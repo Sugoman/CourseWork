@@ -1,0 +1,90 @@
+﻿<UserControl x:Class="EnglishLearningTrainer.Views.AddRuleView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="500" d:DesignWidth="700"
+             Background="White">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+        <StackPanel>
+            <TextBlock Text="Создать новое правило" 
+                       FontSize="24" 
+                       FontWeight="Bold" 
+                       Margin="0,0,0,20"/>
+
+            <TextBlock Text="Заголовок правила:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <TextBox Text="{Binding RuleTitle, UpdateSourceTrigger=PropertyChanged}" 
+                     FontSize="16" 
+                     Padding="10" 
+                     Margin="0,0,0,15"/>
+
+            <TextBlock Text="Краткое описание:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
+                     FontSize="14" 
+                     Padding="10" 
+                     Height="40" 
+                     TextWrapping="Wrap"
+                     Margin="0,0,0,15"/>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Категория:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <ComboBox SelectedItem="{Binding Category}"
+                              FontSize="14" 
+                              Padding="10" 
+                              Margin="0,0,0,15">
+                        <ComboBoxItem Content="Grammar"/>
+                        <ComboBoxItem Content="Vocabulary"/>
+                        <ComboBoxItem Content="Pronunciation"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Уровень сложности:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                    <ComboBox SelectedIndex="{Binding DifficultyLevel}"
+                              FontSize="14" 
+                              Padding="10" 
+                              Margin="0,0,0,15">
+                        <ComboBoxItem Content="1 - Начальный"/>
+                        <ComboBoxItem Content="2 - Базовый"/>
+                        <ComboBoxItem Content="3 - Средний"/>
+                        <ComboBoxItem Content="4 - Продвинутый"/>
+                        <ComboBoxItem Content="5 - Эксперт"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+
+            <TextBlock Text="Содержание (Markdown):" FontWeight="SemiBold" Margin="0,0,0,5"/>
+            <TextBox Text="{Binding MarkdownContent, UpdateSourceTrigger=PropertyChanged}" 
+                     FontSize="14" 
+                     Padding="10" 
+                     Height="150" 
+                     TextWrapping="Wrap"
+                     AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"
+                     Margin="0,0,0,25"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Отмена" 
+                        Command="{Binding CancelCommand}"
+                        Style="{StaticResource DangerButton}" 
+                        Width="100" 
+                        Margin="0,0,10,0"/>
+                <Button Content="Создать" 
+                        Command="{Binding SaveCommand}"
+                        Style="{StaticResource SuccessButton}" 
+                        Width="100"
+                        x:Name="CreateRuleButton"
+                        Click="CreateRuleButton_Click"/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

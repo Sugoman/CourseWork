@@ -1,9 +1,6 @@
-﻿using EnglishLearingTrainer.Core;
-using EnglishLearingTrainer.Models;
-using EnglishLearningTrainer.Core;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using EnglishLearningTrainer.Core;
+using EnglishLearningTrainer.Models;
+using System.Windows;
 using System.Windows.Input;
 using static EnglishLearningTrainer.Core.EventAggregator;
 
@@ -11,8 +8,7 @@ namespace EnglishLearningTrainer.ViewModels
 {
     public class LearningViewModel : TabViewModelBase
     {
-        // --- ФИКС №2: Меняем хрупкий List на надежную Очередь (Queue) ---
-        private readonly Queue<Word> _wordQueue;
+        private Queue<Word> _wordsQueue;
 
         private Word _currentWord;
         public Word CurrentWord
@@ -21,11 +17,18 @@ namespace EnglishLearningTrainer.ViewModels
             set => SetProperty(ref _currentWord, value);
         }
 
+
         private bool _isFlipped;
         public bool IsFlipped
         {
             get => _isFlipped;
-            set => SetProperty(ref _isFlipped, value);
+            set
+            {
+                if (SetProperty(ref _isFlipped, value))
+                {
+                    (AnswerCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                }
+            }
         }
 
         private bool _isSessionComplete;
@@ -42,22 +45,20 @@ namespace EnglishLearningTrainer.ViewModels
         {
             Title = $"Изучение: {dictionary.Name}";
 
-            var words = new List<Word>
+            _wordsQueue = new Queue<Word>(dictionary.Words);
+            if (_wordsQueue.Count == 0)
             {
-                new Word { Id = 1, OriginalWord = "Apple", Translation = "Яблоко" },
-                new Word { Id = 2, OriginalWord = "Book", Translation = "Книга" },
-                new Word { Id = 3, OriginalWord = "Car", Translation = "Машина" },
-                new Word { Id = 4, OriginalWord = "House", Translation = "Дом" },
-                new Word { Id = 5, OriginalWord = "Tree", Translation = "Дерево" }
-            };
-            // Создаем очередь из нашего списка слов
-            _wordQueue = new Queue<Word>(words);
+                MessageBox.Show("Словарь пуст");
+                return;
+            }
+            else
+            {
+                CurrentWord = _wordsQueue.FirstOrDefault();
 
-            // Показываем первое слово, не вынимая его из очереди
-            CurrentWord = _wordQueue.Any() ? _wordQueue.Peek() : null;
-
-            AnswerCommand = new RelayCommand(async (param) => await HandleAnswerAsync((bool)param), (param) => !_isFlipped);
-            CloseTabCommand = new RelayCommand(CloseTab);
+                AnswerCommand = new RelayCommand(async (param) => await HandleAnswerAsync((bool)param), (param) => !_isFlipped);
+                CloseTabCommand = new RelayCommand(CloseTab);
+            }
+                
         }
 
         private async Task HandleAnswerAsync(bool knowsTheWord)
@@ -65,18 +66,14 @@ namespace EnglishLearningTrainer.ViewModels
             IsFlipped = true;
             await Task.Delay(1500);
 
-            // --- НОВАЯ ЛОГИКА НА ОЧЕРЕДИ ---
-            // Вынимаем текущее слово из начала очереди
-            var processedWord = _wordQueue.Dequeue();
+            var word = _wordsQueue.Dequeue();
 
             if (!knowsTheWord)
             {
-                // Если не знает, кладем слово в конец очереди
-                _wordQueue.Enqueue(processedWord);
+                _wordsQueue.Enqueue(word);
             }
-            // -----------------------------
 
-            if (!_wordQueue.Any())
+            if (!_wordsQueue.Any())
             {
                 IsSessionComplete = true;
                 return;
@@ -84,14 +81,12 @@ namespace EnglishLearningTrainer.ViewModels
 
             IsFlipped = false;
             await Task.Delay(300);
-
-            // Показываем новое первое слово в очереди
-            CurrentWord = _wordQueue.Peek();
+            CurrentWord = _wordsQueue.Peek();
         }
 
         private void CloseTab(object parameter)
         {
-            EventAggregator.Instance.Publish(new CloseTabMessage { TabToClose = this });
+            EventAggregator.Instance.Publish(new CloseTabMessage(this));
         }
     }
 }

@@ -1,0 +1,33 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+
+namespace EnglishLearningTrainer.Views
+{
+    /// <summary>
+    /// Логика взаимодействия для AddRuleView.xaml
+    /// </summary>
+    public partial class AddRuleView : UserControl
+    {
+        public AddRuleView()
+        {
+            InitializeComponent();
+        }
+
+        private void CreateRuleButton_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Правило было успешно добавлено!");
+        }
+    }
+}

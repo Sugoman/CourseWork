@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 
-namespace EnglishLearingTrainer.Core
+namespace EnglishLearningTrainer.Core
 {
     public abstract class ObservableObject : INotifyPropertyChanged
     {
@@ -14,7 +14,6 @@ namespace EnglishLearingTrainer.Core
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        // Теперь этот метод возвращает true, если значение реально изменилось
         protected virtual bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
         {
             if (EqualityComparer<T>.Default.Equals(storage, value))

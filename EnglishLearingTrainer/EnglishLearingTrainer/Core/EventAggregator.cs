@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace EnglishLearningTrainer.Core
+﻿namespace EnglishLearningTrainer.Core
 {
     public class EventAggregator
     {
@@ -21,25 +15,59 @@ namespace EnglishLearningTrainer.Core
                 _subscribers[type] = new List<object>();
             }
             _subscribers[type].Add(action);
+            actionTargetMap[action] = action;
         }
+
+        public void Unsubscribe<T>(Action<T> action) where T : class
+        {
+            var type = typeof(T);
+            if (_subscribers.TryGetValue(type, out var subscriberList))
+            {
+                if (actionTargetMap.TryGetValue(action, out var actualSubscriber))
+                {
+                    subscriberList.Remove(actualSubscriber);
+                    actionTargetMap.Remove(action); 
+                    if (subscriberList.Count == 0)
+                    {
+                        _subscribers.Remove(type);
+                    }
+                }
+            }
+        }
+        private readonly Dictionary<Delegate, object> actionTargetMap = new Dictionary<Delegate, object>();
 
         public void Publish<T>(T message) where T : class
         {
             var messageType = message.GetType();
-            var subscriberTypes = _subscribers.Keys
-                .Where(key => key.IsAssignableFrom(messageType));
 
-            foreach (var subscriberType in subscriberTypes)
+            var relevantKeys = _subscribers.Keys
+                .Where(key => key.IsAssignableFrom(messageType))
+                .ToList(); 
+
+            foreach (var subscriberType in relevantKeys)
             {
-                foreach (var subscriber in _subscribers[subscriberType])
+                if (_subscribers.TryGetValue(subscriberType, out var originalSubscriberList))
                 {
-                    (subscriber as Delegate)?.DynamicInvoke(message);
+                    var subscribersCopy = originalSubscriberList.ToList();
+
+                    foreach (var subscriber in subscribersCopy)
+                    {
+                        if (originalSubscriberList.Contains(subscriber))
+                        {
+                            (subscriber as Delegate)?.DynamicInvoke(message);
+                        }
+                    }
                 }
             }
         }
-        public class CloseTabMessage
-        {
-            public TabViewModelBase TabToClose { get; set; }
-        }
+        public class CloseTabMessage 
+        { 
+            public TabViewModelBase TabToClose { get; set; } 
+
+            public CloseTabMessage(TabViewModelBase tabToClose) 
+            { 
+                TabToClose = tabToClose; 
+            } 
+        } 
     }
 }

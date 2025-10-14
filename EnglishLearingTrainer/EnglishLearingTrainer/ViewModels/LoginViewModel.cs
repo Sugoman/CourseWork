@@ -1,28 +1,35 @@
-﻿using EnglishLearingTrainer.Core;
+﻿
 using EnglishLearningTrainer.Core;
-using System;
-using System.Windows.Controls;
-using System.Windows.Input;
+using EnglishLearningTrainer.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Windows;
 
 namespace EnglishLearningTrainer.ViewModels
 {
     public class LoginViewModel : ObservableObject
     {
-        public event Action LoginSuccessful;
+        private static readonly HttpClient _httpClient = new HttpClient
+        {
+            BaseAddress = new Uri("http://localhost:5076") 
+        };
+        public event Action<User> LoginSuccessful;
+        public event Action OfflineLoginRequested;
 
         private string _username;
         public string Username
         {
             get => _username;
-            set
-            {
-                // Используем прокачанный SetProperty и...
-                if (SetProperty(ref _username, value))
-                {
-                    // ...даем тот самый "пинок" кнопке!
-                    (LoginCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                }
-            }
+            set => SetProperty(ref _username, value);
+        }
+
+        private string _password;
+        public string Password
+        {
+            get => _password;
+            set => SetProperty(ref _password, value);
         }
 
         private string _errorMessage;
@@ -32,33 +39,71 @@ namespace EnglishLearningTrainer.ViewModels
             set => SetProperty(ref _errorMessage, value);
         }
 
-        public ICommand LoginCommand { get; }
+        public RelayCommand LoginCommand { get; }
+        public RelayCommand OfflineLoginCommand { get; }
 
         public LoginViewModel()
         {
-            LoginCommand = new RelayCommand(Login, CanLogin);
+            LoginCommand = new RelayCommand(PerformLogin);
+            OfflineLoginCommand = new RelayCommand(PerformOfflineLogin); 
         }
 
-        private bool CanLogin(object parameter)
+        private async void PerformLogin(object parameter)
         {
-            // Теперь это условие будет проверяться при каждом изменении Username
-            return !string.IsNullOrEmpty(Username);
+      
+            ErrorMessage = "";
+
+            if (!(parameter is System.Windows.Controls.PasswordBox passwordBox))
+            {
+                ErrorMessage = "Ошибка получения пароля.";
+                return;
+            }
+            string userPassword = passwordBox.Password;
+
+            var loginRequest = new
+            {
+                Username = this.Username,
+                Password = userPassword
+            };
+
+            try
+            {
+                HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/api/auth/login", loginRequest);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonOptions = new JsonSerializerOptions
+                    {
+                        ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve,
+                        PropertyNameCaseInsensitive = true
+                    };
+
+                    User loggedInUser = await response.Content.ReadFromJsonAsync<User>(jsonOptions);
+
+                }
+                else
+                {
+                    // (401 Unauthorized)
+                    var errorResponse = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
+                    ErrorMessage = errorResponse.Message;
+                }
+            }
+            catch (Exception ex)
+            {
+                // API не запущен / нет интернета
+                ErrorMessage = "Не удалось подключиться к серверу. Попробуйте автономный режим.";
+                System.Diagnostics.Debug.WriteLine($"API Error: {ex.Message}");
+            }
         }
 
-        private void Login(object parameter)
+        private class ErrorResponseDto
         {
-            var passwordBox = parameter as PasswordBox;
-            var password = passwordBox?.Password;
-
-            if (Username == "1" && password == "1")
-            {
-                ErrorMessage = "";
-                LoginSuccessful?.Invoke();
-            }
-            else
-            {
-                ErrorMessage = "Неверный логин или пароль";
-            }
+            public string Message { get; set; }
+        }
+        private void PerformOfflineLogin(object obj)
+        {
+            ErrorMessage = "";
+            OfflineLoginRequested?.Invoke();
         }
     }
 }

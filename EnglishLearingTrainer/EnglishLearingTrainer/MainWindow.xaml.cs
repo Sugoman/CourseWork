@@ -13,7 +13,6 @@ namespace EnglishLearningTrainer
             InitializeComponent();
         }
 
-        // Позволяет перетаскивать окно за заголовок
         private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (e.ChangedButton == MouseButton.Left)
@@ -22,19 +21,16 @@ namespace EnglishLearningTrainer
             }
         }
 
-        // Кнопка "Закрыть"
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {
             Application.Current.Shutdown();
         }
 
-        // Кнопка "Свернуть"
         private void MinimizeButton_Click(object sender, RoutedEventArgs e)
         {
             this.WindowState = WindowState.Minimized;
         }
 
-        // Кнопка "Развернуть/Восстановить"
         private void MaximizeButton_Click(object sender, RoutedEventArgs e)
         {
             if (this.WindowState == WindowState.Maximized)

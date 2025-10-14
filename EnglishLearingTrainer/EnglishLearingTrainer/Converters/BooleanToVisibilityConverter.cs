@@ -13,7 +13,6 @@ namespace EnglishLearningTrainer.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            // Обратное преобразование нам не нужно
             throw new NotImplementedException();
         }
     }
