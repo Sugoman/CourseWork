@@ -1,4 +1,4 @@
-﻿using EnglishLearningTrainer.Models; // Убедись, что Models тут
+﻿using EnglishLearningTrainer.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace EnglishLearningTrainer.Context
@@ -13,7 +13,6 @@ namespace EnglishLearningTrainer.Context
         {
             if (!optionsBuilder.IsConfigured)
             {
-                // Это и есть наш "автономный режим"
                 optionsBuilder.UseSqlite("Data Source=EnglishLearning.db");
             }
         }
@@ -26,7 +25,6 @@ namespace EnglishLearningTrainer.Context
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Конфигурация связей
             modelBuilder.Entity<Dictionary>()
                 .HasMany(d => d.Words)
                 .WithOne(w => w.Dictionary)

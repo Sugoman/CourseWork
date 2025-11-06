@@ -13,22 +13,20 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <!-- Строка для заголовка, высота по контенту -->
                 <RowDefinition Height="*"/>
-                <!-- Строка для текста, занимает все оставшееся место -->
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0" 
                        Text="{Binding Rule.Title}" 
-                       FontSize="32" 
+                       FontSize="{DynamicResource HeaderFontSize}"
                        FontWeight="Bold" 
                        Foreground="#2c3e50" 
                        TextWrapping="Wrap"
-                       Margin="0,0,0,15"/>
+                       Margin="0,0,0,35"/>
 
             <Border BorderBrush="#ecf0f1" BorderThickness="0,1,0,0" Padding="0,20,0,0">
                 <md:MarkdownScrollViewer Markdown="{Binding Rule.MarkdownContent}"
-                                         FontSize="16"
+                                         FontSize="{DynamicResource BaseFontSize}"
                                          VerticalScrollBarVisibility="Auto"
                                          Padding="10"/>
             </Border>

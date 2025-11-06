@@ -1,22 +1,21 @@
 ﻿using EnglishLearningTrainer.Context;
-using EnglishLearningTrainer.Models;
-using LearningTrainerShared.Models;
+using EnglishLearningTrainer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Net.Http;
 
 namespace LearningAPI.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")] // /api/auth
     public class AuthController : ControllerBase
     {
         private readonly ApiDbContext _context;
+        private readonly TokenService _tokenService;
         private HttpClient _httpClient;
 
-        public AuthController(ApiDbContext context)
+        public AuthController(ApiDbContext context, TokenService tokenService)
         {
             _context = context;
+            _tokenService = tokenService;
         }
 
         public class LoginRequest
@@ -24,8 +23,8 @@ namespace LearningAPI.Controllers
             public string Username { get; set; }
             public string Password { get; set; }
         }
-
-        [HttpPost("login")] // /api/auth/login
+        
+        [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _context.Users
@@ -37,10 +36,14 @@ namespace LearningAPI.Controllers
                 return Unauthorized(new { message = "Неверный логин или пароль" });
             }
 
-            return Ok(user);
-        }
+            var accessToken = _tokenService.GenerateAccessToken(user);
 
-        
-       
+            return Ok(new
+            {
+                AccessToken = accessToken,
+                UserLogin = user.Login,
+                UserRole = user.Role.Name
+            });
+        }
     }
 }

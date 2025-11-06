@@ -23,5 +23,7 @@ namespace EnglishLearningTrainer.Models
 
         public DateTime AddedAt { get; set; } = DateTime.Now;
         public Dictionary Dictionary { get; set; }
+
+        public string? Transcription { get; set; }
     }
 }

@@ -21,10 +21,8 @@ namespace EnglishLearningTrainer.Models
         [MaxLength(50)]
         public string LanguageTo { get; set; }
 
-        // Навигационное свойство
         public virtual ICollection<Word> Words { get; set; } = new List<Word>();
 
-        // Вычисляемое свойство
         [NotMapped]
         public int WordCount => Words?.Count ?? 0;
     }

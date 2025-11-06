@@ -10,19 +10,19 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
         <StackPanel>
             <TextBlock Text="Создать новое правило" 
-                       FontSize="24" 
+                       FontSize="{DynamicResource HeaderFontSize}" 
                        FontWeight="Bold" 
                        Margin="0,0,0,20"/>
 
             <TextBlock Text="Заголовок правила:" FontWeight="SemiBold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding RuleTitle, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="16" 
+                     FontSize="{DynamicResource BaseFontSize}"
                      Padding="10" 
                      Margin="0,0,0,15"/>
 
             <TextBlock Text="Краткое описание:" FontWeight="SemiBold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="14" 
+                     FontSize="{DynamicResource BaseFontSize}"
                      Padding="10" 
                      Height="40" 
                      TextWrapping="Wrap"
@@ -38,7 +38,7 @@
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="Категория:" FontWeight="SemiBold" Margin="0,0,0,5"/>
                     <ComboBox SelectedItem="{Binding Category}"
-                              FontSize="14" 
+                              FontSize="{DynamicResource BaseFontSize}"
                               Padding="10" 
                               Margin="0,0,0,15">
                         <ComboBoxItem Content="Grammar"/>
@@ -50,7 +50,7 @@
                 <StackPanel Grid.Column="2">
                     <TextBlock Text="Уровень сложности:" FontWeight="SemiBold" Margin="0,0,0,5"/>
                     <ComboBox SelectedIndex="{Binding DifficultyLevel}"
-                              FontSize="14" 
+                              FontSize="{DynamicResource BaseFontSize}" 
                               Padding="10" 
                               Margin="0,0,0,15">
                         <ComboBoxItem Content="1 - Начальный"/>
@@ -64,7 +64,7 @@
 
             <TextBlock Text="Содержание (Markdown):" FontWeight="SemiBold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding MarkdownContent, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="14" 
+                     FontSize="{DynamicResource BaseFontSize}" 
                      Padding="10" 
                      Height="150" 
                      TextWrapping="Wrap"

@@ -28,7 +28,6 @@ namespace EnglishLearningTrainer.Context
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Конфигурация связей
             modelBuilder.Entity<Dictionary>()
                 .HasMany(d => d.Words)
                 .WithOne(w => w.Dictionary)

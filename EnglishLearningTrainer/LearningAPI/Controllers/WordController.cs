@@ -1,12 +1,12 @@
 ﻿using EnglishLearningTrainer.Context;
-using EnglishLearningTrainer.Models; // Убедись, что 'Word' тут
+using EnglishLearningTrainer.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearningAPI.Controllers
 {
     [ApiController]
-    [Route("api/words")] // -> /api/Words
+    [Route("api/words")] 
     public class WordsController : ControllerBase
     {
         private readonly ApiDbContext _context;
@@ -17,7 +17,6 @@ namespace LearningAPI.Controllers
         }
 
         // POST: /api/Words
-        // Принимаем Word, у которого WPF уже выставил DictionaryId
         [HttpPost]
         public async Task<IActionResult> AddWord([FromBody] Word word)
         {
@@ -26,11 +25,9 @@ namespace LearningAPI.Controllers
                 return BadRequest("Word data or DictionaryId is missing.");
             }
 
-            // Мы доверяем, что WPF прислал 'DictionaryId'
             _context.Words.Add(word);
             await _context.SaveChangesAsync();
 
-            // Возвращаем созданное слово
             return Ok(word);
         }
 

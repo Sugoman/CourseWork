@@ -1,6 +1,7 @@
-﻿
-using EnglishLearningTrainer.Core;
+﻿using EnglishLearningTrainer.Core;
 using EnglishLearningTrainer.Models;
+using EnglishLearningTrainer.Services;
+using LearningTrainerShared.Models;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -11,12 +12,14 @@ namespace EnglishLearningTrainer.ViewModels
     {
         private static readonly HttpClient _httpClient = new HttpClient
         {
-            BaseAddress = new Uri("http://localhost:5076") 
+            BaseAddress = new Uri("http://localhost:5076")
         };
+        private readonly SessionService _sessionService = new SessionService();
+        private string _username;
+
         public event Action<User> LoginSuccessful;
         public event Action OfflineLoginRequested;
 
-        private string _username;
         public string Username
         {
             get => _username;
@@ -43,11 +46,12 @@ namespace EnglishLearningTrainer.ViewModels
         public LoginViewModel()
         {
             LoginCommand = new RelayCommand(PerformLogin);
-            OfflineLoginCommand = new RelayCommand(PerformOfflineLogin); 
+            OfflineLoginCommand = new RelayCommand(PerformOfflineLogin);
         }
 
         private async void PerformLogin(object parameter)
         {
+
             ErrorMessage = "";
 
             if (!(parameter is System.Windows.Controls.PasswordBox passwordBox))
@@ -62,20 +66,35 @@ namespace EnglishLearningTrainer.ViewModels
                 Username = this.Username,
                 Password = userPassword
             };
-
+            var jsonOptions = new JsonSerializerOptions
+            {
+                ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve,
+                PropertyNameCaseInsensitive = true
+            };
             try
             {
                 HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/api/auth/login", loginRequest);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var jsonOptions = new JsonSerializerOptions
-                    {
-                        ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve,
-                        PropertyNameCaseInsensitive = true
-                    };
+                    var sessionDto = await response.Content.ReadFromJsonAsync<UserSessionDto>(jsonOptions);
 
-                    User loggedInUser = await response.Content.ReadFromJsonAsync<User>(jsonOptions);
+                    if (sessionDto == null || string.IsNullOrEmpty(sessionDto.AccessToken))
+                    {
+                        ErrorMessage = "Ошибка сервера: не получен токен доступа.";
+                        return;
+                    }
+
+                    _sessionService.SaveSession(sessionDto);
+
+                    _httpClient.DefaultRequestHeaders.Authorization =
+                        new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionDto.AccessToken);
+
+                    User loggedInUser = new User
+                    {
+                        Login = sessionDto.UserLogin,
+                        Role = new Role { Name = sessionDto.UserRole }
+                    };
 
                     LoginSuccessful?.Invoke(loggedInUser);
                 }
@@ -101,7 +120,6 @@ namespace EnglishLearningTrainer.ViewModels
         private void PerformOfflineLogin(object obj)
         {
             ErrorMessage = "";
-            // Просто "кричим" наверх: "Юзер хочет в офлайн!"
             OfflineLoginRequested?.Invoke();
         }
     }

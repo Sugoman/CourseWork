@@ -35,7 +35,6 @@ namespace EnglishLearningTrainer.Views
 
             if (dictionary != null)
             {
-                // Прямой вызов без команд
                 var viewModel = this.DataContext as DashboardViewModel;
                 viewModel?.StartLearning(dictionary);
             }

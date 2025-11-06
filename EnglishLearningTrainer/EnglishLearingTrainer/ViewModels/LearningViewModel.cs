@@ -45,7 +45,6 @@ namespace EnglishLearningTrainer.ViewModels
         {
             Title = $"Изучение: {dictionary.Name}";
 
-            // Создаем очередь из слов, переданных из словаря
             _wordsQueue = new Queue<Word>(dictionary.Words);
             if (_wordsQueue.Count == 0)
             {
@@ -67,27 +66,22 @@ namespace EnglishLearningTrainer.ViewModels
             IsFlipped = true;
             await Task.Delay(1500);
 
-            // Убираем слово из начала очереди
-            
             var word = _wordsQueue.Dequeue();
 
             if (!knowsTheWord)
             {
-                // Если не знает, кладем его обратно в конец
                 _wordsQueue.Enqueue(word);
             }
 
             if (!_wordsQueue.Any())
             {
-                // Если очередь пуста - сессия окончена
                 IsSessionComplete = true;
                 return;
             }
 
-            // Показываем следующее слово
             IsFlipped = false;
-            await Task.Delay(300); // Задержка для анимации переворота "обратно"
-            CurrentWord = _wordsQueue.Peek(); // Peek() просто "смотрит" на следующий элемент, не удаляя его
+            await Task.Delay(300);
+            CurrentWord = _wordsQueue.Peek();
         }
 
         private void CloseTab(object parameter)

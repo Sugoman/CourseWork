@@ -10,25 +10,31 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
         <StackPanel>
             <TextBlock Text="Добавить новое слово" 
-                       FontSize="24" 
+                       FontSize="{DynamicResource HeaderFontSize}"
                        FontWeight="Bold" 
                        Margin="0,0,0,20"/>
 
             <TextBlock Text="Иностранное слово:" FontWeight="SemiBold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding OriginalWord, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="16" 
+                     PreviewKeyDown="OnOriginalWordTextBox_PreviewKeyDown"
+                     x:Name="OriginalWordTextBox"
+                     FontSize="{DynamicResource BaseFontSize}" 
                      Padding="10" 
                      Margin="0,0,0,15"/>
-
+            <TextBlock Margin="0,5,0,10" Visibility="{Binding DataContext.CanManage, Converter={StaticResource BooleanToVisibilityConverter}}">
+    <Run Text="Возможно, вы имели в виду: "/>
+    <Run Text="{Binding Suggestion}" Foreground="Blue" FontWeight="Bold"/>
+            </TextBlock>
+            
             <TextBlock Text="Перевод:" FontWeight="SemiBold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding Translation, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="16" 
+                     FontSize="{DynamicResource BaseFontSize}"
                      Padding="10" 
                      Margin="0,0,0,15"/>
 
             <TextBlock Text="Пример использования (необязательно):" FontWeight="SemiBold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding Example, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="14" 
+                     FontSize="{DynamicResource BaseFontSize}"
                      Padding="10" 
                      Height="60" 
                      TextWrapping="Wrap"

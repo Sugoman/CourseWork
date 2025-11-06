@@ -1,12 +1,12 @@
 ﻿using EnglishLearningTrainer.Context;
-using EnglishLearningTrainer.Models; // Убедись, что 'Rule' тут
+using EnglishLearningTrainer.Models; 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearningAPI.Controllers
 {
     [ApiController]
-    [Route("api/rules")] // -> /api/Rules
+    [Route("api/rules")] // /api/Rules
     public class RulesController : ControllerBase
     {
         private readonly ApiDbContext _context;

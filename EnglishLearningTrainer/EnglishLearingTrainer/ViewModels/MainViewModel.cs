@@ -1,16 +1,17 @@
 ﻿using EnglishLearningTrainer.Core;
 using EnglishLearningTrainer.Models;
 using EnglishLearningTrainer.Services;
+using LearningTrainerShared.Models;
 
 namespace EnglishLearningTrainer.ViewModels
 {
-    // Главная ViewModel, которая управляет навигацией
     public class MainViewModel : ObservableObject
     {
         private object _currentView;
         private IDataService _dataService;
         private IDataService _apiDataService;
         private IDataService _localDataService;
+        private readonly SettingsService _settingsService;
         public User? CurrentUser { get; private set; }
 
         public object CurrentView
@@ -25,20 +26,43 @@ namespace EnglishLearningTrainer.ViewModels
 
         public MainViewModel()
         {
-            // Начинаем с экрана входа
-            ShowLoginView();
+            _settingsService = new SettingsService();
         }
 
-        // --- ВЫНЕСИ ЛОГИКУ СОЗДАНИЯ LoginView В ОТДЕЛЬНЫЙ МЕТОД ---
+        public MainViewModel(UserSessionDto savedSession)
+        {
+            CurrentUser = new User
+            {
+                Login = savedSession.UserLogin,
+                Role = new Role { Name = savedSession.UserRole }
+            };
+
+            _apiDataService = new ApiDataService();
+            _localDataService = new LocalDataService();
+
+            SyncLocalCacheAsync();
+
+            _apiDataService.SetToken(savedSession.AccessToken);
+
+            var dashboard = new DashboardViewModel(CurrentUser, _apiDataService);
+            CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, new SettingsService());
+
+            EventAggregator.Instance.Subscribe<LogoutRequestedMessage>(HandleLogout);
+        }
+
+        private void OpenSettingsTab()
+        {
+            var settingsVM = new SettingsViewModel(_settingsService);
+
+            EventAggregator.Instance.Publish(settingsVM);
+        }
         private void ShowLoginView()
         {
             var loginVM = new LoginViewModel();
             loginVM.LoginSuccessful += OnLoginSuccessful;
             loginVM.OfflineLoginRequested += OnOfflineLoginRequested;
 
-            // --- И ДОБАВЬ ПОДПИСКУ НА ВЫХОД ---
             EventAggregator.Instance.Subscribe<LogoutRequestedMessage>(HandleLogout);
-            // ---------------------------------
 
             CurrentView = loginVM;
         }
@@ -49,45 +73,41 @@ namespace EnglishLearningTrainer.ViewModels
             _apiDataService = new ApiDataService();
             _localDataService = new LocalDataService();
 
-            SyncLocalCacheAsync(); // Запускаем синхронизацию
+            SyncLocalCacheAsync();
 
             var dashboard = new DashboardViewModel(CurrentUser, _apiDataService);
-            CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard);
+            CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, _settingsService);
         }
 
         private void OnOfflineLoginRequested()
         {
             CurrentUser = null;
-            _apiDataService = null; // В офлайне он не нужен
-            _localDataService = new LocalDataService(); // Создаем только локальный
+            _apiDataService = null; 
+            _localDataService = new LocalDataService();
 
             var dashboard = new DashboardViewModel(null, _localDataService);
-            CurrentView = new ShellViewModel(null, _localDataService, dashboard);
+            CurrentView = new ShellViewModel(null, _localDataService, dashboard, _settingsService);
         }
 
-        // --- ДОБАВЬ ЭТОТ МЕТОД ---
-        // В MainViewModel.cs
         private void HandleLogout(LogoutRequestedMessage message)
         {
-            // --- ВОТ ОН, ФИКС ---
-            // Отписываемся от ЭТОГО сообщения, чтобы не ловить его снова
+            // Отписываемся от старых сообщений
             EventAggregator.Instance.Unsubscribe<LogoutRequestedMessage>(HandleLogout);
-            // ------------------
 
-            // Отписываемся и от сообщений LoginViewModel, если он еще жив
             if (CurrentView is LoginViewModel oldLoginVM)
             {
                 oldLoginVM.LoginSuccessful -= OnLoginSuccessful;
                 oldLoginVM.OfflineLoginRequested -= OnOfflineLoginRequested;
             }
 
-            // Сбрасываем всё
+            SessionService sessionService = new SessionService();
+            sessionService.ClearSession();
+
             CurrentUser = null;
             _apiDataService = null;
             _localDataService = null;
 
-            // Показываем экран входа ЗАНОВО
-            ShowLoginView(); // Этот метод теперь заново подпишется на всё
+            ShowLoginView();
         }
 
         private async Task SyncLocalCacheAsync()
@@ -106,7 +126,6 @@ namespace EnglishLearningTrainer.ViewModels
             }
             catch (Exception ex)
             {
-                // (Если упало - не страшно, юзер всё равно в онлайне)
                 System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА СИНХРОНИЗАЦИИ: {ex.Message}");
             }
         }

@@ -19,17 +19,18 @@ namespace EnglishLearningTrainer.ViewModels
         public ObservableCollection<TabViewModelBase> Tabs { get; }
         private readonly User? _currentUser;
         private readonly IDataService _dataService;
+        private readonly SettingsService _settingsService;
         public ICommand CloseTabCommand { get; }
-        public ICommand LogoutCommand { get; }
+        public ICommand OpenSettingsCommand { get; }
 
-        public ShellViewModel(User? user, IDataService dataService, TabViewModelBase initialDashboard)
+        public ShellViewModel(User? user, IDataService dataService, TabViewModelBase initialDashboard, SettingsService settingsService)
         {
             _currentUser = user;
             _dataService = dataService;
 
             Tabs = new ObservableCollection<TabViewModelBase>();
             CloseTabCommand = new RelayCommand(CloseTab, CanCloseTab);
-            LogoutCommand = new RelayCommand(PerformLogout);
+            OpenSettingsCommand = new RelayCommand(OpenSettings);
 
             EventAggregator.Instance.Subscribe<LearningViewModel>(OpenTab);
             EventAggregator.Instance.Subscribe<RuleViewModel>(OpenTab);
@@ -38,20 +39,25 @@ namespace EnglishLearningTrainer.ViewModels
             EventAggregator.Instance.Subscribe<AddWordViewModel>(OpenTab);
             EventAggregator.Instance.Subscribe<CloseTabMessage>(HandleCloseTabMessage);
             EventAggregator.Instance.Subscribe<DictionaryManagementViewModel>(OpenTab);
+            EventAggregator.Instance.Subscribe<SettingsViewModel>(OpenTab);
 
 
-            // Передаем сервис в конструктор
             var dashboard = initialDashboard;
             Tabs.Add(dashboard);
             SelectedTab = dashboard;
+            _settingsService = settingsService;
         }
-        private void PerformLogout(object obj)
+
+        private void OpenSettings(object obj)
         {
-            // Просто "кричим" в систему
-            EventAggregator.Instance.Publish(new LogoutRequestedMessage());
+            EventAggregator.Instance.Publish(new SettingsViewModel(_settingsService));
         }
+
         private void OpenTab(TabViewModelBase tab)
         {
+            var existingTab = Tabs.FirstOrDefault(t => t.Title == tab.Title);
+            if (existingTab == null)
+
             System.Diagnostics.Debug.WriteLine($"=== OPEN TAB METHOD CALLED ===");
             System.Diagnostics.Debug.WriteLine($"Tab: {tab?.GetType().Name}");
             System.Diagnostics.Debug.WriteLine($"Tab Title: {tab?.Title}");
@@ -70,8 +76,7 @@ namespace EnglishLearningTrainer.ViewModels
                 return;
             }
 
-            // Проверяем, есть ли уже такая вкладка
-            var existingTab = Tabs.FirstOrDefault(t => t.GetType() == tab.GetType() && t.Title == tab.Title);
+            existingTab = Tabs.FirstOrDefault(t => t.GetType() == tab.GetType() && t.Title == tab.Title);
             if (existingTab != null)
             {
                 System.Diagnostics.Debug.WriteLine($"Tab already exists, switching to it: {existingTab.Title}");
@@ -79,17 +84,14 @@ namespace EnglishLearningTrainer.ViewModels
                 return;
             }
 
-            // Добавляем новую вкладку
             System.Diagnostics.Debug.WriteLine("Adding new tab to collection...");
             Tabs.Add(tab);
             System.Diagnostics.Debug.WriteLine($"Tabs count after add: {Tabs.Count}");
 
-            // Выбираем новую вкладку
             SelectedTab = tab;
             System.Diagnostics.Debug.WriteLine($"SelectedTab after: {SelectedTab?.GetType().Name}");
             System.Diagnostics.Debug.WriteLine($"SelectedTab title: {SelectedTab?.Title}");
 
-            // Принудительно уведомляем об изменении
             OnPropertyChanged(nameof(Tabs));
             OnPropertyChanged(nameof(SelectedTab));
 
@@ -101,7 +103,6 @@ namespace EnglishLearningTrainer.ViewModels
             if (message?.TabToClose != null && Tabs.Contains(message.TabToClose))
             {
                 Tabs.Remove(message.TabToClose);
-                // После закрытия всегда возвращаемся на дашборд
                 var dashboard = Tabs.FirstOrDefault(t => t is DashboardViewModel);
                 if (dashboard != null)
                 {
@@ -120,7 +121,6 @@ namespace EnglishLearningTrainer.ViewModels
 
         private bool CanCloseTab(object tabToClose)
         {
-            // Запрещаем закрывать дашборд
             return tabToClose is TabViewModelBase tab && !(tab is DashboardViewModel);
         }
     }

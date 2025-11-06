@@ -9,10 +9,27 @@ namespace EnglishLearningTrainer.ViewModels
     {
         private readonly IDataService _dataService;
         private readonly Dictionary _selectedDictionary;
+        private readonly SpellCheckService _spellCheckService;
 
-        public string OriginalWord { get; set; }
         public string Translation { get; set; }
         public string Example { get; set; }
+        private string _suggestion;
+        public string Suggestion
+        {
+            get => _suggestion;
+            set => SetProperty(ref _suggestion, value);
+        }
+
+        private string _originalWord;
+        public string OriginalWord
+        {
+            get => _originalWord;
+            set
+            {
+                SetProperty(ref _originalWord, value);
+                UpdateSuggestion();
+            }
+        }
 
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
@@ -21,13 +38,22 @@ namespace EnglishLearningTrainer.ViewModels
         {
             _dataService = dataService;
             _selectedDictionary = dictionary;
+            _spellCheckService = new SpellCheckService();
             Title = $"Добавить слово в {dictionary.Name}";
 
-            // ИСПРАВЛЕННЫЕ КОМАНДЫ
             SaveCommand = new RelayCommand(async (param) => await SaveWordAsync());
             CancelCommand = new RelayCommand((param) => Cancel());
         }
-
+        public bool AcceptSuggestion()
+        {
+            if (!string.IsNullOrWhiteSpace(Suggestion))
+            {
+                OriginalWord = Suggestion; 
+                Suggestion = null;      
+                return true; 
+            }
+            return false; 
+        }
         private async Task SaveWordAsync()
         {
             System.Diagnostics.Debug.WriteLine("=== SAVE WORD STARTED ===");
@@ -69,6 +95,11 @@ namespace EnglishLearningTrainer.ViewModels
         {
             System.Diagnostics.Debug.WriteLine("Добавление слова отменено");
             EventAggregator.Instance.Publish(this);
+        }
+
+        private void UpdateSuggestion()
+        {
+            Suggestion = _spellCheckService.SuggestCorrection(OriginalWord);
         }
     }
 }

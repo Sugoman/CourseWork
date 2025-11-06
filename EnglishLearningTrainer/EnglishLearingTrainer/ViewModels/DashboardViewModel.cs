@@ -60,10 +60,8 @@ namespace EnglishLearningTrainer.ViewModels
         {
             System.Diagnostics.Debug.WriteLine($"=== RULE ADDED: {message.Rule.Title} ===");
 
-            // Добавляем правило в коллекцию
             Rules.Add(message.Rule);
 
-            // Сортируем правила по названию (опционально)
             var sortedRules = Rules.OrderBy(r => r.Title).ToList();
             Rules.Clear();
             foreach (var rule in sortedRules)
@@ -74,14 +72,12 @@ namespace EnglishLearningTrainer.ViewModels
             System.Diagnostics.Debug.WriteLine($"Rules collection updated: {Rules.Count} rules");
         }
 
-        // ОБРАБОТЧИК ДОБАВЛЕНИЯ СЛОВАРЯ
         private void OnDictionaryAdded(DictionaryAddedMessage message)
         {
             System.Diagnostics.Debug.WriteLine($"=== DICTIONARY ADDED: {message.Dictionary.Name} ===");
 
             Dictionaries.Add(message.Dictionary);
 
-            // Сортируем словари по названию
             var sortedDicts = Dictionaries.OrderBy(d => d.Name).ToList();
             Dictionaries.Clear();
             foreach (var dict in sortedDicts)
@@ -92,34 +88,23 @@ namespace EnglishLearningTrainer.ViewModels
             System.Diagnostics.Debug.WriteLine($"Dictionaries collection updated: {Dictionaries.Count} dictionaries");
         }
 
-        // ОБРАБОТЧИК ДОБАВЛЕНИЯ СЛОВА
         private void OnWordAdded(WordAddedMessage message)
         {
             System.Diagnostics.Debug.WriteLine($"=== WORD ADDED: {message.Word.OriginalWord} to dictionary {message.DictionaryId} ===");
 
-            // Находим словарь и добавляем слово
             var dictionary = Dictionaries.FirstOrDefault(d => d.Id == message.DictionaryId);
             if (dictionary != null && dictionary.Words != null)
             {
                 dictionary.Words.Add(message.Word);
 
-                // Обновляем отображение счетчика слов
                 OnPropertyChanged(nameof(Dictionaries));
             }
         }
 
         private async void LoadDataAsync()
         {
-            try
-            {
-                System.Diagnostics.Debug.WriteLine("=== LOAD DATA STARTED ===");
-                System.Diagnostics.Debug.WriteLine($"Dictionaries is null: {Dictionaries == null}");
-                System.Diagnostics.Debug.WriteLine($"Rules is null: {Rules == null}");
-                System.Diagnostics.Debug.WriteLine($"_dataService is null: {_dataService == null}");
-
-                // Загрузка данных через сервис
-                var dictionaries = await _dataService.GetDictionariesAsync();
-                var rules = await _dataService.GetRulesAsync();
+            var dictionaries = await _dataService.GetDictionariesAsync();
+            var rules = await _dataService.GetRulesAsync();
 
                 System.Diagnostics.Debug.WriteLine($"dictionaries received: {dictionaries != null}, count: {dictionaries?.Count}");
                 System.Diagnostics.Debug.WriteLine($"rules received: {rules != null}, count: {rules?.Count}");
@@ -141,42 +126,14 @@ namespace EnglishLearningTrainer.ViewModels
                 Dictionaries.Clear();
                 Rules.Clear();
 
-                System.Diagnostics.Debug.WriteLine("Adding dictionaries...");
-                if (dictionaries != null)
-                {
-                    foreach (var dict in dictionaries)
-                    {
-                        dict.Words = dict.Words ?? new List<Word>();
-                        Dictionaries.Add(dict);
-                        System.Diagnostics.Debug.WriteLine($"Added dictionary: {dict.Name}");
-                    }
-                }
-
-                System.Diagnostics.Debug.WriteLine("Adding rules...");
-                if (rules != null)
-                {
-                    foreach (var rule in rules)
-                    {
-                        Rules.Add(rule);
-                        System.Diagnostics.Debug.WriteLine($"Added rule: {rule.Title}");
-                    }
-                }
-
-                // Уведомляем об изменении для обновления интерфейса
-                OnPropertyChanged(nameof(Dictionaries));
-                OnPropertyChanged(nameof(Rules));
-
-                System.Diagnostics.Debug.WriteLine($"Load completed: {Dictionaries.Count} dictionaries, {Rules.Count} rules");
-            }
-            catch (Exception ex)
+            foreach (var dict in dictionaries)
             {
-                System.Diagnostics.Debug.WriteLine($"CRITICAL ERROR in LoadDataAsync: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
-
-                // Аварийная инициализация если что-то пошло не так
-                if (Dictionaries == null) Dictionaries = new ObservableCollection<Dictionary>();
-                if (Rules == null) Rules = new ObservableCollection<Rule>();
+                Dictionaries.Add(dict);
+                dict.Words = dict.Words ?? new List<Word>();
             }
+            foreach (var rule in rules) Rules.Add(rule);
+
+            OnPropertyChanged(nameof(Dictionaries));
         }
 
         private void CreateDictionary()
@@ -223,7 +180,6 @@ namespace EnglishLearningTrainer.ViewModels
                 var success = await _dataService.DeleteWordAsync(word.Id);
                 if (success)
                 {
-                    // Удаляем из коллекции
                     var dictionary = Dictionaries.FirstOrDefault(d => d.Id == word.DictionaryId);
                     dictionary?.Words.Remove(word);
                     OnPropertyChanged(nameof(Dictionaries));

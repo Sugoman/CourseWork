@@ -14,7 +14,6 @@ namespace EnglishLearningTrainer.ViewModels
 
         public ObservableCollection<Word> Words { get; set; }
 
-        // Свойства для редактирования словаря
         public string DictionaryName { get; set; }
         public string Description { get; set; }
         public string LanguageFrom { get; set; }
@@ -32,7 +31,6 @@ namespace EnglishLearningTrainer.ViewModels
             _dictionary = dictionary;
             Title = $"Управление: {dictionary.Name}";
 
-            // Инициализируем свойства для редактирования
             DictionaryName = dictionary.Name;
             Description = dictionary.Description;
             LanguageFrom = dictionary.LanguageFrom;
@@ -40,7 +38,6 @@ namespace EnglishLearningTrainer.ViewModels
 
             Words = new ObservableCollection<Word>(dictionary.Words);
 
-            // Команды
             SaveDictionaryCommand = new RelayCommand(async (param) => await SaveDictionaryAsync());
             DeleteDictionaryCommand = new RelayCommand(async (param) => await DeleteDictionaryAsync());
             DeleteWordCommand = new RelayCommand(async (param) => await DeleteWordAsync(param));
@@ -66,7 +63,6 @@ namespace EnglishLearningTrainer.ViewModels
                 await _dataService.UpdateDictionaryAsync(_dictionary);
                 System.Diagnostics.Debug.WriteLine($"Словарь '{DictionaryName}' успешно обновлен!");
 
-                // Обновляем заголовок вкладки
                 Title = $"Управление: {_dictionary.Name}";
                 OnPropertyChanged(nameof(Title));
             }
@@ -93,10 +89,8 @@ namespace EnglishLearningTrainer.ViewModels
                     {
                         System.Diagnostics.Debug.WriteLine($"Словарь '{_dictionary.Name}' удален!");
 
-                        // Публикуем сообщение об обновлении данных
                         EventAggregator.Instance.Publish(new RefreshDataMessage());
 
-                        // Закрываем вкладку
                         Close();
                     }
                 }

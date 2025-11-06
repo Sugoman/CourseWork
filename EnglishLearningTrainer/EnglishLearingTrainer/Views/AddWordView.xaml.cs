@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EnglishLearningTrainer.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,6 +24,25 @@ namespace EnglishLearningTrainer.Views
         public AddWordView()
         {
             InitializeComponent();
+        }
+        private void OnOriginalWordTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Tab)
+            {
+                var vm = DataContext as AddWordViewModel;
+                if (vm != null)
+                {
+                    bool suggestionAccepted = vm.AcceptSuggestion();
+
+                    if (suggestionAccepted)
+                    {
+                        e.Handled = true;
+
+                        OriginalWordTextBox.Focus();
+                        OriginalWordTextBox.CaretIndex = OriginalWordTextBox.Text.Length;
+                    }
+                }
+            }
         }
     }
 }

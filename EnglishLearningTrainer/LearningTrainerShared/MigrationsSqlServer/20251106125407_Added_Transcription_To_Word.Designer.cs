@@ -4,6 +4,7 @@ using EnglishLearningTrainer.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LearningTrainerShared.MigrationsSqlServer
 {
     [DbContext(typeof(ApiDbContext))]
-    partial class LearningAppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251106125407_Added_Transcription_To_Word")]
+    partial class Added_Transcription_To_Word
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

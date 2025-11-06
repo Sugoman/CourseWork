@@ -16,13 +16,11 @@ namespace EnglishLearningTrainer.Services
         {
             _context = new LocalDbContext();
 
-            // Гарантируем, что БД и таблицы созданы
             _context.Database.EnsureCreated();
         }
 
         public async Task<List<Dictionary>> GetDictionariesAsync()
         {
-            // Сначала убедимся, что БД готова
             await EnsureDatabaseReadyAsync();
 
             return await _context.Dictionaries
@@ -56,7 +54,6 @@ namespace EnglishLearningTrainer.Services
         {
             await EnsureDatabaseReadyAsync();
 
-            // Проверяем, есть ли уже данные в БД
             var hasDictionaries = await _context.Dictionaries.AnyAsync();
             var hasRules = await _context.Rules.AnyAsync();
 
@@ -108,7 +105,6 @@ namespace EnglishLearningTrainer.Services
                 System.Diagnostics.Debug.WriteLine("Dictionaries already exist, skipping creation");
             }
 
-            // Проверяем результат
             var finalCount = await _context.Dictionaries.CountAsync();
             var wordCount = await _context.Words.CountAsync();
             System.Diagnostics.Debug.WriteLine($"After init - Dictionaries: {finalCount}, Words: {wordCount}");
@@ -116,7 +112,6 @@ namespace EnglishLearningTrainer.Services
 
         private async Task EnsureDatabaseReadyAsync()
         {
-            // Дополнительная проверка, что БД готова
             await _context.Database.EnsureCreatedAsync();
         }
 
@@ -130,7 +125,6 @@ namespace EnglishLearningTrainer.Services
             _context.Rules.Add(rule);
             await _context.SaveChangesAsync();
 
-            // Возвращаем правило с заполненным Id
             return rule;
         }
 
@@ -208,6 +202,11 @@ namespace EnglishLearningTrainer.Services
         }
 
         public Task WipeAndStoreRulesAsync(List<Rule> rulesFromServer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetToken(string accessToken)
         {
             throw new NotImplementedException();
         }

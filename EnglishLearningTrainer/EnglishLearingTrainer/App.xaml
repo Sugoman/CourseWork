@@ -5,19 +5,24 @@
              xmlns:converters="clr-namespace:EnglishLearningTrainer.Converters" 
              xmlns:viewmodels="clr-namespace:EnglishLearningTrainer.ViewModels"
              xmlns:views="clr-namespace:EnglishLearningTrainer.Views"
-             xmlns:system="clr-namespace:System;assembly=System.Runtime"
-             StartupUri="MainWindow.xaml">
+             xmlns:system="clr-namespace:System;assembly=System.Runtime">
+    
     <Application.Resources>
-
-
-            <DataTemplate DataType="{x:Type viewmodels:LoginViewModel}">
+        <system:Double x:Key="BaseFontSize">14</system:Double>
+        <system:Double x:Key="HeaderFontSize">20</system:Double>
+        
+        <DataTemplate DataType="{x:Type viewmodels:SettingsViewModel}">
+            <views:SettingsView/>
+        </DataTemplate>
+        
+        <DataTemplate DataType="{x:Type viewmodels:LoginViewModel}">
                 <views:LoginView/>
             </DataTemplate>
 
         <DataTemplate DataType="{x:Type viewmodels:DashboardViewModel}">
             <views:DashboardView/>
         </DataTemplate>
-
+        
 
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <system:Boolean x:Key="True">True</system:Boolean>
@@ -71,7 +76,6 @@
             </Setter>
         </Style>
 
-        <!-- Отдельный стиль для кнопки "Закрыть" с красной подсветкой -->
         <Style x:Key="WindowCloseButton" TargetType="Button" BasedOn="{StaticResource WindowControlButton}">
             <Setter Property="Template">
                 <Setter.Value>

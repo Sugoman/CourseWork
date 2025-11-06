@@ -50,10 +50,8 @@ namespace EnglishLearningTrainer.ViewModels
                 var savedRule = await _dataService.AddRuleAsync(newRule);
                 System.Diagnostics.Debug.WriteLine($"Правило '{RuleTitle}' успешно создано! ID: {savedRule.Id}");
 
-                // ОПОВЕЩАЕМ О НОВОМ ПРАВИЛЕ
                 EventAggregator.Instance.Publish(new RuleAddedMessage(savedRule));
 
-                // Закрываем вкладку
                 EventAggregator.Instance.Publish(this);
             }
             catch (Exception ex)

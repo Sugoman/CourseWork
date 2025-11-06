@@ -10,19 +10,19 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
         <StackPanel>
             <TextBlock Text="Создать новый словарь" 
-                       FontSize="24" 
+                       FontSize="{DynamicResource HeaderFontSize}" 
                        FontWeight="Bold" 
                        Margin="0,0,0,20"/>
 
             <TextBlock Text="Название словаря:" FontWeight="SemiBold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding DictionaryName, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="16" 
+                     FontSize="{DynamicResource BaseFontSize}" 
                      Padding="10" 
                      Margin="0,0,0,15"/>
 
             <TextBlock Text="Описание:" FontWeight="SemiBold" Margin="0,0,0,5"/>
             <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="14" 
+                     FontSize="{DynamicResource BaseFontSize}"
                      Padding="10" 
                      Height="60" 
                      TextWrapping="Wrap"
@@ -39,7 +39,7 @@
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="Изучаемый язык:" FontWeight="SemiBold" Margin="0,0,0,5"/>
                     <TextBox Text="{Binding LanguageFrom, UpdateSourceTrigger=PropertyChanged}" 
-                             FontSize="14" 
+                             FontSize="{DynamicResource BaseFontSize}"
                              Padding="10" 
                              Margin="0,0,0,15"/>
                 </StackPanel>
@@ -47,7 +47,7 @@
                 <StackPanel Grid.Column="2">
                     <TextBlock Text="Родной язык:" FontWeight="SemiBold" Margin="0,0,0,5"/>
                     <TextBox Text="{Binding LanguageTo, UpdateSourceTrigger=PropertyChanged}" 
-                             FontSize="14" 
+                             FontSize="{DynamicResource BaseFontSize}"
                              Padding="10" 
                              Margin="0,0,0,15"/>
                 </StackPanel>

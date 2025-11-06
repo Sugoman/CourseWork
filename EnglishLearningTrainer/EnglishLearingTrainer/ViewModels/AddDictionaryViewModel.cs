@@ -47,7 +47,6 @@ namespace EnglishLearningTrainer.ViewModels
                 var savedDictionary = await _dataService.AddDictionaryAsync(newDictionary);
                 System.Diagnostics.Debug.WriteLine($"Словарь '{DictionaryName}' успешно создан! ID: {savedDictionary.Id}");
 
-                // ОПОВЕЩАЕМ О НОВОМ СЛОВАРЕ
                 EventAggregator.Instance.Publish(new DictionaryAddedMessage(savedDictionary));
 
                 EventAggregator.Instance.Publish(this);

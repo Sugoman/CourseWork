@@ -23,5 +23,7 @@ namespace EnglishLearningTrainer.Services
         Task<bool> DeleteRuleAsync(int ruleId);
         Task<bool> DeleteDictionaryAsync(int dictionaryId);
         Task<bool> UpdateDictionaryAsync(Dictionary dictionary);
+        void SetToken(string accessToken);
+
     }
 }
