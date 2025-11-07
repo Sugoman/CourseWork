@@ -1,4 +1,4 @@
-﻿using EnglishLearningTrainer.Models;
+﻿using LearningTrainer.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -9,7 +9,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EnglishLearningTrainer.Services
+namespace LearningTrainer.Services
 {
     public class TokenService
     {

@@ -1,5 +1,5 @@
-using EnglishLearningTrainer;
-using EnglishLearningTrainer.Context;
+using LearningTrainer;
+using LearningTrainer.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -7,7 +7,6 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -22,7 +21,8 @@ builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.ReferenceHandler =
         System.Text.Json.Serialization.ReferenceHandler.Preserve;
 });
-builder.Services.AddScoped<EnglishLearningTrainer.Services.TokenService>();
+builder.Services.AddScoped<LearningTrainer.Services.TokenService>();
+builder.Services.AddHttpClient<LearningTrainer.Services.ExternalDictionaryService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace EnglishLearningTrainer.Services
+namespace LearningTrainer.Services
 {
     public class SpellCheckService
     {

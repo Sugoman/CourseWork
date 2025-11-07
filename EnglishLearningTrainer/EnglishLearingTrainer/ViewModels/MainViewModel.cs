@@ -1,9 +1,9 @@
-﻿using EnglishLearningTrainer.Core;
-using EnglishLearningTrainer.Models;
-using EnglishLearningTrainer.Services;
+﻿using LearningTrainer.Core;
+using LearningTrainer.Models;
+using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 
-namespace EnglishLearningTrainer.ViewModels
+namespace LearningTrainer.ViewModels
 {
     public class MainViewModel : ObservableObject
     {
@@ -27,6 +27,7 @@ namespace EnglishLearningTrainer.ViewModels
         public MainViewModel()
         {
             _settingsService = new SettingsService();
+            ShowLoginView();
         }
 
         public MainViewModel(UserSessionDto savedSession)

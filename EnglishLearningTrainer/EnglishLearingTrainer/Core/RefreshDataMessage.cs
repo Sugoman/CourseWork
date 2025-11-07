@@ -1,6 +1,6 @@
-﻿using EnglishLearningTrainer.Core;
+﻿using LearningTrainer.Core;
 
-namespace EnglishLearningTrainer.Core
+namespace LearningTrainer.Core
 {
     public class RefreshDataMessage
     {

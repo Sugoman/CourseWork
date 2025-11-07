@@ -1,9 +1,9 @@
-﻿using EnglishLearningTrainer.Models;
-using EnglishLearningTrainer.ViewModels;
+﻿using LearningTrainer.Models;
+using LearningTrainer.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace EnglishLearningTrainer.Views
+namespace LearningTrainer.Views
 {
     /// <summary>
     /// Логика взаимодействия для DashboardView.xaml

@@ -1,5 +1,7 @@
-﻿using EnglishLearningTrainer.Context;
-using EnglishLearningTrainer.Models;
+﻿using LearningTrainer.Context;
+using LearningTrainer.Models;
+using LearningTrainer.Services;
+using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,25 +12,37 @@ namespace LearningAPI.Controllers
     public class WordsController : ControllerBase
     {
         private readonly ApiDbContext _context;
+        private readonly ExternalDictionaryService _dictionaryService;
 
-        public WordsController(ApiDbContext context)
+        public WordsController(ApiDbContext context, ExternalDictionaryService dictionaryService)
         {
             _context = context;
+            _dictionaryService = dictionaryService;
         }
-
-        // POST: /api/Words
         [HttpPost]
-        public async Task<IActionResult> AddWord([FromBody] Word word)
+        public async Task<IActionResult> AddWord([FromBody] CreateWordRequest requestDto)
         {
-            if (word == null || word.DictionaryId == 0)
+            if (requestDto == null || requestDto.DictionaryId == 0)
             {
                 return BadRequest("Word data or DictionaryId is missing.");
             }
 
-            _context.Words.Add(word);
+            var newWord = new Word
+            {
+                OriginalWord = requestDto.OriginalWord,
+                Translation = requestDto.Translation,
+                Example = requestDto.Example,
+                DictionaryId = requestDto.DictionaryId,
+                AddedAt = DateTime.UtcNow
+            };
+
+            var transcription = await _dictionaryService.GetTranscriptionAsync(newWord.OriginalWord);
+            newWord.Transcription = transcription;
+
+            _context.Words.Add(newWord);
             await _context.SaveChangesAsync();
 
-            return Ok(word);
+            return Ok(newWord); 
         }
 
         // DELETE: /api/Words/5

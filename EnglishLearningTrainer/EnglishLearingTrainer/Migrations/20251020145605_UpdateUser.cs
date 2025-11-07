@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace EnglishLearningTrainer.Migrations
+namespace LearningTrainer.Migrations
 {
     /// <inheritdoc />
     public partial class UpdateUser : Migration

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36414.22
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnglishLearningTrainer", "EnglishLearingTrainer\EnglishLearningTrainer.csproj", "{C4A4013C-DF15-4817-9E42-508723FD122E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LearningTrainer", "EnglishLearingTrainer\LearningTrainer.csproj", "{C4A4013C-DF15-4817-9E42-508723FD122E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LearningAPI", "LearningAPI\LearningAPI.csproj", "{81B6B914-C1FA-4812-984A-3E58C796C001}"
 EndProject

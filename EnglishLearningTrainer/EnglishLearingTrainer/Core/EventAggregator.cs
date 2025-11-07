@@ -1,4 +1,4 @@
-﻿namespace EnglishLearningTrainer.Core
+﻿namespace LearningTrainer.Core
 {
     public class EventAggregator
     {

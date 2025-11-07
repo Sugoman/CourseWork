@@ -1,12 +1,12 @@
-﻿using EnglishLearningTrainer.Core;
-using EnglishLearningTrainer.Models;
-using EnglishLearningTrainer.Services;
+﻿using LearningTrainer.Core;
+using LearningTrainer.Models;
+using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace EnglishLearningTrainer.ViewModels
+namespace LearningTrainer.ViewModels
 {
     public class LoginViewModel : ObservableObject
     {

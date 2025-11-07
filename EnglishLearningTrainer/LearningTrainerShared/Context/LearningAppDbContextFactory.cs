@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using System.IO;
 
-namespace EnglishLearningTrainer.Context
+namespace LearningTrainer.Context
 {
     public class LearningAppDbContextFactory : IDesignTimeDbContextFactory<ApiDbContext>
     {

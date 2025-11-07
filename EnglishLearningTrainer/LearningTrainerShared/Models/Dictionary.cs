@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace EnglishLearningTrainer.Models
+namespace LearningTrainer.Models
 {
     public class Dictionary
     {

@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Data;
 
-namespace EnglishLearningTrainer.Converters
+namespace LearningTrainer.Converters
 {
     public class BooleanToVisibilityConverter : IValueConverter
     {

@@ -1,11 +1,11 @@
-﻿using EnglishLearningTrainer.Core;
-using EnglishLearningTrainer.Models;
-using EnglishLearningTrainer.Services;
+﻿using LearningTrainer.Core;
+using LearningTrainer.Models;
+using LearningTrainer.Services;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Input;
 
-namespace EnglishLearningTrainer.ViewModels
+namespace LearningTrainer.ViewModels
 {
     public class DictionaryManagementViewModel : TabViewModelBase
     {

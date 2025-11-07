@@ -1,4 +1,4 @@
-﻿using EnglishLearningTrainer.ViewModels;
+﻿using LearningTrainer.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace EnglishLearningTrainer.Views
+namespace LearningTrainer.Views
 {
     /// <summary>
     /// Логика взаимодействия для AddWordView.xaml

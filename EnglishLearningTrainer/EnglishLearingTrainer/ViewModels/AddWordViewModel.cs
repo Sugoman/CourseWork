@@ -1,9 +1,9 @@
-﻿using EnglishLearningTrainer.Core;
-using EnglishLearningTrainer.Models;
-using EnglishLearningTrainer.Services;
+﻿using LearningTrainer.Core;
+using LearningTrainer.Models;
+using LearningTrainer.Services;
 using System.Windows.Input;
 
-namespace EnglishLearningTrainer.ViewModels
+namespace LearningTrainer.ViewModels
 {
     public class AddWordViewModel : TabViewModelBase
     {
@@ -77,11 +77,13 @@ namespace EnglishLearningTrainer.ViewModels
 
                 System.Diagnostics.Debug.WriteLine($"Добавляем слово: {newWord.OriginalWord}");
 
-                await _dataService.AddWordAsync(newWord);
+                var savedWord = await _dataService.AddWordAsync(newWord);
+
                 System.Diagnostics.Debug.WriteLine($"Слово '{OriginalWord}' успешно добавлено в БД!");
 
                 EventAggregator.Instance.Publish(new RefreshDataMessage());
-                EventAggregator.Instance.Publish(this);
+
+                EventAggregator.Instance.Publish(new EventAggregator.CloseTabMessage(this));
 
                 System.Diagnostics.Debug.WriteLine("=== SAVE WORD COMPLETED ===");
             }

@@ -1,10 +1,10 @@
-﻿using EnglishLearningTrainer.Core;
-using EnglishLearningTrainer.Models;
-using EnglishLearningTrainer.Services;
+﻿using LearningTrainer.Core;
+using LearningTrainer.Models;
+using LearningTrainer.Services;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
-namespace EnglishLearningTrainer.ViewModels
+namespace LearningTrainer.ViewModels
 {
     public class DashboardViewModel : TabViewModelBase
     {
@@ -39,7 +39,7 @@ namespace EnglishLearningTrainer.ViewModels
 
             Title = "Мой Дашборд";
 
-            StartLearningCommand = new RelayCommand(StartLearning);
+            StartLearningCommand = new RelayCommand(async (param) => await StartLearning(param));
             OpenRuleCommand = new RelayCommand(OpenRule);
 
             CreateDictionaryCommand = new RelayCommand((param) => CreateDictionary());
@@ -49,9 +49,9 @@ namespace EnglishLearningTrainer.ViewModels
             DeleteRuleCommand = new RelayCommand(async (param) => await DeleteRule(param));
             ManageDictionaryCommand = new RelayCommand((param) => ManageDictionary(param));
 
+            EventAggregator.Instance.Subscribe<RefreshDataMessage>(OnRefreshData);
             EventAggregator.Instance.Subscribe<RuleAddedMessage>(OnRuleAdded);
             EventAggregator.Instance.Subscribe<DictionaryAddedMessage>(OnDictionaryAdded);
-            EventAggregator.Instance.Subscribe<WordAddedMessage>(OnWordAdded);
 
 
             LoadDataAsync();
@@ -88,18 +88,7 @@ namespace EnglishLearningTrainer.ViewModels
             System.Diagnostics.Debug.WriteLine($"Dictionaries collection updated: {Dictionaries.Count} dictionaries");
         }
 
-        private void OnWordAdded(WordAddedMessage message)
-        {
-            System.Diagnostics.Debug.WriteLine($"=== WORD ADDED: {message.Word.OriginalWord} to dictionary {message.DictionaryId} ===");
-
-            var dictionary = Dictionaries.FirstOrDefault(d => d.Id == message.DictionaryId);
-            if (dictionary != null && dictionary.Words != null)
-            {
-                dictionary.Words.Add(message.Word);
-
-                OnPropertyChanged(nameof(Dictionaries));
-            }
-        }
+     
 
         private async void LoadDataAsync()
         {
@@ -165,10 +154,24 @@ namespace EnglishLearningTrainer.ViewModels
             }
         }
 
-        public void StartLearning(object parameter)
+        private void OnRefreshData(RefreshDataMessage message)
+        {
+
+            System.Diagnostics.Debug.WriteLine(">>> REFRESH. Перезагрузка данных...");
+            LoadDataAsync();
+        }
+
+        public async Task StartLearning(object parameter)
         {
             if (parameter is Dictionary dictionary)
             {
+                if (dictionary.Words == null || dictionary.Words.Count == 0)
+                {
+                    System.Diagnostics.Debug.WriteLine($">>> Пустой словарь. ID: {dictionary.Id}");
+                    dictionary = await _dataService.GetDictionaryByIdAsync(dictionary.Id);
+                }
+
+                // 3. ЗАПУСК: (Теперь у нас 'полный' словарь со словами)
                 EventAggregator.Instance.Publish(new LearningViewModel(dictionary));
             }
         }

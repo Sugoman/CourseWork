@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace EnglishLearningTrainer.Models
+namespace LearningTrainer.Models
 {
     public class Rule
     {

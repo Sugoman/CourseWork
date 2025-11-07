@@ -1,7 +1,7 @@
-﻿using EnglishLearningTrainer.Core;
-using EnglishLearningTrainer.Models;
+﻿using LearningTrainer.Core;
+using LearningTrainer.Models;
 
-namespace EnglishLearningTrainer.ViewModels
+namespace LearningTrainer.ViewModels
 {
     public class RuleViewModel : TabViewModelBase
     {

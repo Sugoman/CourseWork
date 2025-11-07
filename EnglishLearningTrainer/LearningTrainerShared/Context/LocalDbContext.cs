@@ -1,7 +1,7 @@
-﻿using EnglishLearningTrainer.Models;
+﻿using LearningTrainer.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace EnglishLearningTrainer.Context
+namespace LearningTrainer.Context
 {
     public class LocalDbContext : DbContext
     {

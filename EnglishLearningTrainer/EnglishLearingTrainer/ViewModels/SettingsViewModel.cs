@@ -1,11 +1,11 @@
-﻿using EnglishLearningTrainer.Core;
-using EnglishLearningTrainer.Models;      // <- Убедись, что 'SettingsModel' тут (из 'Shared' проекта)
-using EnglishLearningTrainer.Services;    // <- Убедись, что 'SettingsService' тут
+﻿using LearningTrainer.Core;
+using LearningTrainer.Models;      // <- Убедись, что 'SettingsModel' тут (из 'Shared' проекта)
+using LearningTrainer.Services;    // <- Убедись, что 'SettingsService' тут
 using LearningTrainerShared.Models; // (Или где у тебя SettingsModel)
 using System.Windows;                 // <- Для 'Application.Current'
 using System.Windows.Input;
 
-namespace EnglishLearningTrainer.ViewModels
+namespace LearningTrainer.ViewModels
 {
     public class SettingsViewModel : TabViewModelBase
     {

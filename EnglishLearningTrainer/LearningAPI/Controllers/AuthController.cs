@@ -1,5 +1,5 @@
-﻿using EnglishLearningTrainer.Context;
-using EnglishLearningTrainer.Services;
+﻿using LearningTrainer.Context;
+using LearningTrainer.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 

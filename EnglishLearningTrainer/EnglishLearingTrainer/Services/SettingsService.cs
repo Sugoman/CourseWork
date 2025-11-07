@@ -3,7 +3,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 
-namespace EnglishLearningTrainer.Services
+namespace LearningTrainer.Services
 {
     public class SettingsService
     {

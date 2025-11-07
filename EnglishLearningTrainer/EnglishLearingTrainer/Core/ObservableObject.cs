@@ -1,9 +1,9 @@
-﻿using EnglishLearningTrainer.ViewModels;
+﻿using LearningTrainer.ViewModels;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 
-namespace EnglishLearningTrainer.Core
+namespace LearningTrainer.Core
 {
     public abstract class ObservableObject : INotifyPropertyChanged
     {

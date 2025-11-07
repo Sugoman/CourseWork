@@ -1,9 +1,9 @@
-﻿using EnglishLearningTrainer.Core;
-using EnglishLearningTrainer.Models;
-using EnglishLearningTrainer.Services;
+﻿using LearningTrainer.Core;
+using LearningTrainer.Models;
+using LearningTrainer.Services;
 using System.Windows.Input;
 
-namespace EnglishLearningTrainer.ViewModels
+namespace LearningTrainer.ViewModels
 {
     public class AddRuleViewModel : TabViewModelBase
     {
@@ -52,7 +52,7 @@ namespace EnglishLearningTrainer.ViewModels
 
                 EventAggregator.Instance.Publish(new RuleAddedMessage(savedRule));
 
-                EventAggregator.Instance.Publish(this);
+                EventAggregator.Instance.Publish(new EventAggregator.CloseTabMessage(this));
             }
             catch (Exception ex)
             {

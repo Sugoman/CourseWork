@@ -1,13 +1,13 @@
-﻿using EnglishLearningTrainer.Context; 
-using EnglishLearningTrainer.Models;
-using EnglishLearningTrainer.Services;
+﻿using LearningTrainer.Context; 
+using LearningTrainer.Models;
+using LearningTrainer.Services;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace EnglishLearningTrainer.Services 
+namespace LearningTrainer.Services 
 {
     public class LocalDataService : IDataService
     {

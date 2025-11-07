@@ -1,7 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Input;
 
-namespace EnglishLearningTrainer
+namespace LearningTrainer
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

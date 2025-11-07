@@ -1,10 +1,10 @@
-﻿using EnglishLearningTrainer.Core;
-using EnglishLearningTrainer.Models;
+﻿using LearningTrainer.Core;
+using LearningTrainer.Models;
 using System.Windows;
 using System.Windows.Input;
-using static EnglishLearningTrainer.Core.EventAggregator;
+using static LearningTrainer.Core.EventAggregator;
 
-namespace EnglishLearningTrainer.ViewModels
+namespace LearningTrainer.ViewModels
 {
     public class LearningViewModel : TabViewModelBase
     {

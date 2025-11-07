@@ -1,11 +1,11 @@
-﻿using EnglishLearningTrainer.Services;
-using EnglishLearningTrainer.ViewModels;
+﻿using LearningTrainer.Services;
+using LearningTrainer.ViewModels;
 using System.Configuration;
 using System.Data;
 using System.Net.Http;
 using System.Windows;
 
-namespace EnglishLearningTrainer
+namespace LearningTrainer
 {
     /// <summary>
     /// Interaction logic for App.xaml

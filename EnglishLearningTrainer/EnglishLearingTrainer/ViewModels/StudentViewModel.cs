@@ -1,6 +1,6 @@
-﻿using EnglishLearningTrainer.Core;
+﻿using LearningTrainer.Core;
 
-namespace EnglishLearningTrainer.ViewModels
+namespace LearningTrainer.ViewModels
 {
     public class StudentViewModel : ObservableObject
     {

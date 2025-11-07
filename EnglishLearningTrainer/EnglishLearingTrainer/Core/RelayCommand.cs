@@ -1,6 +1,6 @@
 ﻿using System.Windows.Input;
 
-namespace EnglishLearningTrainer.Core
+namespace LearningTrainer.Core
 {
     public class RelayCommand : ICommand
     {

@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace EnglishLearningTrainer.Views
+namespace LearningTrainer.Views
 {
     /// <summary>
     /// Логика взаимодействия для LoginView.xaml

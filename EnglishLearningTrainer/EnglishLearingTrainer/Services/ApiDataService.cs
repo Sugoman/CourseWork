@@ -1,4 +1,4 @@
-﻿using EnglishLearningTrainer.Models;
+﻿using LearningTrainer.Models;
 using LearningTrainerShared.Models;   
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
 
-namespace EnglishLearningTrainer.Services 
+namespace LearningTrainer.Services 
 {
     public class ApiDataService : IDataService
     {
@@ -84,10 +84,18 @@ namespace EnglishLearningTrainer.Services
 
         // Words 
 
-        public async Task<Word> AddWordAsync(Word word)
+        public async Task<Word> AddWordAsync(Word word) // (Тут можно оставить 'Word')
         {
-            // POST /api/words
-            var response = await _httpClient.PostAsJsonAsync("/api/words", word, _jsonOptions);
+            var requestDto = new CreateWordRequest
+            {
+                OriginalWord = word.OriginalWord,
+                Translation = word.Translation,
+                Example = word.Example,
+                DictionaryId = word.DictionaryId
+            };
+
+            var response = await _httpClient.PostAsJsonAsync("/api/words", requestDto, _jsonOptions);
+
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<Word>(_jsonOptions);
         }
@@ -133,5 +141,7 @@ namespace EnglishLearningTrainer.Services
             _httpClient.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
         }
+
+
     }
 }

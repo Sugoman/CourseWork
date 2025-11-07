@@ -1,5 +1,5 @@
-﻿using EnglishLearningTrainer.Context;
-using EnglishLearningTrainer.Models;
+﻿using LearningTrainer.Context;
+using LearningTrainer.Models;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +23,7 @@ namespace LearningAPI.Controllers
         public async Task<IActionResult> GetDictionaries()
         {
             var dictionaries = await _context.Dictionaries
+                                             .Include(d => d.Words)
                                              .ToListAsync();
             return Ok(dictionaries);
         }

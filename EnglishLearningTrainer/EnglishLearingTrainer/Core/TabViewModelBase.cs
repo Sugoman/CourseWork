@@ -1,4 +1,4 @@
-﻿namespace EnglishLearningTrainer.Core
+﻿namespace LearningTrainer.Core
 {
     public abstract class TabViewModelBase : ObservableObject
     {

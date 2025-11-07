@@ -1,8 +1,8 @@
-﻿using EnglishLearningTrainer.Converters;
-using EnglishLearningTrainer.ViewModels;
+﻿using LearningTrainer.Converters;
+using LearningTrainer.ViewModels;
 using System.Windows.Controls;
 
-namespace EnglishLearningTrainer.Views
+namespace LearningTrainer.Views
 {
     public partial class RuleView : UserControl
     {

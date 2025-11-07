@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace EnglishLearningTrainer.Models
+namespace LearningTrainer.Models
 {
     public class Word
     {

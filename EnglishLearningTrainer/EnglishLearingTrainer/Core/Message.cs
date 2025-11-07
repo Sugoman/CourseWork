@@ -1,6 +1,6 @@
-﻿using EnglishLearningTrainer.Models;
+﻿using LearningTrainer.Models;
 
-namespace EnglishLearningTrainer.Core
+namespace LearningTrainer.Core
 {
     public class RuleAddedMessage
     {
