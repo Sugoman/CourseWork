@@ -1,7 +1,5 @@
-﻿using LearningTrainer.ViewModels;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows.Input;
 
 namespace LearningTrainer.Core
 {

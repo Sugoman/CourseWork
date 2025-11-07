@@ -24,6 +24,12 @@
                          RelativeSource={RelativeSource AncestorType=UserControl}, 
                          Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
+                <Button Content="Импорт .json" 
+            Command="{Binding ImportDictionaryCommand}"
+            Style="{StaticResource BaseButton}" 
+            Margin="0,0,10,0"
+            Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
                 <Button Content="+ Новое правило" 
                     Command="{Binding CreateRuleCommand}"
                     Style="{StaticResource PrimaryButton}"
@@ -85,8 +91,7 @@
                                     Style="{StaticResource PrimaryButton}" 
                                     Margin="15" 
                                     HorizontalAlignment="Stretch"/>
-                                <!-- В DataTemplate словаря, рядом с кнопкой "Начать изучение" -->
-                                
+
                             </Grid>
                         </Border>
                     </DataTemplate>
@@ -105,7 +110,6 @@
                     <DataTemplate>
                         <Border Style="{StaticResource CardBorderStyle}">
                             <StackPanel Margin="20">
-                                <!-- Можно добавить иконку книги -->
                                 <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitleStyle}"/>
                                 <TextBlock Text="{Binding Description}" Style="{StaticResource CardDescriptionStyle}"/>
                                 <StackPanel Orientation="Horizontal">

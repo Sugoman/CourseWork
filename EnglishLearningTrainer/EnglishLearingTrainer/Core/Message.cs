@@ -1,4 +1,4 @@
-﻿using LearningTrainer.Models;
+﻿using LearningTrainerShared.Models;
 
 namespace LearningTrainer.Core
 {

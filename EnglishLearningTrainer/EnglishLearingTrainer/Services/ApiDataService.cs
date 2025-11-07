@@ -1,13 +1,9 @@
-﻿using LearningTrainer.Models;
-using LearningTrainerShared.Models;   
+﻿using LearningTrainerShared.Models;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System;
 
-namespace LearningTrainer.Services 
+namespace LearningTrainer.Services
 {
     public class ApiDataService : IDataService
     {
@@ -27,7 +23,7 @@ namespace LearningTrainer.Services
                 PropertyNameCaseInsensitive = true
             };
         }
-        
+
         public async Task<List<Dictionary>> GetDictionariesAsync()
         {
             return await _httpClient.GetFromJsonAsync<List<Dictionary>>("/api/dictionaries", _jsonOptions);

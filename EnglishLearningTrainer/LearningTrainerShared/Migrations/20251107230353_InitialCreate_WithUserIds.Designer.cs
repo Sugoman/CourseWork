@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace LearningTrainerShared.MigrationsSqlServer
+namespace LearningTrainerShared.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    [Migration("20251106125407_Added_Transcription_To_Word")]
-    partial class Added_Transcription_To_Word
+    [Migration("20251107230353_InitialCreate_WithUserIds")]
+    partial class InitialCreate_WithUserIds
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,7 @@ namespace LearningTrainerShared.MigrationsSqlServer
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("EnglishLearningTrainer.Models.Dictionary", b =>
+            modelBuilder.Entity("LearningTrainerShared.Models.Dictionary", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -53,12 +53,17 @@ namespace LearningTrainerShared.MigrationsSqlServer
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Dictionaries");
                 });
 
-            modelBuilder.Entity("EnglishLearningTrainer.Models.LearningProgress", b =>
+            modelBuilder.Entity("LearningTrainerShared.Models.LearningProgress", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -96,7 +101,7 @@ namespace LearningTrainerShared.MigrationsSqlServer
                     b.ToTable("LearningProgresses");
                 });
 
-            modelBuilder.Entity("EnglishLearningTrainer.Models.Role", b =>
+            modelBuilder.Entity("LearningTrainerShared.Models.Role", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -113,7 +118,7 @@ namespace LearningTrainerShared.MigrationsSqlServer
                     b.ToTable("Roles");
                 });
 
-            modelBuilder.Entity("EnglishLearningTrainer.Models.Rule", b =>
+            modelBuilder.Entity("LearningTrainerShared.Models.Rule", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -146,12 +151,17 @@ namespace LearningTrainerShared.MigrationsSqlServer
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Rules");
                 });
 
-            modelBuilder.Entity("EnglishLearningTrainer.Models.User", b =>
+            modelBuilder.Entity("LearningTrainerShared.Models.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -182,7 +192,7 @@ namespace LearningTrainerShared.MigrationsSqlServer
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("EnglishLearningTrainer.Models.Word", b =>
+            modelBuilder.Entity("LearningTrainerShared.Models.Word", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -214,22 +224,38 @@ namespace LearningTrainerShared.MigrationsSqlServer
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DictionaryId");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("Words");
                 });
 
-            modelBuilder.Entity("EnglishLearningTrainer.Models.LearningProgress", b =>
+            modelBuilder.Entity("LearningTrainerShared.Models.Dictionary", b =>
                 {
-                    b.HasOne("EnglishLearningTrainer.Models.User", "User")
+                    b.HasOne("LearningTrainerShared.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("EnglishLearningTrainer.Models.Word", "Word")
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LearningTrainerShared.Models.LearningProgress", b =>
+                {
+                    b.HasOne("LearningTrainerShared.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LearningTrainerShared.Models.Word", "Word")
                         .WithMany()
                         .HasForeignKey("WordId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -240,9 +266,20 @@ namespace LearningTrainerShared.MigrationsSqlServer
                     b.Navigation("Word");
                 });
 
-            modelBuilder.Entity("EnglishLearningTrainer.Models.User", b =>
+            modelBuilder.Entity("LearningTrainerShared.Models.Rule", b =>
                 {
-                    b.HasOne("EnglishLearningTrainer.Models.Role", "Role")
+                    b.HasOne("LearningTrainerShared.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LearningTrainerShared.Models.User", b =>
+                {
+                    b.HasOne("LearningTrainerShared.Models.Role", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -251,23 +288,31 @@ namespace LearningTrainerShared.MigrationsSqlServer
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("EnglishLearningTrainer.Models.Word", b =>
+            modelBuilder.Entity("LearningTrainerShared.Models.Word", b =>
                 {
-                    b.HasOne("EnglishLearningTrainer.Models.Dictionary", "Dictionary")
+                    b.HasOne("LearningTrainerShared.Models.Dictionary", "Dictionary")
                         .WithMany("Words")
                         .HasForeignKey("DictionaryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("LearningTrainerShared.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Dictionary");
+
+                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("EnglishLearningTrainer.Models.Dictionary", b =>
+            modelBuilder.Entity("LearningTrainerShared.Models.Dictionary", b =>
                 {
                     b.Navigation("Words");
                 });
 
-            modelBuilder.Entity("EnglishLearningTrainer.Models.Role", b =>
+            modelBuilder.Entity("LearningTrainerShared.Models.Role", b =>
                 {
                     b.Navigation("Users");
                 });

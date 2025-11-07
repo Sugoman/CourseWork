@@ -1,17 +1,13 @@
 ﻿using LearningTrainer.Context;
-using LearningTrainer.Models;
+using LearningTrainerShared.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace LearningTrainer.Services
 {
     public class DataService : IDataService
     {
         private readonly LocalDbContext _context;
-        
+
         public DataService()
         {
             _context = new LocalDbContext();

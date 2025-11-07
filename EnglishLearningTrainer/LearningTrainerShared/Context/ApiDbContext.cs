@@ -1,11 +1,5 @@
-﻿using LearningTrainer.Models;
+﻿using LearningTrainerShared.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LearningTrainer.Context
 {
@@ -31,17 +25,20 @@ namespace LearningTrainer.Context
             modelBuilder.Entity<Dictionary>()
                 .HasMany(d => d.Words)
                 .WithOne(w => w.Dictionary)
-                .HasForeignKey(w => w.DictionaryId);
+                .HasForeignKey(w => w.DictionaryId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<LearningProgress>()
                 .HasOne(lp => lp.User)
                 .WithMany()
-                .HasForeignKey(lp => lp.UserId);
+                .HasForeignKey(lp => lp.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<LearningProgress>()
                 .HasOne(lp => lp.Word)
                 .WithMany()
-                .HasForeignKey(lp => lp.WordId);
+                .HasForeignKey(lp => lp.WordId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

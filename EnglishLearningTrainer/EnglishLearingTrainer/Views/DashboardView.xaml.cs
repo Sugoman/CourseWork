@@ -1,5 +1,5 @@
-﻿using LearningTrainer.Models;
-using LearningTrainer.ViewModels;
+﻿using LearningTrainer.ViewModels;
+using LearningTrainerShared.Models;
 using System.Windows;
 using System.Windows.Controls;
 
