@@ -1,8 +1,6 @@
 ﻿using LearningTrainer.Core;
-using LearningTrainer.Models;      // <- Убедись, что 'SettingsModel' тут (из 'Shared' проекта)
-using LearningTrainer.Services;    // <- Убедись, что 'SettingsService' тут
-using LearningTrainerShared.Models; // (Или где у тебя SettingsModel)
-using System.Windows;                 // <- Для 'Application.Current'
+using LearningTrainer.Services;    
+using LearningTrainerShared.Models;
 using System.Windows.Input;
 
 namespace LearningTrainer.ViewModels
@@ -46,7 +44,7 @@ namespace LearningTrainer.ViewModels
             var newSettings = new SettingsModel
             {
                 BaseFontSize = this.SelectedFontSize,
-                Theme = _settingsService.CurrentSettings.Theme 
+                Theme = _settingsService.CurrentSettings.Theme
             };
 
             _settingsService.ApplySettingsToApp(newSettings);

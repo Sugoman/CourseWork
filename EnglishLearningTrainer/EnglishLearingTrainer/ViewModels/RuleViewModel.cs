@@ -1,5 +1,5 @@
 ﻿using LearningTrainer.Core;
-using LearningTrainer.Models;
+using LearningTrainerShared.Models;
 
 namespace LearningTrainer.ViewModels
 {

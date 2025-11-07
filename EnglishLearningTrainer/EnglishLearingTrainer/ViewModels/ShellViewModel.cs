@@ -1,6 +1,6 @@
 ﻿using LearningTrainer.Core;
-using LearningTrainer.Models;
 using LearningTrainer.Services;
+using LearningTrainerShared.Models;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using static LearningTrainer.Core.EventAggregator;
@@ -58,7 +58,7 @@ namespace LearningTrainer.ViewModels
             var existingTab = Tabs.FirstOrDefault(t => t.Title == tab.Title);
             if (existingTab == null)
 
-            System.Diagnostics.Debug.WriteLine($"=== OPEN TAB METHOD CALLED ===");
+                System.Diagnostics.Debug.WriteLine($"=== OPEN TAB METHOD CALLED ===");
             System.Diagnostics.Debug.WriteLine($"Tab: {tab?.GetType().Name}");
             System.Diagnostics.Debug.WriteLine($"Tab Title: {tab?.Title}");
             System.Diagnostics.Debug.WriteLine($"Tabs collection: {Tabs?.Count} items");

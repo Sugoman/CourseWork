@@ -1,6 +1,6 @@
 ﻿using LearningTrainer.Core;
-using LearningTrainer.Models;
 using LearningTrainer.Services;
+using LearningTrainerShared.Models;
 using System.Windows.Input;
 
 namespace LearningTrainer.ViewModels
@@ -48,11 +48,11 @@ namespace LearningTrainer.ViewModels
         {
             if (!string.IsNullOrWhiteSpace(Suggestion))
             {
-                OriginalWord = Suggestion; 
-                Suggestion = null;      
-                return true; 
+                OriginalWord = Suggestion;
+                Suggestion = null;
+                return true;
             }
-            return false; 
+            return false;
         }
         private async Task SaveWordAsync()
         {
@@ -81,7 +81,7 @@ namespace LearningTrainer.ViewModels
 
                 System.Diagnostics.Debug.WriteLine($"Слово '{OriginalWord}' успешно добавлено в БД!");
 
-                EventAggregator.Instance.Publish(new RefreshDataMessage());
+                EventAggregator.Instance.Publish(new WordAddedMessage(savedWord, savedWord.DictionaryId));
 
                 EventAggregator.Instance.Publish(new EventAggregator.CloseTabMessage(this));
 

@@ -1,6 +1,6 @@
 ﻿using LearningTrainer.Core;
-using LearningTrainer.Models;
 using LearningTrainer.Services;
+using LearningTrainerShared.Models;
 using System.Windows.Input;
 
 namespace LearningTrainer.ViewModels

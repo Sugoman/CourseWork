@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace LearningTrainer.Models
+namespace LearningTrainerShared.Models
 {
     public class User
     {

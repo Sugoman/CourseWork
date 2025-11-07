@@ -1,7 +1,12 @@
 ﻿using LearningTrainer.Core;
-using LearningTrainer.Models;
 using LearningTrainer.Services;
+using LearningTrainer.Services.Dialogs;
+using LearningTrainerShared.Models;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Windows;
 using System.Windows.Input;
 
 namespace LearningTrainer.ViewModels
@@ -9,13 +14,17 @@ namespace LearningTrainer.ViewModels
     public class DashboardViewModel : TabViewModelBase
     {
         private readonly IDataService _dataService;
-        private readonly User _currentUser;        
+        private readonly User _currentUser;
         private readonly bool _isOnlineMode;
-        public ObservableCollection<Dictionary> Dictionaries { get; set; }
+        private readonly IDialogService _dialogService;
+
+        public ObservableCollection<DictionaryViewModel> Dictionaries { get; set; }
         public ObservableCollection<Rule> Rules { get; set; }
+
         public bool CanManage { get; }
 
         public ICommand CreateDictionaryCommand { get; }
+        public ICommand ImportDictionaryCommand { get; }
         public ICommand CreateRuleCommand { get; }
         public ICommand AddWordCommand { get; }
         public ICommand StartLearningCommand { get; }
@@ -26,15 +35,16 @@ namespace LearningTrainer.ViewModels
 
         public DashboardViewModel(User? user, IDataService dataService)
         {
-            Dictionaries = new ObservableCollection<Dictionary>();
+            Dictionaries = new ObservableCollection<DictionaryViewModel>();
             Rules = new ObservableCollection<Rule>();
             _dataService = dataService;
             _currentUser = user;
+            _dialogService = new DialogService();
 
             _isOnlineMode = (_currentUser != null);
 
-            CanManage = _isOnlineMode                 
-            && _currentUser.Role != null              
+            CanManage = _isOnlineMode
+            && _currentUser.Role != null
             && _currentUser.Role.Name != "Student";
 
             Title = "Мой Дашборд";
@@ -48,11 +58,12 @@ namespace LearningTrainer.ViewModels
             DeleteWordCommand = new RelayCommand(async (param) => await DeleteWord(param));
             DeleteRuleCommand = new RelayCommand(async (param) => await DeleteRule(param));
             ManageDictionaryCommand = new RelayCommand((param) => ManageDictionary(param));
+            ImportDictionaryCommand = new RelayCommand(async (param) => await ImportDictionary());
 
             EventAggregator.Instance.Subscribe<RefreshDataMessage>(OnRefreshData);
             EventAggregator.Instance.Subscribe<RuleAddedMessage>(OnRuleAdded);
             EventAggregator.Instance.Subscribe<DictionaryAddedMessage>(OnDictionaryAdded);
-
+            EventAggregator.Instance.Subscribe<WordAddedMessage>(OnWordAdded);
 
             LoadDataAsync();
         }
@@ -72,11 +83,66 @@ namespace LearningTrainer.ViewModels
             System.Diagnostics.Debug.WriteLine($"Rules collection updated: {Rules.Count} rules");
         }
 
+        private async Task ImportDictionary()
+        {
+            if (_dialogService.ShowOpenDialog(out string filePath))
+            {
+                try
+                {
+                    string json = await File.ReadAllTextAsync(filePath);
+
+                    var options = new JsonSerializerOptions
+                    {
+                        ReferenceHandler = ReferenceHandler.Preserve,
+                        PropertyNameCaseInsensitive = true
+                    };
+
+                    var newDictionary = JsonSerializer.Deserialize<Dictionary>(json, options);
+
+                    newDictionary.Id = 0;
+                    foreach (var word in newDictionary.Words)
+                    {
+                        word.Id = 0;
+                        word.DictionaryId = 0; 
+                    }
+
+                    var savedDictionary = await _dataService.AddDictionaryAsync(newDictionary);
+
+                    EventAggregator.Instance.Publish(new DictionaryAddedMessage(savedDictionary));
+
+                    System.Windows.MessageBox.Show(
+                        $"Словарь '{savedDictionary.Name}' успешно импортирован!",
+                        "Импорт завершен",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Ошибка импорта: {ex.Message}");
+                    System.Windows.MessageBox.Show(
+                        $"Не удалось импортировать словарь. Убедитесь, что это корректный .json файл.\nОшибка: {ex.Message}",
+                        "Ошибка импорта",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void OnWordAdded(WordAddedMessage message)
+        {
+            var dictionaryVM = Dictionaries.FirstOrDefault(d => d.Id == message.DictionaryId);
+
+            if (dictionaryVM != null)
+            {
+                dictionaryVM.Words.Add(message.Word);
+            }
+        }
+
         private void OnDictionaryAdded(DictionaryAddedMessage message)
         {
             System.Diagnostics.Debug.WriteLine($"=== DICTIONARY ADDED: {message.Dictionary.Name} ===");
 
-            Dictionaries.Add(message.Dictionary);
+            Dictionaries.Add(new DictionaryViewModel(message.Dictionary));
 
             var sortedDicts = Dictionaries.OrderBy(d => d.Name).ToList();
             Dictionaries.Clear();
@@ -88,37 +154,33 @@ namespace LearningTrainer.ViewModels
             System.Diagnostics.Debug.WriteLine($"Dictionaries collection updated: {Dictionaries.Count} dictionaries");
         }
 
-     
-
         private async void LoadDataAsync()
         {
             var dictionaries = await _dataService.GetDictionariesAsync();
             var rules = await _dataService.GetRulesAsync();
 
-                System.Diagnostics.Debug.WriteLine($"dictionaries received: {dictionaries != null}, count: {dictionaries?.Count}");
-                System.Diagnostics.Debug.WriteLine($"rules received: {rules != null}, count: {rules?.Count}");
+            System.Diagnostics.Debug.WriteLine($"dictionaries received: {dictionaries != null}, count: {dictionaries?.Count}");
+            System.Diagnostics.Debug.WriteLine($"rules received: {rules != null}, count: {rules?.Count}");
 
-                // ПРОВЕРКА ПЕРЕД ОЧИСТКОЙ
-                if (Dictionaries == null)
-                {
-                    System.Diagnostics.Debug.WriteLine("ERROR: Dictionaries collection is null!");
-                    Dictionaries = new ObservableCollection<Dictionary>();
-                }
+            if (Dictionaries == null)
+            {
+                System.Diagnostics.Debug.WriteLine("ERROR: Dictionaries collection is null!");
+                Dictionaries = new ObservableCollection<DictionaryViewModel>();
+            }
 
-                if (Rules == null)
-                {
-                    System.Diagnostics.Debug.WriteLine("ERROR: Rules collection is null!");
-                    Rules = new ObservableCollection<Rule>();
-                }
+            if (Rules == null)
+            {
+                System.Diagnostics.Debug.WriteLine("ERROR: Rules collection is null!");
+                Rules = new ObservableCollection<Rule>();
+            }
 
-                System.Diagnostics.Debug.WriteLine("Clearing collections...");
-                Dictionaries.Clear();
-                Rules.Clear();
+            System.Diagnostics.Debug.WriteLine("Clearing collections...");
+            Dictionaries.Clear();
+            Rules.Clear();
 
             foreach (var dict in dictionaries)
             {
-                Dictionaries.Add(dict);
-                dict.Words = dict.Words ?? new List<Word>();
+                Dictionaries.Add(new DictionaryViewModel(dict));
             }
             foreach (var rule in rules) Rules.Add(rule);
 
@@ -139,9 +201,9 @@ namespace LearningTrainer.ViewModels
 
         private void AddWord(object parameter)
         {
-            if (parameter is Dictionary dictionary)
+            if (parameter is DictionaryViewModel dictionaryVM)
             {
-                var addWordVm = new AddWordViewModel(_dataService, dictionary);
+                var addWordVm = new AddWordViewModel(_dataService, dictionaryVM.Model);
                 EventAggregator.Instance.Publish(addWordVm);
             }
         }
@@ -163,15 +225,15 @@ namespace LearningTrainer.ViewModels
 
         public async Task StartLearning(object parameter)
         {
-            if (parameter is Dictionary dictionary)
+            if (parameter is DictionaryViewModel dictionaryVM)
             {
+                var dictionary = dictionaryVM.Model;
                 if (dictionary.Words == null || dictionary.Words.Count == 0)
                 {
                     System.Diagnostics.Debug.WriteLine($">>> Пустой словарь. ID: {dictionary.Id}");
                     dictionary = await _dataService.GetDictionaryByIdAsync(dictionary.Id);
                 }
 
-                // 3. ЗАПУСК: (Теперь у нас 'полный' словарь со словами)
                 EventAggregator.Instance.Publish(new LearningViewModel(dictionary));
             }
         }
@@ -202,11 +264,12 @@ namespace LearningTrainer.ViewModels
                 }
             }
         }
+
         private void ManageDictionary(object parameter)
         {
-            if (parameter is Dictionary dictionary)
+            if (parameter is DictionaryViewModel dictionaryVM)
             {
-                var managementVm = new DictionaryManagementViewModel(_dataService, dictionary);
+                var managementVm = new DictionaryManagementViewModel(_dataService, dictionaryVM.Model);
                 EventAggregator.Instance.Publish(managementVm);
             }
         }

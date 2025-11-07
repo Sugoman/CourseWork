@@ -1,12 +1,17 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
-namespace LearningTrainer.Models
+
+namespace LearningTrainerShared.Models
 {
     public class Dictionary
     {
         [Key]
         public int Id { get; set; }
+
+        [Required]
+        public int UserId { get; set; }
 
         [Required]
         [MaxLength(100)]
@@ -21,7 +26,11 @@ namespace LearningTrainer.Models
         [MaxLength(50)]
         public string LanguageTo { get; set; }
 
-        public virtual ICollection<Word> Words { get; set; } = new List<Word>();
+        public virtual ICollection<Word> Words { get; set; }
+            = new System.Collections.ObjectModel.ObservableCollection<Word>();
+
+        [JsonIgnore]
+        public virtual User User { get; set; }
 
         [NotMapped]
         public int WordCount => Words?.Count ?? 0;

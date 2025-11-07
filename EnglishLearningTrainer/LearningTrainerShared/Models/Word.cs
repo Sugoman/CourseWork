@@ -1,12 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace LearningTrainer.Models
+namespace LearningTrainerShared.Models
 {
     public class Word
     {
         [Key]
         public int Id { get; set; }
+
+        [Required]
+        public int UserId { get; set; }
 
         [Required]
         [MaxLength(100)]
@@ -22,7 +25,10 @@ namespace LearningTrainer.Models
         public int DictionaryId { get; set; }
 
         public DateTime AddedAt { get; set; } = DateTime.Now;
+        [JsonIgnore]
         public Dictionary Dictionary { get; set; }
+        [JsonIgnore]
+        public virtual User User { get; set; }
 
         public string? Transcription { get; set; }
     }

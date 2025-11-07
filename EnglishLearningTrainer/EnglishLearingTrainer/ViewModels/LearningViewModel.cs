@@ -1,5 +1,5 @@
 ﻿using LearningTrainer.Core;
-using LearningTrainer.Models;
+using LearningTrainerShared.Models;
 using System.Windows;
 using System.Windows.Input;
 using static LearningTrainer.Core.EventAggregator;
@@ -58,7 +58,7 @@ namespace LearningTrainer.ViewModels
                 AnswerCommand = new RelayCommand(async (param) => await HandleAnswerAsync((bool)param), (param) => !_isFlipped);
                 CloseTabCommand = new RelayCommand(CloseTab);
             }
-                
+
         }
 
         private async Task HandleAnswerAsync(bool knowsTheWord)

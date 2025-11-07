@@ -1,7 +1,13 @@
 ﻿using LearningTrainer.Core;
-using LearningTrainer.Models;
 using LearningTrainer.Services;
+using LearningTrainer.Services.Dialogs;
+using LearningTrainerShared.Models;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Unicode;
 using System.Windows;
 using System.Windows.Input;
 
@@ -11,6 +17,7 @@ namespace LearningTrainer.ViewModels
     {
         private readonly IDataService _dataService;
         private readonly Dictionary _dictionary;
+        private readonly IDialogService _dialogService;
 
         public ObservableCollection<Word> Words { get; set; }
 
@@ -19,6 +26,7 @@ namespace LearningTrainer.ViewModels
         public string LanguageFrom { get; set; }
         public string LanguageTo { get; set; }
 
+        public ICommand ExportDictionaryCommand { get; }
         public ICommand SaveDictionaryCommand { get; }
         public ICommand DeleteDictionaryCommand { get; }
         public ICommand DeleteWordCommand { get; }
@@ -29,6 +37,7 @@ namespace LearningTrainer.ViewModels
         {
             _dataService = dataService;
             _dictionary = dictionary;
+            _dialogService = new DialogService();
             Title = $"Управление: {dictionary.Name}";
 
             DictionaryName = dictionary.Name;
@@ -43,8 +52,44 @@ namespace LearningTrainer.ViewModels
             DeleteWordCommand = new RelayCommand(async (param) => await DeleteWordAsync(param));
             AddWordCommand = new RelayCommand((param) => AddWord());
             CloseCommand = new RelayCommand((param) => Close());
+            ExportDictionaryCommand = new RelayCommand((param) => ExportDictionary());
         }
+        private void ExportDictionary()
+        {
+            string defaultName = $"dictionary-{_dictionary.Name.Replace(" ", "-")}.json";
 
+            if (_dialogService.ShowSaveDialog(defaultName, out string filePath))
+            {
+                try
+                {
+                    var options = new JsonSerializerOptions
+                    {
+                        ReferenceHandler = ReferenceHandler.Preserve,
+                        WriteIndented = true,
+                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+                    };
+
+                    string json = JsonSerializer.Serialize(_dictionary, options);
+
+                    File.WriteAllText(filePath, json);
+
+                    MessageBox.Show(
+                        $"Словарь '{_dictionary.Name}' успешно экспортирован!",
+                        "Экспорт завершен",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Ошибка экспорта: {ex.Message}");
+                    MessageBox.Show(
+                        $"Произошла ошибка: {ex.Message}",
+                        "Ошибка экспорта",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                }
+            }
+        }
         private async Task SaveDictionaryAsync()
         {
             if (string.IsNullOrWhiteSpace(DictionaryName))

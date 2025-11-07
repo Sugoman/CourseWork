@@ -1,5 +1,4 @@
 ﻿using LearningTrainer.Core;
-using LearningTrainer.Models;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using System.Net.Http;
@@ -17,7 +16,8 @@ namespace LearningTrainer.ViewModels
         private readonly SessionService _sessionService = new SessionService();
         private string _username;
 
-        public event Action<User> LoginSuccessful;
+        public event Action<UserSessionDto> LoginSuccessful;
+        
         public event Action OfflineLoginRequested;
 
         public string Username
@@ -90,13 +90,8 @@ namespace LearningTrainer.ViewModels
                     _httpClient.DefaultRequestHeaders.Authorization =
                         new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionDto.AccessToken);
 
-                    User loggedInUser = new User
-                    {
-                        Login = sessionDto.UserLogin,
-                        Role = new Role { Name = sessionDto.UserRole }
-                    };
+                    LoginSuccessful?.Invoke(sessionDto);
 
-                    LoginSuccessful?.Invoke(loggedInUser);
                 }
                 else
                 {

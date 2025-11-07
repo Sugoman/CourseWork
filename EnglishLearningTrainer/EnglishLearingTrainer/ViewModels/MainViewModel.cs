@@ -1,5 +1,4 @@
 ﻿using LearningTrainer.Core;
-using LearningTrainer.Models;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 
@@ -37,16 +36,16 @@ namespace LearningTrainer.ViewModels
                 Login = savedSession.UserLogin,
                 Role = new Role { Name = savedSession.UserRole }
             };
-
+            _settingsService = new SettingsService();
             _apiDataService = new ApiDataService();
-            _localDataService = new LocalDataService();
+            _localDataService = new LocalDataService(CurrentUser.Login);
 
             SyncLocalCacheAsync();
 
             _apiDataService.SetToken(savedSession.AccessToken);
 
             var dashboard = new DashboardViewModel(CurrentUser, _apiDataService);
-            CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, new SettingsService());
+            CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, _settingsService);
 
             EventAggregator.Instance.Subscribe<LogoutRequestedMessage>(HandleLogout);
         }
@@ -68,11 +67,18 @@ namespace LearningTrainer.ViewModels
             CurrentView = loginVM;
         }
 
-        private void OnLoginSuccessful(User loggedInUser)
+        private void OnLoginSuccessful(UserSessionDto sessionDto)
         {
-            CurrentUser = loggedInUser;
+            CurrentUser = new User
+            {
+                Login = sessionDto.UserLogin,
+                Role = new Role { Name = sessionDto.UserRole }
+            };
+
             _apiDataService = new ApiDataService();
-            _localDataService = new LocalDataService();
+            _localDataService = new LocalDataService(CurrentUser.Login);
+
+            _apiDataService.SetToken(sessionDto.AccessToken);
 
             SyncLocalCacheAsync();
 
@@ -83,8 +89,8 @@ namespace LearningTrainer.ViewModels
         private void OnOfflineLoginRequested()
         {
             CurrentUser = null;
-            _apiDataService = null; 
-            _localDataService = new LocalDataService();
+            _apiDataService = null;
+            _localDataService = new LocalDataService(null);
 
             var dashboard = new DashboardViewModel(null, _localDataService);
             CurrentView = new ShellViewModel(null, _localDataService, dashboard, _settingsService);
@@ -92,7 +98,6 @@ namespace LearningTrainer.ViewModels
 
         private void HandleLogout(LogoutRequestedMessage message)
         {
-            // Отписываемся от старых сообщений
             EventAggregator.Instance.Unsubscribe<LogoutRequestedMessage>(HandleLogout);
 
             if (CurrentView is LoginViewModel oldLoginVM)
