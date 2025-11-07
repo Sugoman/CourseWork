@@ -1,8 +1,8 @@
 ﻿using LearningTrainer.Context;
-using LearningTrainer.Models;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace LearningAPI.Controllers
 {
@@ -22,9 +22,27 @@ namespace LearningAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetDictionaries()
         {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId))
+            {
+                return Unauthorized();
+            }
+
             var dictionaries = await _context.Dictionaries
-                                             .Include(d => d.Words)
-                                             .ToListAsync();
+                .Where(d => d.UserId == userId)
+                .Select(d => new
+                {
+                    d.Id,
+                    d.UserId,
+                    d.Name,
+                    d.Description,
+                    d.LanguageFrom,
+                    d.LanguageTo,
+                    d.WordCount, 
+                    Words = d.Words.Where(w => w.UserId == userId).ToList()
+                })
+                .ToListAsync();
+
             return Ok(dictionaries);
         }
 
@@ -32,6 +50,12 @@ namespace LearningAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> AddDictionary([FromBody] CreateDictionaryRequest requestDto)
         {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId))
+            {
+                return Unauthorized();
+            }
+
             if (requestDto == null || string.IsNullOrWhiteSpace(requestDto.Name))
             {
                 return BadRequest("Name is required.");
@@ -43,7 +67,8 @@ namespace LearningAPI.Controllers
                 Description = requestDto.Description,
                 LanguageFrom = requestDto.LanguageFrom,
                 LanguageTo = requestDto.LanguageTo,
-                Words = new List<Word>() 
+                Words = new List<Word>(),
+                UserId = userId
             };
 
             _context.Dictionaries.Add(newDictionary);
@@ -69,11 +94,18 @@ namespace LearningAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDictionary(int id)
         {
-            var dictionary = await _context.Dictionaries.FindAsync(id);
-
-            if (dictionary == null)
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId))
             {
-                return NotFound();
+                return Unauthorized();
+            }
+
+            var dictionary = await _context.Dictionaries.FindAsync(id);
+            if (dictionary == null) return NotFound();
+
+            if (dictionary.UserId != userId)
+            {
+                return Forbid();
             }
 
             _context.Dictionaries.Remove(dictionary);

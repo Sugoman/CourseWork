@@ -1,14 +1,14 @@
 ﻿using LearningTrainer.Context;
-using LearningTrainer.Models;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace LearningAPI.Controllers
 {
     [ApiController]
-    [Route("api/words")] 
+    [Route("api/words")]
     public class WordsController : ControllerBase
     {
         private readonly ApiDbContext _context;
@@ -22,6 +22,12 @@ namespace LearningAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> AddWord([FromBody] CreateWordRequest requestDto)
         {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId))
+            {
+                return Unauthorized();
+            }
+
             if (requestDto == null || requestDto.DictionaryId == 0)
             {
                 return BadRequest("Word data or DictionaryId is missing.");
@@ -33,7 +39,8 @@ namespace LearningAPI.Controllers
                 Translation = requestDto.Translation,
                 Example = requestDto.Example,
                 DictionaryId = requestDto.DictionaryId,
-                AddedAt = DateTime.UtcNow
+                AddedAt = DateTime.UtcNow,
+                UserId = userId
             };
 
             var transcription = await _dictionaryService.GetTranscriptionAsync(newWord.OriginalWord);
@@ -42,17 +49,25 @@ namespace LearningAPI.Controllers
             _context.Words.Add(newWord);
             await _context.SaveChangesAsync();
 
-            return Ok(newWord); 
+            return Ok(newWord);
         }
 
         // DELETE: /api/Words/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteWord(int id)
         {
-            var word = await _context.Words.FindAsync(id);
-            if (word == null)
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId))
             {
-                return NotFound();
+                return Unauthorized();
+            }
+
+            var word = await _context.Words.FindAsync(id);
+            if (word == null) return NotFound();
+
+            if (word.UserId != userId)
+            {
+                return Forbid();
             }
 
             _context.Words.Remove(word);

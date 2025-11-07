@@ -1,7 +1,9 @@
 ﻿using LearningTrainer.Context;
-using LearningTrainer.Models; 
+using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace LearningAPI.Controllers
 {
@@ -20,7 +22,26 @@ namespace LearningAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetRules()
         {
-            var rules = await _context.Rules.ToListAsync();
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var rules = await _context.Rules
+                .Where(x => x.UserId == userId)
+                .Select(r => new
+                {
+                    r.Id,
+                    r.UserId,
+                    r.Title,
+                    r.MarkdownContent,
+                    r.Description,
+                    r.Category,
+                    r.DifficultyLevel,
+                    r.CreatedAt
+                })
+                .ToListAsync();
             return Ok(rules);
         }
 
@@ -28,12 +49,28 @@ namespace LearningAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> AddRule([FromBody] Rule rule)
         {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId))
+            {
+                return Unauthorized();
+            }
+
             if (rule == null)
             {
                 return BadRequest("Rule is required.");
             }
+            var newRule = new Rule
+            {
+                Title = rule.Title,
+                MarkdownContent = rule.MarkdownContent,
+                Description = rule.Description,
+                Category = rule.Category,
+                DifficultyLevel = rule.DifficultyLevel,
+                CreatedAt = rule.CreatedAt,
+                UserId = userId
+            };
 
-            _context.Rules.Add(rule);
+            _context.Rules.Add(newRule);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetRules), new { id = rule.Id }, rule);
@@ -43,14 +80,23 @@ namespace LearningAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRule(int id)
         {
-            var rule = await _context.Rules.FindAsync(id);
-            if (rule == null)
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId))
             {
-                return NotFound();
+                return Unauthorized();
+            }
+
+            var rule = await _context.Rules.FindAsync(id);
+            if (rule == null) return NotFound();
+
+            if (rule.UserId != userId)
+            {
+                return Forbid();
             }
 
             _context.Rules.Remove(rule);
             await _context.SaveChangesAsync();
+
             return NoContent();
         }
     }
