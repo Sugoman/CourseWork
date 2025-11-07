@@ -1,19 +1,19 @@
-﻿using LearningTrainer.Context; 
-using LearningTrainer.Models;
-using LearningTrainer.Services;
+﻿using LearningTrainer.Context;
+using LearningTrainerShared.Models;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace LearningTrainer.Services 
+namespace LearningTrainer.Services
 {
     public class LocalDataService : IDataService
     {
-        private LocalDbContext _context => new LocalDbContext();
+        
+        private readonly string _userLogin;
 
-
+        public LocalDataService(string userLogin)
+        {
+            _userLogin = userLogin;
+        }
+        private LocalDbContext _context => new LocalDbContext(_userLogin);
         public async Task<List<Dictionary>> GetDictionariesAsync()
         {
             using (var db = _context)

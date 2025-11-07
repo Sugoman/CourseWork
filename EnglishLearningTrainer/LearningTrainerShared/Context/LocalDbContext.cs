@@ -1,19 +1,24 @@
-﻿using LearningTrainer.Models;
+﻿using LearningTrainerShared.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearningTrainer.Context
 {
     public class LocalDbContext : DbContext
     {
-        public LocalDbContext()
+        private readonly string _dbName;
+
+        public LocalDbContext(string userLogin = null)
         {
+            _dbName = string.IsNullOrEmpty(userLogin)
+                ? "EnglishLearning.db"
+                : $"{userLogin}_EnglishLearning.db";
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                optionsBuilder.UseSqlite("Data Source=EnglishLearning.db");
+                optionsBuilder.UseSqlite($"Data Source={_dbName}");
             }
         }
 
