@@ -18,6 +18,11 @@ namespace LearningTrainer.Services
         Task<bool> DeleteRuleAsync(int ruleId);
         Task<bool> DeleteDictionaryAsync(int dictionaryId);
         Task<bool> UpdateDictionaryAsync(Dictionary dictionary);
+        Task<List<Word>> GetReviewSessionAsync(int dictionaryId);
+        Task UpdateProgressAsync(UpdateProgressRequest progress);
+        Task<string> ChangePasswordAsync(ChangePasswordRequest request);
+        Task<string> RegisterAsync(RegisterRequest request);
+        Task<UserSessionDto> LoginAsync(object loginRequest);
         void SetToken(string accessToken);
 
     }

@@ -7,6 +7,7 @@ namespace LearningTrainer.Services
 {
     public class ApiDataService : IDataService
     {
+
         private readonly HttpClient _httpClient;
         private readonly JsonSerializerOptions _jsonOptions;
 
@@ -79,8 +80,7 @@ namespace LearningTrainer.Services
         }
 
         // Words 
-
-        public async Task<Word> AddWordAsync(Word word) // (Тут можно оставить 'Word')
+        public async Task<Word> AddWordAsync(Word word)
         {
             var requestDto = new CreateWordRequest
             {
@@ -138,6 +138,67 @@ namespace LearningTrainer.Services
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
         }
 
+        public async Task<List<Word>> GetReviewSessionAsync(int dictionaryId)
+        {
+            // /api/dictionaries/5/review
+            return await _httpClient.GetFromJsonAsync<List<Word>>(
+                $"/api/dictionaries/{dictionaryId}/review", _jsonOptions);
+        }
 
+        public async Task UpdateProgressAsync(UpdateProgressRequest progress)
+        {
+            // POST /api/progress/update
+            var response = await _httpClient.PostAsJsonAsync(
+                "/api/progress/update", progress, _jsonOptions);
+
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task<string> ChangePasswordAsync(ChangePasswordRequest request)
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                "/api/auth/change-password", request, _jsonOptions);
+
+            var responseDto = await response.Content.ReadFromJsonAsync<ApiResponseDto>();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(responseDto?.Message ?? "Ошибка смены пароля");
+            }
+
+            return responseDto?.Message ?? "Успешно!";
+        }
+
+        public async Task<string> RegisterAsync(RegisterRequest request)
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                "/api/auth/register", request, _jsonOptions);
+
+            var responseDto = await response.Content.ReadFromJsonAsync<ApiResponseDto>();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(responseDto?.Message ?? "Ошибка регистрации");
+            }
+
+            return responseDto?.Message ?? "Успешно!";
+        }
+
+        public async Task<UserSessionDto> LoginAsync(object loginRequest)
+        {
+            HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
+                "/api/auth/login", loginRequest, _jsonOptions);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorResponse = await response.Content.ReadFromJsonAsync<ApiResponseDto>();
+                throw new HttpRequestException(errorResponse?.Message ?? "Неверный логин или пароль");
+            }
+
+            return await response.Content.ReadFromJsonAsync<UserSessionDto>(_jsonOptions);
+        }
+
+
+        private class ApiResponseDto { public string Message { get; set; } }
     }
 }

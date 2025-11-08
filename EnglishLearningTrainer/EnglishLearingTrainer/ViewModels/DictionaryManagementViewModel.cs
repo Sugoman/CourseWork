@@ -33,11 +33,13 @@ namespace LearningTrainer.ViewModels
         public ICommand AddWordCommand { get; }
         public ICommand CloseCommand { get; }
 
-        public DictionaryManagementViewModel(IDataService dataService, Dictionary dictionary)
+        public DictionaryManagementViewModel(
+            IDataService dataService,
+            Dictionary dictionary,
+            ObservableCollection<Word> liveWordsCollection)
         {
             _dataService = dataService;
             _dictionary = dictionary;
-            _dialogService = new DialogService();
             Title = $"Управление: {dictionary.Name}";
 
             DictionaryName = dictionary.Name;
@@ -45,14 +47,13 @@ namespace LearningTrainer.ViewModels
             LanguageFrom = dictionary.LanguageFrom;
             LanguageTo = dictionary.LanguageTo;
 
-            Words = new ObservableCollection<Word>(dictionary.Words);
+            Words = liveWordsCollection;
 
             SaveDictionaryCommand = new RelayCommand(async (param) => await SaveDictionaryAsync());
             DeleteDictionaryCommand = new RelayCommand(async (param) => await DeleteDictionaryAsync());
             DeleteWordCommand = new RelayCommand(async (param) => await DeleteWordAsync(param));
             AddWordCommand = new RelayCommand((param) => AddWord());
             CloseCommand = new RelayCommand((param) => Close());
-            ExportDictionaryCommand = new RelayCommand((param) => ExportDictionary());
         }
         private void ExportDictionary()
         {

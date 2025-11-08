@@ -206,5 +206,30 @@ namespace LearningTrainer.Services
         {
             throw new NotImplementedException();
         }
+
+        public Task<List<Word>> GetReviewSessionAsync(int dictionaryId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task UpdateProgressAsync(UpdateProgressRequest progress)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<string> ChangePasswordAsync(ChangePasswordRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<string> RegisterAsync(RegisterRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UserSessionDto> LoginAsync(object loginRequest)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

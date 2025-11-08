@@ -7,11 +7,13 @@ namespace LearningTrainer.Services
     public class SessionService
     {
         private readonly string _sessionFilePath = "user_session.json";
-
+        private readonly string _lastUserLoginPath = "last_user.txt";
+        private readonly SessionService _sessionService;
         public void SaveSession(UserSessionDto session)
         {
             var json = JsonSerializer.Serialize(session);
             File.WriteAllText(_sessionFilePath, json);
+            File.WriteAllText(_lastUserLoginPath, session.UserLogin);
         }
 
         public UserSessionDto? LoadSession()
@@ -23,7 +25,14 @@ namespace LearningTrainer.Services
             }
             return null;
         }
-
+        public string? LoadLastUserLogin()
+        {
+            if (File.Exists(_lastUserLoginPath))
+            {
+                return File.ReadAllText(_lastUserLoginPath);
+            }
+            return null;
+        }
         public void ClearSession()
         {
             if (File.Exists(_sessionFilePath))

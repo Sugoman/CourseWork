@@ -113,5 +113,46 @@ namespace LearningAPI.Controllers
 
             return NoContent();
         }
+
+        // /api/dictionaries/5/review
+        [HttpGet("{id}/review")]
+        public async Task<IActionResult> GetReviewSession(int id)
+        {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId))
+            {
+                return Unauthorized();
+            }
+
+            var now = DateTime.UtcNow;
+
+            var allWordsAndDates = await _context.Words
+                .Where(w => w.DictionaryId == id && w.UserId == userId)
+                .Select(w => new
+                {
+                    TheWord = w,
+
+                    ReviewDate = w.Progress
+                        .Where(p => p.UserId == userId)
+                        .Select(p => (DateTime?)p.NextReview) 
+                        .FirstOrDefault()
+                })
+                .ToListAsync(); 
+
+            var studySession = allWordsAndDates
+                .Where(x =>
+                    !x.ReviewDate.HasValue ||
+                    x.ReviewDate.Value <= now
+                )
+                .Select(x => x.TheWord) 
+                .ToList();
+
+            var random = new Random();
+            var shuffledSession = studySession
+                .OrderBy(w => random.Next())
+                .ToList();
+
+            return Ok(shuffledSession);
+        }
     }
 }
