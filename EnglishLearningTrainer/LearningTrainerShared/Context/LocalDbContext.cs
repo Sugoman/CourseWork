@@ -27,6 +27,7 @@ namespace LearningTrainer.Context
         public DbSet<Dictionary> Dictionaries { get; set; }
         public DbSet<Word> Words { get; set; }
         public DbSet<Rule> Rules { get; set; }
+        public DbSet<LearningProgress> LearningProgresses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -38,12 +39,14 @@ namespace LearningTrainer.Context
             modelBuilder.Entity<LearningProgress>()
                 .HasOne(lp => lp.User)
                 .WithMany()
-                .HasForeignKey(lp => lp.UserId);
+                .HasForeignKey(lp => lp.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<LearningProgress>()
                 .HasOne(lp => lp.Word)
-                .WithMany()
-                .HasForeignKey(lp => lp.WordId);
+                .WithMany(w => w.Progress)
+                .HasForeignKey(lp => lp.WordId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

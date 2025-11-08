@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LearningTrainer.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -23,6 +24,20 @@ namespace LearningTrainer.Views
         public SettingsView()
         {
             InitializeComponent();
+        }
+
+        private async void ChangePasswordButton_Click(object sender, RoutedEventArgs e)
+        {
+            var vm = DataContext as SettingsViewModel;
+            if (vm == null) return;
+
+            string oldPass = OldPasswordBox.Password;
+            string newPass = NewPasswordBox.Password;
+
+            await vm.ChangePasswordAsync(oldPass, newPass);
+
+            OldPasswordBox.Clear();
+            NewPasswordBox.Clear();
         }
     }
 }

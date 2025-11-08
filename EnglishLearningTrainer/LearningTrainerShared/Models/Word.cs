@@ -25,10 +25,15 @@ namespace LearningTrainerShared.Models
         public int DictionaryId { get; set; }
 
         public DateTime AddedAt { get; set; } = DateTime.Now;
+
         [JsonIgnore]
         public Dictionary Dictionary { get; set; }
+
         [JsonIgnore]
         public virtual User User { get; set; }
+
+        [JsonIgnore]
+        public virtual ICollection<LearningProgress> Progress { get; set; }
 
         public string? Transcription { get; set; }
     }

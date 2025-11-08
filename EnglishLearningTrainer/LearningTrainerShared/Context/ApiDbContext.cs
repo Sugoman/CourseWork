@@ -36,9 +36,18 @@ namespace LearningTrainer.Context
 
             modelBuilder.Entity<LearningProgress>()
                 .HasOne(lp => lp.Word)
-                .WithMany()
+                .WithMany(w => w.Progress)
                 .HasForeignKey(lp => lp.WordId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<LearningProgress>()
+                .HasIndex(p => p.UserId);
+
+            modelBuilder.Entity<LearningProgress>()
+                .HasIndex(p => p.WordId);
+
+            modelBuilder.Entity<LearningProgress>()
+                .HasIndex(p => p.NextReview);
         }
     }
 }

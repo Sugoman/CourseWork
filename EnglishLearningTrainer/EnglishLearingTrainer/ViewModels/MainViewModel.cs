@@ -11,6 +11,7 @@ namespace LearningTrainer.ViewModels
         private IDataService _apiDataService;
         private IDataService _localDataService;
         private readonly SettingsService _settingsService;
+        private readonly SessionService _sessionService;
         public User? CurrentUser { get; private set; }
 
         public object CurrentView
@@ -26,6 +27,7 @@ namespace LearningTrainer.ViewModels
         public MainViewModel()
         {
             _settingsService = new SettingsService();
+            _sessionService = new SessionService(); 
             ShowLoginView();
         }
 
@@ -37,10 +39,10 @@ namespace LearningTrainer.ViewModels
                 Role = new Role { Name = savedSession.UserRole }
             };
             _settingsService = new SettingsService();
+            _sessionService = new SessionService();
             _apiDataService = new ApiDataService();
             _localDataService = new LocalDataService(CurrentUser.Login);
 
-            SyncLocalCacheAsync();
 
             _apiDataService.SetToken(savedSession.AccessToken);
 
@@ -48,17 +50,17 @@ namespace LearningTrainer.ViewModels
             CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, _settingsService);
 
             EventAggregator.Instance.Subscribe<LogoutRequestedMessage>(HandleLogout);
+            SyncLocalCacheAsync();
         }
 
         private void OpenSettingsTab()
         {
-            var settingsVM = new SettingsViewModel(_settingsService);
-
+            var settingsVM = new SettingsViewModel(_settingsService, _dataService);
             EventAggregator.Instance.Publish(settingsVM);
         }
         private void ShowLoginView()
         {
-            var loginVM = new LoginViewModel();
+            var loginVM = new LoginViewModel(_sessionService);
             loginVM.LoginSuccessful += OnLoginSuccessful;
             loginVM.OfflineLoginRequested += OnOfflineLoginRequested;
 
@@ -80,20 +82,29 @@ namespace LearningTrainer.ViewModels
 
             _apiDataService.SetToken(sessionDto.AccessToken);
 
-            SyncLocalCacheAsync();
 
             var dashboard = new DashboardViewModel(CurrentUser, _apiDataService);
             CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, _settingsService);
+            SyncLocalCacheAsync();
         }
 
         private void OnOfflineLoginRequested()
         {
+            var savedSession = _sessionService.LoadSession();
+            string offlineLogin = savedSession?.UserLogin;
+
+            if (string.IsNullOrEmpty(offlineLogin))
+            {
+                offlineLogin = _sessionService.LoadLastUserLogin();
+            }
+
             CurrentUser = null;
             _apiDataService = null;
-            _localDataService = new LocalDataService(null);
 
-            var dashboard = new DashboardViewModel(null, _localDataService);
-            CurrentView = new ShellViewModel(null, _localDataService, dashboard, _settingsService);
+            _localDataService = new LocalDataService(offlineLogin);
+
+            var dashboard = new DashboardViewModel(CurrentUser, _localDataService);
+            CurrentView = new ShellViewModel(CurrentUser, _localDataService, dashboard, _settingsService);
         }
 
         private void HandleLogout(LogoutRequestedMessage message)
@@ -106,8 +117,7 @@ namespace LearningTrainer.ViewModels
                 oldLoginVM.OfflineLoginRequested -= OnOfflineLoginRequested;
             }
 
-            SessionService sessionService = new SessionService();
-            sessionService.ClearSession();
+            _sessionService.ClearSession();
 
             CurrentUser = null;
             _apiDataService = null;

@@ -10,13 +10,38 @@
 
         <TextBlock Text="Настройки" FontSize="{DynamicResource HeaderFontSize}" FontWeight="Bold"/>
         <TextBlock Text="Здесь будут общие настройки приложения." FontSize="{DynamicResource BaseFontSize}" Margin="0,5,0,20"/>
+        <TextBlock Text="Смена пароля" FontSize="18" FontWeight="SemiBold" Margin="0,20,0,10"/>
 
+        <TextBlock Text="Старый пароль:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+        <PasswordBox x:Name="OldPasswordBox" FontSize="{DynamicResource BaseFontSize}" Padding="5" Margin="0,0,0,10"/>
+
+        <TextBlock Text="Новый пароль:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+        <PasswordBox x:Name="NewPasswordBox" FontSize="{DynamicResource BaseFontSize}" Padding="5" Margin="0,0,0,10"/>
+
+        <TextBlock Text="{Binding ChangePasswordMessage}" Margin="0,5,0,5">
+            <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                    <Setter Property="Foreground" Value="Green"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsError}" Value="True">
+                            <Setter Property="Foreground" Value="Red"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBlock.Style>
+        </TextBlock>
+
+        <Button x:Name="ChangePasswordButton"
+        Content="Сменить пароль"
+        Click="ChangePasswordButton_Click" 
+        Style="{StaticResource PrimaryButton}" 
+        HorizontalAlignment="Left"
+        Width="200"/>
         <Button Content="Выйти из аккаунта"
                 Command="{Binding LogoutCommand}"
                 Style="{StaticResource DangerButton}" 
                 Margin="0,50,0,0"
                 HorizontalAlignment="Left"
                 Width="200"/>
-
     </StackPanel>
 </UserControl>

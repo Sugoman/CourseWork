@@ -1,6 +1,7 @@
 ﻿using LearningTrainer.Core;
 using LearningTrainer.Services;    
 using LearningTrainerShared.Models;
+using System.Net.Http;
 using System.Windows.Input;
 
 namespace LearningTrainer.ViewModels
@@ -24,13 +25,29 @@ namespace LearningTrainer.ViewModels
             }
         }
 
-        public SettingsViewModel(SettingsService settingsService)
+        private string _changePasswordMessage;
+        public string ChangePasswordMessage
+        {
+            get => _changePasswordMessage;
+            set => SetProperty(ref _changePasswordMessage, value);
+        }
+
+        private bool _isError;
+        public bool IsError
+        {
+            get => _isError;
+            set => SetProperty(ref _isError, value);
+        }
+
+        private readonly IDataService _dataService;
+
+        public SettingsViewModel(SettingsService settingsService, IDataService dataService)
         {
             Title = "Настройки";
             _settingsService = settingsService;
+            _dataService = dataService;
 
             _selectedFontSize = _settingsService.CurrentSettings.BaseFontSize;
-
             LogoutCommand = new RelayCommand(PerformLogout);
         }
 
@@ -49,6 +66,41 @@ namespace LearningTrainer.ViewModels
 
             _settingsService.ApplySettingsToApp(newSettings);
             _settingsService.SaveSettings(newSettings);
+        }
+        public async Task ChangePasswordAsync(string oldPassword, string newPassword)
+        {
+            if (string.IsNullOrWhiteSpace(oldPassword) || string.IsNullOrWhiteSpace(newPassword))
+            {
+                IsError = true;
+                ChangePasswordMessage = "Оба поля должны быть заполнены.";
+                return;
+            }
+
+            try
+            {
+                var request = new ChangePasswordRequest
+                {
+                    OldPassword = oldPassword,
+                    NewPassword = newPassword
+                };
+
+                // Вызываем наш новый IDataService
+                string successMessage = await _dataService.ChangePasswordAsync(request);
+
+                IsError = false;
+                ChangePasswordMessage = successMessage; // "Пароль успешно обновлен"
+            }
+            catch (HttpRequestException ex)
+            {
+                // Ловим ошибку от API (напр. "Неверный старый пароль")
+                IsError = true;
+                ChangePasswordMessage = ex.Message;
+            }
+            catch (Exception ex)
+            {
+                IsError = true;
+                ChangePasswordMessage = $"Критическая ошибка: {ex.Message}";
+            }
         }
     }
 }

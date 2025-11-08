@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <Folder Include="MigrationsSqlServer\" />
+    <Folder Include="Migrations\" />
   </ItemGroup>
 
 </Project>

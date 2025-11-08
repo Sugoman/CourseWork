@@ -50,7 +50,7 @@ namespace LearningTrainer.ViewModels
 
         private void OpenSettings(object obj)
         {
-            EventAggregator.Instance.Publish(new SettingsViewModel(_settingsService));
+            EventAggregator.Instance.Publish(new SettingsViewModel(_settingsService, _dataService));
         }
 
         private void OpenTab(TabViewModelBase tab)

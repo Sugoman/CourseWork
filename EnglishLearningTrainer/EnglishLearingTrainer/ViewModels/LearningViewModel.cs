@@ -1,4 +1,5 @@
 ﻿using LearningTrainer.Core;
+using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using System.Windows;
 using System.Windows.Input;
@@ -8,6 +9,8 @@ namespace LearningTrainer.ViewModels
 {
     public class LearningViewModel : TabViewModelBase
     {
+        private readonly IDataService _dataService;
+        private readonly int _dictionaryId;
         private Queue<Word> _wordsQueue;
 
         private Word _currentWord;
@@ -38,49 +41,94 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _isSessionComplete, value);
         }
 
+        public ICommand FlipCardCommand { get; }
+
         public ICommand AnswerCommand { get; }
+
         public ICommand CloseTabCommand { get; }
 
-        public LearningViewModel(Dictionary dictionary)
+        public LearningViewModel(IDataService dataService, int dictionaryId)
         {
-            Title = $"Изучение: {dictionary.Name}";
+            _dataService = dataService;
+            _dictionaryId = dictionaryId;
+            Title = "Изучение"; // (Потом поменяешь)
 
-            _wordsQueue = new Queue<Word>(dictionary.Words);
-            if (_wordsQueue.Count == 0)
-            {
-                MessageBox.Show("Словарь пуст");
-                return;
-            }
-            else
-            {
-                CurrentWord = _wordsQueue.FirstOrDefault();
+            FlipCardCommand = new RelayCommand(
+                (param) => IsFlipped = true,
+                (param) => !IsFlipped
+            );
 
-                AnswerCommand = new RelayCommand(async (param) => await HandleAnswerAsync((bool)param), (param) => !_isFlipped);
-                CloseTabCommand = new RelayCommand(CloseTab);
-            }
+            AnswerCommand = new RelayCommand(
+                async (param) => await HandleAnswerAsync((ResponseQuality)param),
+                (param) => IsFlipped
+            );
 
+            CloseTabCommand = new RelayCommand(CloseTab);
+
+            LoadSessionAsync();
         }
 
-        private async Task HandleAnswerAsync(bool knowsTheWord)
+        private async void LoadSessionAsync()
         {
-            IsFlipped = true;
-            await Task.Delay(1500);
-
-            var word = _wordsQueue.Dequeue();
-
-            if (!knowsTheWord)
+            try
             {
-                _wordsQueue.Enqueue(word);
+                var sessionWords = await _dataService.GetReviewSessionAsync(_dictionaryId);
+
+                if (sessionWords == null || !sessionWords.Any())
+                {
+                    IsSessionComplete = true; 
+                    return;
+                }
+
+                _wordsQueue = new Queue<Word>(sessionWords);
+                CurrentWord = _wordsQueue.Peek();
+                IsFlipped = false;
+            }
+            catch (System.Net.Http.HttpRequestException ex)
+            {
+                // 401, 500
+                MessageBox.Show($"Ошибка загрузки сессии: {ex.Message}");
+                CloseTab(null);
+            }
+        }
+
+        private async Task HandleAnswerAsync(ResponseQuality quality)
+        {
+            var request = new UpdateProgressRequest
+            {
+                WordId = CurrentWord.Id,
+                Quality = quality
+            };
+
+            try
+            {
+                // POST /api/progress/update
+                await _dataService.UpdateProgressAsync(request);
+            }
+            catch (System.Net.Http.HttpRequestException ex)
+            {
+                MessageBox.Show($"Ошибка сохранения прогресса: {ex.Message}");
+            }
+
+            var wordToRequeue = _wordsQueue.Dequeue(); 
+
+            if (quality == ResponseQuality.Again || quality == ResponseQuality.Hard)
+            {
+                _wordsQueue.Enqueue(wordToRequeue);
             }
 
             if (!_wordsQueue.Any())
             {
-                IsSessionComplete = true;
+                IsSessionComplete = true; 
                 return;
             }
 
+            CurrentWord = null;
+
             IsFlipped = false;
-            await Task.Delay(300);
+
+            await Task.Delay(450);
+
             CurrentWord = _wordsQueue.Peek();
         }
 

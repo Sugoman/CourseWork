@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LearningTrainerShared.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    [Migration("20251107230353_InitialCreate_WithUserIds")]
-    partial class InitialCreate_WithUserIds
+    [Migration("20251108120348_InitialPerfectSchema")]
+    partial class InitialPerfectSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -252,11 +252,11 @@ namespace LearningTrainerShared.Migrations
                     b.HasOne("LearningTrainerShared.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("LearningTrainerShared.Models.Word", "Word")
-                        .WithMany()
+                        .WithMany("Progress")
                         .HasForeignKey("WordId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -293,7 +293,7 @@ namespace LearningTrainerShared.Migrations
                     b.HasOne("LearningTrainerShared.Models.Dictionary", "Dictionary")
                         .WithMany("Words")
                         .HasForeignKey("DictionaryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("LearningTrainerShared.Models.User", "User")
@@ -315,6 +315,11 @@ namespace LearningTrainerShared.Migrations
             modelBuilder.Entity("LearningTrainerShared.Models.Role", b =>
                 {
                     b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("LearningTrainerShared.Models.Word", b =>
+                {
+                    b.Navigation("Progress");
                 });
 #pragma warning restore 612, 618
         }

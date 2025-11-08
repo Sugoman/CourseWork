@@ -100,18 +100,21 @@ namespace LearningTrainer.ViewModels
                     var newDictionary = JsonSerializer.Deserialize<Dictionary>(json, options);
 
                     newDictionary.Id = 0;
-                    foreach (var word in newDictionary.Words)
-                    {
-                        word.Id = 0;
-                        word.DictionaryId = 0; 
-                    }
+                    var wordsToImport = newDictionary.Words.ToList();
+                    newDictionary.Words.Clear();
 
                     var savedDictionary = await _dataService.AddDictionaryAsync(newDictionary);
 
+                    foreach (var word in wordsToImport)
+                    {
+                        word.Id = 0; // Обнуляем ID слова
+                        word.DictionaryId = savedDictionary.Id; 
+                        await _dataService.AddWordAsync(word);
+                    }
                     EventAggregator.Instance.Publish(new DictionaryAddedMessage(savedDictionary));
 
                     System.Windows.MessageBox.Show(
-                        $"Словарь '{savedDictionary.Name}' успешно импортирован!",
+                        $"Словарь '{savedDictionary.Name}' ({wordsToImport.Count} слов) успешно импортирован!",
                         "Импорт завершен",
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
@@ -227,14 +230,9 @@ namespace LearningTrainer.ViewModels
         {
             if (parameter is DictionaryViewModel dictionaryVM)
             {
-                var dictionary = dictionaryVM.Model;
-                if (dictionary.Words == null || dictionary.Words.Count == 0)
-                {
-                    System.Diagnostics.Debug.WriteLine($">>> Пустой словарь. ID: {dictionary.Id}");
-                    dictionary = await _dataService.GetDictionaryByIdAsync(dictionary.Id);
-                }
+                var learningVM = new LearningViewModel(_dataService, dictionaryVM.Id);
 
-                EventAggregator.Instance.Publish(new LearningViewModel(dictionary));
+                EventAggregator.Instance.Publish(learningVM);
             }
         }
 
@@ -269,7 +267,11 @@ namespace LearningTrainer.ViewModels
         {
             if (parameter is DictionaryViewModel dictionaryVM)
             {
-                var managementVm = new DictionaryManagementViewModel(_dataService, dictionaryVM.Model);
+                var managementVm = new DictionaryManagementViewModel(
+                    _dataService,
+                    dictionaryVM.Model,
+                    dictionaryVM.Words
+                );
                 EventAggregator.Instance.Publish(managementVm);
             }
         }

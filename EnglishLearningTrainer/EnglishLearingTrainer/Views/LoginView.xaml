@@ -12,44 +12,81 @@
                 <DropShadowEffect Color="LightGray" ShadowDepth="2" BlurRadius="10" Opacity="0.5"/>
             </Border.Effect>
             <StackPanel>
-                <TextBlock Text="Вход в систему" 
-                           FontSize="{DynamicResource HeaderFontSize}"
-                           FontWeight="Bold" 
-                           HorizontalAlignment="Center"
-                           Margin="0,0,0,20"/>
+                <TextBlock HorizontalAlignment="Center" Margin="0,0,0,20"
+               FontSize="{DynamicResource HeaderFontSize}" FontWeight="Bold">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Text" Value="Вход в систему"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
+                                    <Setter Property="Text" Value="Регистрация"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
 
                 <TextBlock Text="Логин:" FontSize="{DynamicResource BaseFontSize}" Margin="0,10,0,5"/>
                 <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" 
-                         FontSize="{DynamicResource BaseFontSize}" 
-                         Padding="5"/>
+             FontSize="{DynamicResource BaseFontSize}" Padding="5"/>
 
-                <TextBlock Text="Пароль:"
-                           FontSize="{DynamicResource BaseFontSize}"
-                           Margin="0,10,0,5"/>
+                <TextBlock Text="Пароль:" FontSize="{DynamicResource BaseFontSize}" Margin="0,10,0,5"/>
                 <PasswordBox x:Name="MyPasswordBox" 
-                             FontSize="{DynamicResource BaseFontSize}"
-                             Padding="5"/>
+                 FontSize="{DynamicResource BaseFontSize}" Padding="5"/>
 
-                <TextBlock Text="{Binding ErrorMessage}" 
-                           Foreground="Red" 
-                           Margin="0,10,0,0" 
-                           HorizontalAlignment="Center"/>
+                <StackPanel Visibility="{Binding IsRegisterMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock Text="Подтвердить пароль:" FontSize="{DynamicResource BaseFontSize}" Margin="0,10,0,5"/>
+                    <PasswordBox x:Name="ConfirmPasswordBox" 
+                     FontSize="{DynamicResource BaseFontSize}" Padding="5"/>
+                </StackPanel>
 
-                <Button Command="{Binding LoginCommand}" 
-                        Content="Войти" Margin="0,20,0,0"
-                        Padding="10,5" 
-                        Cursor="Hand" 
-                        Style="{StaticResource PrimaryButton}">
-                    <Button.CommandParameter>
-                        <Binding ElementName="MyPasswordBox"/>
-                    </Button.CommandParameter>
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" 
+               Margin="0,10,0,0" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+
+                <Button Command="{Binding SubmitCommand}" Click="SubmitButton_Click"
+            Margin="0,20,0,0" Padding="10,5" 
+            Cursor="Hand">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                            <Setter Property="Content" Value="Войти"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
+                                    <Setter Property="Content" Value="Создать аккаунт"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
                 </Button>
-                
+
                 <Button Command="{Binding OfflineLoginCommand}" 
-                    Content="Автономный режим" 
-                    Style="{StaticResource BaseButton}" 
-                    Margin="0,10,0,0" />
-                        
+        Content="Автономный режим" 
+        Margin="0,10,0,0">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource BaseButton}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <Button Command="{Binding ToggleModeCommand}"
+            Margin="0,15,0,0" HorizontalAlignment="Center">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource BaseButton}">
+                            <Setter Property="Content" Value="Нет аккаунта? Зарегистрироваться"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
+                                    <Setter Property="Content" Value="Уже есть аккаунт? Войти"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
             </StackPanel>
         </Border>
     </Grid>
