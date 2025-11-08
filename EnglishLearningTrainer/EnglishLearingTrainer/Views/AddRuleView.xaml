@@ -82,8 +82,7 @@
                         Command="{Binding SaveCommand}"
                         Style="{StaticResource SuccessButton}" 
                         Width="100"
-                        x:Name="CreateRuleButton"
-                        Click="CreateRuleButton_Click"/>
+                        x:Name="CreateRuleButton"/>
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

@@ -40,6 +40,8 @@ namespace LearningTrainer.ViewModels
         {
             _dataService = dataService;
             _dictionary = dictionary;
+            _dialogService = new DialogService();
+
             Title = $"Управление: {dictionary.Name}";
 
             DictionaryName = dictionary.Name;
@@ -54,6 +56,8 @@ namespace LearningTrainer.ViewModels
             DeleteWordCommand = new RelayCommand(async (param) => await DeleteWordAsync(param));
             AddWordCommand = new RelayCommand((param) => AddWord());
             CloseCommand = new RelayCommand((param) => Close());
+
+            ExportDictionaryCommand = new RelayCommand((param) => ExportDictionary());
         }
         private void ExportDictionary()
         {

@@ -1,5 +1,6 @@
 ﻿using LearningTrainer.Context;
 using LearningTrainerShared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Security.Claims;
 
 namespace LearningAPI.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/rules")] // /api/Rules
     public class RulesController : ControllerBase
@@ -17,6 +19,8 @@ namespace LearningAPI.Controllers
         {
             _context = context;
         }
+
+
 
         // GET: /api/Rules
         [HttpGet]
@@ -47,7 +51,7 @@ namespace LearningAPI.Controllers
 
         // POST: /api/Rules
         [HttpPost]
-        public async Task<IActionResult> AddRule([FromBody] Rule rule)
+        public async Task<IActionResult> AddRule([FromBody] RuleCreateDto ruleDto)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdString, out var userId))
@@ -55,25 +59,31 @@ namespace LearningAPI.Controllers
                 return Unauthorized();
             }
 
-            if (rule == null)
+            if (ruleDto == null)
             {
-                return BadRequest("Rule is required.");
+                return BadRequest("Rule data is required.");
             }
+
+            if (string.IsNullOrWhiteSpace(ruleDto.Title))
+            {
+                return BadRequest("Title is required.");
+            }
+
             var newRule = new Rule
             {
-                Title = rule.Title,
-                MarkdownContent = rule.MarkdownContent,
-                Description = rule.Description,
-                Category = rule.Category,
-                DifficultyLevel = rule.DifficultyLevel,
-                CreatedAt = rule.CreatedAt,
-                UserId = userId
+                Title = ruleDto.Title,
+                MarkdownContent = ruleDto.MarkdownContent,
+                Description = ruleDto.Description ?? "",
+                Category = ruleDto.Category ?? "Grammar",
+                DifficultyLevel = ruleDto.DifficultyLevel,
+                CreatedAt = ruleDto.CreatedAt,
+                UserId = userId  
             };
 
             _context.Rules.Add(newRule);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetRules), new { id = rule.Id }, rule);
+            return CreatedAtAction(nameof(GetRules), new { id = newRule.Id }, newRule);
         }
 
         // DELETE: /api/Rules/5

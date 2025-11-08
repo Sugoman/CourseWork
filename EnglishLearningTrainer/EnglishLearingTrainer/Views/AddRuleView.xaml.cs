@@ -25,9 +25,6 @@ namespace LearningTrainer.Views
             InitializeComponent();
         }
 
-        private void CreateRuleButton_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Правило было успешно добавлено!");
-        }
+       
     }
 }

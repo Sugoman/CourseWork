@@ -1,6 +1,9 @@
 ﻿using LearningTrainer.Context;
 using LearningTrainerShared.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Drawing.Text;
+using System.Net.Http;
+using System.Net.Http.Json;
 
 namespace LearningTrainer.Services
 {
@@ -116,12 +119,29 @@ namespace LearningTrainer.Services
             _context?.Dispose();
         }
 
+        // В вашем DataService
         public async Task<Rule> AddRuleAsync(Rule rule)
         {
-            _context.Rules.Add(rule);
-            await _context.SaveChangesAsync();
+            HttpClient _httpClient = new HttpClient();
+            try
+            {
+                var response = await _httpClient.PostAsJsonAsync("api/rules", rule);
 
-            return rule;
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"HTTP Error: {response.StatusCode}");
+                    System.Diagnostics.Debug.WriteLine($"Error Content: {errorContent}");
+                    throw new HttpRequestException($"Error: {response.StatusCode} - {errorContent}");
+                }
+
+                return await response.Content.ReadFromJsonAsync<Rule>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Exception in DataService: {ex.Message}");
+                throw;
+            }
         }
 
         public async Task<Dictionary> AddDictionaryAsync(Dictionary dictionary)

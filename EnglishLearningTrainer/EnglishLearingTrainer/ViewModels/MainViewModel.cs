@@ -1,6 +1,7 @@
 ﻿using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using System.Net.Http;
 
 namespace LearningTrainer.ViewModels
 {
@@ -51,8 +52,24 @@ namespace LearningTrainer.ViewModels
 
             EventAggregator.Instance.Subscribe<LogoutRequestedMessage>(HandleLogout);
             SyncLocalCacheAsync();
+            InitializeSessionAsync();
         }
+        private async void InitializeSessionAsync()
+        {
+            bool syncSuccess = await SyncLocalCacheAsync();
 
+            if (syncSuccess)
+            {
+                var dashboard = new DashboardViewModel(CurrentUser, _apiDataService);
+                CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, _settingsService);
+                EventAggregator.Instance.Subscribe<LogoutRequestedMessage>(HandleLogout);
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine(">>> ОШИБКА ИНИЦИАЛИЗАЦИИ. Принудительный выход...");
+                HandleLogout(new LogoutRequestedMessage());
+            }
+        }
         private void OpenSettingsTab()
         {
             var settingsVM = new SettingsViewModel(_settingsService, _dataService);
@@ -126,7 +143,7 @@ namespace LearningTrainer.ViewModels
             ShowLoginView();
         }
 
-        private async Task SyncLocalCacheAsync()
+        private async Task<bool> SyncLocalCacheAsync() 
         {
             try
             {
@@ -139,10 +156,17 @@ namespace LearningTrainer.ViewModels
                 await _localDataService.WipeAndStoreRulesAsync(rules);
 
                 System.Diagnostics.Debug.WriteLine(">>> СИНХРОНИЗАЦИЯ УСПЕШНО ЗАВЕРШЕНА.");
+                return true; 
+            }
+            catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА 401: Токен истек!");
+                return false; 
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА СИНХРОНИЗАЦИИ: {ex.Message}");
+                return false; 
             }
         }
     }

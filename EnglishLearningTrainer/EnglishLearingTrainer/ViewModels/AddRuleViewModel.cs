@@ -1,6 +1,7 @@
 ﻿using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using System.Text.Json;
 using System.Windows.Input;
 
 namespace LearningTrainer.ViewModels
@@ -14,6 +15,7 @@ namespace LearningTrainer.ViewModels
         public string MarkdownContent { get; set; }
         public string Category { get; set; } = "Grammar";
         public int DifficultyLevel { get; set; } = 1;
+        public int UserId { get; set; }
 
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
@@ -47,16 +49,24 @@ namespace LearningTrainer.ViewModels
                     CreatedAt = DateTime.Now
                 };
 
+                System.Diagnostics.Debug.WriteLine($"Отправка правила: {JsonSerializer.Serialize(newRule)}");
+
                 var savedRule = await _dataService.AddRuleAsync(newRule);
                 System.Diagnostics.Debug.WriteLine($"Правило '{RuleTitle}' успешно создано! ID: {savedRule.Id}");
 
                 EventAggregator.Instance.Publish(new RuleAddedMessage(savedRule));
-
                 EventAggregator.Instance.Publish(new EventAggregator.CloseTabMessage(this));
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Ошибка при создании правила: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
+
+                // Если это HttpRequestException, можно получить больше информации
+                if (ex is System.Net.Http.HttpRequestException httpEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"HTTP Error: {httpEx.Message}");
+                }
             }
         }
 
