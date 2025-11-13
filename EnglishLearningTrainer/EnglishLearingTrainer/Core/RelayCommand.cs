@@ -1,4 +1,5 @@
-﻿using System.Windows.Input;
+﻿using System.CodeDom.Compiler;
+using System.Windows.Input;
 
 namespace LearningTrainer.Core
 {
@@ -7,6 +8,7 @@ namespace LearningTrainer.Core
         private readonly Action<object> _execute;
         private readonly Predicate<object> _canExecute;
 
+        public event EventHandler Executed;
         public event EventHandler CanExecuteChanged;
 
         public RelayCommand(Action<object> execute, Predicate<object> canExecute = null)
@@ -23,6 +25,7 @@ namespace LearningTrainer.Core
         public void Execute(object parameter)
         {
             _execute(parameter);
+            Executed?.Invoke(this, EventArgs.Empty);
         }
 
         public void RaiseCanExecuteChanged()

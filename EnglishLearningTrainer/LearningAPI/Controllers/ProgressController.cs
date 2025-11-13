@@ -88,7 +88,6 @@ namespace LearningAPI.Controllers
                     break;
             }
 
-            progress.TotalAttempts++;
             await _context.SaveChangesAsync();
             return Ok(progress);
         }

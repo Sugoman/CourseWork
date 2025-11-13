@@ -63,7 +63,7 @@ namespace LearningTrainer.Services
                 }
             }
 
-            if (bestScore >= 80 && bestSuggestion.ToLower() != inputWord.ToLower())
+            if (bestScore >= 50 && bestSuggestion.ToLower() != inputWord.ToLower())
             {
                 return bestSuggestion;
             }

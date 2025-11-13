@@ -47,9 +47,6 @@ namespace LearningTrainer.ViewModels
 
             _apiDataService.SetToken(savedSession.AccessToken);
 
-            var dashboard = new DashboardViewModel(CurrentUser, _apiDataService);
-            CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, _settingsService);
-
             EventAggregator.Instance.Subscribe<LogoutRequestedMessage>(HandleLogout);
             SyncLocalCacheAsync();
             InitializeSessionAsync();
@@ -62,7 +59,6 @@ namespace LearningTrainer.ViewModels
             {
                 var dashboard = new DashboardViewModel(CurrentUser, _apiDataService);
                 CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, _settingsService);
-                EventAggregator.Instance.Subscribe<LogoutRequestedMessage>(HandleLogout);
             }
             else
             {

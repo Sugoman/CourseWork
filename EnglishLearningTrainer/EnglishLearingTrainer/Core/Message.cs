@@ -23,4 +23,10 @@ namespace LearningTrainer.Core
             DictionaryId = dictionaryId;
         }
     }
+
+    public class DictionaryDeletedMessage
+    {
+        public int DictionaryId { get; }
+        public DictionaryDeletedMessage(int dictionaryId) => DictionaryId = dictionaryId;
+    }
 }

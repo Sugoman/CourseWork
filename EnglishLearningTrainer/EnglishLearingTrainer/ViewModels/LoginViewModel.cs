@@ -19,7 +19,7 @@ namespace LearningTrainer.ViewModels
 
         public event Action OfflineLoginRequested;
         public RelayCommand ToggleModeCommand { get; }
-        public RelayCommand SubmitCommand { get; }
+        public RelayCommand RegisterCommand { get; }
 
         private readonly IDataService _apiDataService;
 
@@ -50,6 +50,20 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _errorMessage, value);
         }
 
+        private string _currentPassword;
+        public string CurrentPassword
+        {
+            get => _currentPassword;
+            set => SetProperty(ref _currentPassword, value);
+        }
+
+        private string _confirmPassword;
+        public string ConfirmPassword
+        {
+            get => _confirmPassword;
+            set => SetProperty(ref _confirmPassword, value);
+        }
+
         public RelayCommand LoginCommand { get; }
         public RelayCommand OfflineLoginCommand { get; }
 
@@ -60,7 +74,14 @@ namespace LearningTrainer.ViewModels
             OfflineLoginCommand = new RelayCommand(PerformOfflineLogin);
             ToggleModeCommand = new RelayCommand(ToggleRegisterMode);
 
-            SubmitCommand = new RelayCommand((_) => { });
+            LoginCommand = new RelayCommand(
+    async (param) => await PerformLogin((string)param),
+    (param) => !string.IsNullOrWhiteSpace((string)param) // CanExecute
+);
+            RegisterCommand = new RelayCommand(
+                async (param) => await PerformRegister((string)param),
+                (param) => !string.IsNullOrWhiteSpace((string)param) // CanExecute
+            );
         }
 
 
@@ -71,22 +92,11 @@ namespace LearningTrainer.ViewModels
             ErrorMessage = "";
         }
 
-        public async Task PerformSubmit(string password, string confirmPassword)
-        {
-            if (IsRegisterMode)
-            {
-                await PerformRegister(password, confirmPassword);
-            }
-            else
-            {
-                await PerformLogin(password);
-            }
-        }
 
-        private async Task PerformRegister(string password, string confirmPassword)
+        private async Task PerformRegister(string confirmedPassword)
         {
             ErrorMessage = "";
-            if (password != confirmPassword)
+            if (confirmedPassword != CurrentPassword)
             {
                 ErrorMessage = "Пароли не совпадают";
                 return;
@@ -94,7 +104,7 @@ namespace LearningTrainer.ViewModels
 
             try
             {
-                var request = new RegisterRequest { Login = Username, Password = password };
+                var request = new RegisterRequest { Login = Username, Password = CurrentPassword };
                 string successMessage = await _apiDataService.RegisterAsync(request);
 
                 ErrorMessage = successMessage + ". Теперь можете войти.";

@@ -1,4 +1,5 @@
-﻿using LearningTrainer.Context;
+﻿using BCrypt.Net;
+using LearningTrainer.Context;
 using LearningTrainerShared.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,24 +24,24 @@ namespace LearningTrainer.Services
                     var studentRole = db.Roles.FirstOrDefault(r => r.Id == 3);
                     if (studentRole == null)
                     {
-                        // Роли нет, создаем её
                         studentRole = new Role { Id = 3, Name = "Student" };
                         db.Roles.Add(studentRole);
                         db.SaveChanges(); 
                     }
 
-                    // 3. ТЕПЕРЬ проверяем 'User'
                     var localUser = db.Users.FirstOrDefault(u => u.Login == _userLogin);
                     if (localUser == null)
                     {
+                        var safeRandomHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString());
+
                         localUser = new User
                         {
                             Login = _userLogin,
-                            PasswordHash = "", 
-                            RoleId = studentRole.Id 
+                            PasswordHash = safeRandomHash, 
+                            RoleId = studentRole.Id
                         };
                         db.Users.Add(localUser);
-                        db.SaveChanges(); 
+                        db.SaveChanges();
                     }
 
                     _currentLocalUserId = localUser.Id;
@@ -52,7 +53,10 @@ namespace LearningTrainer.Services
         {
             using (var db = _context)
             {
-                return await db.Dictionaries.Include(d => d.Words).ToListAsync();
+                return await db.Dictionaries
+                    .Where(d => d.UserId == _currentLocalUserId)
+                    .Include(d => d.Words)
+                    .ToListAsync();
             }
         }
 
@@ -60,7 +64,9 @@ namespace LearningTrainer.Services
         {
             using (var db = _context)
             {
-                return await db.Rules.ToListAsync();
+                return await db.Rules
+                    .Where(r => r.UserId == _currentLocalUserId) 
+                    .ToListAsync();
             }
         }
 
@@ -77,6 +83,8 @@ namespace LearningTrainer.Services
         {
             using (var db = _context)
             {
+                dictionary.UserId = _currentLocalUserId;
+
                 db.Dictionaries.Add(dictionary);
                 await db.SaveChangesAsync();
                 return dictionary;
@@ -87,6 +95,8 @@ namespace LearningTrainer.Services
         {
             using (var db = _context)
             {
+                rule.UserId = _currentLocalUserId;
+
                 db.Rules.Add(rule);
                 await db.SaveChangesAsync();
                 return rule;
@@ -97,6 +107,8 @@ namespace LearningTrainer.Services
         {
             using (var db = _context)
             {
+                word.UserId = _currentLocalUserId;
+
                 db.Words.Add(word);
                 await db.SaveChangesAsync();
                 return word;

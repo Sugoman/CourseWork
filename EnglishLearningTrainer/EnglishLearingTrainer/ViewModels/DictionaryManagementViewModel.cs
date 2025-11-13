@@ -139,9 +139,12 @@ namespace LearningTrainer.ViewModels
                     {
                         System.Diagnostics.Debug.WriteLine($"Словарь '{_dictionary.Name}' удален!");
 
-                        EventAggregator.Instance.Publish(new RefreshDataMessage());
+                        EventAggregator.Instance.Publish(new DictionaryDeletedMessage(_dictionary.Id));
 
-                        Close();
+                        EventAggregator.Instance.Publish(
+                            new EventAggregator.CloseTabMessage(this)
+                        );
+
                     }
                 }
                 catch (Exception ex)
@@ -181,7 +184,7 @@ namespace LearningTrainer.ViewModels
 
         private void Close()
         {
-            EventAggregator.Instance.Publish(this);
+            EventAggregator.Instance.Publish(new EventAggregator.CloseTabMessage(this)); 
         }
     }
 }

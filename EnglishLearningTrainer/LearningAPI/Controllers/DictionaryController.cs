@@ -80,9 +80,15 @@ namespace LearningAPI.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetDictionaryById(int id)
         {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId))
+            {
+                return Unauthorized();
+            }
+
             var dictionary = await _context.Dictionaries
                                              .Include(d => d.Words)
-                                             .FirstOrDefaultAsync(d => d.Id == id);
+                                             .FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
 
             if (dictionary == null)
             {
@@ -90,6 +96,7 @@ namespace LearningAPI.Controllers
             }
             return Ok(dictionary);
         }
+
         // DELETE: /api/dictionaries/5 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteDictionary(int id)
@@ -100,12 +107,30 @@ namespace LearningAPI.Controllers
                 return Unauthorized();
             }
 
-            var dictionary = await _context.Dictionaries.FindAsync(id);
+            var dictionary = await _context.Dictionaries
+                .Include(d => d.Words)
+                    .ThenInclude(w => w.Progress) 
+                .FirstOrDefaultAsync(d => d.Id == id);
+
             if (dictionary == null) return NotFound();
 
             if (dictionary.UserId != userId)
             {
                 return Forbid();
+            }
+
+            foreach (var word in dictionary.Words)
+            {
+               
+                if (word.Progress != null && word.Progress.Any())
+                {
+                    _context.LearningProgresses.RemoveRange(word.Progress);
+                }
+            }
+
+            if (dictionary.Words.Any())
+            {
+                _context.Words.RemoveRange(dictionary.Words);
             }
 
             _context.Dictionaries.Remove(dictionary);

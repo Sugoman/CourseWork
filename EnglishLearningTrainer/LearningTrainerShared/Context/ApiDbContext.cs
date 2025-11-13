@@ -22,6 +22,9 @@ namespace LearningTrainer.Context
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<LearningProgress>()
+                .HasAlternateKey(p => new { p.UserId, p.WordId });
+
             modelBuilder.Entity<Dictionary>()
                 .HasMany(d => d.Words)
                 .WithOne(w => w.Dictionary)
@@ -38,7 +41,7 @@ namespace LearningTrainer.Context
                 .HasOne(lp => lp.Word)
                 .WithMany(w => w.Progress)
                 .HasForeignKey(lp => lp.WordId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict); 
 
             modelBuilder.Entity<LearningProgress>()
                 .HasIndex(p => p.UserId);

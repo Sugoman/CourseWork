@@ -28,7 +28,14 @@ namespace LearningTrainer.Services
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var expires = DateTime.UtcNow.AddHours(1); // 1 hour
+            var expiryHoursString = _config["Jwt:ExpiresHours"];
+            if (!int.TryParse(expiryHoursString, out var expiryHours))
+            {
+                expiryHours = 1; 
+            }
+
+            var expires = DateTime.UtcNow.AddHours(expiryHours);        
+
 
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],

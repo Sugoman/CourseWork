@@ -18,7 +18,6 @@ namespace LearningTrainer.ViewModels
         private readonly User _currentUser;
         private readonly bool _isOnlineMode;
         private readonly IDialogService _dialogService;
-
         public ObservableCollection<DictionaryViewModel> Dictionaries { get; set; }
         public ObservableCollection<Rule> Rules { get; set; }
 
@@ -61,6 +60,8 @@ namespace LearningTrainer.ViewModels
             ManageDictionaryCommand = new RelayCommand((param) => ManageDictionary(param));
             ImportDictionaryCommand = new RelayCommand(async (param) => await ImportDictionary());
 
+
+            EventAggregator.Instance.Subscribe<DictionaryDeletedMessage>(OnDictionaryDeleted);
             EventAggregator.Instance.Subscribe<RefreshDataMessage>(OnRefreshData);
             EventAggregator.Instance.Subscribe<RuleAddedMessage>(OnRuleAdded);
             EventAggregator.Instance.Subscribe<DictionaryAddedMessage>(OnDictionaryAdded);
@@ -68,6 +69,18 @@ namespace LearningTrainer.ViewModels
 
             LoadDataAsync();
         }
+
+        private void OnDictionaryDeleted(DictionaryDeletedMessage message)
+        {
+            var dictionaryVM = Dictionaries.FirstOrDefault(d => d.Id == message.DictionaryId);
+
+            if (dictionaryVM != null)
+            {
+                Dictionaries.Remove(dictionaryVM);
+                System.Diagnostics.Debug.WriteLine($"Словарь ID {message.DictionaryId} удален из коллекции Dashboard.");
+            }
+        }
+
         private void OnRuleAdded(RuleAddedMessage message)
         {
             System.Diagnostics.Debug.WriteLine($"=== RULE ADDED: {message.Rule.Title} ===");
@@ -196,7 +209,7 @@ namespace LearningTrainer.ViewModels
             {
                 if (httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    System.Diagnostics.Debug.WriteLine("!!! 401 (Unauthorized) ПОЙМАН в Dashboard. Запускаю принудительный выход...");
+                    System.Diagnostics.Debug.WriteLine("!!! 401 (Unauthorized) ПОЙМАН в Dashboard. Запуск принудительного выхода");
                     EventAggregator.Instance.Publish(new LogoutRequestedMessage());
                 }
                 else

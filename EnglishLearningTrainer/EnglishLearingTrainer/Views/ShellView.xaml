@@ -8,7 +8,11 @@
              xmlns:converters="clr-namespace:LearningTrainer.Converters"
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="900">
+    <UserControl.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
 
+    
     <Grid>
         <TabControl ItemsSource="{Binding Tabs}" SelectedItem="{Binding SelectedTab}">
             <TabControl.ItemTemplate>
@@ -27,7 +31,6 @@
                 <DataTemplate>
                     <ContentControl>
                         <ContentControl.Resources>
-                            <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
                             <DataTemplate DataType="{x:Type viewmodels:DashboardViewModel}">
                                 <views:DashboardView/>
                             </DataTemplate>

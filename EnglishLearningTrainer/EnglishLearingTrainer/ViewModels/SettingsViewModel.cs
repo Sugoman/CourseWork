@@ -1,5 +1,5 @@
 ﻿using LearningTrainer.Core;
-using LearningTrainer.Services;    
+using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using System.Net.Http;
 using System.Windows.Input;
@@ -11,6 +11,7 @@ namespace LearningTrainer.ViewModels
         private readonly SettingsService _settingsService;
 
         public ICommand LogoutCommand { get; }
+        public ICommand ChangePasswordCommand { get; }
 
         private double _selectedFontSize;
         public double SelectedFontSize
@@ -23,6 +24,20 @@ namespace LearningTrainer.ViewModels
                     ApplyAndSaveSettings();
                 }
             }
+        }
+
+        private string _oldPassword;
+        public string OldPassword
+        {
+            get => _oldPassword;
+            set => SetProperty(ref _oldPassword, value);
+        }
+
+        private string _newPassword;
+        public string NewPassword
+        {
+            get => _newPassword;
+            set => SetProperty(ref _newPassword, value);
         }
 
         private string _changePasswordMessage;
@@ -49,6 +64,11 @@ namespace LearningTrainer.ViewModels
 
             _selectedFontSize = _settingsService.CurrentSettings.BaseFontSize;
             LogoutCommand = new RelayCommand(PerformLogout);
+
+            ChangePasswordCommand = new RelayCommand(
+        async (param) => await ChangePasswordAsync((string)param),
+        (param) => !string.IsNullOrWhiteSpace(OldPassword) && !string.IsNullOrWhiteSpace((string)param) // CanExecute
+    );
         }
 
         private void PerformLogout(object obj)
@@ -67,9 +87,9 @@ namespace LearningTrainer.ViewModels
             _settingsService.ApplySettingsToApp(newSettings);
             _settingsService.SaveSettings(newSettings);
         }
-        public async Task ChangePasswordAsync(string oldPassword, string newPassword)
+        public async Task ChangePasswordAsync(string newPassword)
         {
-            if (string.IsNullOrWhiteSpace(oldPassword) || string.IsNullOrWhiteSpace(newPassword))
+            if (string.IsNullOrWhiteSpace(OldPassword) || string.IsNullOrWhiteSpace(newPassword))
             {
                 IsError = true;
                 ChangePasswordMessage = "Оба поля должны быть заполнены.";
@@ -80,19 +100,17 @@ namespace LearningTrainer.ViewModels
             {
                 var request = new ChangePasswordRequest
                 {
-                    OldPassword = oldPassword,
+                    OldPassword = this.OldPassword,
                     NewPassword = newPassword
                 };
 
-                // Вызываем наш новый IDataService
                 string successMessage = await _dataService.ChangePasswordAsync(request);
 
                 IsError = false;
-                ChangePasswordMessage = successMessage; // "Пароль успешно обновлен"
+                ChangePasswordMessage = successMessage; 
             }
             catch (HttpRequestException ex)
             {
-                // Ловим ошибку от API (напр. "Неверный старый пароль")
                 IsError = true;
                 ChangePasswordMessage = ex.Message;
             }

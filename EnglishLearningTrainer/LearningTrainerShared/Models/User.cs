@@ -20,6 +20,6 @@ namespace LearningTrainerShared.Models
 
         public Role Role { get; set; } // "Admin", "Teacher", "Student"
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

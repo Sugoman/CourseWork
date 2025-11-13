@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:behaviors="clr-namespace:LearningTrainer.Behaviors"
              xmlns:local="clr-namespace:LearningTrainer.Views"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
@@ -13,10 +14,24 @@
         <TextBlock Text="Смена пароля" FontSize="18" FontWeight="SemiBold" Margin="0,20,0,10"/>
 
         <TextBlock Text="Старый пароль:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-        <PasswordBox x:Name="OldPasswordBox" FontSize="{DynamicResource BaseFontSize}" Padding="5" Margin="0,0,0,10"/>
+        <PasswordBox x:Name="OldPasswordBox" 
+             FontSize="{DynamicResource BaseFontSize}" 
+             Padding="5" 
+             Margin="0,0,0,10"
+
+             behaviors:PasswordBoxBehavior.Attach="True"
+             behaviors:PasswordBoxBehavior.Password="{Binding OldPassword, Mode=TwoWay}"
+             behaviors:PasswordBoxBehavior.SubmitCommand="{Binding ChangePasswordCommand}"/>
 
         <TextBlock Text="Новый пароль:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-        <PasswordBox x:Name="NewPasswordBox" FontSize="{DynamicResource BaseFontSize}" Padding="5" Margin="0,0,0,10"/>
+        <PasswordBox x:Name="NewPasswordBox" 
+             FontSize="{DynamicResource BaseFontSize}" 
+             Padding="5" 
+             Margin="0,0,0,10"
+
+             behaviors:PasswordBoxBehavior.Attach="True"
+             behaviors:PasswordBoxBehavior.Password="{Binding NewPassword, Mode=TwoWay}"
+             behaviors:PasswordBoxBehavior.SubmitCommand="{Binding ChangePasswordCommand}"/>
 
         <TextBlock Text="{Binding ChangePasswordMessage}" Margin="0,5,0,5">
             <TextBlock.Style>
@@ -32,11 +47,13 @@
         </TextBlock>
 
         <Button x:Name="ChangePasswordButton"
-        Content="Сменить пароль"
-        Click="ChangePasswordButton_Click" 
-        Style="{StaticResource PrimaryButton}" 
-        HorizontalAlignment="Left"
-        Width="200"/>
+             Content="Сменить пароль"
+             Command="{Binding ChangePasswordCommand}"
+             CommandParameter="{Binding ElementName=NewPasswordBox, Path=(behaviors:PasswordBoxBehavior.Password)}"
+             Style="{StaticResource PrimaryButton}" 
+             HorizontalAlignment="Left"
+             Width="200"/>
+        
         <Button Content="Выйти из аккаунта"
                 Command="{Binding LogoutCommand}"
                 Style="{StaticResource DangerButton}" 

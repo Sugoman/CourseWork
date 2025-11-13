@@ -31,6 +31,9 @@ namespace LearningTrainer.Context
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<LearningProgress>()
+                .HasAlternateKey(p => new { p.UserId, p.WordId });
+
             modelBuilder.Entity<Dictionary>()
                 .HasMany(d => d.Words)
                 .WithOne(w => w.Dictionary)

@@ -24,20 +24,23 @@ namespace LearningTrainer.Views
         public SettingsView()
         {
             InitializeComponent();
+
+            this.DataContextChanged += OnDataContextChanged;
         }
 
-        private async void ChangePasswordButton_Click(object sender, RoutedEventArgs e)
+        private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            var vm = DataContext as SettingsViewModel;
-            if (vm == null) return;
-
-            string oldPass = OldPasswordBox.Password;
-            string newPass = NewPasswordBox.Password;
-
-            await vm.ChangePasswordAsync(oldPass, newPass);
-
-            OldPasswordBox.Clear();
-            NewPasswordBox.Clear();
+            if (DataContext is ViewModels.SettingsViewModel vm)
+            {
+                if (vm.ChangePasswordCommand is LearningTrainer.Core.RelayCommand command)
+                {
+                    command.Executed += (s, ev) =>
+                    {
+                        OldPasswordBox.Clear();
+                        NewPasswordBox.Clear();
+                    };
+                }
+            }
         }
     }
 }

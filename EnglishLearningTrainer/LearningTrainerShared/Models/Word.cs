@@ -24,7 +24,7 @@ namespace LearningTrainerShared.Models
 
         public int DictionaryId { get; set; }
 
-        public DateTime AddedAt { get; set; } = DateTime.Now;
+        public DateTime AddedAt { get; set; } = DateTime.UtcNow;
 
         [JsonIgnore]
         public Dictionary Dictionary { get; set; }
