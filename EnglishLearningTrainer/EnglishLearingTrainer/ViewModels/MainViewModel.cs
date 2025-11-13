@@ -160,13 +160,25 @@ namespace LearningTrainer.ViewModels
             }
             catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА 401: Токен истек!");
-                return false; 
+                if (httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА 401: Токен истек! (HTTP)");
+                    return false; 
+                }
+
+                System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА HTTP: {httpEx.Message}");
+                return false;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА СИНХРОНИЗАЦИИ: {ex.Message}");
-                return false; 
+
+                if (ex.Message.Contains("401"))
+                {
+                    System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА 401: Токен истек! (Exception)");
+                    return false;
+                }
+                return false;
             }
         }
     }

@@ -1,7 +1,9 @@
 ﻿using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using System.Net.Http;
 using System.Text.Json;
+using System.Windows;
 using System.Windows.Input;
 
 namespace LearningTrainer.ViewModels
@@ -57,16 +59,25 @@ namespace LearningTrainer.ViewModels
                 EventAggregator.Instance.Publish(new RuleAddedMessage(savedRule));
                 EventAggregator.Instance.Publish(new EventAggregator.CloseTabMessage(this));
             }
+            catch (HttpRequestException httpEx)
+            {
+                if (httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Ваша сессия истекла. Пожалуйста, выйдите и войдите снова.",
+                        "Ошибка авторизации",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+
+                    EventAggregator.Instance.Publish(new EventAggregator.CloseTabMessage(this));
+                    return;
+                }
+
+                System.Diagnostics.Debug.WriteLine($"Ошибка при создании правила: {httpEx.Message}");
+            }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Ошибка при создании правила: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"StackTrace: {ex.StackTrace}");
-
-                // Если это HttpRequestException, можно получить больше информации
-                if (ex is System.Net.Http.HttpRequestException httpEx)
-                {
-                    System.Diagnostics.Debug.WriteLine($"HTTP Error: {httpEx.Message}");
-                }
+                System.Diagnostics.Debug.WriteLine($"Критическая ошибка: {ex.Message}");
             }
         }
 

@@ -4,6 +4,7 @@ using LearningTrainer.Services.Dialogs;
 using LearningTrainerShared.Models;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Net.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
@@ -159,35 +160,54 @@ namespace LearningTrainer.ViewModels
 
         private async void LoadDataAsync()
         {
-            var dictionaries = await _dataService.GetDictionariesAsync();
-            var rules = await _dataService.GetRulesAsync();
-
-            System.Diagnostics.Debug.WriteLine($"dictionaries received: {dictionaries != null}, count: {dictionaries?.Count}");
-            System.Diagnostics.Debug.WriteLine($"rules received: {rules != null}, count: {rules?.Count}");
-
-            if (Dictionaries == null)
+            try
             {
-                System.Diagnostics.Debug.WriteLine("ERROR: Dictionaries collection is null!");
-                Dictionaries = new ObservableCollection<DictionaryViewModel>();
-            }
+                var dictionaries = await _dataService.GetDictionariesAsync();
+                var rules = await _dataService.GetRulesAsync();
 
-            if (Rules == null)
+                System.Diagnostics.Debug.WriteLine($"dictionaries received: {dictionaries != null}, count: {dictionaries?.Count}");
+                System.Diagnostics.Debug.WriteLine($"rules received: {rules != null}, count: {rules?.Count}");
+
+                if (Dictionaries == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("ERROR: Dictionaries collection is null!");
+                    Dictionaries = new ObservableCollection<DictionaryViewModel>();
+                }
+
+                if (Rules == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("ERROR: Rules collection is null!");
+                    Rules = new ObservableCollection<Rule>();
+                }
+
+                System.Diagnostics.Debug.WriteLine("Clearing collections...");
+                Dictionaries.Clear();
+                Rules.Clear();
+
+                foreach (var dict in dictionaries)
+                {
+                    Dictionaries.Add(new DictionaryViewModel(dict));
+                }
+                foreach (var rule in rules) Rules.Add(rule);
+
+                OnPropertyChanged(nameof(Dictionaries));
+            }
+            catch (HttpRequestException httpEx)
             {
-                System.Diagnostics.Debug.WriteLine("ERROR: Rules collection is null!");
-                Rules = new ObservableCollection<Rule>();
+                if (httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    System.Diagnostics.Debug.WriteLine("!!! 401 (Unauthorized) ПОЙМАН в Dashboard. Запускаю принудительный выход...");
+                    EventAggregator.Instance.Publish(new LogoutRequestedMessage());
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА HTTP в Dashboard: {httpEx.Message}");
+                }
             }
-
-            System.Diagnostics.Debug.WriteLine("Clearing collections...");
-            Dictionaries.Clear();
-            Rules.Clear();
-
-            foreach (var dict in dictionaries)
+            catch (Exception ex)
             {
-                Dictionaries.Add(new DictionaryViewModel(dict));
+                System.Diagnostics.Debug.WriteLine($"!!! КРИТИЧЕСКАЯ ОШИБКА в Dashboard.LoadData: {ex.Message}");
             }
-            foreach (var rule in rules) Rules.Add(rule);
-
-            OnPropertyChanged(nameof(Dictionaries));
         }
 
         private void CreateDictionary()
