@@ -5,6 +5,7 @@ using LearningTrainerShared.Models;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Http;
+using System.Security.AccessControl;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
@@ -18,11 +19,14 @@ namespace LearningTrainer.ViewModels
         private readonly User _currentUser;
         private readonly bool _isOnlineMode;
         private readonly IDialogService _dialogService;
+        private readonly SettingsService _settingsService;
         public ObservableCollection<DictionaryViewModel> Dictionaries { get; set; }
         public ObservableCollection<Rule> Rules { get; set; }
+        public ObservableCollection<DictionaryViewModel> DisplayDictionaries { get; set; }
 
         public bool CanManage { get; }
 
+        public ICommand OpenSettingsCommand { get; }
         public ICommand CreateDictionaryCommand { get; }
         public ICommand ImportDictionaryCommand { get; }
         public ICommand CreateRuleCommand { get; }
@@ -32,26 +36,57 @@ namespace LearningTrainer.ViewModels
         public ICommand DeleteWordCommand { get; }
         public ICommand DeleteRuleCommand { get; }
         public ICommand ManageDictionaryCommand { get; }
+        public ICommand EditRuleCommand { get; }
 
-        public DashboardViewModel(User? user, IDataService dataService)
+        private bool _isOverviewMode;
+        public bool IsOverviewMode
         {
+            get => _isOverviewMode;
+            set => SetProperty(ref _isOverviewMode, value);
+        }
+        public bool IsContentMode => !IsOverviewMode;
+        private string _searchQuery;
+        public string SearchQuery
+        {
+            get => _searchQuery;
+            set
+            {
+                if (SetProperty(ref _searchQuery, value))
+                {
+                    ApplySorting();
+                }
+            }
+        }
+
+        private bool _isFeatured;
+
+        public bool IsFeatured
+        {
+            get => _isFeatured;
+            set => SetProperty(ref _isFeatured, value);
+        }
+        
+        public DashboardViewModel(User? user, IDataService dataService, SettingsService settingsService)
+        {
+            IsOverviewMode = false;
+
             Dictionaries = new ObservableCollection<DictionaryViewModel>();
             Rules = new ObservableCollection<Rule>();
             _dataService = dataService;
             _currentUser = user;
             _dialogService = new DialogService();
-
+            _settingsService = settingsService;
             _isOnlineMode = (_currentUser != null);
 
             CanManage = _isOnlineMode
             && _currentUser.Role != null
             && _currentUser.Role.Name != "Student";
 
-            Title = "Мой Дашборд";
+            Title = "HOME";
 
             StartLearningCommand = new RelayCommand(async (param) => await StartLearning(param));
             OpenRuleCommand = new RelayCommand(OpenRule);
-
+            EditRuleCommand = new RelayCommand(EditRule);
             CreateDictionaryCommand = new RelayCommand((param) => CreateDictionary());
             CreateRuleCommand = new RelayCommand((param) => CreateRule());
             AddWordCommand = new RelayCommand((param) => AddWord(param));
@@ -59,6 +94,15 @@ namespace LearningTrainer.ViewModels
             DeleteRuleCommand = new RelayCommand(async (param) => await DeleteRule(param));
             ManageDictionaryCommand = new RelayCommand((param) => ManageDictionary(param));
             ImportDictionaryCommand = new RelayCommand(async (param) => await ImportDictionary());
+            DisplayDictionaries = new ObservableCollection<DictionaryViewModel>();
+            OpenSettingsCommand = new RelayCommand(OpenSettings);
+            DisplaySortOptions = new ObservableCollection<SortingDisplayItem>()
+            {
+                new SortingDisplayItem { Key = SortKey.NameAsc, DisplayName = GetLocalized("Loc.Sort.NameAsc") },
+                new SortingDisplayItem { Key = SortKey.NameDesc, DisplayName = GetLocalized("Loc.Sort.NameDesc") },
+                new SortingDisplayItem { Key = SortKey.CountMin, DisplayName = GetLocalized("Loc.Sort.CountMin") },
+                new SortingDisplayItem { Key = SortKey.CountMax, DisplayName = GetLocalized("Loc.Sort.CountMax") }
+            };
 
 
             EventAggregator.Instance.Subscribe<DictionaryDeletedMessage>(OnDictionaryDeleted);
@@ -66,10 +110,12 @@ namespace LearningTrainer.ViewModels
             EventAggregator.Instance.Subscribe<RuleAddedMessage>(OnRuleAdded);
             EventAggregator.Instance.Subscribe<DictionaryAddedMessage>(OnDictionaryAdded);
             EventAggregator.Instance.Subscribe<WordAddedMessage>(OnWordAdded);
-
             LoadDataAsync();
         }
-
+        private void OpenSettings(object obj)
+        {
+            EventAggregator.Instance.Publish(new SettingsViewModel(_settingsService, _dataService, _currentUser));
+        }
         private void OnDictionaryDeleted(DictionaryDeletedMessage message)
         {
             var dictionaryVM = Dictionaries.FirstOrDefault(d => d.Id == message.DictionaryId);
@@ -97,6 +143,16 @@ namespace LearningTrainer.ViewModels
             System.Diagnostics.Debug.WriteLine($"Rules collection updated: {Rules.Count} rules");
         }
 
+        private void EditRule(object parameter)
+        {
+            if (parameter is Rule rule)
+            {
+                System.Diagnostics.Debug.WriteLine($"Opening EDITOR for: {rule.Title}");
+                var managementVm = new RuleManagementViewModel(_dataService, rule, _currentUser.Id);
+                EventAggregator.Instance.Publish(managementVm);
+            }
+        }
+
         private async Task ImportDictionary()
         {
             if (_dialogService.ShowOpenDialog(out string filePath))
@@ -121,11 +177,12 @@ namespace LearningTrainer.ViewModels
 
                     foreach (var word in wordsToImport)
                     {
-                        word.Id = 0; // Обнуляем ID слова
-                        word.DictionaryId = savedDictionary.Id; 
+                        word.Id = 0;
+                        word.DictionaryId = savedDictionary.Id;
                         await _dataService.AddWordAsync(word);
                     }
                     EventAggregator.Instance.Publish(new DictionaryAddedMessage(savedDictionary));
+                    EventAggregator.Instance.Publish(new RefreshDataMessage());
 
                     System.Windows.MessageBox.Show(
                         $"Словарь '{savedDictionary.Name}' ({wordsToImport.Count} слов) успешно импортирован!",
@@ -173,24 +230,23 @@ namespace LearningTrainer.ViewModels
 
         private async void LoadDataAsync()
         {
+
             try
             {
-                var dictionaries = await _dataService.GetDictionariesAsync();
-                var rules = await _dataService.GetRulesAsync();
+                SelectedSortKey = SortKey.NameAsc;
+                List<Dictionary> dictionaries;
+                List<Rule> rules;
 
-                System.Diagnostics.Debug.WriteLine($"dictionaries received: {dictionaries != null}, count: {dictionaries?.Count}");
-                System.Diagnostics.Debug.WriteLine($"rules received: {rules != null}, count: {rules?.Count}");
 
-                if (Dictionaries == null)
+                if (_currentUser?.Role?.Name == "Student")
                 {
-                    System.Diagnostics.Debug.WriteLine("ERROR: Dictionaries collection is null!");
-                    Dictionaries = new ObservableCollection<DictionaryViewModel>();
+                    dictionaries = await _dataService.GetAvailableDictionariesAsync();
+                    rules = await _dataService.GetAvailableRulesAsync();
                 }
-
-                if (Rules == null)
+                else
                 {
-                    System.Diagnostics.Debug.WriteLine("ERROR: Rules collection is null!");
-                    Rules = new ObservableCollection<Rule>();
+                    dictionaries = await _dataService.GetDictionariesAsync();
+                    rules = await _dataService.GetRulesAsync();
                 }
 
                 System.Diagnostics.Debug.WriteLine("Clearing collections...");
@@ -202,6 +258,12 @@ namespace LearningTrainer.ViewModels
                     Dictionaries.Add(new DictionaryViewModel(dict));
                 }
                 foreach (var rule in rules) Rules.Add(rule);
+
+                DisplayDictionaries.Clear();
+                foreach (var dict in Dictionaries)
+                {
+                    DisplayDictionaries.Add(dict);
+                }
 
                 OnPropertyChanged(nameof(Dictionaries));
             }
@@ -248,7 +310,10 @@ namespace LearningTrainer.ViewModels
         {
             if (parameter is Rule rule)
             {
-                EventAggregator.Instance.Publish(new RuleViewModel(rule));
+                System.Diagnostics.Debug.WriteLine($"Opening VIEWER for: {rule.Title}");
+
+                var viewerVm = new RuleViewModel(rule, _settingsService);
+                EventAggregator.Instance.Publish(viewerVm);
             }
         }
 
@@ -263,7 +328,7 @@ namespace LearningTrainer.ViewModels
         {
             if (parameter is DictionaryViewModel dictionaryVM)
             {
-                var learningVM = new LearningViewModel(_dataService, dictionaryVM.Id);
+                var learningVM = new LearningViewModel(_dataService, dictionaryVM.Id, dictionaryVM.Name);
 
                 EventAggregator.Instance.Publish(learningVM);
             }
@@ -296,16 +361,106 @@ namespace LearningTrainer.ViewModels
             }
         }
 
+        public enum SortKey
+        {
+            NameAsc,    // По названию (А-Я)
+            NameDesc,   // По названию (Я-А)
+            CountMin,   // По количеству слов (Мин)
+            CountMax    // По количеству слов (Макс)
+        }
+        private static string GetLocalized(string key)
+        {
+            try
+            {
+                return Application.Current.FindResource(key) as string;
+            }
+            catch
+            {
+                return $"MISSING_LOC:{key}";
+            }
+        }
         private void ManageDictionary(object parameter)
         {
             if (parameter is DictionaryViewModel dictionaryVM)
             {
+                int currentUserId = _currentUser.Id;
+
                 var managementVm = new DictionaryManagementViewModel(
                     _dataService,
                     dictionaryVM.Model,
-                    dictionaryVM.Words
+                    dictionaryVM.Words,
+                    currentUserId
                 );
                 EventAggregator.Instance.Publish(managementVm);
+            }
+        }
+
+        public class SortingDisplayItem
+        {
+            public SortKey Key { get; set; } 
+            public string DisplayName { get; set; } 
+        }
+
+        private void ShareRule(object param)
+        {
+            if (param is Rule rule)
+            {
+                var shareVm = new ShareContentViewModel(
+                    _dataService,
+                    rule.Id,
+                    rule.Title,
+                    ShareContentType.Rule 
+                );
+                EventAggregator.Instance.Publish(shareVm);
+            }
+        }
+
+        public ObservableCollection<SortingDisplayItem> DisplaySortOptions { get; }
+
+        // 2. Выбранный элемент (SelectedValue)
+        private SortKey _selectedSortKey;
+        public SortKey SelectedSortKey
+        {
+            get => _selectedSortKey;
+            set
+            {
+                if (SetProperty(ref _selectedSortKey, value)) // Assuming SetProperty handles INPC
+                {
+                    ApplySorting();
+                }
+            }
+        }
+
+        private void ApplySorting()
+        {
+            if (Dictionaries == null || DisplaySortOptions == null) return;
+
+            IEnumerable<DictionaryViewModel> query = Dictionaries;
+
+            switch (SelectedSortKey)
+            {
+                case SortKey.NameAsc: 
+                    query = query.OrderBy(d => d.Name);
+                    break;
+                case SortKey.NameDesc:
+                    query = query.OrderByDescending(d => d.Name);
+                    break;
+                case SortKey.CountMin: 
+                    query = query.OrderBy(d => d.WordCount);
+                    break;
+                case SortKey.CountMax:
+                    query = query.OrderByDescending(d => d.WordCount);
+                    break;
+            }
+
+
+            if (DisplayDictionaries == null)
+                DisplayDictionaries = new ObservableCollection<DictionaryViewModel>();
+
+            DisplayDictionaries.Clear();
+            foreach (var item in query)
+            {
+                DisplayDictionaries.Add(item);
             }
         }
     }

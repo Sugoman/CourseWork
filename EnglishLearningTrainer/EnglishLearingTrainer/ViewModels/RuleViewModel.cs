@@ -1,19 +1,37 @@
 ﻿using LearningTrainer.Core;
+using LearningTrainer.Services;
 using LearningTrainerShared.Models;
-using Microsoft.VisualBasic.ApplicationServices;
 
 namespace LearningTrainer.ViewModels
 {
     public class RuleViewModel : TabViewModelBase
     {
-        public Rule Rule { get; }
-        public int UserId { get; }
+        private readonly SettingsService _settingsService;
 
-        public RuleViewModel(Rule rule)
+        public Rule Rule { get; }
+
+        private MarkdownConfig _config;
+        public MarkdownConfig Config
+        {
+            get => _config;
+            set => SetProperty(ref _config, value);
+        }
+
+        public RuleViewModel(Rule rule, SettingsService settingsService)
         {
             Rule = rule;
-            Title = $"Правило: {rule.Title}";
-            UserId = -1;
+            _settingsService = settingsService;
+
+            Title = $"Rule: {rule.Title}";
+
+           /* Config = _settingsService.CurrentMarkdownConfig;
+
+            _settingsService.MarkdownConfigChanged += OnConfigChanged;*/
+        }
+
+        private void OnConfigChanged(MarkdownConfig newConfig)
+        {
+            Config = newConfig;
         }
     }
 }

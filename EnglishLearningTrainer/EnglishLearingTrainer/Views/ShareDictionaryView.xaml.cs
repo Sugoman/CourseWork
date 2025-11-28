@@ -10,16 +10,17 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace EnglishLearingTrainer.Views
+namespace LearningTrainer.Views
 {
     /// <summary>
-    /// Логика взаимодействия для AdminView.xaml
+    /// Логика взаимодействия для ShareDictionaryView.xaml
     /// </summary>
-    public partial class AdminView : Window
+    public partial class ShareDictionaryView : UserControl
     {
-        public AdminView()
+        public ShareDictionaryView()
         {
             InitializeComponent();
         }

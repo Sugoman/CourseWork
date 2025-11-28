@@ -1,6 +1,7 @@
 ﻿using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
 
@@ -10,7 +11,7 @@ namespace LearningTrainer.ViewModels
     {
         private static readonly HttpClient _httpClient = new HttpClient
         {
-            BaseAddress = new Uri("http://localhost:5076")
+            BaseAddress = new Uri("http://localhost:5077")
         };
         private readonly SessionService _sessionService = new SessionService();
         private string _username;
@@ -20,13 +21,19 @@ namespace LearningTrainer.ViewModels
         public event Action OfflineLoginRequested;
         public RelayCommand ToggleModeCommand { get; }
         public RelayCommand RegisterCommand { get; }
+        public RelayCommand OpenGitHubCommand { get; }
 
         private readonly IDataService _apiDataService;
 
         public string Username
         {
             get => _username;
-            set => SetProperty(ref _username, value);
+            set
+            {
+                SetProperty(ref _username, value);
+                LoginCommand.RaiseCanExecuteChanged();
+                RegisterCommand.RaiseCanExecuteChanged();
+            }
         }
 
         private string _password;
@@ -40,7 +47,12 @@ namespace LearningTrainer.ViewModels
         public bool IsRegisterMode
         {
             get => _isRegisterMode;
-            set => SetProperty(ref _isRegisterMode, value);
+            set
+            {
+                SetProperty(ref _isRegisterMode, value);
+                LoginCommand.RaiseCanExecuteChanged();
+                RegisterCommand.RaiseCanExecuteChanged();
+            }
         }
 
         private string _errorMessage;
@@ -54,14 +66,30 @@ namespace LearningTrainer.ViewModels
         public string CurrentPassword
         {
             get => _currentPassword;
-            set => SetProperty(ref _currentPassword, value);
+            set
+            {
+                SetProperty(ref _currentPassword, value);
+                LoginCommand.RaiseCanExecuteChanged();
+                RegisterCommand.RaiseCanExecuteChanged();
+            }
         }
 
         private string _confirmPassword;
         public string ConfirmPassword
         {
             get => _confirmPassword;
-            set => SetProperty(ref _confirmPassword, value);
+            set
+            {
+                SetProperty(ref _confirmPassword, value);
+                RegisterCommand.RaiseCanExecuteChanged();
+            }
+        }
+
+        private string _inviteCode;
+        public string InviteCode
+        {
+            get => _inviteCode;
+            set => SetProperty(ref _inviteCode, value);
         }
 
         public RelayCommand LoginCommand { get; }
@@ -73,18 +101,44 @@ namespace LearningTrainer.ViewModels
             _sessionService = sessionService;
             OfflineLoginCommand = new RelayCommand(PerformOfflineLogin);
             ToggleModeCommand = new RelayCommand(ToggleRegisterMode);
+            OpenGitHubCommand = new RelayCommand(PerformOpenGitHub);
 
             LoginCommand = new RelayCommand(
-    async (param) => await PerformLogin((string)param),
-    (param) => !string.IsNullOrWhiteSpace((string)param) // CanExecute
-);
+                async (param) => await PerformLogin(CurrentPassword), 
+                (param) => CanLoginExecute()                          
+            );
             RegisterCommand = new RelayCommand(
-                async (param) => await PerformRegister((string)param),
-                (param) => !string.IsNullOrWhiteSpace((string)param) // CanExecute
+                async (param) => await PerformRegister(ConfirmPassword), 
+                (param) => CanRegisterExecute()                          
             );
         }
+        private void PerformOpenGitHub(object obj)
+        {
+            string url = "https://github.com/Sugoman";
+            try
+            {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to open URL: {ex.Message}");
+                ErrorMessage = "Не удалось открыть ссылку.";
+            }
+        }
+        private bool CanLoginExecute()
+        {
+            return !IsRegisterMode &&
+                   !string.IsNullOrWhiteSpace(Username) &&
+                   !string.IsNullOrWhiteSpace(CurrentPassword);
+        }
 
-
+        private bool CanRegisterExecute()
+        {
+            return IsRegisterMode &&
+                   !string.IsNullOrWhiteSpace(Username) &&
+                   !string.IsNullOrWhiteSpace(CurrentPassword) &&
+                   !string.IsNullOrWhiteSpace(ConfirmPassword);
+        }
 
         private void ToggleRegisterMode(object obj)
         {
@@ -104,7 +158,13 @@ namespace LearningTrainer.ViewModels
 
             try
             {
-                var request = new RegisterRequest { Login = Username, Password = CurrentPassword };
+                var request = new RegisterRequest
+                {
+                    Login = Username,
+                    Password = CurrentPassword,
+                    InviteCode = string.IsNullOrWhiteSpace(InviteCode) ? null : InviteCode
+                };
+
                 string successMessage = await _apiDataService.RegisterAsync(request);
 
                 ErrorMessage = successMessage + ". Теперь можете войти.";
@@ -115,6 +175,7 @@ namespace LearningTrainer.ViewModels
                 ErrorMessage = ex.Message;
             }
         }
+
         private async Task PerformLogin(string password)
         {
 

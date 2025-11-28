@@ -31,6 +31,13 @@ namespace LearningTrainer.ViewModels
             }
         }
 
+        private bool _isFeatured;
+        public bool IsFeatured
+        {
+            get => _isFeatured;
+            set => SetProperty(ref _isFeatured, value);
+        }
+
         public string LanguageFrom
         {
             get => Model.LanguageFrom;

@@ -37,10 +37,11 @@
 
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="Категория:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <ComboBox SelectedItem="{Binding Category}"
-                              FontSize="{DynamicResource BaseFontSize}"
-                              Padding="10" 
-                              Margin="0,0,0,15">
+                    <ComboBox SelectedValue="{Binding Category}"
+                        SelectedValuePath="Content"
+                        FontSize="{DynamicResource BaseFontSize}"
+                        Padding="10" 
+                        Margin="0,0,0,15">
                         <ComboBoxItem Content="Grammar"/>
                         <ComboBoxItem Content="Vocabulary"/>
                         <ComboBoxItem Content="Pronunciation"/>
@@ -49,15 +50,16 @@
 
                 <StackPanel Grid.Column="2">
                     <TextBlock Text="Уровень сложности:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <ComboBox SelectedIndex="{Binding DifficultyLevel}"
-                              FontSize="{DynamicResource BaseFontSize}" 
-                              Padding="10" 
-                              Margin="0,0,0,15">
-                        <ComboBoxItem Content="1 - Начальный"/>
-                        <ComboBoxItem Content="2 - Базовый"/>
-                        <ComboBoxItem Content="3 - Средний"/>
-                        <ComboBoxItem Content="4 - Продвинутый"/>
-                        <ComboBoxItem Content="5 - Эксперт"/>
+                    <ComboBox SelectedValue="{Binding DifficultyLevel}"
+                        SelectedValuePath="Tag"
+                        FontSize="{DynamicResource BaseFontSize}" 
+                        Padding="10" 
+                        Margin="0,0,0,15">
+                        <ComboBoxItem Content="1 - Начальный" Tag="1"/>
+                        <ComboBoxItem Content="2 - Базовый" Tag="2"/>
+                        <ComboBoxItem Content="3 - Средний" Tag="3"/>
+                        <ComboBoxItem Content="4 - Продвинутый" Tag="4"/>
+                        <ComboBoxItem Content="5 - Эксперт" Tag="5"/>
                     </ComboBox>
                 </StackPanel>
             </Grid>

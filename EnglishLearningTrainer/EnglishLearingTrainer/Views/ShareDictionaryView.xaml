@@ -1,0 +1,66 @@
+﻿<UserControl x:Class="LearningTrainer.Views.ShareDictionaryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:viewmodels="clr-namespace:LearningTrainer.ViewModels"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="400">
+
+    <Grid Width="450" Height="500">
+        <Border Background="White" CornerRadius="12" Padding="20">
+            <StackPanel>
+
+                <Grid Margin="0,0,0,15">
+                    <TextBlock Text="{Binding Title}" 
+                               FontSize="18" FontWeight="Bold" 
+                               Foreground="#111827" 
+                               VerticalAlignment="Center"/>
+
+                    <Button Content="✕" 
+                            Command="{Binding CloseCommand}"
+                            Style="{StaticResource CloseTabButtonStyle}"
+                            HorizontalAlignment="Right"
+                            Foreground="#4B5563"
+                            Width="24" Height="24"/>
+                </Grid>
+
+                <Border BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Margin="0,0,0,15"/>
+
+                <TextBlock Text="Загрузка студентов..."
+                           Foreground="#4B5563"
+                           HorizontalAlignment="Center"
+                           Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Height="350">
+                    <ItemsControl ItemsSource="{Binding Students}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="#F3F4FFA8" BorderThickness="0,0,0,1" Padding="0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" 
+                                                   Text="{Binding Student.Login}" 
+                                                   VerticalAlignment="Center"
+                                                   FontSize="14"/>
+
+                                        <CheckBox Grid.Column="1" 
+                                                  Content="Доступ"
+                                                  IsChecked="{Binding IsShared, Mode=TwoWay}"
+                                                  Style="{StaticResource ToggleSwitchStyle}"
+                                                  Margin="10,0"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>

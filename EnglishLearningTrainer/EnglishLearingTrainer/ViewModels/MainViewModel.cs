@@ -2,6 +2,7 @@
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using System.Net.Http;
+using System.Net.Http.Headers;
 
 namespace LearningTrainer.ViewModels
 {
@@ -13,8 +14,10 @@ namespace LearningTrainer.ViewModels
         private IDataService _localDataService;
         private readonly SettingsService _settingsService;
         private readonly SessionService _sessionService;
+        public MarkdownConfig CurrentMarkdownConfig { get; private set; } = new MarkdownConfig();
+        public event Action<MarkdownConfig> MarkdownConfigChanged;
+        MarkdownConfig markdownConfig;
         public User? CurrentUser { get; private set; }
-
         public object CurrentView
         {
             get { return _currentView; }
@@ -36,8 +39,10 @@ namespace LearningTrainer.ViewModels
         {
             CurrentUser = new User
             {
+                Id = savedSession.UserId,
                 Login = savedSession.UserLogin,
-                Role = new Role { Name = savedSession.UserRole }
+                Role = new Role { Name = savedSession.UserRole },
+                InviteCode = savedSession.InviteCode
             };
             _settingsService = new SettingsService();
             _sessionService = new SessionService();
@@ -57,7 +62,7 @@ namespace LearningTrainer.ViewModels
 
             if (syncSuccess)
             {
-                var dashboard = new DashboardViewModel(CurrentUser, _apiDataService);
+                var dashboard = new DashboardViewModel(CurrentUser, _apiDataService, _settingsService);
                 CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, _settingsService);
             }
             else
@@ -68,7 +73,7 @@ namespace LearningTrainer.ViewModels
         }
         private void OpenSettingsTab()
         {
-            var settingsVM = new SettingsViewModel(_settingsService, _dataService);
+            var settingsVM = new SettingsViewModel(_settingsService, _dataService, CurrentUser);
             EventAggregator.Instance.Publish(settingsVM);
         }
         private void ShowLoginView()
@@ -84,10 +89,13 @@ namespace LearningTrainer.ViewModels
 
         private void OnLoginSuccessful(UserSessionDto sessionDto)
         {
+            System.Diagnostics.Debug.WriteLine($"Login Success! UserID: {sessionDto.UserId}");
             CurrentUser = new User
             {
+                Id = sessionDto.UserId,
                 Login = sessionDto.UserLogin,
-                Role = new Role { Name = sessionDto.UserRole }
+                Role = new Role { Name = sessionDto.UserRole },
+                InviteCode = sessionDto.InviteCode
             };
 
             _apiDataService = new ApiDataService();
@@ -96,7 +104,7 @@ namespace LearningTrainer.ViewModels
             _apiDataService.SetToken(sessionDto.AccessToken);
 
 
-            var dashboard = new DashboardViewModel(CurrentUser, _apiDataService);
+            var dashboard = new DashboardViewModel(CurrentUser, _apiDataService, _settingsService);
             CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, _settingsService);
             SyncLocalCacheAsync();
         }
@@ -116,7 +124,7 @@ namespace LearningTrainer.ViewModels
 
             _localDataService = new LocalDataService(offlineLogin);
 
-            var dashboard = new DashboardViewModel(CurrentUser, _localDataService);
+            var dashboard = new DashboardViewModel(CurrentUser, _localDataService, _settingsService);
             CurrentView = new ShellViewModel(CurrentUser, _localDataService, dashboard, _settingsService);
         }
 

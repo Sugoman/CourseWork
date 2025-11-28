@@ -1,0 +1,74 @@
+﻿<UserControl x:Class="LearningTrainer.Views.RuleManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:converters="clr-namespace:LearningTrainer.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="800"
+             Background="White">
+
+    <UserControl.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <Button Content="← Back" Command="{Binding CloseCommand}" 
+                    HorizontalAlignment="Left" Style="{StaticResource BaseButton}" Background="Transparent"/>
+
+            <TextBlock Text="Edit Rule" FontSize="24" FontWeight="Bold" Margin="0,10,0,0"/>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1">
+            <StackPanel MaxWidth="800" HorizontalAlignment="Left">
+
+                <TextBlock Text="Title" FontWeight="SemiBold" Margin="0,10,0,5"/>
+                <TextBox Text="{Binding Title}" Padding="5" FontSize="16"/>
+
+                <TextBlock Text="Description (Short)" FontWeight="SemiBold" Margin="0,15,0,5"/>
+                <TextBox Text="{Binding Description}" Padding="5"/>
+
+                <Grid Margin="0,15,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                        <TextBlock Text="Category" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding Category}" Padding="5"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                        <TextBlock Text="Difficulty (1-5)" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding DifficultyLevel}" Padding="5"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="Content (Markdown)" FontWeight="SemiBold" Margin="0,15,0,5"/>
+                <TextBox Text="{Binding MarkdownContent}" 
+                         AcceptsReturn="True" 
+                         TextWrapping="Wrap"
+                         MinHeight="300"
+                         Padding="10"
+                         VerticalScrollBarVisibility="Auto"
+                         FontFamily="Consolas"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Save Changes" 
+                    Command="{Binding SaveChangesCommand}" 
+                    Style="{StaticResource PrimaryButton}"
+                    Padding="20,10"
+                    Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

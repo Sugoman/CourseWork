@@ -10,55 +10,213 @@ using System.Text.Json.Serialization;
 using System.Text.Unicode;
 using System.Windows;
 using System.Windows.Input;
+using static LearningTrainer.Core.EventAggregator;
 
 namespace LearningTrainer.ViewModels
 {
     public class DictionaryManagementViewModel : TabViewModelBase
     {
         private readonly IDataService _dataService;
-        private readonly Dictionary _dictionary;
         private readonly IDialogService _dialogService;
+        private readonly Dictionary _dictionary;
+        private readonly Dictionary _dictionaryModel;
+        private bool _isReadOnly;
+        public bool IsReadOnly
+        {
+            get => _isReadOnly;
+            set => SetProperty(ref _isReadOnly, value);
+        }
 
+        public bool IsEditable => !IsReadOnly;
+
+        private string _dictionaryName;
+        public string DictionaryName
+        {
+            get => _dictionaryName;
+            set
+            {
+                if (SetProperty(ref _dictionaryName, value))
+                {
+                }
+            }
+        }
+
+        private string _description;
+        public string Description
+        {
+            get => _description;
+            set => SetProperty(ref _description, value);
+        }
+
+        public string LanguageFrom => _dictionaryModel.LanguageFrom ?? "Unknown";
+        public string LanguageTo => _dictionaryModel.LanguageTo ?? "Unknown";
+
+
+        private ObservableCollection<Word> _allWords;
         public ObservableCollection<Word> Words { get; set; }
 
-        public string DictionaryName { get; set; }
-        public string Description { get; set; }
-        public string LanguageFrom { get; set; }
-        public string LanguageTo { get; set; }
 
-        public ICommand ExportDictionaryCommand { get; }
-        public ICommand SaveDictionaryCommand { get; }
-        public ICommand DeleteDictionaryCommand { get; }
-        public ICommand DeleteWordCommand { get; }
+        private string _searchWordQuery;
+        public string SearchWordQuery
+        {
+            get => _searchWordQuery;
+            set
+            {
+                if (SetProperty(ref _searchWordQuery, value))
+                {
+                    FilterWords();
+                }
+            }
+        }
+
         public ICommand AddWordCommand { get; }
+        public ICommand DeleteWordCommand { get; }
+        public ICommand DeleteDictionaryCommand { get; }
+        public ICommand ExportDictionaryCommand { get; }
+        public ICommand SaveChangesCommand { get; }
         public ICommand CloseCommand { get; }
+        public ICommand ShareDictionaryCommand { get; }
 
-        public DictionaryManagementViewModel(
-            IDataService dataService,
-            Dictionary dictionary,
-            ObservableCollection<Word> liveWordsCollection)
+
+
+        public DictionaryManagementViewModel(IDataService dataService,
+                                             Dictionary dictionary,
+                                             ObservableCollection<Word> words,
+                                             int currentUserId)
         {
             _dataService = dataService;
+            _dictionaryModel = dictionary;
             _dictionary = dictionary;
             _dialogService = new DialogService();
 
-            Title = $"Управление: {dictionary.Name}";
-
             DictionaryName = dictionary.Name;
             Description = dictionary.Description;
-            LanguageFrom = dictionary.LanguageFrom;
-            LanguageTo = dictionary.LanguageTo;
+            IsReadOnly = dictionary.UserId != currentUserId;
 
-            Words = liveWordsCollection;
+            System.Diagnostics.Debug.WriteLine($"UserId: {dictionary.UserId}, Current: {currentUserId}, IsReadOnly: {IsReadOnly}, IsEditable: {IsEditable}");
+           
+            Title = $"Edit: {dictionary.Name}";
 
-            SaveDictionaryCommand = new RelayCommand(async (param) => await SaveDictionaryAsync());
-            DeleteDictionaryCommand = new RelayCommand(async (param) => await DeleteDictionaryAsync());
-            DeleteWordCommand = new RelayCommand(async (param) => await DeleteWordAsync(param));
-            AddWordCommand = new RelayCommand((param) => AddWord());
-            CloseCommand = new RelayCommand((param) => Close());
+            _allWords = words;
+            Words = new ObservableCollection<Word>(words);
 
+            AddWordCommand = new RelayCommand(AddWord, (_) => IsEditable);
+            DeleteWordCommand = new RelayCommand(async (p) => await DeleteWord(p), (_) => IsEditable);
+            SaveChangesCommand = new RelayCommand(async (p) => await SaveChanges(), (_) => IsEditable);
+
+            DeleteDictionaryCommand = new RelayCommand(async (p) => await DeleteDictionary(), (_) => IsEditable);
+            ShareDictionaryCommand = new RelayCommand(ShareDictionary);
             ExportDictionaryCommand = new RelayCommand((param) => ExportDictionary());
+
+
+            CloseCommand = new RelayCommand(CloseTab);
+            EventAggregator.Instance.Subscribe<WordAddedMessage>(OnWordAdded);
         }
+        private void ShareDictionary(object obj)
+        {
+            var shareVm = new ShareContentViewModel(
+                _dataService,
+                _dictionaryModel.Id,
+                _dictionaryModel.Name,
+                ShareContentType.Dictionary
+            );
+
+            EventAggregator.Instance.Publish(shareVm);
+        }
+
+        private void FilterWords()
+        {
+            if (string.IsNullOrWhiteSpace(SearchWordQuery))
+            {
+                Words.Clear();
+                foreach (var word in _allWords) Words.Add(word);
+            }
+            else
+            {
+                var filtered = _allWords.Where(w =>
+                    w.OriginalWord.Contains(SearchWordQuery, StringComparison.OrdinalIgnoreCase) ||
+                    w.Translation.Contains(SearchWordQuery, StringComparison.OrdinalIgnoreCase)
+                ).ToList();
+
+                Words.Clear();
+                foreach (var word in filtered) Words.Add(word);
+            }
+        }
+
+        private async Task SaveChanges()
+        {
+            _dictionaryModel.Name = DictionaryName;
+            _dictionaryModel.Description = Description;
+
+            try
+            {
+                bool isSuccess = await _dataService.UpdateDictionaryAsync(_dictionaryModel);
+
+                if (isSuccess)
+                {
+                    MessageBox.Show("Changes saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    Title = $"Edit: {DictionaryName}";
+                }
+                else
+                {
+                    MessageBox.Show("Failed to save changes to the server. Please check your connection.", "Server Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show($"Critical error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+
+        private void AddWord(object obj)
+        {
+            var addWordVm = new AddWordViewModel(_dataService, _dictionaryModel);
+            EventAggregator.Instance.Publish(addWordVm);
+        }
+
+        private void OnWordAdded(WordAddedMessage message)
+        {
+            if (message.DictionaryId == _dictionaryModel.Id)
+            {
+                if (!_allWords.Contains(message.Word))
+                {
+                    _allWords.Add(message.Word);
+                }
+
+                FilterWords();
+            }
+        }
+
+        private async Task DeleteWord(object parameter)
+        {
+            if (parameter is Word word)
+            {
+                if (MessageBox.Show($"Delete word '{word.OriginalWord}'?", "Confirm", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    var success = await _dataService.DeleteWordAsync(word.Id);
+                    if (success)
+                    {
+                        _allWords.Remove(word);
+                        FilterWords();
+                    }
+                }
+            }
+        }
+
+        private async Task DeleteDictionary()
+        {
+            if (MessageBox.Show($"Are you sure you want to delete dictionary '{DictionaryName}'?", "DELETE DICTIONARY", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            {
+                var success = await _dataService.DeleteDictionaryAsync(_dictionaryModel.Id);
+                if (success)
+                {
+                    EventAggregator.Instance.Publish(new DictionaryDeletedMessage(_dictionaryModel.Id));
+                    EventAggregator.Instance.Publish(new CloseTabMessage(this));
+                }
+            }
+        }
+
         private void ExportDictionary()
         {
             string defaultName = $"dictionary-{_dictionary.Name.Replace(" ", "-")}.json";
@@ -95,96 +253,10 @@ namespace LearningTrainer.ViewModels
                 }
             }
         }
-        private async Task SaveDictionaryAsync()
+
+        private void CloseTab(object obj)
         {
-            if (string.IsNullOrWhiteSpace(DictionaryName))
-            {
-                System.Diagnostics.Debug.WriteLine("Ошибка: не заполнено название словаря");
-                return;
-            }
-
-            try
-            {
-                _dictionary.Name = DictionaryName.Trim();
-                _dictionary.Description = Description?.Trim() ?? "";
-                _dictionary.LanguageFrom = LanguageFrom.Trim();
-                _dictionary.LanguageTo = LanguageTo.Trim();
-
-                await _dataService.UpdateDictionaryAsync(_dictionary);
-                System.Diagnostics.Debug.WriteLine($"Словарь '{DictionaryName}' успешно обновлен!");
-
-                Title = $"Управление: {_dictionary.Name}";
-                OnPropertyChanged(nameof(Title));
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Ошибка при обновлении словаря: {ex.Message}");
-            }
-        }
-
-        private async Task DeleteDictionaryAsync()
-        {
-            var result = System.Windows.MessageBox.Show(
-                $"Вы уверены, что хотите удалить словарь '{_dictionary.Name}'? Это действие нельзя отменить.",
-                "Подтверждение удаления",
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    var success = await _dataService.DeleteDictionaryAsync(_dictionary.Id);
-                    if (success)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Словарь '{_dictionary.Name}' удален!");
-
-                        EventAggregator.Instance.Publish(new DictionaryDeletedMessage(_dictionary.Id));
-
-                        EventAggregator.Instance.Publish(
-                            new EventAggregator.CloseTabMessage(this)
-                        );
-
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Ошибка при удалении словаря: {ex.Message}");
-                }
-            }
-        }
-
-        private async Task DeleteWordAsync(object parameter)
-        {
-            if (parameter is Word word)
-            {
-                var result = System.Windows.MessageBox.Show(
-                    $"Удалить слово '{word.OriginalWord}'?",
-                    "Подтверждение удаления",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (result == MessageBoxResult.Yes)
-                {
-                    var success = await _dataService.DeleteWordAsync(word.Id);
-                    if (success)
-                    {
-                        Words.Remove(word);
-                        System.Diagnostics.Debug.WriteLine($"Слово '{word.OriginalWord}' удалено!");
-                    }
-                }
-            }
-        }
-
-        private void AddWord()
-        {
-            var addWordVm = new AddWordViewModel(_dataService, _dictionary);
-            EventAggregator.Instance.Publish(addWordVm);
-        }
-
-        private void Close()
-        {
-            EventAggregator.Instance.Publish(new EventAggregator.CloseTabMessage(this)); 
+            EventAggregator.Instance.Publish(new CloseTabMessage(this));
         }
     }
 }

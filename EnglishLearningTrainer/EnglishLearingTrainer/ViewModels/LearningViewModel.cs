@@ -47,22 +47,25 @@ namespace LearningTrainer.ViewModels
 
         public ICommand CloseTabCommand { get; }
 
-        public LearningViewModel(IDataService dataService, int dictionaryId)
+        public LearningViewModel(IDataService dataService, int dictionaryId, string dictionaryName)
         {
             _dataService = dataService;
             _dictionaryId = dictionaryId;
-            Title = "Изучение"; // (Потом поменяешь)
+            Title = dictionaryName; 
 
             FlipCardCommand = new RelayCommand(
                 (param) => IsFlipped = true,
-                (param) => !IsFlipped
+                (param) => !IsFlipped && CurrentWord != null
             );
 
             AnswerCommand = new RelayCommand(
-                async (param) => await HandleAnswerAsync((ResponseQuality)param),
-                (param) => IsFlipped
-            );
-
+               async (param) =>
+               {
+                   if (param is ResponseQuality quality)
+                       await HandleAnswerAsync(quality);
+               },
+               (param) => IsFlipped && CurrentWord != null 
+           );
             CloseTabCommand = new RelayCommand(CloseTab);
 
             LoadSessionAsync();
@@ -83,6 +86,9 @@ namespace LearningTrainer.ViewModels
                 _wordsQueue = new Queue<Word>(sessionWords);
                 CurrentWord = _wordsQueue.Peek();
                 IsFlipped = false;
+
+                (FlipCardCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                (AnswerCommand as RelayCommand)?.RaiseCanExecuteChanged();
             }
             catch (System.Net.Http.HttpRequestException ex)
             {

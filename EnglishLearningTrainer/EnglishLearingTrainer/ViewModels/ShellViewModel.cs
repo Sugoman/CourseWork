@@ -19,9 +19,8 @@ namespace LearningTrainer.ViewModels
         public ObservableCollection<TabViewModelBase> Tabs { get; }
         private readonly User? _currentUser;
         private readonly IDataService _dataService;
-        private readonly SettingsService _settingsService;
         public ICommand CloseTabCommand { get; }
-        public ICommand OpenSettingsCommand { get; }
+
 
         public ShellViewModel(User? user, IDataService dataService, TabViewModelBase initialDashboard, SettingsService settingsService)
         {
@@ -30,7 +29,6 @@ namespace LearningTrainer.ViewModels
 
             Tabs = new ObservableCollection<TabViewModelBase>();
             CloseTabCommand = new RelayCommand(CloseTab, CanCloseTab);
-            OpenSettingsCommand = new RelayCommand(OpenSettings);
 
             EventAggregator.Instance.Subscribe<LearningViewModel>(OpenTab);
             EventAggregator.Instance.Subscribe<RuleViewModel>(OpenTab);
@@ -40,18 +38,15 @@ namespace LearningTrainer.ViewModels
             EventAggregator.Instance.Subscribe<CloseTabMessage>(HandleCloseTabMessage);
             EventAggregator.Instance.Subscribe<DictionaryManagementViewModel>(OpenTab);
             EventAggregator.Instance.Subscribe<SettingsViewModel>(OpenTab);
-
+            EventAggregator.Instance.Subscribe<ShareContentViewModel>(OpenTab);
+            EventAggregator.Instance.Subscribe<RuleManagementViewModel>(OpenTab);
 
             var dashboard = initialDashboard;
             Tabs.Add(dashboard);
             SelectedTab = dashboard;
-            _settingsService = settingsService;
         }
 
-        private void OpenSettings(object obj)
-        {
-            EventAggregator.Instance.Publish(new SettingsViewModel(_settingsService, _dataService));
-        }
+        
 
         private void OpenTab(TabViewModelBase tab)
         {

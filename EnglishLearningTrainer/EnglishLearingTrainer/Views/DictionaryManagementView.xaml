@@ -3,112 +3,316 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:LearningTrainer.Views"
+             xmlns:converters="clr-namespace:LearningTrainer.Converters"              
+             xmlns:svg="http://sharpvectors.codeplex.com/svgc/"
              mc:Ignorable="d" 
-             d:DesignHeight="500" d:DesignWidth="800"
-             Background="White">
+             d:DesignHeight="700" d:DesignWidth="1100"
+             Background="#F3F4F6">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
-        <StackPanel>
-            <!-- Заголовок -->
-            <TextBlock Text="Управление словарем" 
-                       FontSize="{DynamicResource HeaderFontSize}" 
-                       FontWeight="Bold" 
-                       Margin="0,0,0,20"/>
+    <UserControl.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter"/>
+        <converters:StringNullOrEmptyToVisibilityConverter x:Key="StringNullOrEmptyToVisibilityConverter"/>
 
-            <!-- Редактирование информации о словаре -->
-            <GroupBox Header="Информация о словаре" Padding="15" Margin="0,0,0,20">
-                <StackPanel>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+        <!-- СТИЛЬ ДЛЯ DATAGRID (Твой новый стиль) -->
+        <Style TargetType="DataGrid">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="RowHeaderWidth" Value="0"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#F3F4F6"/>
+            <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="RowHeight" Value="50"/>
+            <Setter Property="Padding" Value="10"/>
+            <Setter Property="AlternationCount" Value="2"/>
+        </Style>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Название:" FontWeight="SemiBold" Margin="0,0,10,10"/>
-                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding DictionaryName}" Margin="0,0,0,10"/>
+        <!-- Стиль заголовков колонок -->
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#E5E7EB"/>
+            <Setter Property="Foreground" Value="#6B7280"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="15,12"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+        </Style>
 
-                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Описание:" FontWeight="SemiBold" Margin="0,0,10,10"/>
-                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Description}" Height="60" TextWrapping="Wrap" Margin="0,0,0,10"/>
+        <!-- Стиль ячеек -->
+        <Style TargetType="DataGridCell">
+            <Setter Property="Padding" Value="15,0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                            <ContentPresenter VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#EFF6FF"/>
+                    <!-- Светло-голубой при выделении -->
+                    <Setter Property="Foreground" Value="#1E3A8A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Изучаемый язык:" FontWeight="SemiBold" Margin="0,0,10,10"/>
-                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding LanguageFrom}" Margin="0,0,0,10"/>
+        <!-- Чередование строк -->
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="ItemsControl.AlternationIndex" Value="1">
+                    <Setter Property="Background" Value="#F9FAFB"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Родной язык:" FontWeight="SemiBold" Margin="0,0,10,0"/>
-                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding LanguageTo}" Margin="0,0,0,0"/>
-                    </Grid>
+        <!-- Маленькие кнопки действий (Edit/Delete) -->
+        <Style x:Key="GridActionButton" TargetType="Button">
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,5,0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="6">
+                            <!-- Контент кнопки (иконка) будет передан через Content -->
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bdr" Property="Background" Value="#DBEAFE"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+        <!-- Стиль кнопки "Сохранить" (Зеленая) -->
+        <Style x:Key="SaveButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#10B981"/>
+            <!-- Green -->
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Width" Value="36"/>
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="18">                           
+                            <svg:SvgViewbox Source="Sources/save.svg" Width="18" Height="18"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#059669"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
-                        <Button Content="Экспорт в .json" 
-                            Command="{Binding ExportDictionaryCommand}"
-                            Style="{StaticResource BaseButton}" 
-                            Width="150"
-                            Margin="0,0,10,0"/>
+    </UserControl.Resources>
 
-                        <Button Content="Сохранить изменения" 
-                            Command="{Binding SaveDictionaryCommand}"
-                            Style="{StaticResource SuccessButton}" 
-                            Width="150"/>
+    <Grid Margin="30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Header -->
+            <RowDefinition Height="Auto"/>
+            <!-- Toolbar -->
+            <RowDefinition Height="*"/>
+            <!-- Grid -->
+            <RowDefinition Height="Auto"/>
+            <!-- Footer -->
+        </Grid.RowDefinitions>
+
+        <!-- 1. HEADER & INFO -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <!-- Навигация "Назад" -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                <Button Style="{StaticResource BaseButton}" 
+                         Background="Transparent" Foreground="#6B7280" Padding="0"
+                         Command="{Binding CloseCommand}" Cursor="Hand">
+                    <StackPanel Orientation="Horizontal">
+                        <!-- Иконка "Назад" -->
+                        <svg:SvgViewbox Source="Sources/back.svg" Width="12" Height="12" Margin="0,0,5,0"/>
+                        <TextBlock Text="Back to Library"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                   
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                        <TextBox Text="{Binding DictionaryName, UpdateSourceTrigger=PropertyChanged}" 
+                                 FontSize="28" FontWeight="Bold" Foreground="#111827"
+                                 Background="Transparent" BorderThickness="0"
+                                 Padding="0" MaxLength="60"/>
+
+                        <svg:SvgViewbox Source="Sources/edit.svg" Width="20" Height="20" Margin="10,0,0,0" Opacity="0.5" 
+                                        Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                        <Button Style="{StaticResource SaveButtonStyle}" 
+                                Command="{Binding SaveChangesCommand}" 
+                                Margin="20,0,0,0"
+                                ToolTip="Save Name &amp; Description"
+                                Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        </Button>
                     </StackPanel>
 
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,10">
+                        <Border Background="#E0E7FF" CornerRadius="4" Padding="8,4" Margin="0,0,5,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding LanguageFrom}" Foreground="#3730A3" FontWeight="SemiBold" FontSize="12"/>
+                                <TextBlock Text=" → " Foreground="#3730A3" FontWeight="SemiBold" FontSize="12" Margin="5,0"/>
+                                <TextBlock Text="{Binding LanguageTo}" Foreground="#3730A3" FontWeight="SemiBold" FontSize="12"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
+                             FontSize="14" Foreground="#6B7280"
+                             Background="Transparent" BorderThickness="0"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             MaxWidth="700" HorizontalAlignment="Left"
+                             Margin="0,5,0,0" MaxLength="150"/>
                 </StackPanel>
-            </GroupBox>
-
-            <!-- Управление словами -->
-            <GroupBox Header="Слова в словаре" Padding="15">
-                <StackPanel>
-                    <Button Content="+ Добавить слово" 
-                            Command="{Binding AddWordCommand}"
-                            Style="{StaticResource PrimaryButton}" 
-                            Width="150" 
-                            HorizontalAlignment="Left"
-                            Margin="0,0,0,15"/>
-
-                    <ItemsControl ItemsSource="{Binding Words}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border BorderBrush="#E0E0E0" BorderThickness="0,0,0,1" Padding="10,5">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <StackPanel Grid.Column="0">
-                                            <TextBlock Text="{Binding OriginalWord}" FontWeight="Bold" FontSize="16"/>
-                                            <TextBlock Text="{Binding Translation}" Foreground="Gray" Margin="0,2,0,0"/>
-                                            <TextBlock Text="{Binding Example}" FontStyle="Italic" TextWrapping="Wrap" Margin="0,5,0,0"/>
-                                        </StackPanel>
-
-                                        <Button Grid.Column="1"
-                                                Content="🗑️" 
-                                                Command="{Binding DataContext.DeleteWordCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"
-                                                Style="{StaticResource DangerButton}" 
-                                                Width="30"
-                                                Height="30"
-                                                ToolTip="Удалить слово"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- Кнопка удаления словаря -->
-                    <Button Content="🗑️ УДАЛИТЬ СЛОВАРЬ" 
-                            Command="{Binding DeleteDictionaryCommand}"
-                            Style="{StaticResource DangerButton}" 
-                            HorizontalAlignment="Right"
-                            Margin="0,20,0,0"
-                            Width="180"/>
-                </StackPanel>
-            </GroupBox>
+            </Grid>
         </StackPanel>
-    </ScrollViewer>
+
+        <!-- 2. TOOLBAR (Add & Search) -->
+        <Grid Grid.Row="1" Margin="0,0,0,15">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Кнопка "Добавить" -->
+            <Button Grid.Column="0" 
+                    Content="   + Add New Word   "
+                    Command="{Binding AddWordCommand}"
+                    Style="{StaticResource PrimaryButton}"
+                    Padding="20,10"
+                    Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+            <!-- Поиск -->
+            <Border Grid.Column="2" Background="White" CornerRadius="8" BorderBrush="#D1D5DB" BorderThickness="1" Padding="10,5" Width="300">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <svg:SvgViewbox Grid.Column="0" Source="Sources/search.svg" Width="16" Height="16" Margin="0,0,10,0"/>
+
+                    <TextBox Grid.Column="1" 
+                             Text="{Binding SearchWordQuery, UpdateSourceTrigger=PropertyChanged}"
+                             x:Name="SearchTextBox"
+                             BorderThickness="0" Background="Transparent"
+                             VerticalContentAlignment="Center"/>
+                    <!-- Плейсхолдер -->
+                    <TextBlock Grid.Column="1" Text="Search word..." Foreground="#9CA3AF" VerticalAlignment="Center" IsHitTestVisible="False"
+                               Visibility="{Binding Text, ElementName=SearchTextBox, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- 3. DATA GRID -->
+        <Border Grid.Row="2" Background="White" CornerRadius="10" BorderBrush="#E5E7EB" BorderThickness="1" ClipToBounds="True">
+            <Border.Effect>
+                <DropShadowEffect Color="Black" Opacity="0.05" BlurRadius="10" ShadowDepth="2"/>
+            </Border.Effect>
+
+            <DataGrid ItemsSource="{Binding Words}"
+                      Background="White"
+                      BorderThickness="0">
+                <DataGrid.Columns>
+
+                    <!-- Колонка 1: Слово -->
+                    <DataGridTextColumn Header="Word" Binding="{Binding OriginalWord}" Width="*" FontWeight="SemiBold"/>
+
+                    <!-- Колонка 2: Перевод -->
+                    <DataGridTextColumn Header="Translation" Binding="{Binding Translation}" Width="*"/>
+
+                    <!-- Колонка 3: Пример -->
+                    <DataGridTextColumn Header="Example" Binding="{Binding Example}" Width="1.5*" Foreground="#6B7280">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                <Setter Property="ToolTip" Value="{Binding Example}"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+
+                    <!-- Колонка 4: Действия -->
+                    <DataGridTemplateColumn Header="Actions" Width="Auto">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <!-- Кнопка Редактировать -->
+                                    <Button Style="{StaticResource GridActionButton}" ToolTip="Edit Word">
+                                        <svg:SvgViewbox Source="Sources/edit.svg" Width="16" Height="16"/>
+                                    </Button>
+
+                                    <!-- Кнопка Удалить -->
+                                    <Button Style="{StaticResource GridActionButton}" ToolTip="Delete Word"
+                                            Command="{Binding DataContext.DeleteWordCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}">
+                                        <svg:SvgViewbox Source="Sources/trash.svg" Width="16" Height="16"/>
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- 4. FOOTER -->
+        <Grid Grid.Row="3" Margin="0,15,0,0">
+            <TextBlock VerticalAlignment="Center" Foreground="#6B7280">
+                <Run Text="Total words: "/>
+                <Run Text="{Binding Words.Count, Mode=OneWay}" FontWeight="Bold"/>
+            </TextBlock>
+            
+            <Button Content="  Share Access  " 
+            Command="{Binding ShareDictionaryCommand}" 
+            Style="{StaticResource PrimaryButton}"
+            Background="#4B5563" Foreground="White"
+            Width="150" Margin="0,0,10,0"
+            Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}">
+            </Button>
+            
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="  Export .json  " Command="{Binding ExportDictionaryCommand}" Style="{StaticResource BaseButton}" Margin="0,0,10,0" Background="White" Foreground="#374151" BorderBrush="#D1D5DB" BorderThickness="1"/>
+                <Button Content=" Delete Dictionary " 
+            Command="{Binding DeleteDictionaryCommand}" 
+            Style="{StaticResource DangerButton}"
+            Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            </StackPanel>
+        </Grid>
+
+    </Grid>
 </UserControl>

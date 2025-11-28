@@ -4,105 +4,323 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:LearningTrainer.Views"
-             xmlns:behaviors="clr-namespace:LearningTrainer.Behaviors"
+             xmlns:behaviors="clr-namespace:LearningTrainer.Behaviors"       
+             xmlns:svg="clr-namespace:SharpVectors.Converters;assembly=SharpVectors.Converters.Wpf"
+             xmlns:converters="clr-namespace:LearningTrainer.Converters" 
+             xmlns:system="clr-namespace:System;assembly=System.Runtime"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
-    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
-        <Border Background="White" CornerRadius="10" Padding="40" MinWidth="350">
-            <Border.Effect>
-                <DropShadowEffect Color="LightGray" ShadowDepth="2" BlurRadius="10" Opacity="0.5"/>
-            </Border.Effect>
-            <StackPanel>
-                <TextBlock HorizontalAlignment="Center" Margin="0,0,0,20"
-               FontSize="{DynamicResource HeaderFontSize}" FontWeight="Bold">
+             d:DesignHeight="700" d:DesignWidth="500">
+    <UserControl.Resources>
+        <converters:InvertedBooleanConverter x:Key="InvertedBooleanConverter" />
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter" />
+        <converters:StringNullOrEmptyToVisibilityConverter x:Key="StringNullOrEmptyToVisibilityConverter" />
+
+
+        <!-- Стиль для табов Login/Register -->
+        <Style x:Key="SegmentButton" TargetType="RadioButton">
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="MinWidth" Value="100"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+            <!-- light gray -->
+            <Setter Property="Foreground" Value="#6B7280"/>
+            <!-- gray -->
+            <Setter Property="BorderThickness" Value="1,1,1,1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{Binding Path=Tag, RelativeSource={RelativeSource TemplatedParent}}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <!-- Базовое состояние "Выбрано" -->
+                <Trigger Property="IsChecked" Value="True">
+                    <Setter Property="Background" Value="#3B82F6"/>
+                    <!-- blue -->
+                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="BorderBrush" Value="#3B82F6"/>
+                </Trigger>
+                <!-- Наведение мыши, когда НЕ выбрано -->
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E5E7EB"/>
+                    <!-- lighter gray -->
+                </Trigger>
+                <!-- Наведение мыши, когда ВЫБРАНО -->
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsMouseOver" Value="True" />
+                        <Condition Property="IsChecked" Value="True" />
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Background" Value="#2563EB"/>
+                    <!-- darker blue -->
+                </MultiTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Стиль для основной кнопки (Login/Create Account) -->
+        <Style x:Key="PrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="#3B82F6"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="10,14"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="20">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#2563EB"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Background" Value="#9CA3AF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        
+    </UserControl.Resources>
+
+    <Grid Background="#F3F4F6">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Основной контент -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20">
+
+                <!-- Заголовок -->
+                <TextBlock HorizontalAlignment="Center" Margin="0,20,0,20" FontSize="28" FontWeight="Bold" Foreground="#111827">
                     <TextBlock.Style>
                         <Style TargetType="TextBlock">
-                            <Setter Property="Text" Value="Вход в систему"/>
+                            <Setter Property="Text" Value="{DynamicResource Loc.Login.Title}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
-                                    <Setter Property="Text" Value="Регистрация"/>
+                                    <Setter Property="Text" Value="{DynamicResource Loc.Login.CreateAccountButton}"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
 
-                <TextBlock Text="Логин:" FontSize="{DynamicResource BaseFontSize}" Margin="0,10,0,5"/>
-                <TextBox Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" 
-             FontSize="{DynamicResource BaseFontSize}" Padding="5"/>
+                <!-- Поле Email/Login -->
+                <Label Content="{DynamicResource Loc.Login.EmailPlaceholder}" Foreground="#374151" FontWeight="Medium" Margin="0,10,0,5"/>
+                <Grid>
+                    <Border Background="White" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="8" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <svg:SvgViewbox Source="Sources/email.svg" 
+                            Width="20"
+                            Height="20"
+                            Stretch="Uniform"
+                            Margin="10 0 10 0"
+                            Grid.Column="0"/>
+                        <TextBox x:Name="UsernameTextBox" 
+                                 Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"
+                                 Background="Transparent" BorderThickness="0" Padding="8,12" 
+                                 VerticalContentAlignment="Center" Width="320" Grid.Column="1"
+                                 FontSize="14"/>
+                    </Grid>
+                    <!-- Плейсхолдер -->
+                    <TextBlock Text="your@email.com" Foreground="#9CA3AF" VerticalAlignment="Center" 
+                               Margin="50,0,0,0" IsHitTestVisible="False"
+                               Visibility="{Binding Text, ElementName=UsernameTextBox, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                </Grid>
 
-                <TextBlock Text="Пароль:" FontSize="{DynamicResource BaseFontSize}" Margin="0,10,0,5"/>
-                <PasswordBox x:Name="MyPasswordBox" 
-             FontSize="{DynamicResource BaseFontSize}" 
-             Padding="5"
+                <!-- Поле Password -->
+                <Label Content="{DynamicResource Loc.Login.PasswordPlaceholder}" Foreground="#374151" FontWeight="Medium" Margin="0,10,0,5"/>
+                <Grid>
+                    <Border Background="White" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="8" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <svg:SvgViewbox Source="Sources/password.svg" 
+                                Width="20"
+                                Height="20"
+                                Stretch="Uniform"
+                                Margin="10 0 10 0"
+                                            Grid.Column="0"/>
+                        <PasswordBox x:Name="MyPasswordBox" 
+                                     Background="Transparent" BorderThickness="0" Padding="8,12" 
+                                     VerticalContentAlignment="Center" Width="320" Grid.Column="1"
+                                     FontSize="14"
+                                     behaviors:PasswordBoxBehavior.Attach="True"
+                                     behaviors:PasswordBoxBehavior.Password="{Binding CurrentPassword, Mode=TwoWay}"
+                                     behaviors:PasswordBoxBehavior.SubmitCommand="{Binding LoginCommand}" />
+                    </Grid>
+                    <!-- Плейсхолдер -->
+                    <TextBlock Text="••••••••" Foreground="#9CA3AF" VerticalAlignment="Center" 
+                               Margin="50,0,0,0" IsHitTestVisible="False"
+                               Visibility="{Binding CurrentPassword, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                </Grid>
 
-             behaviors:PasswordBoxBehavior.Attach="True"
-             behaviors:PasswordBoxBehavior.Password="{Binding CurrentPassword, Mode=TwoWay}"
-             behaviors:PasswordBoxBehavior.SubmitCommand="{Binding LoginCommand}" />
-
+                <!-- Поле Confirm Password (только для регистрации) -->
                 <StackPanel Visibility="{Binding IsRegisterMode, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <TextBlock Text="Подтвердить пароль:" FontSize="{DynamicResource BaseFontSize}" Margin="0,10,0,5"/>
-                    <PasswordBox x:Name="ConfirmPasswordBox" 
-             FontSize="{DynamicResource BaseFontSize}" 
-             Padding="5"
+                    <Label Content="{DynamicResource Loc.Login.ConfirmPassword}" Foreground="#374151" FontWeight="Medium" Margin="0,10,0,5"/>
+                    <Grid>
+                        <Border Background="White" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="8" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-             behaviors:PasswordBoxBehavior.Attach="True"
-             behaviors:PasswordBoxBehavior.Password="{Binding ConfirmPassword, Mode=TwoWay}"
-             behaviors:PasswordBoxBehavior.SubmitCommand="{Binding RegisterCommand}" />
+
+                            <PasswordBox x:Name="ConfirmPasswordBox" 
+                                         Background="Transparent" BorderThickness="0" Padding="8,12" 
+                                         VerticalContentAlignment="Center" Width="320" Grid.Column="1"
+                                         FontSize="14"
+                                         behaviors:PasswordBoxBehavior.Attach="True"
+                                         behaviors:PasswordBoxBehavior.Password="{Binding ConfirmPassword, Mode=TwoWay}"
+                                         behaviors:PasswordBoxBehavior.SubmitCommand="{Binding RegisterCommand}" />
+                        </Grid>
+                        
+                        <!-- Плейсхолдер -->
+                        <TextBlock Text="••••••••" Foreground="#9CA3AF" VerticalAlignment="Center" 
+                                   Margin="50,0,0,0" IsHitTestVisible="False"
+                                   Visibility="{Binding ConfirmPassword, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                    </Grid>
+
+                    <Label Content="{DynamicResource Loc.Login.CodePlaceholder}" Foreground="#374151" FontWeight="Medium" Margin="0,15,0,5"/>
+                    <Grid>
+                        <Border Background="White" BorderBrush="#D1D5DB" BorderThickness="1" CornerRadius="8" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <!-- Иконка школы (нужно добавить school.svg в Sources) -->
+                            <svg:SvgViewbox Source="Sources/school.svg" Width="20" Height="20" Stretch="Uniform" Margin="10,0,10,0" Grid.Column="0"/>
+
+                            <TextBox x:Name="InviteCodeBox"
+                                     Text="{Binding InviteCode, UpdateSourceTrigger=PropertyChanged}"
+                                     Background="Transparent" BorderThickness="0" Padding="5,12" 
+                                     VerticalContentAlignment="Center" Grid.Column="1"
+                                     FontSize="14"/>
+                        </Grid>
+                        <!-- Плейсхолдер -->
+                        <TextBlock Text="TR-1234" Foreground="#9CA3AF" VerticalAlignment="Center" 
+                                   Margin="45,0,0,0" IsHitTestVisible="False"
+                                   Visibility="{Binding InviteCode, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                    </Grid>
+                    <TextBlock Text="{DynamicResource Loc.Login.UnderCodePlaceholder}" FontSize="11" Foreground="#6B7280" Margin="5,2,0,0"/>
+                 
+                    <!-- Сообщение статуса -->
+                    <TextBlock Text="{Binding JoinClassMessage}" Foreground="{Binding JoinClassMessageColor}" Margin="0,5,0,0"/>
+
                 </StackPanel>
 
-                <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" 
-               Margin="0,10,0,0" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                <!-- Remember Me (только для логина) -->
+                <CheckBox Content="{DynamicResource Loc.Login.RememberMe}" Foreground="#4B5563" Margin="0,15,0,0"
+                          Visibility="{Binding IsRegisterMode, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
 
-                <Button 
-    Command="{Binding LoginCommand}" 
-    CommandParameter="{Binding ElementName=MyPasswordBox, Path=(behaviors:PasswordBoxBehavior.Password)}" 
-    Margin="0,20,0,0" Padding="10,5" Cursor="Hand">
+                <!-- Сообщение об ошибке -->
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="#EF4444" 
+                           Margin="0,10,0,0" HorizontalAlignment="Center" TextWrapping="Wrap"
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, ConverterParameter=invert}"/>
+
+                <!-- Основная кнопка (Login/Register) -->
+                <Button Margin="0,20,0,0">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
-                            <Setter Property="Content" Value="Войти"/>
+                            
+                            <Setter Property="Content" Value="{DynamicResource Loc.Login.Button}"/>
+                            <Setter Property="Command" Value="{Binding LoginCommand}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
-                                    <Setter Property="Content" Value="Создать аккаунт"/>
+                                    <Setter Property="Content" Value="{DynamicResource Loc.Login.CreateAccountButton}"/>
                                     <Setter Property="Command" Value="{Binding RegisterCommand}"/>
-                                    <Setter Property="CommandParameter" 
-                                         Value="{Binding ElementName=ConfirmPasswordBox, Path=(behaviors:PasswordBoxBehavior.Password)}"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </Button.Style>
                 </Button>
+                
+                <Button Content="{DynamicResource Loc.Login.OfflineModeButton}"
+                        Command="{Binding OfflineLoginCommand}"
+                        Style="{StaticResource LinkButton}" 
+                        Margin="0,15,0,0"
+                        HorizontalAlignment="Center"
+                        Visibility="{Binding IsRegisterMode, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
+                <!-- Разделитель и доп. кнопки (только для логина) -->
+                <StackPanel Margin="0,25,0,0"
+                            Visibility="{Binding IsRegisterMode, Converter={StaticResource InvertedBooleanToVisibilityConverter}}">
+                    <Grid VerticalAlignment="Center">
+                        <Border BorderBrush="#D1D5DB" BorderThickness="0,1,0,0" Height="1"/>
+                        <TextBlock Text="Source" Background="#F3F4F6" Foreground="#6B7280"
+                                   HorizontalAlignment="Center" Padding="8,0"/>
+                    </Grid>
 
-                <Button Command="{Binding OfflineLoginCommand}" 
-        Content="Автономный режим" 
-        Margin="0,10,0,0">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource BaseButton}">
-                            <Setter Property="Visibility" Value="Visible"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
+                        <Button Style="{StaticResource SocialButton}" Command="{Binding OpenGitHubCommand}">
+                            <svg:SvgViewbox Source="Sources/github.svg" 
+                                Width="20"
+                                Height="20"
+                                Stretch="Fill"/>
 
-                <Button Command="{Binding ToggleModeCommand}"
-            Margin="0,15,0,0" HorizontalAlignment="Center">
-                    <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource BaseButton}">
-                            <Setter Property="Content" Value="Нет аккаунта? Зарегистрироваться"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
-                                    <Setter Property="Content" Value="Уже есть аккаунт? Войти"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Button.Style>
-                </Button>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Переключатель режима (Login/Register) -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,20">
+                    <TextBlock Foreground="#4B5563">
+                        <TextBlock.Style>
+                            <Style TargetType="{x:Type TextBlock}">
+                                <!-- Default (Login mode) -->
+                                <Setter Property="Text" Value="{DynamicResource Loc.Login.SignUpPart1}"/>
+                                <Style.Triggers>
+                                    <!-- Register mode -->
+                                    <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
+                                        <Setter Property="Text" Value="{DynamicResource Loc.Login.LogInPart1}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <Button Command="{Binding ToggleModeCommand}" Margin="5,0,0,0" FontWeight="Medium">
+                        <Button.Style>
+                            <Style TargetType="{x:Type Button}" BasedOn="{StaticResource LinkButton}">
+                                <Setter Property="Content" Value="{DynamicResource Loc.Login.SignUpPart2}"/>
+                                <Style.Triggers>
+                                    <!-- Register mode -->
+                                    <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
+                                        <Setter Property="Content" Value="{DynamicResource Loc.Login.Button}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
 
             </StackPanel>
-        </Border>
+        </ScrollViewer>
     </Grid>
 </UserControl>
