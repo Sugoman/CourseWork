@@ -20,20 +20,20 @@ namespace LearningAPI.Controllers
             _context = context;
         }
 
-
-
-        // GET: /api/Rules
-        [HttpGet]
-        public async Task<IActionResult> GetRules()
+        [HttpGet("list/available")]
+        [Authorize]
+        public async Task<IActionResult> GetAvailableRules()
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
+            if (!int.TryParse(userIdString, out int currentUserId)) return Unauthorized();
+
+            var sharedRuleIds = await _context.RuleSharings
+                .Where(rs => rs.StudentId == currentUserId)
+                .Select(rs => rs.RuleId)
+                .ToListAsync();
 
             var rules = await _context.Rules
-                .Where(x => x.UserId == userId)
+                .Where(r => r.UserId == currentUserId || sharedRuleIds.Contains(r.Id))
                 .Select(r => new
                 {
                     r.Id,
@@ -43,9 +43,39 @@ namespace LearningAPI.Controllers
                     r.Description,
                     r.Category,
                     r.DifficultyLevel,
-                    r.CreatedAt
+                    r.CreatedAt,
+                    IsReadOnly = r.UserId != currentUserId
                 })
                 .ToListAsync();
+
+            return Ok(rules);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRules()
+        {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
+
+            var currentUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+            var teacherId = currentUser?.UserId;
+
+            var rules = await _context.Rules
+                .Where(r => r.UserId == userId || (teacherId != null && r.UserId == teacherId))
+                .Select(r => new
+                {
+                    r.Id,
+                    r.UserId,
+                    r.Title,
+                    r.MarkdownContent,
+                    r.Description,
+                    r.Category,
+                    r.DifficultyLevel,
+                    r.CreatedAt,
+                    IsReadOnly = r.UserId != userId
+                })
+                .ToListAsync();
+
             return Ok(rules);
         }
 
@@ -108,6 +138,38 @@ namespace LearningAPI.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateRule(int id, [FromBody] Rule rule)
+        {
+            if (id != rule.Id) return BadRequest("ID mismatch");
+
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
+
+            var existingRule = await _context.Rules.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+            if (existingRule == null) return NotFound();
+
+            if (existingRule.UserId != userId) return Forbid("Вы не можете редактировать чужое правило.");
+
+            rule.UserId = userId;
+            rule.CreatedAt = existingRule.CreatedAt;
+
+            _context.Entry(rule).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_context.Rules.Any(e => e.Id == id)) return NotFound();
+                else throw;
+            }
+
+            return NoContent(); 
         }
     }
 }

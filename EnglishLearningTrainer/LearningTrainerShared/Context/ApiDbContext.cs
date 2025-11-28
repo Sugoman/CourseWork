@@ -17,6 +17,8 @@ namespace LearningTrainer.Context
         public DbSet<Rule> Rules { get; set; }
         public DbSet<LearningProgress> LearningProgresses { get; set; }
         public DbSet<Role> Roles { get; set; }
+        public DbSet<DictionarySharing> DictionarySharings { get; set; } = null!;
+        public DbSet<RuleSharing> RuleSharings { get; set; } = null!;
 
 
 
@@ -51,6 +53,31 @@ namespace LearningTrainer.Context
 
             modelBuilder.Entity<LearningProgress>()
                 .HasIndex(p => p.NextReview);
+
+            modelBuilder.Entity<DictionarySharing>()
+                .HasOne(ds => ds.User)
+                .WithMany()
+                .HasForeignKey(ds => ds.StudentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<DictionarySharing>()
+                .HasOne(ds => ds.Dictionary)
+                .WithMany()
+                .HasForeignKey(ds => ds.DictionaryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // RuleSharing (Правило -> Ученик)
+            modelBuilder.Entity<RuleSharing>()
+                .HasOne(rs => rs.User)
+                .WithMany()
+                .HasForeignKey(rs => rs.StudentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<RuleSharing>()
+                .HasOne(rs => rs.Rule)
+                .WithMany()
+                .HasForeignKey(rs => rs.RuleId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

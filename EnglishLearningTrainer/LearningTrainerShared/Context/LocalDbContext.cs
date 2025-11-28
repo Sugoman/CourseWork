@@ -10,8 +10,8 @@ namespace LearningTrainer.Context
         public LocalDbContext(string userLogin = null)
         {
             _dbName = string.IsNullOrEmpty(userLogin)
-                ? "EnglishLearning.db"
-                : $"{userLogin}_EnglishLearning.db";
+                ? "LanguageLearning.db"
+                : $"{userLogin}_LanguageLearning.db";
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

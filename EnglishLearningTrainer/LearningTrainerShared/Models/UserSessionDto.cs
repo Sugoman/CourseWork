@@ -12,5 +12,7 @@ namespace LearningTrainerShared.Models
         public string AccessToken { get; set; }
         public string UserLogin { get; set; }
         public string UserRole { get; set; }
+        public int UserId { get; set; }      
+        public string InviteCode { get; set; }
     }
 }

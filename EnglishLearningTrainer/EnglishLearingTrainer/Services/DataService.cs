@@ -251,5 +251,50 @@ namespace LearningTrainer.Services
         {
             throw new NotImplementedException();
         }
+
+        public Task<UpgradeResultDto> UpgradeToTeacherAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<StudentDto>> GetMyStudentsAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<int>> GetDictionarySharingStatusAsync(int dictionaryId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<SharingResultDto> ToggleDictionarySharingAsync(int dictionaryId, int studentId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<Dictionary>> GetAvailableDictionariesAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<Rule>> GetAvailableRulesAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<int>> GetRuleSharingStatusAsync(int ruleId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<SharingResultDto> ToggleRuleSharingAsync(int ruleId, int studentId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> UpdateRuleAsync(Rule rule)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -5,17 +5,18 @@ using System.Text.Json;
 
 namespace LearningTrainer.Services
 {
+
+    public class SharingResultDto { public string Message { get; set; } public string Status { get; set; } }
     public class ApiDataService : IDataService
     {
 
         private readonly HttpClient _httpClient;
         private readonly JsonSerializerOptions _jsonOptions;
-
         public ApiDataService()
         {
             _httpClient = new HttpClient
             {
-                BaseAddress = new Uri("http://localhost:5076")
+                BaseAddress = new Uri("http://localhost:5077")
             };
 
             _jsonOptions = new JsonSerializerOptions
@@ -108,9 +109,18 @@ namespace LearningTrainer.Services
             throw new NotImplementedException("Онлайн-метод GetWordsByDictionaryAsync еще не создан");
         }
 
-        public Task<bool> UpdateDictionaryAsync(Dictionary dictionary)
+        public async Task<bool> UpdateDictionaryAsync(Dictionary dictionary)
         {
-            throw new NotImplementedException("Онлайн-метод UpdateDictionaryAsync еще не создан");
+            try
+            {
+                var response = await _httpClient.PutAsJsonAsync($"api/dictionaries/{dictionary.Id}", dictionary);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[EXCEPTION] Ошибка обновления: {ex.Message}");
+                return false;
+            }
         }
 
         public Task InitializeTestDataAsync()
@@ -171,16 +181,28 @@ namespace LearningTrainer.Services
 
         public async Task<string> RegisterAsync(RegisterRequest request)
         {
-            var response = await _httpClient.PostAsJsonAsync(
-                "/api/auth/register", request, _jsonOptions);
-
-            var responseDto = await response.Content.ReadFromJsonAsync<ApiResponseDto>();
+            var response = await _httpClient.PostAsJsonAsync("/api/auth/register", request, _jsonOptions);
 
             if (!response.IsSuccessStatusCode)
             {
-                throw new HttpRequestException(responseDto?.Message ?? "Ошибка регистрации");
+                var errorContent = await response.Content.ReadAsStringAsync();
+
+                try
+                {
+                    var errorDto = System.Text.Json.JsonSerializer.Deserialize<ApiResponseDto>(errorContent, _jsonOptions);
+                    if (!string.IsNullOrEmpty(errorDto?.Message))
+                    {
+                        throw new HttpRequestException(errorDto.Message);
+                    }
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                }
+
+                throw new HttpRequestException($"Ошибка регистрации ({response.StatusCode}): {errorContent}");
             }
 
+            var responseDto = await response.Content.ReadFromJsonAsync<ApiResponseDto>(_jsonOptions);
             return responseDto?.Message ?? "Успешно!";
         }
 
@@ -198,7 +220,85 @@ namespace LearningTrainer.Services
             return await response.Content.ReadFromJsonAsync<UserSessionDto>(_jsonOptions);
         }
 
+        public async Task<UpgradeResultDto> UpgradeToTeacherAsync()
+        {
+            var response = await _httpClient.PostAsync("/api/auth/upgrade-to-teacher", null);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<UpgradeResultDto>(_jsonOptions);
+        }
 
+        public async Task<List<StudentDto>> GetMyStudentsAsync()
+        {
+            // GET /api/classroom/students
+            return await _httpClient.GetFromJsonAsync<List<StudentDto>>("/api/classroom/students", _jsonOptions)
+                ?? new List<StudentDto>();
+        }
+
+        public async Task<List<int>> GetDictionarySharingStatusAsync(int dictionaryId)
+        {
+            var result = await _httpClient.GetFromJsonAsync<List<int>>(
+                $"/api/sharing/dictionary/{dictionaryId}/status",
+                _jsonOptions
+            );
+
+            return result ?? new List<int>();
+        }
+
+        public async Task<SharingResultDto> ToggleDictionarySharingAsync(int dictionaryId, int studentId)
+        {
+            var request = new { ContentId = dictionaryId, StudentId = studentId };
+
+            var response = await _httpClient.PostAsJsonAsync("/api/sharing/dictionary/toggle", request, _jsonOptions);
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadFromJsonAsync<SharingResultDto>(_jsonOptions)
+                ?? new SharingResultDto();
+        }
+
+
+        public async Task<List<Dictionary>> GetAvailableDictionariesAsync()
+        {
+
+            return await _httpClient.GetFromJsonAsync<List<Dictionary>>("/api/dictionaries/list/available", _jsonOptions);
+        }
+
+        public async Task<List<Rule>> GetAvailableRulesAsync()
+        {
+            return await _httpClient.GetFromJsonAsync<List<Rule>>("/api/rules/list/available", _jsonOptions);
+        }
+
+        public async Task<List<int>> GetRuleSharingStatusAsync(int ruleId)
+        {
+            var result = await _httpClient.GetFromJsonAsync<List<int>>(
+                $"/api/sharing/rule/{ruleId}/status",
+                _jsonOptions
+            );
+
+            return result ?? new List<int>();
+        }
+
+        public async Task<SharingResultDto> ToggleRuleSharingAsync(int ruleId, int studentId)
+        {
+            var request = new { ContentId = ruleId, StudentId = studentId };
+            var response = await _httpClient.PostAsJsonAsync("/api/sharing/rule/toggle", request, _jsonOptions);
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<SharingResultDto>(_jsonOptions)
+                   ?? new SharingResultDto();
+        }
+        public async Task<bool> UpdateRuleAsync(Rule rule)
+        {
+            try
+            {
+                var response = await _httpClient.PutAsJsonAsync($"api/rules/{rule.Id}", rule, _jsonOptions);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[EXCEPTION] Rule update error: {ex.Message}");
+                return false;
+            }
+        }
         private class ApiResponseDto { public string Message { get; set; } }
     }
 }

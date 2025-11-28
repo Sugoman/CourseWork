@@ -5,23 +5,18 @@
 namespace LearningTrainerShared.Migrations
 {
     /// <inheritdoc />
-    public partial class Add_Performance_Indexes : Migration
+    public partial class DBUpdate2 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateIndex(
-                name: "IX_LearningProgresses_NextReview",
-                table: "LearningProgresses",
-                column: "NextReview");
+
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_LearningProgresses_NextReview",
-                table: "LearningProgresses");
+
         }
     }
 }

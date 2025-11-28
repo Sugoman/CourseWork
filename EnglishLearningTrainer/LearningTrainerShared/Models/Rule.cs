@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace LearningTrainerShared.Models
@@ -11,13 +12,12 @@ namespace LearningTrainerShared.Models
         public int UserId { get; set; }
 
         [Required]
-        [MaxLength(200)]
+        [MaxLength(70)]
         public string Title { get; set; }
         
         [Required]
         public string MarkdownContent { get; set; }
         
-        [MaxLength(50)]
         public string Description { get; set; }
         [MaxLength(50)]
         public string Category { get; set; } // "Grammar", "Vocabulary", "Pronunciation"
@@ -27,6 +27,8 @@ namespace LearningTrainerShared.Models
         [JsonIgnore]
         public virtual User User { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow; 
+        [NotMapped]
+        public bool IsFeatured { get; set; }
     }
 }

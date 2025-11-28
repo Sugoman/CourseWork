@@ -7,15 +7,14 @@ namespace LearningTrainer.Services
 {
     public class LocalDataService : IDataService
     {
-        
         private readonly string _userLogin;
         private int _currentLocalUserId = 0;
 
         public LocalDataService(string userLogin)
         {
-            _userLogin = userLogin;
+            this._userLogin = userLogin;
 
-            using (var db = _context)
+            using (var db = Context)
             {
                 db.Database.EnsureCreated();
 
@@ -48,10 +47,10 @@ namespace LearningTrainer.Services
                 }
             }
         }
-        private LocalDbContext _context => new LocalDbContext(_userLogin);
+        private LocalDbContext Context => new LocalDbContext(_userLogin);
         public async Task<List<Dictionary>> GetDictionariesAsync()
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 return await db.Dictionaries
                     .Where(d => d.UserId == _currentLocalUserId)
@@ -62,7 +61,7 @@ namespace LearningTrainer.Services
 
         public async Task<List<Rule>> GetRulesAsync()
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 return await db.Rules
                     .Where(r => r.UserId == _currentLocalUserId) 
@@ -72,7 +71,7 @@ namespace LearningTrainer.Services
 
         public async Task<Dictionary> GetDictionaryByIdAsync(int id)
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 return await db.Dictionaries.Include(d => d.Words)
                                  .FirstOrDefaultAsync(d => d.Id == id);
@@ -81,7 +80,7 @@ namespace LearningTrainer.Services
 
         public async Task<Dictionary> AddDictionaryAsync(Dictionary dictionary)
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 dictionary.UserId = _currentLocalUserId;
 
@@ -93,7 +92,7 @@ namespace LearningTrainer.Services
 
         public async Task<Rule> AddRuleAsync(Rule rule)
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 rule.UserId = _currentLocalUserId;
 
@@ -105,7 +104,7 @@ namespace LearningTrainer.Services
 
         public async Task<Word> AddWordAsync(Word word)
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 word.UserId = _currentLocalUserId;
 
@@ -117,7 +116,7 @@ namespace LearningTrainer.Services
 
         public async Task<bool> DeleteDictionaryAsync(int dictionaryId)
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 var dict = await db.Dictionaries.FindAsync(dictionaryId);
                 if (dict == null) return false;
@@ -129,7 +128,7 @@ namespace LearningTrainer.Services
 
         public async Task<bool> DeleteRuleAsync(int ruleId)
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 var rule = await db.Rules.FindAsync(ruleId);
                 if (rule == null) return false;
@@ -141,7 +140,7 @@ namespace LearningTrainer.Services
 
         public async Task<bool> DeleteWordAsync(int wordId)
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 var word = await db.Words.FindAsync(wordId);
                 if (word == null) return false;
@@ -153,7 +152,7 @@ namespace LearningTrainer.Services
 
         public async Task WipeAndStoreDictionariesAsync(List<Dictionary> dictionariesFromServer)
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 await db.Database.ExecuteSqlRawAsync("DELETE FROM LearningProgresses");
                 await db.Database.ExecuteSqlRawAsync("DELETE FROM Words");
@@ -191,7 +190,7 @@ namespace LearningTrainer.Services
 
         public async Task WipeAndStoreRulesAsync(List<Rule> rulesFromServer)
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 await db.Database.ExecuteSqlRawAsync("DELETE FROM Rules");
 
@@ -236,7 +235,7 @@ namespace LearningTrainer.Services
 
         public async Task<List<Word>> GetReviewSessionAsync(int dictionaryId)
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 var now = DateTime.UtcNow;
 
@@ -264,7 +263,7 @@ namespace LearningTrainer.Services
 
         public async Task UpdateProgressAsync(UpdateProgressRequest progress)
         {
-            using (var db = _context)
+            using (var db = Context)
             {
                 var existingProgress = await db.LearningProgresses
                     .FirstOrDefaultAsync(p => p.UserId == _currentLocalUserId && p.WordId == progress.WordId);
@@ -339,6 +338,51 @@ namespace LearningTrainer.Services
         }
 
         public Task<UserSessionDto> LoginAsync(object loginRequest)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<UpgradeResultDto> UpgradeToTeacherAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<StudentDto>> GetMyStudentsAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<int>> GetDictionarySharingStatusAsync(int dictionaryId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<SharingResultDto> ToggleDictionarySharingAsync(int dictionaryId, int studentId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<Dictionary>> GetAvailableDictionariesAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<Rule>> GetAvailableRulesAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<List<int>> GetRuleSharingStatusAsync(int ruleId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<SharingResultDto> ToggleRuleSharingAsync(int ruleId, int studentId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> UpdateRuleAsync(Rule rule)
         {
             throw new NotImplementedException();
         }

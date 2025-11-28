@@ -2,6 +2,7 @@
 using LearningTrainer.ViewModels;
 using System.Configuration;
 using System.Data;
+using System.Globalization;
 using System.Net.Http;
 using System.Windows;
 
@@ -14,19 +15,14 @@ namespace LearningTrainer
     {
         protected override void OnStartup(StartupEventArgs e)
         {
+            var settingsService = new SettingsService();
+
             SessionService sessionService = new SessionService();
             var savedSession = sessionService.LoadSession();
 
-            MainViewModel mainVM;
-
-            if (savedSession != null)
-            {
-                mainVM = new MainViewModel(savedSession);
-            }
-            else
-            {
-                mainVM = new MainViewModel();
-            }
+            MainViewModel mainVM = savedSession != null
+                ? new MainViewModel(savedSession)
+                : new MainViewModel();
 
             var mainWindow = new MainWindow();
             mainWindow.DataContext = mainVM;

@@ -1,5 +1,7 @@
-﻿using System;
+﻿using LearningTrainerShared.Models;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -14,12 +16,12 @@ public class UserSessionDto
 
 public class Program
 {
-    private static readonly string ApiBaseUrl = "http://localhost:5076";
-    private static readonly string Username = "1"; 
+    private static readonly string ApiBaseUrl = "http://localhost:5077";
+    private static readonly string Username = "123";
     private static readonly string Password = "1";
 
-    private static readonly int CONCURRENT_USERS = 1000; 
-    private static readonly int REQUESTS_PER_USER = 200; 
+    private static readonly int CONCURRENT_USERS = 100;
+    private static readonly int REQUESTS_PER_USER = 20;
 
     private static readonly HttpClient _client = new HttpClient { BaseAddress = new Uri(ApiBaseUrl) };
 
@@ -55,6 +57,35 @@ public class Program
         Console.WriteLine($"Запросов в секунду (RPS): {totalRequests / stopwatch.Elapsed.TotalSeconds:F2}");
     }
 
+    public static class DataGenerator
+    {
+        private static readonly Random Random = new Random();
+        private static readonly string[] Words = { "apple", "banana", "cat", "dog", "house" };
+
+        public static object CreateRandomWordRequest(int dictionaryId)
+        {
+            var originalWord = Words[Random.Next(Words.Length)] + Random.Next(1000); // Уникальное слово
+            return new
+            {
+                OriginalWord = originalWord,
+                Translation = "Случайный перевод",
+                Example = "Случайный пример",
+                DictionaryId = dictionaryId
+            };
+        }
+
+        public static object CreateRandomDictionaryRequest()
+        {
+            return new
+            {
+                Name = $"ТестСловарь_{Guid.NewGuid().ToString().Substring(0, 8)}",
+                Description = "Стресс-тест",
+                LanguageFrom = "English",
+                LanguageTo = "Russian"
+            };
+        }
+    }
+
     private static async Task SimulateUserActivity(int userId)
     {
         var loginRequest = new { Username = Username, Password = Password };
@@ -70,19 +101,36 @@ public class Program
         var token = session.AccessToken;
 
         using var userClient = new HttpClient { BaseAddress = new Uri(ApiBaseUrl) };
-        userClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", token);
+        userClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
+        // --- 1. СОЗДАЁМ СЛОВАРЬ (ОДИН РАЗ) ---
+        var dictRequest = DataGenerator.CreateRandomDictionaryRequest();
+        var dictResponse = await userClient.PostAsJsonAsync("/api/dictionaries", dictRequest);
+
+        if (!dictResponse.IsSuccessStatusCode)
+        {
+            Console.WriteLine($"[Юзер {userId}] Ошибка создания словаря: {dictResponse.StatusCode}");
+            return;
+        }
+
+        // Получаем ID созданного словаря для последующих запросов
+        var createdDict = await dictResponse.Content.ReadFromJsonAsync<Dictionary>(); // Нужен класс Dictionary
+        int testDictionaryId = createdDict.Id;
+
+        // --- 2. ЦИКЛ ДОБАВЛЕНИЯ СЛОВ ---
         for (int i = 0; i < REQUESTS_PER_USER; i++)
         {
-            var dictResponse = await userClient.GetAsync("/api/dictionaries");
-            if (!dictResponse.IsSuccessStatusCode)
-                Console.WriteLine($"[Юзер {userId}] Ошибка GetDictionaries: {dictResponse.StatusCode}");
+            var wordRequest = DataGenerator.CreateRandomWordRequest(testDictionaryId);
+            await userClient.PostAsJsonAsync("/api/words", wordRequest); // Добавляем слово
 
+            // Тут можно добавить GetAsync("/api/dictionaries/{testDictionaryId}") для чтения
 
-            await Task.Delay(50); 
+            await Task.Delay(50); // Пауза, чтобы не убить базу
         }
-        Console.WriteLine($"[Юзер {userId}] Завершил сессию.");
+        Console.WriteLine($"[Юзер {userId}] Завершил сессию. Добавлено {REQUESTS_PER_USER} слов.");
     }
 }
+
+
+
 

@@ -21,8 +21,17 @@ namespace LearningTrainer.Services
         Task<List<Word>> GetReviewSessionAsync(int dictionaryId);
         Task UpdateProgressAsync(UpdateProgressRequest progress);
         Task<string> ChangePasswordAsync(ChangePasswordRequest request);
-        Task<string> RegisterAsync(RegisterRequest request);
+        Task<string> RegisterAsync(RegisterRequest request); 
         Task<UserSessionDto> LoginAsync(object loginRequest);
+        Task<UpgradeResultDto> UpgradeToTeacherAsync();
+        Task<List<StudentDto>> GetMyStudentsAsync();
+        Task<List<Dictionary>> GetAvailableDictionariesAsync();
+        Task<List<Rule>> GetAvailableRulesAsync();
+        Task<List<int>> GetDictionarySharingStatusAsync(int dictionaryId);
+        Task<bool> UpdateRuleAsync(Rule rule);
+        Task<SharingResultDto> ToggleDictionarySharingAsync(int dictionaryId, int studentId);
+        Task<List<int>> GetRuleSharingStatusAsync(int ruleId);
+        Task<SharingResultDto> ToggleRuleSharingAsync(int ruleId, int studentId);
         void SetToken(string accessToken);
 
     }

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using BCrypt.Net;
+using NanoidDotNet;
 
 namespace LearningAPI.Controllers
 {
@@ -27,7 +28,8 @@ namespace LearningAPI.Controllers
             public string Username { get; set; }
             public string Password { get; set; }
         }
-
+        private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+        private string GenerateInviteCode() => $"TR-{Nanoid.Generate(size: 6)}";
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
@@ -46,7 +48,9 @@ namespace LearningAPI.Controllers
             {
                 AccessToken = accessToken,
                 UserLogin = user.Login,
-                UserRole = user.Role.Name
+                UserRole = user.Role.Name,
+                UserId = user.Id,         
+                InviteCode = user.InviteCode
             });
         }
 
@@ -85,27 +89,86 @@ namespace LearningAPI.Controllers
                 return BadRequest(new { message = "Этот логин уже занят" });
             }
 
-            var studentRole = await _context.Roles
-                .FirstOrDefaultAsync(r => r.Name == "Student");
+            Role roleToAssign;
+            int? teacherId = null;
 
-            if (studentRole == null)
+            if (!string.IsNullOrWhiteSpace(request.InviteCode))
             {
-                return StatusCode(500, new { message = "Критическая ошибка: Роль 'Student' не найдена в базе данных." });
+                var teacher = await _context.Users
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.InviteCode == request.InviteCode);
+
+                if (teacher != null)
+                {
+                    roleToAssign = await _context.Roles.AsNoTracking()
+                        .FirstOrDefaultAsync(r => r.Name == "Student");
+                    teacherId = teacher.Id;
+
+                }
+                else
+                {
+                    return BadRequest(new { message = "Неверный код приглашения" });
+                }
+            }
+            else
+            {
+                roleToAssign = await _context.Roles.AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Name == "Admin");
+            }
+
+            if (roleToAssign == null)
+            {
+                return StatusCode(500, new { message = "Ошибка: Роль не найдена в БД." });
             }
 
             var newUser = new User
             {
                 Login = request.Login,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                RoleId = studentRole.Id,
+                RoleId = roleToAssign.Id,
+                UserId = teacherId,
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            // 201 Created
             return CreatedAtAction(nameof(Login), new { username = newUser.Login }, new { message = "Аккаунт успешно создан" });
+        }
+
+        [Authorize]
+        [HttpPost("upgrade-to-teacher")]
+        public async Task<IActionResult> UpgradeToTeacher()
+        {
+            var userId = GetUserId();
+            var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null) return NotFound("User not found.");
+
+            if (user.Role.Name != "Admin" && user.Role.Name != "IndependentUser")
+            {
+                return StatusCode(403, new { message = "Только администратор может стать учителем." });
+            }
+
+            var teacherRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Teacher");
+            if (teacherRole == null)
+            {
+                return StatusCode(500, new { message = "Критическая ошибка: Роль 'Teacher' не найдена в базе данных." });
+            }
+
+            user.RoleId = teacherRole.Id;
+            user.InviteCode = GenerateInviteCode();
+
+            await _context.SaveChangesAsync();
+            var newAccessToken = _tokenService.GenerateAccessToken(user);
+
+            return Ok(new
+            {
+                Message = "Вы стали учителем. Код сгенерирован.",
+                InviteCode = user.InviteCode,
+                AccessToken = newAccessToken,
+                UserRole = "Teacher"
+            });
         }
     }
 }

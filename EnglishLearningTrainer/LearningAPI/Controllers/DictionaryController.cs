@@ -1,5 +1,6 @@
 ﻿using LearningTrainer.Context;
 using LearningTrainerShared.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -11,7 +12,6 @@ namespace LearningAPI.Controllers
     public class DictionaryController : Controller
     {
         private readonly ApiDbContext _context;
-        private HttpClient _httpClient;
 
         public DictionaryController(ApiDbContext context)
         {
@@ -23,13 +23,16 @@ namespace LearningAPI.Controllers
         public async Task<IActionResult> GetDictionaries()
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
+            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
+
+            var currentUser = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            var teacherId = currentUser?.UserId;
 
             var dictionaries = await _context.Dictionaries
-                .Where(d => d.UserId == userId)
+                .Where(d => d.UserId == userId || (teacherId != null && d.UserId == teacherId))
                 .Select(d => new
                 {
                     d.Id,
@@ -38,9 +41,45 @@ namespace LearningAPI.Controllers
                     d.Description,
                     d.LanguageFrom,
                     d.LanguageTo,
-                    d.WordCount, 
-                    Words = d.Words.Where(w => w.UserId == userId).ToList()
+                    d.WordCount,
+                    IsReadOnly = d.UserId != userId,
+                    Words = d.Words.ToList()
                 })
+                .ToListAsync();
+
+            return Ok(dictionaries);
+        }
+
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetDictionaryById(int id)
+        {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
+
+            var dictionary = await _context.Dictionaries
+                 .Include(d => d.Words)
+                 .FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
+
+            if (dictionary == null) return NotFound();
+            return Ok(dictionary);
+        }
+
+        [HttpGet("list/available")] // Итоговый путь: /api/dictionaries/list/available
+        [Authorize]
+        public async Task<ActionResult<List<Dictionary>>> GetAvailableDictionaries()
+        {
+            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(userIdString, out int currentUserId)) return Unauthorized();
+
+            // Логика запроса
+            var sharedIds = await _context.DictionarySharings
+                .Where(ds => ds.StudentId == currentUserId)
+                .Select(ds => ds.DictionaryId)
+                .ToListAsync();
+
+            var dictionaries = await _context.Dictionaries
+                .Include(d => d.Words)
+                .Where(d => d.UserId == currentUserId || sharedIds.Contains(d.Id))
                 .ToListAsync();
 
             return Ok(dictionaries);
@@ -51,15 +90,10 @@ namespace LearningAPI.Controllers
         public async Task<IActionResult> AddDictionary([FromBody] CreateDictionaryRequest requestDto)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
+            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
 
             if (requestDto == null || string.IsNullOrWhiteSpace(requestDto.Name))
-            {
                 return BadRequest("Name is required.");
-            }
 
             var newDictionary = new Dictionary
             {
@@ -77,59 +111,27 @@ namespace LearningAPI.Controllers
             return CreatedAtAction(nameof(GetDictionaries), new { id = newDictionary.Id }, newDictionary);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetDictionaryById(int id)
-        {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
-
-            var dictionary = await _context.Dictionaries
-                                             .Include(d => d.Words)
-                                             .FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
-
-            if (dictionary == null)
-            {
-                return NotFound();
-            }
-            return Ok(dictionary);
-        }
-
-        // DELETE: /api/dictionaries/5 
-        [HttpDelete("{id}")]
+        [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteDictionary(int id)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
+            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
 
             var dictionary = await _context.Dictionaries
-                .Include(d => d.Words)
-                    .ThenInclude(w => w.Progress) 
+                .Include(d => d.Words).ThenInclude(w => w.Progress)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (dictionary == null) return NotFound();
 
-            if (dictionary.UserId != userId)
-            {
-                return Forbid();
-            }
-
-            foreach (var word in dictionary.Words)
-            {
-               
-                if (word.Progress != null && word.Progress.Any())
-                {
-                    _context.LearningProgresses.RemoveRange(word.Progress);
-                }
-            }
+            if (dictionary.UserId != userId) return Forbid();
 
             if (dictionary.Words.Any())
             {
+                // Очистка прогресса (если каскадное удаление не настроено в БД)
+                var wordIds = dictionary.Words.Select(w => w.Id).ToList();
+                var progresses = _context.LearningProgresses.Where(p => wordIds.Contains(p.WordId));
+                _context.LearningProgresses.RemoveRange(progresses);
+
                 _context.Words.RemoveRange(dictionary.Words);
             }
 
@@ -139,45 +141,56 @@ namespace LearningAPI.Controllers
             return NoContent();
         }
 
-        // /api/dictionaries/5/review
-        [HttpGet("{id}/review")]
+        [HttpGet("{id:int}/review")]
         public async Task<IActionResult> GetReviewSession(int id)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
+            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
 
+            var currentUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+            var teacherId = currentUser?.UserId;
             var now = DateTime.UtcNow;
 
             var allWordsAndDates = await _context.Words
-                .Where(w => w.DictionaryId == id && w.UserId == userId)
+                .Where(w => w.DictionaryId == id && (w.UserId == userId || (teacherId != null && w.UserId == teacherId)))
                 .Select(w => new
                 {
                     TheWord = w,
-
                     ReviewDate = w.Progress
                         .Where(p => p.UserId == userId)
-                        .Select(p => (DateTime?)p.NextReview) 
+                        .Select(p => (DateTime?)p.NextReview)
                         .FirstOrDefault()
                 })
-                .ToListAsync(); 
+                .ToListAsync();
 
             var studySession = allWordsAndDates
-                .Where(x =>
-                    !x.ReviewDate.HasValue ||
-                    x.ReviewDate.Value <= now
-                )
-                .Select(x => x.TheWord) 
+                .Where(x => !x.ReviewDate.HasValue || x.ReviewDate.Value <= now)
+                .Select(x => x.TheWord)
                 .ToList();
 
-            var random = new Random();
-            var shuffledSession = studySession
-                .OrderBy(w => random.Next())
-                .ToList();
+            var shuffledSession = studySession.OrderBy(w => Guid.NewGuid()).ToList();
 
             return Ok(shuffledSession);
+        }
+
+        [HttpPut("{id:int}")]
+        public async Task<IActionResult> UpdateDictionary(int id, [FromBody] Dictionary dictionary)
+        {
+            if (id != dictionary.Id) return BadRequest("ID mismatch");
+
+            _context.Entry(dictionary).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!_context.Dictionaries.Any(e => e.Id == id)) return NotFound();
+                else throw;
+            }
+
+            return NoContent();
         }
     }
 }

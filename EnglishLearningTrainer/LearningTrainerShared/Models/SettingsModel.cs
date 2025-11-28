@@ -10,5 +10,9 @@ namespace LearningTrainerShared.Models
     {
         public double BaseFontSize { get; set; } = 14;
         public string Theme { get; set; } = "Light";
+
+        public string AccentColor { get; set; }
+        public string BackgroundColor { get; set; }
+        public string TextColor { get; set; }
     }
 }

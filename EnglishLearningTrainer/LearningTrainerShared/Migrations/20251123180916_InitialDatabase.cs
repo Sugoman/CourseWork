@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LearningTrainerShared.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialPerfectSchema : Migration
+    public partial class InitialDatabase : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -33,7 +33,9 @@ namespace LearningTrainerShared.Migrations
                     RoleId = table.Column<int>(type: "int", nullable: false),
                     Login = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UserId = table.Column<int>(type: "int", nullable: true),
+                    InviteCode = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -44,6 +46,11 @@ namespace LearningTrainerShared.Migrations
                         principalTable: "Roles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Users_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -76,9 +83,9 @@ namespace LearningTrainerShared.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<int>(type: "int", nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(70)", maxLength: 70, nullable: false),
                     MarkdownContent = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Category = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     DifficultyLevel = table.Column<int>(type: "int", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
@@ -92,6 +99,33 @@ namespace LearningTrainerShared.Migrations
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DictionarySharings",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    DictionaryId = table.Column<int>(type: "int", nullable: false),
+                    StudentId = table.Column<int>(type: "int", nullable: false),
+                    SharedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DictionarySharings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_DictionarySharings_Dictionaries_DictionaryId",
+                        column: x => x.DictionaryId,
+                        principalTable: "Dictionaries",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_DictionarySharings_Users_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -126,6 +160,33 @@ namespace LearningTrainerShared.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "RuleSharings",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    RuleId = table.Column<int>(type: "int", nullable: false),
+                    StudentId = table.Column<int>(type: "int", nullable: false),
+                    SharedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RuleSharings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RuleSharings_Rules_RuleId",
+                        column: x => x.RuleId,
+                        principalTable: "Rules",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_RuleSharings_Users_StudentId",
+                        column: x => x.StudentId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "LearningProgresses",
                 columns: table => new
                 {
@@ -142,6 +203,7 @@ namespace LearningTrainerShared.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_LearningProgresses", x => x.Id);
+                    table.UniqueConstraint("AK_LearningProgresses_UserId_WordId", x => new { x.UserId, x.WordId });
                     table.ForeignKey(
                         name: "FK_LearningProgresses_Users_UserId",
                         column: x => x.UserId,
@@ -153,13 +215,28 @@ namespace LearningTrainerShared.Migrations
                         column: x => x.WordId,
                         principalTable: "Words",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Dictionaries_UserId",
                 table: "Dictionaries",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DictionarySharings_DictionaryId",
+                table: "DictionarySharings",
+                column: "DictionaryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DictionarySharings_StudentId",
+                table: "DictionarySharings",
+                column: "StudentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LearningProgresses_NextReview",
+                table: "LearningProgresses",
+                column: "NextReview");
 
             migrationBuilder.CreateIndex(
                 name: "IX_LearningProgresses_UserId",
@@ -177,9 +254,24 @@ namespace LearningTrainerShared.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_RuleSharings_RuleId",
+                table: "RuleSharings",
+                column: "RuleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RuleSharings_StudentId",
+                table: "RuleSharings",
+                column: "StudentId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Users_RoleId",
                 table: "Users",
                 column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_UserId",
+                table: "Users",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Words_DictionaryId",
@@ -196,13 +288,19 @@ namespace LearningTrainerShared.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "DictionarySharings");
+
+            migrationBuilder.DropTable(
                 name: "LearningProgresses");
 
             migrationBuilder.DropTable(
-                name: "Rules");
+                name: "RuleSharings");
 
             migrationBuilder.DropTable(
                 name: "Words");
+
+            migrationBuilder.DropTable(
+                name: "Rules");
 
             migrationBuilder.DropTable(
                 name: "Dictionaries");

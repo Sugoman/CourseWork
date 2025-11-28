@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace LearningTrainerShared.Models
 {
@@ -21,5 +23,13 @@ namespace LearningTrainerShared.Models
         public Role Role { get; set; } // "Admin", "Teacher", "Student"
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public int? UserId { get; set; }
+        [JsonIgnore]
+        [ForeignKey("UserId")] 
+        public User? Teacher { get; set; }
+        [JsonIgnore]
+        public virtual ICollection<User> Students { get; set; }
+        public string? InviteCode { get; set; }
     }
 }

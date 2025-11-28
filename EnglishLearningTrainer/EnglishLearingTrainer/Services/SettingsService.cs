@@ -13,17 +13,29 @@ namespace LearningTrainer.Services
         public SettingsService()
         {
             CurrentSettings = LoadSettings();
-            ApplySettingsToApp(CurrentSettings); 
+            ApplyAllSettings(); 
         }
 
-        public SettingsModel LoadSettings()
+        private void ApplyAllSettings()
         {
-            if (File.Exists(_settingsFilePath))
-            {
-                string json = File.ReadAllText(_settingsFilePath);
-                return JsonSerializer.Deserialize<SettingsModel>(json) ?? new SettingsModel();
-            }
-            return new SettingsModel();
+            // 1. Применяем базовую тему (Словарь)
+            string theme = string.IsNullOrEmpty(CurrentSettings.Theme) ? "Light" : CurrentSettings.Theme;
+            ThemeService.SetTheme(theme);
+
+            // 2. Накатываем кастомные цвета ПОВЕРХ темы
+            if (!string.IsNullOrEmpty(CurrentSettings.BackgroundColor))
+                ThemeService.ApplyColor("MainBackgroundBrush", CurrentSettings.BackgroundColor);
+
+            if (!string.IsNullOrEmpty(CurrentSettings.TextColor))
+                ThemeService.ApplyColor("PrimaryTextBrush", CurrentSettings.TextColor);
+
+            if (!string.IsNullOrEmpty(CurrentSettings.AccentColor))
+                ThemeService.ApplyColor("PrimaryAccentBrush", CurrentSettings.AccentColor);
+
+            // 3. Шрифты
+            if (CurrentSettings.BaseFontSize <= 0) CurrentSettings.BaseFontSize = 14;
+            Application.Current.Resources["BaseFontSize"] = CurrentSettings.BaseFontSize;
+            Application.Current.Resources["HeaderFontSize"] = CurrentSettings.BaseFontSize + 6;
         }
 
         public void SaveSettings(SettingsModel settings)
@@ -31,12 +43,23 @@ namespace LearningTrainer.Services
             CurrentSettings = settings;
             string json = JsonSerializer.Serialize(settings, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(_settingsFilePath, json);
+
+            // Сразу применяем изменения
+            ApplyAllSettings();
         }
 
-        public void ApplySettingsToApp(SettingsModel settings)
+        public SettingsModel LoadSettings()
         {
-            Application.Current.Resources["BaseFontSize"] = settings.BaseFontSize;
-            Application.Current.Resources["HeaderFontSize"] = settings.BaseFontSize + 6;
+            if (File.Exists(_settingsFilePath))
+            {
+                try
+                {
+                    string json = File.ReadAllText(_settingsFilePath);
+                    return JsonSerializer.Deserialize<SettingsModel>(json) ?? new SettingsModel();
+                }
+                catch { return new SettingsModel(); }
+            }
+            return new SettingsModel();
         }
     }
 }

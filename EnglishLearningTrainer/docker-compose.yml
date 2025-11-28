@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # -------------------------------
+  # 1. Твой API (Приложение)
+  # -------------------------------
+  learningapi:
+    image: ${DOCKER_REGISTRY-}learningapi
+    build:
+      context: .
+      dockerfile: LearningAPI/Dockerfile
+    ports:
+      - "5077:8080" # 5077 снаружи -> 8080 внутри
+    depends_on:
+      - db # Ждем запуска базы
+    environment:
+      # ВНИМАНИЕ:
+      # 1. Server=db (имя сервиса ниже)
+      # 2. User Id=sa (стандартный админ в MSSQL Docker)
+      # 3. Password должен совпадать с тем, что указан в сервисе db ниже
+      - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True
+      - ASPNETCORE_URLS=http://+:8080
+
+  # -------------------------------
+  # 2. База данных (MSSQL Server)
+  # -------------------------------
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: learning_sql_server
+    user: root
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=MySuperStrong!Pass123 #
+    ports:
+      - "14333:1433" 
+    volumes:
+      - sql_data:/var/opt/mssql/data # Сохраняем данные, чтобы не стирались при перезапуске
+
+volumes:
+  sql_data:

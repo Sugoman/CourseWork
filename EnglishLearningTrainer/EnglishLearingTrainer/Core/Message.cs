@@ -2,6 +2,11 @@
 
 namespace LearningTrainer.Core
 {
+    public class RoleChangedMessage
+    {
+        public string NewToken { get; set; }
+        public string NewRole { get; set; }
+    }
     public class RuleAddedMessage
     {
         public Rule Rule { get; }

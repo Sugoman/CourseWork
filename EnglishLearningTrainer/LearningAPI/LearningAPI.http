@@ -1,4 +1,4 @@
-@LearningAPI_HostAddress = http://localhost:5076
+@LearningAPI_HostAddress = http://localhost:5077
 
 GET {{LearningAPI_HostAddress}}/weatherforecast/
 Accept: application/json

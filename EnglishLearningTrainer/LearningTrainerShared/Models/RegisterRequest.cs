@@ -10,5 +10,6 @@ namespace LearningTrainerShared.Models
     {
         public string Login { get; set; }
         public string Password { get; set; }
+        public string? InviteCode { get; set; }
     }
 }

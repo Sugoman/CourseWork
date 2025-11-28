@@ -34,5 +34,9 @@ namespace LearningTrainerShared.Models
 
         [NotMapped]
         public int WordCount => Words?.Count ?? 0;
+
+        [JsonIgnore]
+        public virtual ICollection<DictionarySharing> DictionarySharings { get; set; }
+        = new List<DictionarySharing>();
     }
 }
