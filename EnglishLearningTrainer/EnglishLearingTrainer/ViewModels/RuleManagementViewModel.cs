@@ -15,7 +15,6 @@ namespace LearningTrainer.ViewModels
         // Поля для привязки к TextBox
         public string Title { get; set; }
         public string Description { get; set; }
-        public string MarkdownContent { get; set; }
         public string Category { get; set; }
         public int DifficultyLevel { get; set; }
 
@@ -33,7 +32,6 @@ namespace LearningTrainer.ViewModels
 
             Title = rule.Title;
             Description = rule.Description;
-            MarkdownContent = rule.MarkdownContent;
             Category = rule.Category;
             DifficultyLevel = rule.DifficultyLevel;
 
@@ -43,6 +41,18 @@ namespace LearningTrainer.ViewModels
             CloseCommand = new RelayCommand((_) => EventAggregator.Instance.Publish(new CloseTabMessage(this)));
         }
 
+        private string _markdownContent;
+        public string MarkdownContent
+        {
+            get => _markdownContent;
+            set => SetProperty(ref _markdownContent, value);
+        }
+        private MarkdownConfig _config;
+        public MarkdownConfig Config
+        {
+            get => _config;
+            set => SetProperty(ref _config, value);
+        }
         private async Task SaveChanges()
         {
             _ruleModel.Title = Title;

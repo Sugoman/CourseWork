@@ -24,9 +24,9 @@ namespace LearningTrainer.ViewModels
 
             Title = $"Rule: {rule.Title}";
 
-           /* Config = _settingsService.CurrentMarkdownConfig;
+           Config = _settingsService.CurrentMarkdownConfig;
 
-            _settingsService.MarkdownConfigChanged += OnConfigChanged;*/
+            _settingsService.MarkdownConfigChanged += OnConfigChanged;
         }
 
         private void OnConfigChanged(MarkdownConfig newConfig)

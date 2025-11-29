@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
-// Добавь, чтобы видеть CloseTabMessage
 using static LearningTrainer.Core.EventAggregator;
 
 namespace LearningTrainer.ViewModels
@@ -13,25 +12,73 @@ namespace LearningTrainer.ViewModels
     public class AddRuleViewModel : TabViewModelBase
     {
         private readonly IDataService _dataService;
+        private readonly SettingsService _settingsService;
 
-        public string RuleTitle { get; set; }
-        public string Description { get; set; }
-        public string MarkdownContent { get; set; }
-        public string Category { get; set; } = "Grammar";
+        private string _ruleTitle;
+        private string _description;
+        private string _markdownContent;
+        private string _category = "Grammar";
+        private int _difficultyLevel = 1;
+        private MarkdownConfig _config;
 
-        public int DifficultyLevel { get; set; } = 1;
+        public string RuleTitle
+        {
+            get => _ruleTitle;
+            set => SetProperty(ref _ruleTitle, value);
+        }
+
+        public string Description
+        {
+            get => _description;
+            set => SetProperty(ref _description, value);
+        }
+
+        public string MarkdownContent
+        {
+            get => _markdownContent;
+            set => SetProperty(ref _markdownContent, value);
+        }
+
+        public string Category
+        {
+            get => _category;
+            set => SetProperty(ref _category, value);
+        }
+
+        public int DifficultyLevel
+        {
+            get => _difficultyLevel;
+            set => SetProperty(ref _difficultyLevel, value);
+        }
+
+        public MarkdownConfig Config
+        {
+            get => _config;
+            set => SetProperty(ref _config, value);
+        }
+
         public int UserId { get; set; }
 
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
 
-        public AddRuleViewModel(IDataService dataService)
+        public AddRuleViewModel(IDataService dataService, SettingsService settingsService)
         {
             _dataService = dataService;
+            _settingsService = settingsService;
             Title = "Создать новое правило";
+
+            // Загружаем цвета темы
+            Config = _settingsService.CurrentMarkdownConfig;
+            _settingsService.MarkdownConfigChanged += OnConfigChanged;
 
             SaveCommand = new RelayCommand(async (param) => await SaveRuleAsync());
             CancelCommand = new RelayCommand((param) => Cancel());
+        }
+
+        private void OnConfigChanged(MarkdownConfig newConfig)
+        {
+            Config = newConfig;
         }
 
         private async Task SaveRuleAsync()
@@ -49,7 +96,7 @@ namespace LearningTrainer.ViewModels
                     Title = RuleTitle.Trim(),
                     Description = Description?.Trim() ?? "",
                     MarkdownContent = MarkdownContent.Trim(),
-                    Category = Category.Trim(), 
+                    Category = Category.Trim(),
                     DifficultyLevel = DifficultyLevel,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -57,7 +104,6 @@ namespace LearningTrainer.ViewModels
                 var savedRule = await _dataService.AddRuleAsync(newRule);
 
                 EventAggregator.Instance.Publish(new RuleAddedMessage(savedRule));
-
                 EventAggregator.Instance.Publish(new CloseTabMessage(this));
             }
             catch (Exception ex)

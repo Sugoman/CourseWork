@@ -5,60 +5,123 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:viewmodels="clr-namespace:LearningTrainer.ViewModels"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="400">
+             d:DesignHeight="500" d:DesignWidth="500"
+             Background="{DynamicResource MainBackgroundBrush}">
+    <Grid>
+        <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                CornerRadius="12" 
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                Width="420"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Padding="25">
 
-    <Grid Width="450" Height="500">
-        <Border Background="White" CornerRadius="12" Padding="20">
+            <Border.Effect>
+                <DropShadowEffect Color="Black" Opacity="0.15" BlurRadius="20" ShadowDepth="5"/>
+            </Border.Effect>
+
             <StackPanel>
-
                 <Grid Margin="0,0,0,15">
-                    <TextBlock Text="{Binding Title}" 
-                               FontSize="18" FontWeight="Bold" 
-                               Foreground="#111827" 
-                               VerticalAlignment="Center"/>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
-                    <Button Content="✕" 
+                    <TextBlock Text="{Binding Title}" 
+                               FontSize="{DynamicResource HeaderFontSize}" 
+                               FontWeight="Bold" 
+                               Foreground="{DynamicResource PrimaryTextBrush}" 
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"/>
+
+                    <Button Grid.Column="1"
                             Command="{Binding CloseCommand}"
-                            Style="{StaticResource CloseTabButtonStyle}"
-                            HorizontalAlignment="Right"
-                            Foreground="#4B5563"
-                            Width="24" Height="24"/>
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Foreground="{DynamicResource SecondaryTextBrush}"
+                            Cursor="Hand"
+                            Padding="5">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                                    <TextBlock Text="✕" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
                 </Grid>
 
-                <Border BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Margin="0,0,0,15"/>
+                <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,15" Opacity="0.3"/>
 
                 <TextBlock Text="Загрузка студентов..."
-                           Foreground="#4B5563"
+                           Foreground="{DynamicResource TertiaryTextBrush}"
                            HorizontalAlignment="Center"
+                           Margin="0,20,0,20"
                            Visibility="{Binding IsLoading, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Height="350">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="350">
                     <ItemsControl ItemsSource="{Binding Students}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Border BorderBrush="#F3F4FFA8" BorderThickness="0,0,0,1" Padding="0,8">
+                                <Border BorderBrush="{DynamicResource SeparatorBrush}" 
+                                        BorderThickness="0,0,0,1" 
+                                        Padding="5,12">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Opacity" Value="1"/>
+                                        </Style>
+                                    </Border.Style>
+
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <TextBlock Grid.Column="0" 
-                                                   Text="{Binding Student.Login}" 
-                                                   VerticalAlignment="Center"
-                                                   FontSize="14"/>
+                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Student.Login}" 
+                                                       Foreground="{DynamicResource PrimaryTextBrush}"
+                                                       FontSize="15"
+                                                       FontWeight="Medium"/>
+                                        </StackPanel>
 
                                         <CheckBox Grid.Column="1" 
                                                   Content="Доступ"
                                                   IsChecked="{Binding IsShared, Mode=TwoWay}"
                                                   Style="{StaticResource ToggleSwitchStyle}"
-                                                  Margin="10,0"/>
+                                                  Foreground="{DynamicResource SecondaryTextBrush}"
+                                                  FontSize="12"
+                                                  VerticalAlignment="Center"/>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
+
+                <TextBlock Text="Студенты не найдены" 
+                           Foreground="{DynamicResource TertiaryTextBrush}"
+                           HorizontalAlignment="Center"
+                           Margin="0,20,0,0"
+                           FontStyle="Italic">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Students.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
 
             </StackPanel>
         </Border>

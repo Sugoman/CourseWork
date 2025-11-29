@@ -8,14 +8,14 @@
              xmlns:svg="http://sharpvectors.codeplex.com/svgc/"
              mc:Ignorable="d" 
              d:DesignHeight="700" d:DesignWidth="1100"
-             Background="#F3F4F6">
+             Background="{DynamicResource MainBackgroundBrush}">
 
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter"/>
         <converters:StringNullOrEmptyToVisibilityConverter x:Key="StringNullOrEmptyToVisibilityConverter"/>
 
-        <!-- СТИЛЬ ДЛЯ DATAGRID (Твой новый стиль) -->
+        <!-- СТИЛЬ ДЛЯ DATAGRID -->
         <Style TargetType="DataGrid">
             <Setter Property="Background" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -36,13 +36,13 @@
 
         <!-- Стиль заголовков колонок -->
         <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#E5E7EB"/>
-            <Setter Property="Foreground" Value="#6B7280"/>
+            <Setter Property="Background" Value="{DynamicResource SecondaryMainBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Padding" Value="15,12"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="BorderThickness" Value="0,0,0,1"/>
-            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
         </Style>
 
         <!-- Стиль ячеек -->
@@ -52,7 +52,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="DataGridCell">
-                        <Border Background="{TemplateBinding Background}" BorderThickness="0">
+                        <Border Background="{DynamicResource InputBackgroundBrush}" BorderThickness="0">
                             <ContentPresenter VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
                         </Border>
                     </ControlTemplate>
@@ -60,24 +60,24 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#EFF6FF"/>
+                    <Setter Property="Background" Value="{DynamicResource IsMouseOverBrush}"/>
                     <!-- Светло-голубой при выделении -->
-                    <Setter Property="Foreground" Value="#1E3A8A"/>
+                    <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
         <!-- Чередование строк -->
         <Style TargetType="DataGridRow">
-            <Setter Property="Background" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource TertiaryTextBrush}"/>
             <Style.Triggers>
                 <Trigger Property="ItemsControl.AlternationIndex" Value="1">
-                    <Setter Property="Background" Value="#F9FAFB"/>
+                    <Setter Property="Background" Value="{DynamicResource SecondaryTextBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
-        <!-- Маленькие кнопки действий (Edit/Delete) -->
+        <!-- Edit/Delete -->
         <Style x:Key="GridActionButton" TargetType="Button">
             <Setter Property="Width" Value="32"/>
             <Setter Property="Height" Value="32"/>
@@ -89,7 +89,6 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="6">
-                            <!-- Контент кнопки (иконка) будет передан через Content -->
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -104,7 +103,7 @@
 
         <!-- Стиль кнопки "Сохранить" (Зеленая) -->
         <Style x:Key="SaveButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#10B981"/>
+            <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
             <!-- Green -->
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="Width" Value="36"/>
@@ -113,12 +112,20 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="18">                           
-                            <svg:SvgViewbox Source="Sources/save.svg" Width="18" Height="18"/>
+                        <Border Background="{TemplateBinding Background}" CornerRadius="18">
+                            <Rectangle Width="18" Height="18" Fill="{DynamicResource PrimaryTextBrush}">
+                                <Rectangle.OpacityMask>
+                                    <VisualBrush Stretch="Uniform">
+                                        <VisualBrush.Visual>
+                                            <svg:SvgViewbox Source="Sources/save.svg"/>
+                                        </VisualBrush.Visual>
+                                    </VisualBrush>
+                                </Rectangle.OpacityMask>
+                            </Rectangle>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#059669"/>
+                                <Setter Property="Background" Value="{DynamicResource MouseOverSuccessBrush}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -149,8 +156,16 @@
                          Command="{Binding CloseCommand}" Cursor="Hand">
                     <StackPanel Orientation="Horizontal">
                         <!-- Иконка "Назад" -->
-                        <svg:SvgViewbox Source="Sources/back.svg" Width="12" Height="12" Margin="0,0,5,0"/>
-                        <TextBlock Text="Back to Library"/>
+                        <Rectangle Width="12" Height="12" Margin="0,0,5,0" Fill="{DynamicResource SecondaryTextBrush}">
+                            <Rectangle.OpacityMask>
+                                <VisualBrush Stretch="Uniform">
+                                    <VisualBrush.Visual>
+                                        <svg:SvgViewbox Source="Sources/back.svg"/>
+                                    </VisualBrush.Visual>
+                                </VisualBrush>
+                            </Rectangle.OpacityMask>
+                        </Rectangle>
+                        <TextBlock Text="Back to Library  " Margin="5"/>
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -162,16 +177,31 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0">
-                   
+
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
                         <TextBox Text="{Binding DictionaryName, UpdateSourceTrigger=PropertyChanged}" 
-                                 FontSize="28" FontWeight="Bold" Foreground="#111827"
-                                 Background="Transparent" BorderThickness="0"
-                                 Padding="0" MaxLength="60"/>
+                                 FontSize="28" 
+                                 FontWeight="Bold" 
+                                 Foreground="{DynamicResource PrimaryTextBrush}"
+                                 Background="Transparent" 
+                                 BorderThickness="0"
+                                 Padding="0" 
+                                 MaxLength="60"/>
 
-                        <svg:SvgViewbox Source="Sources/edit.svg" Width="20" Height="20" Margin="10,0,0,0" Opacity="0.5" 
-                                        Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-
+                        <Rectangle Width="20" Height="20" 
+                                       Margin="10,0,0,0" 
+                                       Opacity="0.5" 
+                                       Visibility="{Binding IsEditable, 
+                                                    Converter={StaticResource BooleanToVisibilityConverter}}" 
+                                       Fill="{DynamicResource PrimaryTextBrush}">
+                            <Rectangle.OpacityMask>
+                                <VisualBrush Stretch="Uniform">
+                                    <VisualBrush.Visual>
+                                        <svg:SvgViewbox Source="Sources/edit.svg"/>
+                                    </VisualBrush.Visual>
+                                </VisualBrush>
+                            </Rectangle.OpacityMask>
+                        </Rectangle>
                         <Button Style="{StaticResource SaveButtonStyle}" 
                                 Command="{Binding SaveChangesCommand}" 
                                 Margin="20,0,0,0"
@@ -181,11 +211,11 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,5,0,10">
-                        <Border Background="#E0E7FF" CornerRadius="4" Padding="8,4" Margin="0,0,5,0">
+                        <Border Background="{DynamicResource InputBackgroundBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,5,0">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding LanguageFrom}" Foreground="#3730A3" FontWeight="SemiBold" FontSize="12"/>
-                                <TextBlock Text=" → " Foreground="#3730A3" FontWeight="SemiBold" FontSize="12" Margin="5,0"/>
-                                <TextBlock Text="{Binding LanguageTo}" Foreground="#3730A3" FontWeight="SemiBold" FontSize="12"/>
+                                <TextBlock Text="{Binding LanguageFrom}" Foreground="#7772cf" FontWeight="SemiBold" FontSize="12"/>
+                                <TextBlock Text=" → " Foreground="#7772cf" FontWeight="SemiBold" FontSize="12" Margin="5,0"/>
+                                <TextBlock Text="{Binding LanguageTo}" Foreground="#7772cf" FontWeight="SemiBold" FontSize="12"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -218,45 +248,82 @@
                     Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
             <!-- Поиск -->
-            <Border Grid.Column="2" Background="White" CornerRadius="8" BorderBrush="#D1D5DB" BorderThickness="1" Padding="10,5" Width="300">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <svg:SvgViewbox Grid.Column="0" Source="Sources/search.svg" Width="16" Height="16" Margin="0,0,10,0"/>
+            <Grid Grid.Column="2">
+                <Border 
+        Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+        BorderBrush="{DynamicResource SeparatorBrush}"
+        BorderThickness="1"
+        CornerRadius="8" 
+        Width="300" Height="35"
+                Grid.Column="2"/>
 
-                    <TextBox Grid.Column="1" 
-                             Text="{Binding SearchWordQuery, UpdateSourceTrigger=PropertyChanged}"
+                <StackPanel Orientation="Horizontal">
+
+                    <Rectangle
+                        Fill="{DynamicResource PrimaryTextBrush}"
+                        Height="20" Width="20"
+                        Stretch="Uniform" 
+                        Margin="12,0,5,0" 
+                        VerticalAlignment="Center">
+                        <Rectangle.OpacityMask>
+                            <VisualBrush Stretch="Uniform">
+                                <VisualBrush.Visual>
+                                    <svg:SvgViewbox Source="Sources/search.svg"/>
+                                </VisualBrush.Visual>
+                            </VisualBrush>
+                        </Rectangle.OpacityMask>
+                    </Rectangle>
+
+                    <TextBox Background="Transparent" 
+                             BorderThickness="0" 
+                             Padding="8" 
+                             VerticalContentAlignment="Center" 
+                             Width="250" 
+                             FontSize="14"
                              x:Name="SearchTextBox"
-                             BorderThickness="0" Background="Transparent"
-                             VerticalContentAlignment="Center"/>
-                    <!-- Плейсхолдер -->
-                    <TextBlock Grid.Column="1" Text="Search word..." Foreground="#9CA3AF" VerticalAlignment="Center" IsHitTestVisible="False"
-                               Visibility="{Binding Text, ElementName=SearchTextBox, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
-
-                </Grid>
-            </Border>
+                             Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"/>
+                </StackPanel>
+                <TextBlock Text="{DynamicResource Loc.Dashboard.SearchPlaceholder}" 
+                           Foreground="{DynamicResource PrimaryTextBrush}" 
+                           VerticalAlignment="Center" 
+                           Margin="50,0,0,0" 
+                           IsHitTestVisible="False"
+                           Visibility="{Binding Text, ElementName=SearchTextBox, 
+                                        Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+            </Grid>
         </Grid>
 
         <!-- 3. DATA GRID -->
-        <Border Grid.Row="2" Background="White" CornerRadius="10" BorderBrush="#E5E7EB" BorderThickness="1" ClipToBounds="True">
+        <Border Grid.Row="2" Background="Transparent" CornerRadius="10" BorderBrush="#E5E7EB" BorderThickness="0" ClipToBounds="True">
             <Border.Effect>
                 <DropShadowEffect Color="Black" Opacity="0.05" BlurRadius="10" ShadowDepth="2"/>
             </Border.Effect>
 
             <DataGrid ItemsSource="{Binding Words}"
-                      Background="White"
+                      Background="{DynamicResource SecondaryMainBackgroundBrush}"
                       BorderThickness="0">
                 <DataGrid.Columns>
 
-                    <!-- Колонка 1: Слово -->
-                    <DataGridTextColumn Header="Word" Binding="{Binding OriginalWord}" Width="*" FontWeight="SemiBold"/>
+                    <!-- Слово -->
+                    <DataGridTextColumn Header="Word" 
+                                        Binding="{Binding OriginalWord}" 
+                                        Width="*" 
+                                        Foreground="{DynamicResource PrimaryTextBrush}" 
+                                        FontWeight="SemiBold"/>
 
-                    <!-- Колонка 2: Перевод -->
-                    <DataGridTextColumn Header="Translation" Binding="{Binding Translation}" Width="*"/>
+                    <!-- Перевод -->
+                    <DataGridTextColumn Header="Translation" 
+                                        Binding="{Binding Translation}"
+                                        Foreground="{DynamicResource PrimaryTextBrush}"  
+                                        Width="*"/>
+                    
+                    <!-- Транскрипция -->
+                    <DataGridTextColumn Header="Transcription" 
+                                        Binding="{Binding Transcription}"
+                                        Foreground="{DynamicResource PrimaryTextBrush}"  
+                                        Width="*"/>
 
-                    <!-- Колонка 3: Пример -->
+                    <!-- Пример -->
                     <DataGridTextColumn Header="Example" Binding="{Binding Example}" Width="1.5*" Foreground="#6B7280">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
@@ -266,21 +333,37 @@
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
 
-                    <!-- Колонка 4: Действия -->
+                    <!-- Действия -->
                     <DataGridTemplateColumn Header="Actions" Width="Auto">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
                                     <!-- Кнопка Редактировать -->
                                     <Button Style="{StaticResource GridActionButton}" ToolTip="Edit Word">
-                                        <svg:SvgViewbox Source="Sources/edit.svg" Width="16" Height="16"/>
+                                        <Rectangle Width="16" Height="16" Fill="{DynamicResource PrimaryTextBrush}">
+                                            <Rectangle.OpacityMask>
+                                                <VisualBrush Stretch="Uniform">
+                                                    <VisualBrush.Visual>
+                                                        <svg:SvgViewbox Source="Sources/edit.svg"/>
+                                                    </VisualBrush.Visual>
+                                                </VisualBrush>
+                                            </Rectangle.OpacityMask>
+                                        </Rectangle>
                                     </Button>
 
                                     <!-- Кнопка Удалить -->
                                     <Button Style="{StaticResource GridActionButton}" ToolTip="Delete Word"
                                             Command="{Binding DataContext.DeleteWordCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}">
-                                        <svg:SvgViewbox Source="Sources/trash.svg" Width="16" Height="16"/>
+                                        <Rectangle Width="16" Height="16" Fill="{DynamicResource PrimaryTextBrush}">
+                                            <Rectangle.OpacityMask>
+                                                <VisualBrush Stretch="Uniform">
+                                                    <VisualBrush.Visual>
+                                                        <svg:SvgViewbox Source="Sources/trash.svg"/>
+                                                    </VisualBrush.Visual>
+                                                </VisualBrush>
+                                            </Rectangle.OpacityMask>
+                                        </Rectangle>
                                     </Button>
                                 </StackPanel>
                             </DataTemplate>
@@ -292,11 +375,11 @@
 
         <!-- 4. FOOTER -->
         <Grid Grid.Row="3" Margin="0,15,0,0">
-            <TextBlock VerticalAlignment="Center" Foreground="#6B7280">
-                <Run Text="Total words: "/>
-                <Run Text="{Binding Words.Count, Mode=OneWay}" FontWeight="Bold"/>
+            <TextBlock VerticalAlignment="Center">
+                <Run Text="Total words: " Foreground="{DynamicResource TertiaryTextBrush}"/>
+                <Run Text="{Binding Words.Count, Mode=OneWay}" FontWeight="Bold" Foreground="{DynamicResource TertiaryTextBrush}"/>
             </TextBlock>
-            
+
             <Button Content="  Share Access  " 
             Command="{Binding ShareDictionaryCommand}" 
             Style="{StaticResource PrimaryButton}"
@@ -304,7 +387,7 @@
             Width="150" Margin="0,0,10,0"
             Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}">
             </Button>
-            
+
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="  Export .json  " Command="{Binding ExportDictionaryCommand}" Style="{StaticResource BaseButton}" Margin="0,0,10,0" Background="White" Foreground="#374151" BorderBrush="#D1D5DB" BorderThickness="1"/>
                 <Button Content=" Delete Dictionary " 

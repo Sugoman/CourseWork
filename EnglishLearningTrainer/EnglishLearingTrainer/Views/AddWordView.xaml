@@ -4,54 +4,100 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="400" d:DesignWidth="500"
-             Background="White">
-
+             d:DesignHeight="500" d:DesignWidth="600"
+             Background="{DynamicResource MainBackgroundBrush}">
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
-        <StackPanel>
-            <TextBlock Text="Добавить новое слово" 
-                       FontSize="{DynamicResource HeaderFontSize}"
-                       FontWeight="Bold" 
-                       Margin="0,0,0,20"/>
 
-            <TextBlock Text="Иностранное слово:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-            <TextBox Text="{Binding OriginalWord, UpdateSourceTrigger=PropertyChanged}" 
-                     PreviewKeyDown="OnOriginalWordTextBox_PreviewKeyDown"
-                     x:Name="OriginalWordTextBox"
-                     FontSize="{DynamicResource BaseFontSize}" 
-                     Padding="10" 
-                     Margin="0,0,0,15"/>
-            <TextBlock Margin="0,5,0,10" Visibility="{Binding DataContext.CanManage, Converter={StaticResource BooleanToVisibilityConverter}}">
-    <Run Text="Возможно, вы имели в виду: "/>
-    <Run Text="{Binding Suggestion}" Foreground="Blue" FontWeight="Bold"/>
-            </TextBlock>
-            
-            <TextBlock Text="Перевод:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-            <TextBox Text="{Binding Translation, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="{DynamicResource BaseFontSize}"
-                     Padding="10" 
-                     Margin="0,0,0,15"/>
+        <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                CornerRadius="12" 
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                Margin="20"
+                Padding="30"
+                MaxWidth="600"
+                VerticalAlignment="Center">
 
-            <TextBlock Text="Пример использования (необязательно):" FontWeight="SemiBold" Margin="0,0,0,5"/>
-            <TextBox Text="{Binding Example, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="{DynamicResource BaseFontSize}"
-                     Padding="10" 
-                     Height="60" 
-                     TextWrapping="Wrap"
-                     AcceptsReturn="True"
-                     Margin="0,0,0,25"/>
+            <Border.Effect>
+                <DropShadowEffect Color="Black" Opacity="0.15" BlurRadius="15" ShadowDepth="4"/>
+            </Border.Effect>
 
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Отмена" 
-                        Command="{Binding CancelCommand}"
-                        Style="{StaticResource DangerButton}" 
-                        Width="100" 
-                        Margin="0,0,10,0"/>
-                <Button Content="Сохранить" 
-                        Command="{Binding SaveCommand}"
-                        Style="{StaticResource SuccessButton}" 
-                        Width="100"/>
+            <StackPanel>
+                <TextBlock Text="Добавить новое слово" 
+                           FontSize="{DynamicResource HeaderFontSize}"
+                           FontWeight="Bold" 
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           Margin="0,0,0,25"/>
+
+                <TextBlock Text="Иностранное слово" 
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontWeight="Medium" Margin="0,0,0,5"/>
+
+                <Border Style="{StaticResource InputContainerStyle}">
+                    <TextBox Text="{Binding OriginalWord, UpdateSourceTrigger=PropertyChanged}" 
+                             PreviewKeyDown="OnOriginalWordTextBox_PreviewKeyDown"
+                             x:Name="OriginalWordTextBox"
+                             Foreground="{DynamicResource PrimaryTextBrush}"
+                             CaretBrush="{DynamicResource PrimaryTextBrush}"
+                             FontSize="{DynamicResource BaseFontSize}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0,2"/>
+                </Border>
+
+                <TextBlock Margin="0,5,0,15" 
+                           FontSize="13"
+                           Visibility="{Binding DataContext.CanManage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Run Text="Возможно, вы имели в виду: " Foreground="{DynamicResource TertiaryTextBrush}"/>
+                    <Run Text="{Binding Suggestion}" Foreground="{DynamicResource PrimaryAccentBrush}" FontWeight="SemiBold"/>
+                </TextBlock>
+
+                <TextBlock Text="Перевод" 
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontWeight="Medium" Margin="0,0,0,5"/>
+
+                <Border Style="{StaticResource InputContainerStyle}">
+                    <TextBox Text="{Binding Translation, UpdateSourceTrigger=PropertyChanged}" 
+                             Foreground="{DynamicResource PrimaryTextBrush}"
+                             CaretBrush="{DynamicResource PrimaryTextBrush}"
+                             FontSize="{DynamicResource BaseFontSize}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0,2"/>
+                </Border>
+
+                <TextBlock Text="Пример использования (необязательно)" 
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontWeight="Medium" Margin="0,10,0,5"/>
+
+                <Border Style="{StaticResource InputContainerStyle}">
+                    <TextBox Text="{Binding Example, UpdateSourceTrigger=PropertyChanged}" 
+                             Foreground="{DynamicResource PrimaryTextBrush}"
+                             CaretBrush="{DynamicResource PrimaryTextBrush}"
+                             FontSize="{DynamicResource BaseFontSize}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0,2"
+                             Height="80" 
+                             VerticalContentAlignment="Top"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"/>
+                </Border>
+
+                <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,20,0,20" Opacity="0.3"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Отмена" 
+                            Command="{Binding CancelCommand}"
+                            Style="{StaticResource DangerButton}" 
+                            Width="100" 
+                            Margin="0,0,15,0"/>
+
+                    <Button Content="Сохранить" 
+                            Command="{Binding SaveCommand}"
+                            Style="{StaticResource SuccessButton}" 
+                            Width="110"/>
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
+        </Border>
     </ScrollViewer>
 </UserControl>

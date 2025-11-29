@@ -12,12 +12,17 @@
   <ItemGroup>
     <None Remove="Sources\account.svg" />
     <None Remove="Sources\appearance.svg" />
+    <None Remove="Sources\back.svg" />
     <None Remove="Sources\edit.svg" />
+    <None Remove="Sources\email.svg" />
     <None Remove="Sources\flag-me.svg" />
     <None Remove="Sources\general.svg" />
     <None Remove="Sources\github.svg" />
     <None Remove="Sources\google.svg" />
     <None Remove="Sources\notifications.svg" />
+    <None Remove="Sources\password.svg" />
+    <None Remove="Sources\save.svg" />
+    <None Remove="Sources\school.svg" />
     <None Remove="Sources\search.svg" />
     <None Remove="Sources\settings.svg" />
     <None Remove="Sources\start.svg" />
@@ -26,6 +31,10 @@
 
   <ItemGroup>
     <Content Include="icon.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Sources\school.svg" />
   </ItemGroup>
 
   <ItemGroup>
@@ -55,13 +64,12 @@
     <Resource Include="Sources\appearance.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
+    <Resource Include="Sources\back.svg" />
     <Resource Include="Sources\cross.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Sources\edit.svg" />
-    <Resource Include="Sources\email.svg">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
+    <Resource Include="Sources\email.svg" />
     <Resource Include="Sources\flag-me.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
@@ -77,9 +85,8 @@
     <Resource Include="Sources\notifications.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>
-    <Resource Include="Sources\password.svg">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Resource>
+    <Resource Include="Sources\password.svg" />
+    <Resource Include="Sources\save.svg" />
     <Resource Include="Sources\search.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Resource>

@@ -1,28 +1,23 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <SolidColorBrush x:Key="MainBackgroundBrush" Color="#F3F4F6"/>
-
+    <SolidColorBrush x:Key="MainBackgroundBrush" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="SecondaryMainBackgroundBrush" Color="#F4F5F7"/>
+    <SolidColorBrush x:Key="IsMouseOverBrush" Color="#E5E7EB"/>
+    <SolidColorBrush x:Key="ShallBackgroundBrush" Color="#E5E7EB"/>
     <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF"/>
-    
-    <SolidColorBrush x:Key="CardPartBackgroundBrush" Color="#F1F1F1"/>
-
-    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#F9FAFB"/>
-
-    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#FFFFFF"/>
-
-    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#111827"/>
-
-    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#4B5563"/>
-
+    <SolidColorBrush x:Key="InputBackgroundBrush" Color="#F4F5F7"/>
+    <SolidColorBrush x:Key="SeparatorBrush" Color="#D1D5DB"/>
+    <SolidColorBrush x:Key="BorderBrush" Color="#D1D5DB"/>
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#F4F5F7"/>
+    <SolidColorBrush x:Key="SuccessBrush" Color="#30A966"/>
+    <SolidColorBrush x:Key="MouseOverSuccessBrush" Color="#32C277"/>
+    <SolidColorBrush x:Key="ActionBrush" Color="#0056b3"/>
+    <SolidColorBrush x:Key="MouseOverActionBrush" Color="#007BFF"/>
+    <SolidColorBrush x:Key="DangerBrush" Color="#F87171"/>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#1F2937"/>
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#6B7280"/>
     <SolidColorBrush x:Key="TertiaryTextBrush" Color="#9CA3AF"/>
-
-    <SolidColorBrush x:Key="BorderBrush" Color="#E5E7EB"/>
-
-    <SolidColorBrush x:Key="PrimaryAccentBrush" Color="#3B82F6"/>
+    <SolidColorBrush x:Key="PrimaryAccentBrush" Color="#2563EB"/>
     <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FFFFFF"/>
-
-    <SolidColorBrush x:Key="SuccessBrush" Color="#10B981"/>
-
-    <SolidColorBrush x:Key="DangerBrush" Color="#EF4444"/>
 </ResourceDictionary>

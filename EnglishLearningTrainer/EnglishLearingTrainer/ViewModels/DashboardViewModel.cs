@@ -5,7 +5,6 @@ using LearningTrainerShared.Models;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Http;
-using System.Security.AccessControl;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
@@ -65,7 +64,7 @@ namespace LearningTrainer.ViewModels
             get => _isFeatured;
             set => SetProperty(ref _isFeatured, value);
         }
-        
+
         public DashboardViewModel(User? user, IDataService dataService, SettingsService settingsService)
         {
             IsOverviewMode = false;
@@ -293,7 +292,7 @@ namespace LearningTrainer.ViewModels
 
         private void CreateRule()
         {
-            var addRuleVm = new AddRuleViewModel(_dataService);
+            var addRuleVm = new AddRuleViewModel(_dataService, _settingsService);
             EventAggregator.Instance.Publish(addRuleVm);
         }
 
@@ -383,22 +382,30 @@ namespace LearningTrainer.ViewModels
         {
             if (parameter is DictionaryViewModel dictionaryVM)
             {
-                int currentUserId = _currentUser.Id;
+                if (_currentUser == null)
+                {
+                    MessageBox.Show("Невозможно изменять словари в офлайн режиме");
+                }
+                else
+                {
+                    int currentUserId = _currentUser.Id;
 
-                var managementVm = new DictionaryManagementViewModel(
-                    _dataService,
-                    dictionaryVM.Model,
-                    dictionaryVM.Words,
-                    currentUserId
-                );
-                EventAggregator.Instance.Publish(managementVm);
+                    var managementVm = new DictionaryManagementViewModel(
+                        _dataService,
+                        dictionaryVM.Model,
+                        dictionaryVM.Words,
+                        currentUserId
+                    );
+                    EventAggregator.Instance.Publish(managementVm);
+
+                }
             }
         }
 
         public class SortingDisplayItem
         {
-            public SortKey Key { get; set; } 
-            public string DisplayName { get; set; } 
+            public SortKey Key { get; set; }
+            public string DisplayName { get; set; }
         }
 
         private void ShareRule(object param)
@@ -409,7 +416,7 @@ namespace LearningTrainer.ViewModels
                     _dataService,
                     rule.Id,
                     rule.Title,
-                    ShareContentType.Rule 
+                    ShareContentType.Rule
                 );
                 EventAggregator.Instance.Publish(shareVm);
             }
@@ -439,13 +446,13 @@ namespace LearningTrainer.ViewModels
 
             switch (SelectedSortKey)
             {
-                case SortKey.NameAsc: 
+                case SortKey.NameAsc:
                     query = query.OrderBy(d => d.Name);
                     break;
                 case SortKey.NameDesc:
                     query = query.OrderByDescending(d => d.Name);
                     break;
-                case SortKey.CountMin: 
+                case SortKey.CountMin:
                     query = query.OrderBy(d => d.WordCount);
                     break;
                 case SortKey.CountMax:

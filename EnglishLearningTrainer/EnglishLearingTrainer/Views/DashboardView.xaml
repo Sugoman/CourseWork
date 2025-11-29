@@ -14,8 +14,8 @@
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <converters:StringNullOrEmptyToVisibilityConverter x:Key="StringNullOrEmptyToVisibilityConverter" />
 
-        
-        
+
+
 
     </UserControl.Resources>
 
@@ -29,7 +29,10 @@
         <!-- ===================================== -->
         <!--        Row 0: НАВИГАЦИОННАЯ ПАНЕЛЬ    -->
         <!-- ===================================== -->
-        <Border Grid.Row="0" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
+        <Border Grid.Row="0" 
+                Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                BorderBrush="{DynamicResource BorderBrush}" 
+                BorderThickness="0,0,0,1">
             <Grid Margin="20,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -56,12 +59,20 @@
 
                     <Border BorderBrush="#E5E7EB" BorderThickness="1,0,0,0" Height="24" Margin="15,0"/>
 
-                    <Button x:Name="AddButton" Content="{DynamicResource Loc.Dashboard.AddButton}" Style="{StaticResource NavButtonStyle}" Click="AddButton_Click"
+                    <Button x:Name="AddButton" 
+                            Content="{DynamicResource Loc.Dashboard.AddButton}" 
+                            Style="{StaticResource NavButtonStyle}" 
+                            Click="AddButton_Click"
                     Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Button.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="{DynamicResource Loc.Dashboard.AddRule}" Command="{Binding CreateRuleCommand}"/>
-                                <MenuItem Header="{DynamicResource Loc.Dashboard.AddVocabulary}" Command="{Binding CreateDictionaryCommand}"/>
+                            <ContextMenu Background="{DynamicResource SecondaryMainBackgroundBrush}" >
+                                <MenuItem Header="{DynamicResource Loc.Dashboard.AddRule}" 
+                                          Foreground="{DynamicResource PrimaryTextBrush}" 
+                                          Command="{Binding CreateRuleCommand}"/>
+
+                                <MenuItem Header="{DynamicResource Loc.Dashboard.AddVocabulary}" 
+                                          Foreground="{DynamicResource PrimaryTextBrush}" 
+                                          Command="{Binding CreateDictionaryCommand}"/>
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
@@ -75,7 +86,20 @@
                         <Button.ContentTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
-                                    <svg:SvgViewbox Source="Sources/settings.svg" Height="20" Width="20"/>
+                                    <Rectangle Height="20" Width="20" Fill="{DynamicResource PrimaryTextBrush}">
+                                        <Rectangle.OpacityMask>
+                                            <VisualBrush Stretch="Uniform">
+                                                <VisualBrush.Visual>
+                                                    <svg:SvgViewbox Source="Sources/settings.svg" />
+                                                </VisualBrush.Visual>
+                                            </VisualBrush>
+                                        </Rectangle.OpacityMask>
+                                    </Rectangle>
+
+
+
+
+
                                     <TextBlock Text=" Settings" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </DataTemplate>
@@ -85,25 +109,50 @@
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
                     <ComboBox ItemsSource="{Binding DisplaySortOptions}"
+                     ItemContainerStyle="{StaticResource ComboBoxItemContainerStyle}"
                      SelectedValue="{Binding SelectedSortKey}"
+                     Foreground="{DynamicResource PrimaryTextBrush}"
+                     Style="{StaticResource SortComboBoxStyle}"
                      DisplayMemberPath="DisplayName"
                      SelectedValuePath="Key"
-                     
-                     Style="{StaticResource SortComboBoxStyle}"
                      MinWidth="210"/>
                 </StackPanel>
 
-                <Grid Grid.Column="2" VerticalAlignment="Center" Margin="10,0,0,0">
-                    <Border Background="#F3F4F6" CornerRadius="8" Width="300" Height="40"/>
+                <Grid Grid.Column="2" 
+                      VerticalAlignment="Center" 
+                      Margin="10,0,0,0">
+                    <Border 
+                        Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                        BorderBrush="{DynamicResource SeparatorBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8" 
+                        Width="300" Height="35"/>
+
                     <StackPanel Orientation="Horizontal">
-                        <svg:SvgViewbox Source="Sources/search.svg" Height="20" Width="20"
-                      Stretch="Uniform" Margin="12,0,5,0" VerticalAlignment="Center"/>
+
+                        <Rectangle
+                            Fill="{DynamicResource PrimaryTextBrush}"
+                            Height="20" Width="20"
+                            Stretch="Uniform" 
+                            Margin="12,0,5,0" 
+                            VerticalAlignment="Center">
+                            <Rectangle.OpacityMask>
+                                <VisualBrush Stretch="Uniform">
+                                    <VisualBrush.Visual>
+                                        <svg:SvgViewbox Source="Sources/search.svg"/>
+                                    </VisualBrush.Visual>
+                                </VisualBrush>
+                            </Rectangle.OpacityMask>
+                        </Rectangle>
+
                         <TextBox Background="Transparent" BorderThickness="0" Padding="8" 
                          VerticalContentAlignment="Center" Width="250" FontSize="14"
                          x:Name="SearchTextBox"
                          Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"/>
                     </StackPanel>
-                    <TextBlock Text="{DynamicResource Loc.Dashboard.SearchPlaceholder}" Foreground="#9CA3AF" VerticalAlignment="Center" 
+                    <TextBlock Text="{DynamicResource Loc.Dashboard.SearchPlaceholder}" 
+                               Foreground="{DynamicResource PrimaryTextBrush}" 
+                               VerticalAlignment="Center" 
                        Margin="50,0,0,0" IsHitTestVisible="False"
                        Visibility="{Binding Text, ElementName=SearchTextBox, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
                 </Grid>
@@ -129,74 +178,86 @@
 
                 <StackPanel Margin="30">
                     <StackPanel.Resources>
-                    <Style x:Key="RuleCardStyle" TargetType="Border">
-                        <Setter Property="MinWidth" Value="200"/>
-                        <Setter Property="MinHeight" Value="100"/>
-                        <Setter Property="Background" Value="White"/>
-                        <Setter Property="CornerRadius" Value="12"/>
-                        <Setter Property="BorderThickness" Value="3"/>
-                        <Setter Property="BorderBrush" Value="#E5E7EB"/>
-                        <Setter Property="Margin" Value="8"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                <Setter Property="Background" Value="#3B82F6"/>
-                                <Setter Property="BorderBrush" Value="#3B82F6"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
+                        <Style x:Key="RuleCardStyle" TargetType="Border">
+                            <Setter Property="MinWidth" Value="200"/>
+                            <Setter Property="MinHeight" Value="100"/>
+                            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                            <Setter Property="CornerRadius" Value="12"/>
+                            <Setter Property="BorderThickness" Value="3"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                            <Setter Property="Margin" Value="8"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFeatured}" Value="True">
+                                    <Setter Property="Background" Value="#3B82F6"/>
+                                    <Setter Property="BorderBrush" Value="#3B82F6"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
 
-                    <Style x:Key="VocabCardStyle" TargetType="Border">
-                        <Setter Property="Width" Value="300"/>
-                        <Setter Property="Height" Value="200"/>
-                        <Setter Property="Background" Value="White"/>
-                        <Setter Property="CornerRadius" Value="12"/>
-                        <Setter Property="BorderThickness" Value="3"/>
-                        <Setter Property="BorderBrush" Value="#E5E7EB"/>
-                        <Setter Property="Margin" Value="8"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                <Setter Property="Background" Value="#3B82F6"/>
-                                <Setter Property="BorderBrush" Value="#3B82F6"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
+                        <Style x:Key="VocabCardStyle" TargetType="Border">
+                            <Setter Property="Width" Value="300"/>
+                            <Setter Property="Height" Value="200"/>
+                            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                            <Setter Property="CornerRadius" Value="12"/>
+                            <Setter Property="BorderThickness" Value="5"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                            <Setter Property="Margin" Value="8"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFeatured}" Value="True">
+                                    <Setter Property="Background" Value="#3B82F6"/>
+                                    <Setter Property="BorderBrush" Value="#3B82F6"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
 
-                    <Style x:Key="PlayButtonStyle" TargetType="Button">
-                        <Setter Property="Width" Value="44"/>
-                        <Setter Property="Height" Value="44"/>
-                        <Setter Property="Background" Value="#FFFFFF"/>
-                        <Setter Property="Foreground" Value="#3B82F6"/>
-                        <Setter Property="BorderThickness" Value="0"/>
-                        <Setter Property="Cursor" Value="Hand"/>
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border Background="{TemplateBinding Background}" CornerRadius="22">
-                                        <svg:SvgViewbox Source="Sources/start.svg" Width="30" Height="30"/>
-                                    </Border>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#F0F9FF"/>
-                            </Trigger>
-                            <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                <Setter Property="Background" Value="#2563EB"/>
-                                <Setter Property="Foreground" Value="White"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </StackPanel.Resources>
+                        <Style x:Key="PlayButtonStyle" TargetType="Button">
+                            <Setter Property="Width" Value="44"/>
+                            <Setter Property="Height" Value="44"/>
+                            <Setter Property="Background" Value="#FFFFFF"/>
+                            <Setter Property="Foreground" Value="#3B82F6"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="22">
+                                            <Rectangle Width="30" Height="30" Fill="{DynamicResource SecondaryTextBrush}">
+                                                <Rectangle.OpacityMask>
+                                                    <VisualBrush Stretch="Uniform">
+                                                        <VisualBrush.Visual>
+                                                            <svg:SvgViewbox Source="Sources/start.svg"/>
+                                                        </VisualBrush.Visual>
+                                                    </VisualBrush>
+                                                </Rectangle.OpacityMask>
+                                            </Rectangle>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#F0F9FF"/>
+                                </Trigger>
+                                <DataTrigger Binding="{Binding IsFeatured}" Value="True">
+                                    <Setter Property="Background" Value="#2563EB"/>
+                                    <Setter Property="Foreground" Value="White"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Resources>
 
 
-                <TextBlock Text="{DynamicResource Loc.Dashboard.RuleLabel}" Style="{StaticResource SectionHeaderStyle}" FontSize="28"/>
-                <ItemsControl ItemsSource="{Binding Rules}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
+                    <TextBlock Text="{DynamicResource Loc.Dashboard.RuleLabel}" 
+                           Style="{StaticResource SectionHeaderStyle}" 
+                           FontSize="28"
+                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+
+                    <ItemsControl ItemsSource="{Binding Rules}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Style="{StaticResource RuleCardStyle}" Cursor="Hand">
@@ -214,56 +275,71 @@
                                         </Grid.RowDefinitions>
 
                                         <TextBlock Grid.Row="0" Text="{Binding Title}" 
-               FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"
-               VerticalAlignment="Center" Margin="10" FontSize="16"
-               MaxWidth="200" MinWidth="200"/>
+                                                   Foreground="{DynamicResource PrimaryTextBrush}" 
+                                                   FontWeight="Bold" 
+                                                   TextAlignment="Center" TextWrapping="Wrap"
+                                                   VerticalAlignment="Center" 
+                                                   Margin="10" 
+                                                   FontSize="16"
+                                                   MaxWidth="200" MinWidth="200"/>
 
                                         <TextBlock Grid.Row="1" Text="{Binding Description}" 
-               FontWeight="Thin" TextAlignment="Center" TextWrapping="Wrap"
-               VerticalAlignment="Center" Margin="10" FontSize="14"
-               MaxWidth="200" MinWidth="200"/>
+                                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                                   FontWeight="Thin" 
+                                                   TextAlignment="Center" 
+                                                   TextWrapping="Wrap"
+                                                   VerticalAlignment="Center" 
+                                                   Margin="10" 
+                                                   FontSize="{DynamicResource BaseFontSize}"
+                                                   MaxWidth="200" MinWidth="200"/>
 
-                                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,10,10">
+                                        <StackPanel Grid.Row="2" 
+                                                    Orientation="Horizontal" 
+                                                    HorizontalAlignment="Right" 
+                                                    Margin="0,0,10,10">
 
                                             <Button Content="✏️"
-        
-                                                Command="{Binding DataContext.EditRuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                
-                                                CommandParameter="{Binding}"
-                                                Background="Transparent" 
-                                                BorderThickness="0" 
-                                                Cursor="Hand"
-                                                FontSize="16" 
-                                                Margin="0,0,5,0" 
-                                                ToolTip="Edit Rule"/>
+                                                    Command="{Binding DataContext.EditRuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"                                                    
+                                                    Foreground="{DynamicResource PrimaryTextBrush}"
+                                                    Background="Transparent" 
+                                                    BorderThickness="0" 
+                                                    Cursor="Hand"
+                                                    FontSize="16" 
+                                                    Margin="0,0,5,0" 
+                                                    ToolTip="Edit Rule"/>
 
                                             <Button Content="🗑️"
-                                                Command="{Binding DataContext.DeleteRuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"
-                                                Background="Transparent" 
-                                                BorderThickness="0" 
-                                                Cursor="Hand"
-                                                Foreground="Red" 
-                                                FontSize="16" 
-                                                ToolTip="Delete"/>
+                                                    Command="{Binding DataContext.DeleteRuleCommand, 
+                                                             RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Background="Transparent" 
+                                                    BorderThickness="0" 
+                                                    Cursor="Hand"
+                                                    Foreground="{DynamicResource DangerBrush}" 
+                                                    FontSize="16" 
+                                                    ToolTip="Delete"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                
-                <Separator Margin="20"/>
-                
-                <TextBlock Text="Vocabulary" Style="{StaticResource SectionHeaderStyle}" FontSize="28"/>
-                <ItemsControl ItemsSource="{Binding DisplayDictionaries}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
+
+                    <Separator Margin="20"/>
+
+                    <TextBlock Text="{DynamicResource Loc.Login.Change}" 
+                           Style="{StaticResource SectionHeaderStyle}" 
+                           FontSize="28"
+                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+                    <ItemsControl ItemsSource="{Binding DisplayDictionaries}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
                                 <Border Style="{StaticResource VocabCardStyle}">
                                     <Grid>
                                         <Grid.RowDefinitions>
@@ -279,20 +355,21 @@
                                             </Grid.ColumnDefinitions>
 
                                             <TextBlock Grid.Column="0" Text="{Binding Name}" 
-                                                       FontSize="18" 
+                                                       FontSize="{DynamicResource HeaderFontSize}" 
+                                                       Foreground="{DynamicResource PrimaryTextBrush}"
                                                        FontWeight="Bold" 
                                                        TextWrapping="Wrap" 
                                                        MaxHeight="40" 
                                                        TextTrimming="CharacterEllipsis">
                                                 <TextBlock.ToolTip>
-                                                    <ToolTip Content="{Binding Title}"/>
+                                                    <ToolTip Content="{Binding Name}"/>
                                                 </TextBlock.ToolTip>
-                                                <TextBlock.Style>                                                    
+                                                <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Foreground" Value="#1F2937"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                                                <Setter Property="Foreground" Value="White"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -306,7 +383,7 @@
                                                 Background="Transparent" BorderThickness="0" Cursor="Hand"
                                                 ToolTip="{DynamicResource Loc.Dashboard.DictionaryToolTip}">
                                                 <Button.Content>
-                                                    <TextBlock Text="⚙️" FontSize="16"/>
+                                                    <TextBlock Text="⚙️" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="16"/>
                                                 </Button.Content>
                                             </Button>
                                         </Grid>
@@ -317,10 +394,10 @@
                                                 TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="#4B5563"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                                                <Setter Property="Foreground" Value="#D1D5DB"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -328,8 +405,8 @@
                                             </TextBlock>
 
                                             <TextBlock FontSize="12" Opacity="0.6">
-                                                <Run Text="{DynamicResource Loc.Dashboard.WordCount}"/>
-                                                <Run Text="{Binding WordCount, Mode=OneWay}" FontWeight="SemiBold"/>
+                                                <Run Text="{DynamicResource Loc.Dashboard.WordCount}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                                <Run Text="{Binding WordCount, Mode=OneWay}" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="SemiBold"/>
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Foreground" Value="#1F2937"/>
@@ -345,6 +422,7 @@
 
                                         <Button Grid.Row="2" 
                                             Style="{StaticResource PlayButtonStyle}"
+                                            Background="Transparent"
                                             Command="{Binding DataContext.StartLearningCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             CommandParameter="{Binding}"
                                             HorizontalAlignment="Center"
@@ -353,10 +431,10 @@
                                     </Grid>
                                 </Border>
                             </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
-        </ScrollViewer>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </UserControl>

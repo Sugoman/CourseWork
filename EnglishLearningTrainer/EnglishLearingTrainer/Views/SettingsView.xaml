@@ -65,7 +65,19 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource PrimaryAccentBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <Style x:Key="ToggleSwitchStyle" TargetType="CheckBox">
             <Setter Property="Template">
                 <Setter.Value>
@@ -215,23 +227,22 @@
                                   ClickMode="Press"
                                           Padding="10,10"/>
 
-                            <ContentPresenter x:Name="contentPresenter" 
-                                      ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" 
-                                      Content="{TemplateBinding SelectionBoxItem}" 
-                                      ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" 
-                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
-                                      IsHitTestVisible="False" 
-                                      Margin="{TemplateBinding Padding}" 
-                                      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
-                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                            <ContentPresenter x:Name="contentPresenter"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" 
+                                              Content="{TemplateBinding SelectionBoxItem}" 
+                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" 
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                              IsHitTestVisible="False" 
+                                              Margin="{TemplateBinding Padding}" 
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                         </Grid>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
-
     </UserControl.Resources>
-
+    
     <Grid Margin="20">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="220"/>
@@ -254,11 +265,6 @@
                          Command="{Binding SwitchSectionCommand}" CommandParameter="Account"
                          IsChecked="{Binding CurrentSection, Converter={StaticResource StringMatchToBooleanConverter}, ConverterParameter=Account, Mode=TwoWay}"/>
 
-            <RadioButton Content="Notifications" Tag="Sources/notifications.svg"
-                         Style="{StaticResource SidebarButtonStyle}" 
-                         Command="{Binding SwitchSectionCommand}" CommandParameter="Notifications"
-                         IsChecked="{Binding CurrentSection, Converter={StaticResource StringMatchToBooleanConverter}, ConverterParameter=Notifications, Mode=TwoWay}"/>
-
             <RadioButton Content="Appearance" Tag="Sources/appearance.svg"
                          Style="{StaticResource SidebarButtonStyle}" 
                          Command="{Binding SwitchSectionCommand}" CommandParameter="Appearance"
@@ -266,7 +272,7 @@
         </StackPanel>
 
         <!-- КОНТЕНТ -->
-        <Border Grid.Column="1" Background="{DynamicResource CardPartBackgroundBrush}" CornerRadius="12" Padding="40">
+        <Border Grid.Column="1" Background="{DynamicResource SecondaryMainBackgroundBrush}" CornerRadius="12" Padding="40">
             <Border.Effect>
                 <DropShadowEffect Color="Black" Opacity="0.05" BlurRadius="10" ShadowDepth="2"/>
             </Border.Effect>
@@ -332,11 +338,22 @@
                             </Style>
                         </StackPanel.Style>
 
-                        <TextBlock Text="Account" FontSize="{DynamicResource BiggerHeaderFontSize}" FontWeight="Bold" Margin="0,0,0,20"/>
+                        <TextBlock Text="Account" 
+                                   FontSize="{DynamicResource BiggerHeaderFontSize}" 
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   FontWeight="Bold" 
+                                   Margin="0,0,0,20"/>
 
-                        <TextBlock Text="Change Password" FontSize="{DynamicResource HeaderFontSize}" FontWeight="SemiBold" Margin="0,0,0,20"/>
+                        <TextBlock Text="Change Password" 
+                                   FontSize="{DynamicResource HeaderFontSize}" 
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   FontWeight="SemiBold" 
+                                   Margin="0,0,0,20"/>
 
-                        <TextBlock Text="Old Password" Foreground="#6B7280" FontSize="14" Margin="0,0,0,4"/>
+                        <TextBlock Text="Old Password" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}" 
+                                   FontSize="14" 
+                                   Margin="0,0,0,4"/>
                         <Border Style="{StaticResource InputContainerStyle}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -350,7 +367,11 @@
                             </Grid>
                         </Border>
 
-                        <TextBlock Text="New Password" Foreground="#6B7280" FontSize="14" Margin="0,0,0,4"/>
+                        <TextBlock Text="New Password" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}" 
+                                   FontSize="14" 
+                                   Margin="0,0,0,4"/>
+                        
                         <Border Style="{StaticResource InputContainerStyle}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -364,11 +385,25 @@
                             </Grid>
                         </Border>
 
-                        <Button Content="Save Changes" Command="{Binding ChangePasswordCommand}" Style="{StaticResource PrimaryButton}" Width="160" Height="40" HorizontalAlignment="Left"/>
+                        <Button Content="Save Changes" 
+                                Command="{Binding ChangePasswordCommand}" 
+                                Style="{StaticResource PrimaryButton}" 
+           
+                                Width="160" Height="40" 
+                                HorizontalAlignment="Left"/>
 
+                        <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,0,0,1" Margin="0,30,0,30"/>
+                        
                         <StackPanel>
-                            <TextBlock Text="Teacher Tools" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,20"/>
-                            <TextBlock Text="Generate Invite Code" Foreground="#6B7280" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Teacher Tools" 
+                                       FontSize="{DynamicResource BiggerHeaderFontSize}"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"
+                                       FontWeight="SemiBold" 
+                                       Margin="0,0,0,20"/>
+                            <TextBlock Text="Generate Invite Code" 
+                                       Foreground="#6B7280" 
+                                       FontSize="{DynamicResource BaseFontSize}" 
+                                       Margin="0,0,0,4"/>
 
                             <Grid>
                                 <Grid.ColumnDefinitions>
@@ -376,27 +411,39 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <!-- Кнопка генерации кода (видна, если не Teacher) -->
                                 <Button Grid.Column="0" Content="Стать Учителем"
-                Command="{Binding UpgradeToTeacherCommand}"
-                Style="{StaticResource PrimaryButton}"
-                Width="180" Height="40" HorizontalAlignment="Left"
-                Visibility="{Binding TeacherCode, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                                    Command="{Binding UpgradeToTeacherCommand}"
+                                    Style="{StaticResource PrimaryButton}"
+                                    Width="180" Height="40" HorizontalAlignment="Left"
+                                    Visibility="{Binding TeacherCode, 
+                                                Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
 
-                                <!-- Отображение кода (видна, если TeacherCode не пустой) -->
                                 <TextBlock Grid.Column="0" Text="{Binding TeacherCode}"
-                   FontSize="16" FontWeight="Bold"
-                   VerticalAlignment="Center"
-                   Visibility="{Binding TeacherCode, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, ConverterParameter=invert}"/>
+                                    FontSize="{DynamicResource HeaderFontSize}" 
+                                    FontWeight="Bold"
+                                    Foreground="{DynamicResource PrimaryTextBrush}"
+                                    VerticalAlignment="Center"
+                                    Visibility="{Binding TeacherCode, 
+                                                Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, 
+                                                ConverterParameter=invert}"/>
                             </Grid>
 
-                            <TextBlock Text="Code allows students to join your class." 
-               FontSize="11" Foreground="#6B7280" Margin="0,5,0,0"/>
+                            <TextBlock Text="Code allows students to join your class."               
+                                       FontSize="{DynamicResource BaseFontSize}" 
+                                       Foreground="{DynamicResource TertiaryTextBrush}" 
+                                       Margin="0,5,0,0"/>
+                            
                         </StackPanel>
                         
-                        <Border BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Margin="0,30,0,30"/>
+                        <Border BorderBrush="#E5E7EB" 
+                                BorderThickness="0,0,0,1" 
+                                Margin="0,30,0,30"/>
 
-                        <Button Content="Log Out" Command="{Binding LogoutCommand}" Style="{StaticResource DangerButton}" Width="120" HorizontalAlignment="Left"/>
+                        <Button Content="Log Out" 
+                                Command="{Binding LogoutCommand}" 
+                                Style="{StaticResource DangerButton}" 
+                                Width="120" 
+                                HorizontalAlignment="Left"/>
                     </StackPanel>
 
 
@@ -412,145 +459,29 @@
                             </Style>
                         </StackPanel.Style>
 
-                        <TextBlock Text="Appearance" FontSize="24" FontWeight="Bold" Margin="0,0,0,20"/>
+                        <TextBlock Text="Appearance" 
+                                   FontSize="{DynamicResource BiggerHeaderFontSize}" 
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   FontWeight="Bold" 
+                                   Margin="0,0,0,20"/>
 
-                        <TextBlock Text="Accent Color" FontWeight="SemiBold" Margin="0,20,0,10"/>
-                        <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Choose Theme" 
+                                   FontWeight="SemiBold"
+                                   FontSize="{DynamicResource BaseFontSize}"
+                                   Margin="0,0,0,10" 
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
 
-                            <RadioButton GroupName="Color" Margin="0,0,10,0"
-                                Command="{Binding ChangeAccentColorCommand}" 
-                                CommandParameter="#3B82F6">
-                                <RadioButton.Template>
-                                    <ControlTemplate>
-                                        <Border Width="30" Height="30" CornerRadius="15" Background="#3B82F6" 
-                                        BorderThickness="{Binding IsChecked, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToThicknessConverter}}"/>
-                                    </ControlTemplate>
-                                </RadioButton.Template>
-                            </RadioButton>
+                        <ComboBox ItemsSource="{Binding AvailableThemes}"
+                                  SelectedItem="{Binding SelectedTheme}"
+                                  Foreground="{DynamicResource PrimaryTextBrush}"
+                                  Width="200"
+                                  HorizontalAlignment="Left"/>
 
-                            <RadioButton GroupName="Color" Margin="0,0,10,0"
-                 Command="{Binding ChangeAccentColorCommand}" 
-                 CommandParameter="#10B981">
-                                <RadioButton.Template>
-                                    <ControlTemplate>
-                                        <Border Width="30" Height="30" CornerRadius="15" Background="#10B981"/>
-                                    </ControlTemplate>
-                                </RadioButton.Template>
-                            </RadioButton>
+                        <TextBlock Text="Select a predefined color scheme for better readability." 
+                                   FontSize="12" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}" 
+                                   Margin="0,10,0,0"/>
 
-                            <RadioButton GroupName="Color"
-                 Command="{Binding ChangeAccentColorCommand}" 
-                 CommandParameter="#8B5CF6">
-                                <RadioButton.Template>
-                                    <ControlTemplate>
-                                        <Border Width="30" Height="30" CornerRadius="15" Background="#8B5CF6"/>
-                                    </ControlTemplate>
-                                </RadioButton.Template>
-                            </RadioButton>
-
-                        </StackPanel>
-
-                        <CheckBox Content="Dark Mode (Coming Soon)" Style="{StaticResource ToggleSwitchStyle}" IsChecked="{Binding IsDarkMode, Mode=TwoWay}"/>
-
-                        <StackPanel>
-
-                            <TextBlock Text="Application Interface Colors" FontSize="18" FontWeight="SemiBold" Margin="0,20,0,10"/>
-                            <TextBlock Text="Customize the look of buttons and window background." Foreground="Gray" Margin="0,0,0,15"/>
-
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="10"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="10"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="Window Background" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" Margin="0,0,0,4"/>
-                                    <Border Style="{StaticResource InputContainerStyle}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Border Width="16" Height="16" CornerRadius="4" Margin="0,0,8,0" 
-                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                                                <Border.Background>
-                                                    <SolidColorBrush Color="{Binding AppBackgroundColor}"/>
-                                                </Border.Background>
-                                            </Border>
-
-                                            <TextBox Grid.Column="1" Text="{Binding AppBackgroundColor, UpdateSourceTrigger=PropertyChanged}" 
-                         Background="Transparent" Foreground="{DynamicResource PrimaryTextBrush}" BorderThickness="0" Padding="0"/>
-                                        </Grid>
-                                    </Border>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Main Text" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" Margin="0,0,0,4"/>
-                                    <Border Style="{StaticResource InputContainerStyle}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Border Width="16" Height="16" CornerRadius="4" Margin="0,0,8,0" 
-                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                                                <Border.Background>
-                                                    <SolidColorBrush Color="{Binding AppTextColor}"/>
-                                                </Border.Background>
-                                            </Border>
-
-                                            <TextBox Grid.Column="1" Text="{Binding AppTextColor, UpdateSourceTrigger=PropertyChanged}" 
-                         Background="Transparent" Foreground="{DynamicResource PrimaryTextBrush}" BorderThickness="0" Padding="0"/>
-                                        </Grid>
-                                    </Border>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="4">
-                                    <TextBlock Text="Accent (Buttons)" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" Margin="0,0,0,4"/>
-                                    <Border Style="{StaticResource InputContainerStyle}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            <Border Width="16" Height="16" CornerRadius="4" Margin="0,0,8,0" 
-                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                                                <Border.Background>
-                                                    <SolidColorBrush Color="{Binding AppAccentColor}"/>
-                                                </Border.Background>
-                                            </Border>
-
-                                            <TextBox Grid.Column="1" Text="{Binding AppAccentColor, UpdateSourceTrigger=PropertyChanged}" 
-                         Background="Transparent" Foreground="{DynamicResource PrimaryTextBrush}" BorderThickness="0" Padding="0"/>
-                                        </Grid>
-                                    </Border>
-                                </StackPanel>
-                            </Grid>
-
-                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="0,20,0,20"/>
-
-                            <TextBlock Text="Learning Content Colors (Markdown)" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                            <TextBlock Text="Customize how lessons and rules look inside the viewer." Foreground="Gray" Margin="0,0,0,15"/>
-
-                        </StackPanel>
-                    </StackPanel>
-
-                    <StackPanel>
-                        <StackPanel.Style>
-                            <Style TargetType="StackPanel">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding CurrentSection}" Value="Notifications">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </StackPanel.Style>
-                        <TextBlock Text="Notifications Settings" FontSize="24" FontWeight="Bold"/>
-                        <TextBlock Text="Тут пока пусто, но выглядит красиво!" Foreground="Gray" Margin="0,10"/>
                     </StackPanel>
 
                 </Grid>

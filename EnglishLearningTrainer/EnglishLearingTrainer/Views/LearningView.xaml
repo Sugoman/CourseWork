@@ -7,8 +7,8 @@
              xmlns:system="clr-namespace:System;assembly=mscorlib" 
              xmlns:models="clr-namespace:LearningTrainerShared.Models;assembly=LearningTrainerShared"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800"
-             Background="#F0F2F5">
+             d:DesignHeight="600" d:DesignWidth="800"
+             Background="{DynamicResource MainBackgroundBrush}">
 
     <UserControl.Resources>
         <system:Boolean x:Key="True">True</system:Boolean>
@@ -16,18 +16,31 @@
     </UserControl.Resources>
 
     <Grid>
-        <!-- Экран завершения сессии -->
-        <Grid Background="#F0F2F5" VerticalAlignment="Center" HorizontalAlignment="Center"
+        <Grid Background="{DynamicResource MainBackgroundBrush}" 
+              VerticalAlignment="Center" HorizontalAlignment="Center"
               Visibility="{Binding IsSessionComplete, Converter={StaticResource BooleanToVisibilityConverter}}">
             <StackPanel HorizontalAlignment="Center">
-                <TextBlock Text="🎉" FontSize="80" HorizontalAlignment="Center"/>
-                <TextBlock Text="Отличная работа!" FontSize="28" FontWeight="Bold" Margin="0,10,0,0"/>
-                <TextBlock Text="Все слова на сегодня выучены." FontSize="{DynamicResource BaseFontSize}" Foreground="Gray" Margin="0,5,0,20"/>
-                <Button Content="Вернуться на дашборд" Command="{Binding CloseTabCommand}" Style="{StaticResource BaseButton}" HorizontalAlignment="Center"/>
+                <TextBlock Text="🎉" Foreground="{DynamicResource TertiaryTextBrush}" FontSize="80" HorizontalAlignment="Center"/>
+                <TextBlock Text="Отличная работа!"
+                           FontSize="28" FontWeight="Bold" 
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           HorizontalAlignment="Center"
+                           Margin="0,10,0,0"/>
+                <TextBlock Text="Все слова на сегодня выучены."
+                           FontSize="{DynamicResource BaseFontSize}" 
+                           Foreground="{DynamicResource SecondaryTextBrush}" 
+                           HorizontalAlignment="Center"
+                           Margin="0,5,0,30"/>
+
+                <Button Content="   Вернуться на дашборд   " 
+                        Command="{Binding CloseTabCommand}" 
+                        Style="{StaticResource BaseButton}" 
+                        HorizontalAlignment="Center"
+                        Padding="20,10"
+                        MinHeight="40"/>
             </StackPanel>
         </Grid>
 
-        <!-- Основной экран тренажера -->
         <Grid>
             <Grid.Style>
                 <Style TargetType="Grid">
@@ -43,27 +56,27 @@
             <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="400" Height="250">
                 <Grid.Resources>
                     <Style TargetType="TextBlock" x:Key="CardTextStyle">
-                        <Setter Property="FontSize" Value="36"/>
-                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="FontSize" Value="32"/>
+                        <Setter Property="FontWeight" Value="Bold"/>
                         <Setter Property="HorizontalAlignment" Value="Center"/>
                         <Setter Property="VerticalAlignment" Value="Center"/>
                         <Setter Property="TextWrapping" Value="Wrap"/>
+                        <Setter Property="TextAlignment" Value="Center"/>
                     </Style>
                 </Grid.Resources>
 
-                <!-- Задняя сторона -->
                 <Border>
                     <Border.RenderTransform>
                         <ScaleTransform ScaleX="0" />
                     </Border.RenderTransform>
                     <Border.Style>
                         <Style TargetType="Border">
-                            <Setter Property="Background" Value="#4CAF50"/>
-                            <Setter Property="CornerRadius" Value="15"/>
+                            <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
+                            <Setter Property="CornerRadius" Value="16"/>
                             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
                             <Setter Property="Effect">
                                 <Setter.Value>
-                                    <DropShadowEffect ShadowDepth="2" Color="LightGray" Opacity="0.3" BlurRadius="15"/>
+                                    <DropShadowEffect ShadowDepth="4" Color="Black" Opacity="0.3" BlurRadius="20"/>
                                 </Setter.Value>
                             </Setter>
                             <Style.Triggers>
@@ -86,22 +99,24 @@
                             </Style.Triggers>
                         </Style>
                     </Border.Style>
+
                     <TextBlock Text="{Binding CurrentWord.Translation}" Style="{StaticResource CardTextStyle}" Foreground="White"/>
                 </Border>
 
-                <!-- Передняя сторона -->
                 <Border>
                     <Border.RenderTransform>
                         <ScaleTransform ScaleX="1" />
                     </Border.RenderTransform>
                     <Border.Style>
                         <Style TargetType="Border">
-                            <Setter Property="Background" Value="White"/>
-                            <Setter Property="CornerRadius" Value="15"/>
+                            <Setter Property="Background" Value="{DynamicResource SecondaryMainBackgroundBrush}"/>
+                            <Setter Property="CornerRadius" Value="16"/>
+                            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                            <Setter Property="BorderThickness" Value="1"/>
                             <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
                             <Setter Property="Effect">
                                 <Setter.Value>
-                                    <DropShadowEffect ShadowDepth="2" Color="LightGray" Opacity="0.3" BlurRadius="15"/>
+                                    <DropShadowEffect ShadowDepth="4" Color="Black" Opacity="0.2" BlurRadius="20"/>
                                 </Setter.Value>
                             </Setter>
                             <Style.Triggers>
@@ -124,33 +139,41 @@
                             </Style.Triggers>
                         </Style>
                     </Border.Style>
+
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock Text="{Binding CurrentWord.OriginalWord}" 
                                    Style="{StaticResource CardTextStyle}"
-                                   TextAlignment="Center"/>
-                        
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+
                         <TextBlock Text="{Binding CurrentWord.Transcription}"
-                            FontSize="20"
-                            Foreground="#555"
-                            FontFamily="Arial" 
-                            FontStyle="Italic"
-                            Margin="0,5,0,0"/>
+                                   FontSize="20"
+                                   Foreground="{DynamicResource PrimaryAccentBrush}"
+                                   FontFamily="Arial" 
+                                   HorizontalAlignment="Center"
+                                   Margin="0,8,0,0"/>
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <!-- Кнопки управления -->
             <StackPanel Orientation="Vertical" 
-            HorizontalAlignment="Center" 
-            VerticalAlignment="Bottom" 
-            Margin="20">
+                        HorizontalAlignment="Center" 
+                        VerticalAlignment="Bottom" 
+                        Margin="0,0,0,40">
+
                 <Button Content="Показать ответ" 
-            Command="{Binding FlipCardCommand}"
-            Width="200"
-            Height="40">
+                        Command="{Binding FlipCardCommand}"
+                        Width="220"
+                        Height="48"
+                        FontSize="16"
+                        Cursor="Hand">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
                             <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="Effect">
+                                <Setter.Value>
+                                    <DropShadowEffect Color="Black" Opacity="0.2" BlurRadius="10" ShadowDepth="2"/>
+                                </Setter.Value>
+                            </Setter>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsFlipped}" Value="True">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -173,28 +196,28 @@
                     </StackPanel.Style>
 
                     <Button Content="Снова" 
-                Command="{Binding AnswerCommand}" 
-                CommandParameter="{x:Static models:ResponseQuality.Again}"
-                Style="{StaticResource DangerButton}" 
-                Width="90" Height="40" Margin="5"/>
+                            Command="{Binding AnswerCommand}" 
+                            CommandParameter="{x:Static models:ResponseQuality.Again}"
+                            Style="{StaticResource DangerButton}" 
+                            Width="100" Height="45" Margin="5"/>
 
                     <Button Content="Трудно" 
-                Command="{Binding AnswerCommand}" 
-                CommandParameter="{x:Static models:ResponseQuality.Hard}"
-                Style="{StaticResource BaseButton}" 
-                Width="90" Height="40" Margin="5"/>
+                            Command="{Binding AnswerCommand}" 
+                            CommandParameter="{x:Static models:ResponseQuality.Hard}"
+                            Style="{StaticResource BaseButton}" 
+                            Width="100" Height="45" Margin="5"/>
 
                     <Button Content="Хорошо" 
-                Command="{Binding AnswerCommand}" 
-                CommandParameter="{x:Static models:ResponseQuality.Good}"
-                Style="{StaticResource BaseButton}" 
-                Width="90" Height="40" Margin="5"/>
+                            Command="{Binding AnswerCommand}" 
+                            CommandParameter="{x:Static models:ResponseQuality.Good}"
+                            Style="{StaticResource BaseButton}" 
+                            Width="100" Height="45" Margin="5"/>
 
                     <Button Content="Легко" 
-                Command="{Binding AnswerCommand}" 
-                CommandParameter="{x:Static models:ResponseQuality.Easy}"
-                Style="{StaticResource SuccessButton}" 
-                Width="90" Height="40" Margin="5"/>
+                            Command="{Binding AnswerCommand}" 
+                            CommandParameter="{x:Static models:ResponseQuality.Easy}"
+                            Style="{StaticResource SuccessButton}" 
+                            Width="100" Height="45" Margin="5"/>
 
                 </StackPanel>
             </StackPanel>

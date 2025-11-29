@@ -2,6 +2,7 @@
 using LearningTrainer.Context;
 using LearningTrainerShared.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Windows.Forms;
 
 namespace LearningTrainer.Services
 {
@@ -344,7 +345,8 @@ namespace LearningTrainer.Services
 
         public Task<UpgradeResultDto> UpgradeToTeacherAsync()
         {
-            throw new NotImplementedException();
+            MessageBox.Show("Вы находитесь в Офлайн режиме");
+            return null;
         }
 
         public Task<List<StudentDto>> GetMyStudentsAsync()

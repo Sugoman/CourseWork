@@ -4,9 +4,11 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:converters="clr-namespace:LearningTrainer.Converters"
+             xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+             xmlns:behaviors="clr-namespace:LearningTrainer.Behaviors"
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="800"
-             Background="White">
+             d:DesignHeight="700" d:DesignWidth="1200"
+             Background="{DynamicResource MainBackgroundBrush}">
 
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
@@ -19,56 +21,167 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,20">
-            <Button Content="← Back" Command="{Binding CloseCommand}" 
-                    HorizontalAlignment="Left" Style="{StaticResource BaseButton}" Background="Transparent"/>
+        <StackPanel Grid.Row="0" Margin="0,0,0,20" Orientation="Horizontal" VerticalAlignment="Center">
+            <Button Command="{Binding CloseCommand}" 
+                    Cursor="Hand"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Margin="0,0,15,0"
+                    VerticalAlignment="Center">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="10,5">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="←" FontSize="18" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Back" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
 
-            <TextBlock Text="Edit Rule" FontSize="24" FontWeight="Bold" Margin="0,10,0,0"/>
+            <TextBlock Text="Edit Rule" 
+                       FontSize="{DynamicResource HeaderFontSize}" 
+                       FontWeight="Bold" 
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       VerticalAlignment="Center"/>
         </StackPanel>
 
-        <ScrollViewer Grid.Row="1">
-            <StackPanel MaxWidth="800" HorizontalAlignment="Left">
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-                <TextBlock Text="Title" FontWeight="SemiBold" Margin="0,10,0,5"/>
-                <TextBox Text="{Binding Title}" Padding="5" FontSize="16"/>
+            <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,10,0">
+                <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                        CornerRadius="12" 
+                        BorderBrush="{DynamicResource BorderBrush}" 
+                        BorderThickness="1"
+                        Padding="25">
 
-                <TextBlock Text="Description (Short)" FontWeight="SemiBold" Margin="0,15,0,5"/>
-                <TextBox Text="{Binding Description}" Padding="5"/>
+                    <Border.Effect>
+                        <DropShadowEffect Color="Black" Opacity="0.1" BlurRadius="15" ShadowDepth="4"/>
+                    </Border.Effect>
 
-                <Grid Margin="0,15,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Editor" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,20"/>
 
-                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
-                        <TextBlock Text="Category" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                        <TextBox Text="{Binding Category}" Padding="5"/>
+                        <TextBlock Text="Title" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Medium" Margin="0,0,0,5"/>
+                        <Border Style="{StaticResource InputContainerStyle}">
+                            <TextBox Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" 
+                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                     CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                     FontSize="16" FontWeight="SemiBold"
+                                     Background="Transparent" BorderThickness="0" Padding="0,2"/>
+                        </Border>
+
+                        <TextBlock Text="Description" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Medium" Margin="0,15,0,5"/>
+                        <Border Style="{StaticResource InputContainerStyle}">
+                            <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
+                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                     CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                     FontSize="{DynamicResource BaseFontSize}"
+                                     Background="Transparent" BorderThickness="0" Padding="0,2"/>
+                        </Border>
+
+                        <Grid Margin="0,15,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="15"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Category" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Medium" Margin="0,0,0,5"/>
+                                <Border Style="{StaticResource InputContainerStyle}">
+                                    <TextBox Text="{Binding Category, UpdateSourceTrigger=PropertyChanged}" 
+                                             Foreground="{DynamicResource PrimaryTextBrush}"
+                                             CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                             Background="Transparent" BorderThickness="0" Padding="0,2"/>
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Difficulty" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Medium" Margin="0,0,0,5"/>
+                                <Border Style="{StaticResource InputContainerStyle}">
+                                    <TextBox Text="{Binding DifficultyLevel, UpdateSourceTrigger=PropertyChanged}" 
+                                             Foreground="{DynamicResource PrimaryTextBrush}"
+                                             CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                             Background="Transparent" BorderThickness="0" Padding="0,2"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <TextBlock Text="Content (Markdown)" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Medium" Margin="0,15,0,5"/>
+                        <Border Style="{StaticResource InputContainerStyle}" Padding="0">
+                            <TextBox Text="{Binding MarkdownContent, UpdateSourceTrigger=PropertyChanged}" 
+                                     AcceptsReturn="True" 
+                                     TextWrapping="Wrap"
+                                     MinHeight="400"
+                                     Padding="15"
+                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                     CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     VerticalScrollBarVisibility="Auto"
+                                     FontFamily="Consolas"
+                                     FontSize="13"/>
+                        </Border>
                     </StackPanel>
+                </Border>
+            </ScrollViewer>
 
-                    <StackPanel Grid.Column="1" Margin="10,0,0,0">
-                        <TextBlock Text="Difficulty (1-5)" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                        <TextBox Text="{Binding DifficultyLevel}" Padding="5"/>
-                    </StackPanel>
+            <Border Grid.Column="2" 
+                    Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                    CornerRadius="12" 
+                    BorderBrush="{DynamicResource BorderBrush}" 
+                    BorderThickness="1"
+                    Padding="0">
+                <Border.Effect>
+                    <DropShadowEffect Color="Black" Opacity="0.1" BlurRadius="15" ShadowDepth="4"/>
+                </Border.Effect>
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="25,20">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="Live Preview" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                            <TextBlock Text="Markdown Rendered" FontSize="12" Foreground="{DynamicResource TertiaryTextBrush}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+
+                    <wv2:WebView2 
+                        Grid.Row="1"
+                        behaviors:WebBrowserBehavior.Markdown="{Binding MarkdownContent, UpdateSourceTrigger=PropertyChanged}"
+                        behaviors:WebBrowserBehavior.Config="{Binding Config, UpdateSourceTrigger=PropertyChanged}"
+                        DefaultBackgroundColor="Transparent"
+                        Margin="5"/>
                 </Grid>
-
-                <TextBlock Text="Content (Markdown)" FontWeight="SemiBold" Margin="0,15,0,5"/>
-                <TextBox Text="{Binding MarkdownContent}" 
-                         AcceptsReturn="True" 
-                         TextWrapping="Wrap"
-                         MinHeight="300"
-                         Padding="10"
-                         VerticalScrollBarVisibility="Auto"
-                         FontFamily="Consolas"/>
-            </StackPanel>
-        </ScrollViewer>
+            </Border>
+        </Grid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
             <Button Content="Save Changes" 
                     Command="{Binding SaveChangesCommand}" 
                     Style="{StaticResource PrimaryButton}"
-                    Padding="20,10"
-                    Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    Padding="30,12"
+                    Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Button.Effect>
+                    <DropShadowEffect Color="Black" Opacity="0.25" BlurRadius="10" ShadowDepth="2"/>
+                </Button.Effect>
+            </Button>
         </StackPanel>
     </Grid>
 </UserControl>

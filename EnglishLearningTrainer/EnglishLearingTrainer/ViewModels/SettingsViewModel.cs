@@ -1,12 +1,10 @@
 ﻿using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
-using System;
-using System.Collections.Generic;
 using System.Net.Http;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace LearningTrainer.ViewModels
 {
@@ -30,114 +28,6 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _currentSection, value);
         }
 
-        // --- СВОЙСТВА ТЕМЫ (COLORS) ---
-        private string _currentAccentColor;
-        public string CurrentAccentColor
-        {
-            get => _currentAccentColor;
-            set
-            {
-                if (SetProperty(ref _currentAccentColor, value))
-                {
-                    // 1. Меняем конфиг для WebView (Markdown)
-                    UpdateMarkdownConfig();
-
-                    // 2. 🔥 Меняем цвет кнопок во всем приложении
-                    ThemeService.ApplyColor("PrimaryAccentBrush", value);
-                }
-            }
-        }
-
-        private string _currentBackgroundColor;
-        public string CurrentBackgroundColor
-        {
-            get => _currentBackgroundColor;
-            set
-            {
-                if (SetProperty(ref _currentBackgroundColor, value))
-                {
-                    IsDarkMode = _currentBackgroundColor?.ToLower() == "#1e1e1e";
-                    UpdateMarkdownConfig();
-
-                    ThemeService.ApplyColor("MainBackgroundBrush", value);
-
-                }
-            }
-        }
-
-        private string _currentTextColor;
-        public string CurrentTextColor
-        {
-            get => _currentTextColor;
-            set
-            {
-                if (SetProperty(ref _currentTextColor, value))
-                {
-                    UpdateMarkdownConfig();
-
-                    // 4. 🔥 Меняем цвет текста
-                    ThemeService.ApplyColor("PrimaryTextBrush", value);
-                }
-            }
-        }
-
-        private double _selectedFontSize;
-        public double SelectedFontSize
-        {
-            get => _selectedFontSize;
-            set
-            {
-                if (SetProperty(ref _selectedFontSize, value))
-                {
-                    ApplyAndSaveAppThemeSettings();
-                    UpdateMarkdownConfig();
-                }
-            }
-        }
-        private string _appAccentColor;
-        public string AppAccentColor
-        {
-            get => _appAccentColor;
-            set
-            {
-                if (SetProperty(ref _appAccentColor, value))
-                {
-                    ThemeService.ApplyColor("PrimaryAccentBrush", value);
-
-                    ApplyAndSaveAppThemeSettings();
-                }
-            }
-        }
-
-        private string _appBackgroundColor;
-        public string AppBackgroundColor
-        {
-            get => _appBackgroundColor;
-            set
-            {
-                if (SetProperty(ref _appBackgroundColor, value))
-                {
-                    ThemeService.ApplyColor("MainBackgroundBrush", value);
-
-                    ApplyAndSaveAppThemeSettings();
-                }
-            }
-        }
-
-        private string _appTextColor;
-        public string AppTextColor
-        {
-            get => _appTextColor;
-            set
-            {
-                if (SetProperty(ref _appTextColor, value))
-                {
-                    ThemeService.ApplyColor("PrimaryTextBrush", value);
-                    ApplyAndSaveAppThemeSettings();
-                }
-            }
-        }
-        // Тумблер темной темы
         private bool _isDarkMode;
         public bool IsDarkMode
         {
@@ -146,7 +36,23 @@ namespace LearningTrainer.ViewModels
             {
                 if (SetProperty(ref _isDarkMode, value))
                 {
-                    ApplyThemePreset(value);
+                    SaveSettings();
+                    _settingsService.ApplyCustomColors(reloadBaseTheme: true);
+                    UpdateColorsFromResources();
+                }
+            }
+        }
+
+        // ШРИФТ
+        private double _selectedFontSize;
+        public double SelectedFontSize
+        {
+            get => _selectedFontSize;
+            set
+            {
+                if (SetProperty(ref _selectedFontSize, value))
+                {
+                    SaveSettings();
                 }
             }
         }
@@ -202,8 +108,64 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _dailyGoal, value);
         }
 
+        private string _appBackgroundColor;
+        public string AppBackgroundColor
+        {
+            get => _appBackgroundColor;
+            set
+            {
+                if (SetProperty(ref _appBackgroundColor, value))
+                {
+                    SaveSettings();
+                    _settingsService.ApplyCustomColors();
+                }
+            }
+        }
+
+        private string _appTextColor;
+        public string AppTextColor
+        {
+            get => _appTextColor;
+            set
+            {
+                if (SetProperty(ref _appTextColor, value))
+                {
+                    SaveSettings();
+                    _settingsService.ApplyCustomColors();
+                }
+            }
+        }
+
+        private string _selectedTheme;
+        public string SelectedTheme
+        {
+            get => _selectedTheme;
+            set
+            {
+                if (SetProperty(ref _selectedTheme, value))
+                {
+                    _settingsService.ApplyTheme(value);
+                }
+            }
+        }
+
+        private string _appAccentColor;
+        public string AppAccentColor
+        {
+            get => _appAccentColor;
+            set
+            {
+                if (SetProperty(ref _appAccentColor, value))
+                {
+                    SaveSettings();
+                    _settingsService.ApplyCustomColors();
+                }
+            }
+        }
+
         // --- СВОЙСТВА ЛОКАЛИЗАЦИИ ---
         public List<string> AvailableLanguages { get; } = new List<string> { "English", "Русский", "Español", "Deutsch" };
+        public List<string> AvailableThemes { get; } = new List<string> { "Light", "Dark", "Dracula", "Forest" };
 
         private string _currentLanguage = "English";
         public string CurrentLanguage
@@ -226,99 +188,30 @@ namespace LearningTrainer.ViewModels
             Title = "Настройки";
             _settingsService = settingsService;
             _dataService = dataService;
-
             if (currentUser != null)
             {
                 TeacherCode = currentUser.InviteCode;
             }
 
-            /*var savedConfig = _settingsService.CurrentMarkdownConfig;
-            _selectedFontSize = savedConfig.FontSize; 
-            _currentAccentColor = savedConfig.AccentColor;
-            _currentBackgroundColor = savedConfig.BackgroundColor;
-            _currentTextColor = savedConfig.TextColor;
-            _currentMarkdownConfig = savedConfig;*/
-
-            _isDarkMode = _currentBackgroundColor?.ToLower() == "#1e1e1e";
+            _isDarkMode = _settingsService.CurrentSettings.Theme == "Dark";
 
             LogoutCommand = new RelayCommand(PerformLogout);
             SwitchSectionCommand = new RelayCommand(sec => CurrentSection = (string)sec);
 
+            SelectedTheme = _settingsService.CurrentSettings.Theme;
             UpgradeToTeacherCommand = new RelayCommand(async (_) => await PerformUpgradeToTeacher());
 
             ChangePasswordCommand = new RelayCommand(
                 async (param) => await ChangePasswordAsync((string)param),
                 (param) => !string.IsNullOrWhiteSpace(OldPassword) && !string.IsNullOrWhiteSpace((string)param)
             );
-
-            ChangeAccentColorCommand = new RelayCommand(hexColor =>
-            {
-                CurrentAccentColor = (string)hexColor; // Триггерит сеттер -> UpdateMarkdownConfig
-            });
-
-            AppAccentColor = _settingsService.CurrentSettings.AccentColor;
-            AppBackgroundColor = _settingsService.CurrentSettings.BackgroundColor;
-            AppTextColor = _settingsService.CurrentSettings.TextColor;
+            UpdateColorsFromResources();
 
         }
 
         // ============================================================
         // МЕТОДЫ ЛОГИКИ
         // ============================================================
-
-        private void ApplyThemePreset(bool isDark)
-        {
-            ThemeService.SetTheme(isDark ? "Dark" : "Light");
-
-            if (isDark)
-            {
-                CurrentBackgroundColor = "#1E1E1E";
-                CurrentTextColor = "#E5E7EB";
-
-                ThemeService.ApplyColor("CardBackgroundBrush", "#1E1E1E");
-                ThemeService.ApplyColor("CardPartBackgroundBrush", "#1A1A1A");
-            }
-            else
-            {
-                CurrentBackgroundColor = "#FFFFFF";
-                CurrentTextColor = "#000000";
-
-                ThemeService.ApplyColor("CardBackgroundBrush", "#FFFFFF");
-                ThemeService.ApplyColor("CardPartBackgroundBrush", "#F1F1F1");
-            }
-        }
-
-        private void UpdateMarkdownConfig()
-        {
-            var newConfig = new MarkdownConfig
-            {
-                FontSize = (int)SelectedFontSize,
-                AccentColor = CurrentAccentColor,
-                BackgroundColor = CurrentBackgroundColor,
-                TextColor = CurrentTextColor
-            };
-
-            CurrentMarkdownConfig = newConfig;
-
-            //_settingsService.UpdateMarkdownAppearance(newConfig);
-        }
-
-        private void ApplyAndSaveAppThemeSettings()
-        {
-            var newSettings = new SettingsModel
-            {
-                BaseFontSize = this.SelectedFontSize,
-
-                AccentColor = AppAccentColor,
-                BackgroundColor = AppBackgroundColor,
-                TextColor = AppTextColor,
-
-                Theme = IsDarkMode ? "Dark" : "Light"
-            };
-
-            //_settingsService.ApplySettingsToApp(newSettings);
-            _settingsService.SaveSettings(newSettings);
-        }
 
         private void PerformLogout(object obj)
         {
@@ -329,13 +222,21 @@ namespace LearningTrainer.ViewModels
         {
             try
             {
-                var result = await _dataService.UpgradeToTeacherAsync();
-                TeacherCode = result.InviteCode;
+                if (_dataService.UpgradeToTeacherAsync() == null)
+                {
+                    throw new InvalidOperationException("Невозможно использовать онлайн функции в офлайн режиме");
+                }
+                else
+                {
 
-                MessageBox.Show($"Поздравляем! Вы стали учителем.\nВаш код приглашения: {result.InviteCode}",
-                                "Статус обновлен", MessageBoxButton.OK, MessageBoxImage.Information);
+                    var result = await _dataService.UpgradeToTeacherAsync();
+                    TeacherCode = result.InviteCode;
 
-                EventAggregator.Instance.Publish(new RoleChangedMessage { NewToken = result.AccessToken, NewRole = result.UserRole });
+                    MessageBox.Show($"Поздравляем! Вы стали учителем.\nВаш код приглашения: {result.InviteCode}",
+                                    "Статус обновлен", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    EventAggregator.Instance.Publish(new RoleChangedMessage { NewToken = result.AccessToken, NewRole = result.UserRole });
+                }
             }
             catch (HttpRequestException ex)
             {
@@ -377,6 +278,42 @@ namespace LearningTrainer.ViewModels
                 IsError = true;
                 ChangePasswordMessage = $"Ошибка: {ex.Message}";
             }
+        }
+
+        private void UpdateColorsFromResources()
+        {
+            // Хелпер для вытаскивания цвета в HEX
+            string GetHex(string key)
+            {
+                if (Application.Current.Resources[key] is SolidColorBrush brush)
+                {
+                    return brush.Color.ToString(); // Вернет типа #FF121212
+                }
+                return "#000000"; // Фолбэк на всякий случай
+            }
+
+            // ВАЖНО: Обновляем свойства через поле и RaisePropertyChanged, 
+            // чтобы НЕ триггерить лишнее сохранение настроек (если у тебя в сеттере стоит Save logic)
+
+            _appBackgroundColor = GetHex("MainBackgroundBrush");
+            OnPropertyChanged(nameof(AppBackgroundColor));
+
+            _appTextColor = GetHex("PrimaryTextBrush");
+            OnPropertyChanged(nameof(AppTextColor));
+
+            _appAccentColor = GetHex("PrimaryAccentBrush");
+            OnPropertyChanged(nameof(AppAccentColor));
+
+            // Добавь сюда остальные свои цвета (Border, Input и т.д.)
+        }
+        private void SaveSettings()
+        {
+            var newSettings = new SettingsModel
+            {
+                Theme = IsDarkMode ? "Dark" : "Light",
+                BaseFontSize = SelectedFontSize
+            };
+            _settingsService.SaveSettings(newSettings);
         }
 
         private void ChangeLanguage(string languageName)

@@ -4,88 +4,235 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             d:DesignHeight="500" d:DesignWidth="700"
-             Background="White">
+             d:DesignHeight="600" d:DesignWidth="700"
+             Background="{DynamicResource MainBackgroundBrush}">
+
+    <UserControl.Resources>
+        <Style x:Key="ComboBoxToggleButtonStyle" TargetType="ToggleButton">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="ClickMode" Value="Press"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="templateRoot"
+                                Background="{DynamicResource InputBackgroundBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="30"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Path x:Name="arrow" Grid.Column="1" 
+                                      Data="M0,0 L4,4 L8,0" 
+                                      HorizontalAlignment="Center" 
+                                      VerticalAlignment="Center"
+                                      Fill="{DynamicResource SecondaryTextBrush}"
+                                      StrokeThickness="0"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="templateRoot" Property="BorderBrush" Value="{DynamicResource TertiaryTextBrush}"/>
+                                <Setter TargetName="arrow" Property="Fill" Value="{DynamicResource PrimaryTextBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="templateRoot" Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                <Setter TargetName="arrow" Property="Fill" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                <Setter TargetName="arrow" Property="Data" Value="M0,4 L4,0 L8,4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="FontSize" Value="{DynamicResource BaseFontSize}"/>
+            <Setter Property="ItemContainerStyle" Value="{StaticResource ComboBoxItemContainerStyle}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid x:Name="templateRoot" SnapsToDevicePixels="True">
+                            <Popup x:Name="PART_Popup" 
+                                   AllowsTransparency="True" 
+                                   Grid.ColumnSpan="2" 
+                                   IsOpen="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
+                                   Margin="1" 
+                                   PopupAnimation="Slide" 
+                                   Placement="Bottom">
+                                <Border x:Name="dropDownBorder" 
+                                        Background="{DynamicResource CardBackgroundBrush}" 
+                                        BorderBrush="{DynamicResource BorderBrush}" 
+                                        BorderThickness="1" 
+                                        CornerRadius="6"
+                                        MinWidth="{Binding ActualWidth, ElementName=templateRoot}" 
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="Black" Opacity="0.1" BlurRadius="10" ShadowDepth="3"/>
+                                    </Border.Effect>
+                                    <ScrollViewer x:Name="DropDownScrollViewer">
+                                        <Grid x:Name="grid" RenderOptions.ClearTypeHint="Enabled">
+                                            <Canvas x:Name="canvas" HorizontalAlignment="Left" Height="0" VerticalAlignment="Top" Width="0">
+                                                <Rectangle x:Name="opaqueRect" Fill="{Binding Background, ElementName=dropDownBorder}" Height="{Binding ActualHeight, ElementName=dropDownBorder}" Width="{Binding ActualWidth, ElementName=dropDownBorder}"/>
+                                            </Canvas>
+                                            <ItemsPresenter x:Name="ItemsPresenter" KeyboardNavigation.DirectionalNavigation="Contained" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                                        </Grid>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+
+                            <ToggleButton x:Name="toggleButton" 
+                                          Style="{StaticResource ComboBoxToggleButtonStyle}" 
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
+                                          ClickMode="Press"
+                                          Padding="10,10"/>
+
+                            <ContentPresenter x:Name="contentPresenter"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" 
+                                              Content="{TemplateBinding SelectionBoxItem}" 
+                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" 
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                              IsHitTestVisible="False" 
+                                              Margin="{TemplateBinding Padding}" 
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" 
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
-        <StackPanel>
-            <TextBlock Text="Создать новое правило" 
-                       FontSize="{DynamicResource HeaderFontSize}" 
-                       FontWeight="Bold" 
-                       Margin="0,0,0,20"/>
 
-            <TextBlock Text="Заголовок правила:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-            <TextBox Text="{Binding RuleTitle, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="{DynamicResource BaseFontSize}"
-                     Padding="10" 
-                     Margin="0,0,0,15"/>
+        <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                CornerRadius="12" 
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                MaxWidth="700"
+                VerticalAlignment="Center">
 
-            <TextBlock Text="Краткое описание:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-            <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="{DynamicResource BaseFontSize}"
-                     Padding="10" 
-                     Height="40" 
-                     TextWrapping="Wrap"
-                     Margin="0,0,0,15"/>
+            <Border.Effect>
+                <DropShadowEffect Color="Black" Opacity="0.15" BlurRadius="15" ShadowDepth="4"/>
+            </Border.Effect>
 
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="10"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+            <StackPanel Margin="30">
+                <TextBlock Text="Создать новое правило" 
+                           FontSize="{DynamicResource HeaderFontSize}" 
+                           FontWeight="Bold" 
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           Margin="0,0,0,25"/>
 
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="Категория:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <ComboBox SelectedValue="{Binding Category}"
-                        SelectedValuePath="Content"
-                        FontSize="{DynamicResource BaseFontSize}"
-                        Padding="10" 
-                        Margin="0,0,0,15">
-                        <ComboBoxItem Content="Grammar"/>
-                        <ComboBoxItem Content="Vocabulary"/>
-                        <ComboBoxItem Content="Pronunciation"/>
-                    </ComboBox>
+                <TextBlock Text="Заголовок правила" 
+                           Foreground="{DynamicResource SecondaryTextBrush}" 
+                           FontWeight="Medium" Margin="0,0,0,5"/>
+                <Border Style="{StaticResource InputContainerStyle}">
+                    <TextBox Text="{Binding RuleTitle, UpdateSourceTrigger=PropertyChanged}" 
+                             Foreground="{DynamicResource PrimaryTextBrush}"
+                             CaretBrush="{DynamicResource PrimaryTextBrush}"
+                             FontSize="{DynamicResource BaseFontSize}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0,2"/>
+                </Border>
+
+                <TextBlock Text="Краткое описание" 
+                           Foreground="{DynamicResource SecondaryTextBrush}" 
+                           FontWeight="Medium" Margin="0,10,0,5"/>
+                <Border Style="{StaticResource InputContainerStyle}">
+                    <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
+                             Foreground="{DynamicResource PrimaryTextBrush}"
+                             CaretBrush="{DynamicResource PrimaryTextBrush}"
+                             FontSize="{DynamicResource BaseFontSize}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0,2"
+                             Height="60" 
+                             VerticalContentAlignment="Top"
+                             TextWrapping="Wrap"/>
+                </Border>
+
+                <Grid Margin="0,10,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Категория" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}" 
+                                   FontWeight="Medium" Margin="0,0,0,5"/>
+                        <ComboBox SelectedValue="{Binding Category}"
+                                  SelectedValuePath="Content"
+                                  Height="40">
+                            <ComboBoxItem Content="Grammar"/>
+                            <ComboBoxItem Content="Vocabulary"/>
+                            <ComboBoxItem Content="Pronunciation"/>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Уровень сложности" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}" 
+                                   FontWeight="Medium" Margin="0,0,0,5"/>
+                        <ComboBox SelectedValue="{Binding DifficultyLevel}"
+                                  SelectedValuePath="Tag"
+                                  Height="40">
+                            <ComboBoxItem Content="1 - Начальный" Tag="1"/>
+                            <ComboBoxItem Content="2 - Базовый" Tag="2"/>
+                            <ComboBoxItem Content="3 - Средний" Tag="3"/>
+                            <ComboBoxItem Content="4 - Продвинутый" Tag="4"/>
+                            <ComboBoxItem Content="5 - Эксперт" Tag="5"/>
+                        </ComboBox>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="Содержание (Markdown)" 
+                           Foreground="{DynamicResource SecondaryTextBrush}" 
+                           FontWeight="Medium" Margin="0,0,0,5"/>
+                <Border Style="{StaticResource InputContainerStyle}" Padding="0">
+                    <TextBox Text="{Binding MarkdownContent, UpdateSourceTrigger=PropertyChanged}" 
+                             Foreground="{DynamicResource PrimaryTextBrush}"
+                             CaretBrush="{DynamicResource PrimaryTextBrush}"
+                             FontSize="{DynamicResource BaseFontSize}" 
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="10" 
+                             MinHeight="200"
+                             VerticalContentAlignment="Top"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto"/>
+                </Border>
+
+                <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,20,0,20" Opacity="0.3"/>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Отмена" 
+                            Command="{Binding CancelCommand}"
+                            Style="{StaticResource DangerButton}" 
+                            Width="100" 
+                            Margin="0,0,15,0"/>
+                    <Button Content="Создать" 
+                            Command="{Binding SaveCommand}"
+                            Style="{StaticResource SuccessButton}" 
+                            Width="120"
+                            x:Name="CreateRuleButton"/>
                 </StackPanel>
-
-                <StackPanel Grid.Column="2">
-                    <TextBlock Text="Уровень сложности:" FontWeight="SemiBold" Margin="0,0,0,5"/>
-                    <ComboBox SelectedValue="{Binding DifficultyLevel}"
-                        SelectedValuePath="Tag"
-                        FontSize="{DynamicResource BaseFontSize}" 
-                        Padding="10" 
-                        Margin="0,0,0,15">
-                        <ComboBoxItem Content="1 - Начальный" Tag="1"/>
-                        <ComboBoxItem Content="2 - Базовый" Tag="2"/>
-                        <ComboBoxItem Content="3 - Средний" Tag="3"/>
-                        <ComboBoxItem Content="4 - Продвинутый" Tag="4"/>
-                        <ComboBoxItem Content="5 - Эксперт" Tag="5"/>
-                    </ComboBox>
-                </StackPanel>
-            </Grid>
-
-            <TextBlock Text="Содержание (Markdown):" FontWeight="SemiBold" Margin="0,0,0,5"/>
-            <TextBox Text="{Binding MarkdownContent, UpdateSourceTrigger=PropertyChanged}" 
-                     FontSize="{DynamicResource BaseFontSize}" 
-                     Padding="10" 
-                     Height="150" 
-                     TextWrapping="Wrap"
-                     AcceptsReturn="True"
-                     VerticalScrollBarVisibility="Auto"
-                     Margin="0,0,0,25"/>
-
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="Отмена" 
-                        Command="{Binding CancelCommand}"
-                        Style="{StaticResource DangerButton}" 
-                        Width="100" 
-                        Margin="0,0,10,0"/>
-                <Button Content="Создать" 
-                        Command="{Binding SaveCommand}"
-                        Style="{StaticResource SuccessButton}" 
-                        Width="100"
-                        x:Name="CreateRuleButton"/>
             </StackPanel>
-        </StackPanel>
+        </Border>
     </ScrollViewer>
 </UserControl>
