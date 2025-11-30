@@ -253,19 +253,19 @@
 
         <!-- САЙДБАР -->
         <StackPanel Grid.Column="0" Margin="0,20,20,0">
-           
 
-            <RadioButton Content="General" Tag="Sources/general.svg"
+
+            <RadioButton Content="{DynamicResource Loc.Settings.GeneralRadio}" Tag="Sources/general.svg"
                          Style="{StaticResource SidebarButtonStyle}" 
                          Command="{Binding SwitchSectionCommand}" CommandParameter="General"
                          IsChecked="{Binding CurrentSection, Converter={StaticResource StringMatchToBooleanConverter}, ConverterParameter=General, Mode=TwoWay}"/>
 
-            <RadioButton Content="Account" Tag="Sources/account.svg"
+            <RadioButton Content="{DynamicResource Loc.Settings.AccountRadio}" Tag="Sources/account.svg"
                          Style="{StaticResource SidebarButtonStyle}" 
                          Command="{Binding SwitchSectionCommand}" CommandParameter="Account"
                          IsChecked="{Binding CurrentSection, Converter={StaticResource StringMatchToBooleanConverter}, ConverterParameter=Account, Mode=TwoWay}"/>
 
-            <RadioButton Content="Appearance" Tag="Sources/appearance.svg"
+            <RadioButton Content="{DynamicResource Loc.Settings.AppearanceRadio}" Tag="Sources/appearance.svg"
                          Style="{StaticResource SidebarButtonStyle}" 
                          Command="{Binding SwitchSectionCommand}" CommandParameter="Appearance"
                          IsChecked="{Binding CurrentSection, Converter={StaticResource StringMatchToBooleanConverter}, ConverterParameter=Appearance, Mode=TwoWay}"/>
@@ -291,13 +291,20 @@
                             </Style>
                         </StackPanel.Style>
 
-                        <TextBlock Text="General Settings" FontSize="24" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold" Margin="0,0,0,20"/>
+                        <TextBlock Text="{DynamicResource Loc.SettingsGen.TitleLabel}" 
+                                   FontSize="{DynamicResource BiggerHeaderFontSize}" 
+                                   Foreground="{DynamicResource PrimaryTextBrush}" 
+                                   FontWeight="Bold" 
+                                   Margin="0,0,0,20"/>
 
-                        <TextBlock Text="Daily Goal" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock Text="{DynamicResource Loc.SettingsGen.DailyGoalLabel}" 
+                                   Foreground="{DynamicResource PrimaryTextBrush}" 
+                                   FontWeight="SemiBold" 
+                                   Margin="0,0,0,10"/>
                         <Border Style="{StaticResource InputContainerStyle}">
                             <StackPanel Margin="5">
                                 <Grid>
-                                    <TextBlock Text="New words per day:" Foreground="#6B7280"/>
+                                    <TextBlock Text="{DynamicResource Loc.SettingsGen.NewWordsPerDayLabel}" Foreground="{DynamicResource SecondaryTextBrush}"/>
                                     <TextBlock Text="{Binding ElementName=GoalSlider, Path=Value}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="#3B82F6"/>
                                 </Grid>
                                 <Slider x:Name="GoalSlider" Minimum="5" Maximum="50" Value="{Binding DailyGoal}" 
@@ -306,7 +313,7 @@
                         </Border>
 
 
-                        <TextBlock Text="Interface Language" 
+                        <TextBlock Text="{DynamicResource Loc.SettingsGen.LanguageLabel}" 
                                    Foreground="{DynamicResource PrimaryTextBrush}" 
                                    FontSize="{DynamicResource BaseFontSize}"
                                    FontWeight="SemiBold" 
@@ -338,21 +345,21 @@
                             </Style>
                         </StackPanel.Style>
 
-                        <TextBlock Text="Account" 
+                        <TextBlock Text="{DynamicResource Loc.SettingsAcc.TitleLabel}" 
                                    FontSize="{DynamicResource BiggerHeaderFontSize}" 
                                    Foreground="{DynamicResource PrimaryTextBrush}"
                                    FontWeight="Bold" 
                                    Margin="0,0,0,20"/>
 
-                        <TextBlock Text="Change Password" 
+                        <TextBlock Text="{DynamicResource Loc.SettingsAcc.ChangePasswordLabel}" 
                                    FontSize="{DynamicResource HeaderFontSize}" 
                                    Foreground="{DynamicResource PrimaryTextBrush}"
                                    FontWeight="SemiBold" 
                                    Margin="0,0,0,20"/>
 
-                        <TextBlock Text="Old Password" 
+                        <TextBlock Text="{DynamicResource Loc.SettingsAcc.OldPasswordLabel}" 
                                    Foreground="{DynamicResource SecondaryTextBrush}" 
-                                   FontSize="14" 
+                                   FontSize="{DynamicResource BaseFontSize}" 
                                    Margin="0,0,0,4"/>
                         <Border Style="{StaticResource InputContainerStyle}">
                             <Grid>
@@ -360,16 +367,24 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <svg:SvgViewbox Grid.Column="0" Source="Sources/lock.svg" Width="16" Height="16" Stretch="Uniform" Margin="0,0,10,0"/>
-                                <PasswordBox Grid.Column="1" x:Name="OldPasswordBox" Background="Transparent" BorderThickness="0"
+                                <svg:SvgViewbox Grid.Column="0" 
+                                                Source="Sources/password.svg" 
+                                                Width="16" Height="16" 
+                                                Stretch="Uniform" 
+                                                Margin="0,0,10,0"/>
+                                <PasswordBox Grid.Column="1" 
+                                             x:Name="OldPasswordBox" 
+                                             Background="Transparent"
+                                             Foreground="{DynamicResource PrimaryTextBrush}"
+                                             BorderThickness="0"
                                              behaviors:PasswordBoxBehavior.Attach="True"
                                              behaviors:PasswordBoxBehavior.Password="{Binding OldPassword, Mode=TwoWay}"/>
                             </Grid>
                         </Border>
 
-                        <TextBlock Text="New Password" 
+                        <TextBlock Text="{DynamicResource Loc.SettingsAcc.NewPasswordLabel}" 
                                    Foreground="{DynamicResource SecondaryTextBrush}" 
-                                   FontSize="14" 
+                                   FontSize="{DynamicResource BaseFontSize}" 
                                    Margin="0,0,0,4"/>
                         
                         <Border Style="{StaticResource InputContainerStyle}">
@@ -378,30 +393,37 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <svg:SvgViewbox Grid.Column="0" Source="Sources/lock.svg" Width="16" Height="16" Stretch="Uniform" Margin="0,0,10,0"/>
-                                <PasswordBox Grid.Column="1" x:Name="NewPasswordBox" Background="Transparent" BorderThickness="0"
+                                <svg:SvgViewbox Grid.Column="0" 
+                                                Source="Sources/password.svg" 
+                                                Width="16" Height="16" 
+                                                Stretch="Uniform" 
+                                                Margin="0,0,10,0"/>
+                                <PasswordBox Grid.Column="1" 
+                                             x:Name="NewPasswordBox" 
+                                             Foreground="{DynamicResource PrimaryTextBrush}"
+                                             Background="Transparent" 
+                                             BorderThickness="0"
                                              behaviors:PasswordBoxBehavior.Attach="True"
                                              behaviors:PasswordBoxBehavior.Password="{Binding NewPassword, Mode=TwoWay}"/>
                             </Grid>
                         </Border>
 
-                        <Button Content="Save Changes" 
+                        <Button Content="{DynamicResource Loc.Button.SaveButton}" 
                                 Command="{Binding ChangePasswordCommand}" 
-                                Style="{StaticResource PrimaryButton}" 
-           
+                                Style="{StaticResource PrimaryButton}"            
                                 Width="160" Height="40" 
                                 HorizontalAlignment="Left"/>
 
                         <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,0,0,1" Margin="0,30,0,30"/>
                         
                         <StackPanel>
-                            <TextBlock Text="Teacher Tools" 
+                            <TextBlock Text="{DynamicResource Loc.SettingsAcc.TeacherTitleLabel}" 
                                        FontSize="{DynamicResource BiggerHeaderFontSize}"
                                        Foreground="{DynamicResource PrimaryTextBrush}"
                                        FontWeight="SemiBold" 
                                        Margin="0,0,0,20"/>
-                            <TextBlock Text="Generate Invite Code" 
-                                       Foreground="#6B7280" 
+                            <TextBlock Text="{DynamicResource Loc.SettingsAcc.GenerateCodeLabel}" 
+                                       Foreground="{DynamicResource PrimaryTextBrush}" 
                                        FontSize="{DynamicResource BaseFontSize}" 
                                        Margin="0,0,0,4"/>
 
@@ -411,12 +433,14 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
-                                <Button Grid.Column="0" Content="Стать Учителем"
-                                    Command="{Binding UpgradeToTeacherCommand}"
-                                    Style="{StaticResource PrimaryButton}"
-                                    Width="180" Height="40" HorizontalAlignment="Left"
-                                    Visibility="{Binding TeacherCode, 
-                                                Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                                <Button Grid.Column="0" 
+                                        Content="Стать Учителем"
+                                        Command="{Binding UpgradeToTeacherCommand}"
+                                        Style="{StaticResource PrimaryButton}"
+                                        Width="180" Height="40" 
+                                        HorizontalAlignment="Left"
+                                        Visibility="{Binding TeacherCode, 
+                                                    Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
 
                                 <TextBlock Grid.Column="0" Text="{Binding TeacherCode}"
                                     FontSize="{DynamicResource HeaderFontSize}" 
@@ -428,7 +452,7 @@
                                                 ConverterParameter=invert}"/>
                             </Grid>
 
-                            <TextBlock Text="Code allows students to join your class."               
+                            <TextBlock Text="{DynamicResource Loc.SettingsAcc.HelpCodeLabel}"               
                                        FontSize="{DynamicResource BaseFontSize}" 
                                        Foreground="{DynamicResource TertiaryTextBrush}" 
                                        Margin="0,5,0,0"/>
@@ -439,7 +463,7 @@
                                 BorderThickness="0,0,0,1" 
                                 Margin="0,30,0,30"/>
 
-                        <Button Content="Log Out" 
+                        <Button Content="{DynamicResource Loc.Button.LogoutButton}" 
                                 Command="{Binding LogoutCommand}" 
                                 Style="{StaticResource DangerButton}" 
                                 Width="120" 
@@ -459,13 +483,13 @@
                             </Style>
                         </StackPanel.Style>
 
-                        <TextBlock Text="Appearance" 
+                        <TextBlock Text="{DynamicResource Loc.SettingsApp.TitleLabel}" 
                                    FontSize="{DynamicResource BiggerHeaderFontSize}" 
                                    Foreground="{DynamicResource PrimaryTextBrush}"
                                    FontWeight="Bold" 
                                    Margin="0,0,0,20"/>
 
-                        <TextBlock Text="Choose Theme" 
+                        <TextBlock Text="{DynamicResource Loc.SettingsApp.ChooseThemeLabel}" 
                                    FontWeight="SemiBold"
                                    FontSize="{DynamicResource BaseFontSize}"
                                    Margin="0,0,0,10" 
@@ -477,13 +501,11 @@
                                   Width="200"
                                   HorizontalAlignment="Left"/>
 
-                        <TextBlock Text="Select a predefined color scheme for better readability." 
+                        <TextBlock Text="{DynamicResource Loc.SettingsApp.ReadabiltyLabel}" 
                                    FontSize="12" 
                                    Foreground="{DynamicResource SecondaryTextBrush}" 
                                    Margin="0,10,0,0"/>
-
                     </StackPanel>
-
                 </Grid>
             </ScrollViewer>
         </Border>

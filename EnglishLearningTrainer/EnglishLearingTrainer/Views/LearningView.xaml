@@ -160,7 +160,7 @@
                         VerticalAlignment="Bottom" 
                         Margin="0,0,0,40">
 
-                <Button Content="Показать ответ" 
+                <Button Content="{DynamicResource Loc.Learning.ShowAnswerButton}" 
                         Command="{Binding FlipCardCommand}"
                         Width="220"
                         Height="48"
@@ -195,25 +195,25 @@
                         </Style>
                     </StackPanel.Style>
 
-                    <Button Content="Снова" 
+                    <Button Content="{DynamicResource Loc.Learning.AgainLabel}" 
                             Command="{Binding AnswerCommand}" 
                             CommandParameter="{x:Static models:ResponseQuality.Again}"
                             Style="{StaticResource DangerButton}" 
                             Width="100" Height="45" Margin="5"/>
 
-                    <Button Content="Трудно" 
+                    <Button Content="{DynamicResource Loc.Learning.HardLabel}" 
                             Command="{Binding AnswerCommand}" 
                             CommandParameter="{x:Static models:ResponseQuality.Hard}"
                             Style="{StaticResource BaseButton}" 
                             Width="100" Height="45" Margin="5"/>
 
-                    <Button Content="Хорошо" 
+                    <Button Content="{DynamicResource Loc.Learning.FineLabel}" 
                             Command="{Binding AnswerCommand}" 
                             CommandParameter="{x:Static models:ResponseQuality.Good}"
                             Style="{StaticResource BaseButton}" 
                             Width="100" Height="45" Margin="5"/>
 
-                    <Button Content="Легко" 
+                    <Button Content="{DynamicResource Loc.Learning.EasyLabel}" 
                             Command="{Binding AnswerCommand}" 
                             CommandParameter="{x:Static models:ResponseQuality.Easy}"
                             Style="{StaticResource SuccessButton}" 

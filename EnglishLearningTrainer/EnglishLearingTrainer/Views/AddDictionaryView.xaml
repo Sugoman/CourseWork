@@ -21,12 +21,12 @@
             </Border.Effect>
 
             <StackPanel>
-                <TextBlock Text="Создать новый словарь" 
+                <TextBlock Text="{DynamicResource Loc.AddDict.CreateDict}" 
                            FontSize="{DynamicResource HeaderFontSize}" 
                            FontWeight="Bold" 
                            Foreground="{DynamicResource PrimaryTextBrush}"
                            Margin="0,0,0,25"/>
-                <TextBlock Text="Название словаря" 
+                <TextBlock Text="{DynamicResource Loc.AddDict.TitleDictLabel}" 
                            Foreground="{DynamicResource SecondaryTextBrush}" 
                            FontSize="14" FontWeight="Medium" Margin="0,0,0,5"/>
                 <Border Style="{StaticResource InputContainerStyle}">
@@ -39,7 +39,7 @@
                              Padding="0,2"/>
                 </Border>
 
-                <TextBlock Text="Описание" 
+                <TextBlock Text="{DynamicResource Loc.AddDict.DescriptionDictLabel}" 
                            Foreground="{DynamicResource SecondaryTextBrush}" 
                            FontSize="14" FontWeight="Medium" Margin="0,10,0,5"/>
 
@@ -65,7 +65,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="Изучаемый язык" 
+                        <TextBlock Text="{DynamicResource Loc.AddDict.StudiedLangLabel}" 
                                    Foreground="{DynamicResource SecondaryTextBrush}" 
                                    FontSize="14" FontWeight="Medium" Margin="0,0,0,5"/>
                         <Border Style="{StaticResource InputContainerStyle}">
@@ -80,7 +80,7 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="2">
-                        <TextBlock Text="Родной язык" 
+                        <TextBlock Text="{DynamicResource Loc.AddDict.NativeLangLabel}" 
                                    Foreground="{DynamicResource SecondaryTextBrush}" 
                                    FontSize="14" FontWeight="Medium" Margin="0,0,0,5"/>
                         <Border Style="{StaticResource InputContainerStyle}">
@@ -97,12 +97,12 @@
 
                 <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,20,0,20" Opacity="0.3"/>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Отмена" 
+                    <Button Content="{DynamicResource Loc.Button.CancelButton}" 
                             Command="{Binding CancelCommand}"
                             Style="{StaticResource DangerButton}" 
                             Width="100" 
                             Margin="0,0,15,0"/>
-                    <Button Content="Создать" 
+                    <Button Content="{DynamicResource Loc.Button.CreateButton}" 
                             Command="{Binding SaveCommand}"
                             Style="{StaticResource SuccessButton}" 
                             Width="120"/>

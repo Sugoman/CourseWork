@@ -164,7 +164,7 @@ namespace LearningTrainer.ViewModels
         }
 
         // --- СВОЙСТВА ЛОКАЛИЗАЦИИ ---
-        public List<string> AvailableLanguages { get; } = new List<string> { "English", "Русский", "Español", "Deutsch" };
+        public List<string> AvailableLanguages { get; } = new List<string> { "English", "Русский", "Español", "Deutsch", "中国人" };
         public List<string> AvailableThemes { get; } = new List<string> { "Light", "Dark", "Dracula", "Forest" };
 
         private string _currentLanguage = "English";
@@ -185,7 +185,7 @@ namespace LearningTrainer.ViewModels
         // ============================================================
         public SettingsViewModel(SettingsService settingsService, IDataService dataService, User currentUser)
         {
-            Title = "Настройки";
+            Title = "Settings";
             _settingsService = settingsService;
             _dataService = dataService;
             if (currentUser != null)
@@ -282,18 +282,15 @@ namespace LearningTrainer.ViewModels
 
         private void UpdateColorsFromResources()
         {
-            // Хелпер для вытаскивания цвета в HEX
             string GetHex(string key)
             {
                 if (Application.Current.Resources[key] is SolidColorBrush brush)
                 {
-                    return brush.Color.ToString(); // Вернет типа #FF121212
+                    return brush.Color.ToString(); 
                 }
-                return "#000000"; // Фолбэк на всякий случай
+                return "#000000"; 
             }
 
-            // ВАЖНО: Обновляем свойства через поле и RaisePropertyChanged, 
-            // чтобы НЕ триггерить лишнее сохранение настроек (если у тебя в сеттере стоит Save logic)
 
             _appBackgroundColor = GetHex("MainBackgroundBrush");
             OnPropertyChanged(nameof(AppBackgroundColor));
@@ -304,7 +301,6 @@ namespace LearningTrainer.ViewModels
             _appAccentColor = GetHex("PrimaryAccentBrush");
             OnPropertyChanged(nameof(AppAccentColor));
 
-            // Добавь сюда остальные свои цвета (Border, Input и т.д.)
         }
         private void SaveSettings()
         {
@@ -322,6 +318,9 @@ namespace LearningTrainer.ViewModels
             {
                 "Русский" => "ru",
                 "English" => "en",
+                "Español" => "es",
+                "Deutsch" => "de",
+                "中国人" => "ch",
                 _ => "en"
             };
             LocalizationManager.SetLanguage(code);

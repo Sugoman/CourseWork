@@ -129,13 +129,13 @@
             </Border.Effect>
 
             <StackPanel Margin="30">
-                <TextBlock Text="Создать новое правило" 
+                <TextBlock Text="{DynamicResource Loc.AddRule.CreateRule}" 
                            FontSize="{DynamicResource HeaderFontSize}" 
                            FontWeight="Bold" 
                            Foreground="{DynamicResource PrimaryTextBrush}"
                            Margin="0,0,0,25"/>
 
-                <TextBlock Text="Заголовок правила" 
+                <TextBlock Text="{DynamicResource Loc.AddRule.TitleRuleLabel}" 
                            Foreground="{DynamicResource SecondaryTextBrush}" 
                            FontWeight="Medium" Margin="0,0,0,5"/>
                 <Border Style="{StaticResource InputContainerStyle}">
@@ -148,7 +148,7 @@
                              Padding="0,2"/>
                 </Border>
 
-                <TextBlock Text="Краткое описание" 
+                <TextBlock Text="{DynamicResource Loc.AddDict.DescriptionDictLabel}" 
                            Foreground="{DynamicResource SecondaryTextBrush}" 
                            FontWeight="Medium" Margin="0,10,0,5"/>
                 <Border Style="{StaticResource InputContainerStyle}">
@@ -172,35 +172,35 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="Категория" 
+                        <TextBlock Text="{DynamicResource Loc.AddRule.CategoryLabel}" 
                                    Foreground="{DynamicResource SecondaryTextBrush}" 
                                    FontWeight="Medium" Margin="0,0,0,5"/>
                         <ComboBox SelectedValue="{Binding Category}"
                                   SelectedValuePath="Content"
                                   Height="40">
-                            <ComboBoxItem Content="Grammar"/>
-                            <ComboBoxItem Content="Vocabulary"/>
-                            <ComboBoxItem Content="Pronunciation"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.GrammarComboBox}"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.VocabularyComboBox}"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.PronunciationComboBox}"/>
                         </ComboBox>
                     </StackPanel>
 
                     <StackPanel Grid.Column="2">
-                        <TextBlock Text="Уровень сложности" 
+                        <TextBlock Text="{DynamicResource Loc.AddRule.DiffLevelLabel}" 
                                    Foreground="{DynamicResource SecondaryTextBrush}" 
                                    FontWeight="Medium" Margin="0,0,0,5"/>
                         <ComboBox SelectedValue="{Binding DifficultyLevel}"
                                   SelectedValuePath="Tag"
                                   Height="40">
-                            <ComboBoxItem Content="1 - Начальный" Tag="1"/>
-                            <ComboBoxItem Content="2 - Базовый" Tag="2"/>
-                            <ComboBoxItem Content="3 - Средний" Tag="3"/>
-                            <ComboBoxItem Content="4 - Продвинутый" Tag="4"/>
-                            <ComboBoxItem Content="5 - Эксперт" Tag="5"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.1_ComboBox}" Tag="1"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.2_ComboBox}" Tag="2"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.3_ComboBox}" Tag="3"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.4_ComboBox}" Tag="4"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.5_ComboBox}" Tag="5"/>
                         </ComboBox>
                     </StackPanel>
                 </Grid>
 
-                <TextBlock Text="Содержание (Markdown)" 
+                <TextBlock Text="{DynamicResource Loc.AddRule.ContainsLabel}" 
                            Foreground="{DynamicResource SecondaryTextBrush}" 
                            FontWeight="Medium" Margin="0,0,0,5"/>
                 <Border Style="{StaticResource InputContainerStyle}" Padding="0">

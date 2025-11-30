@@ -165,7 +165,7 @@
                                 </VisualBrush>
                             </Rectangle.OpacityMask>
                         </Rectangle>
-                        <TextBlock Text="Back to Library  " Margin="5"/>
+                        <TextBlock Text="{DynamicResource Loc.Button.BackButton}" Margin="5"/>
                     </StackPanel>
                 </Button>
             </StackPanel>
@@ -241,7 +241,8 @@
 
             <!-- Кнопка "Добавить" -->
             <Button Grid.Column="0" 
-                    Content="   + Add New Word   "
+                    Content="{DynamicResource Loc.Button.AddWordButton}"
+                    MinWidth="130"
                     Command="{Binding AddWordCommand}"
                     Style="{StaticResource PrimaryButton}"
                     Padding="20,10"
@@ -305,26 +306,29 @@
                 <DataGrid.Columns>
 
                     <!-- Слово -->
-                    <DataGridTextColumn Header="Word" 
+                    <DataGridTextColumn Header="{DynamicResource Loc.Grid.WordHeader}" 
                                         Binding="{Binding OriginalWord}" 
                                         Width="*" 
                                         Foreground="{DynamicResource PrimaryTextBrush}" 
                                         FontWeight="SemiBold"/>
 
                     <!-- Перевод -->
-                    <DataGridTextColumn Header="Translation" 
+                    <DataGridTextColumn Header="{DynamicResource Loc.Grid.TranslationHeader}" 
                                         Binding="{Binding Translation}"
                                         Foreground="{DynamicResource PrimaryTextBrush}"  
                                         Width="*"/>
                     
                     <!-- Транскрипция -->
-                    <DataGridTextColumn Header="Transcription" 
+                    <DataGridTextColumn Header="{DynamicResource Loc.Grid.TranscriptionHeader}" 
                                         Binding="{Binding Transcription}"
                                         Foreground="{DynamicResource PrimaryTextBrush}"  
                                         Width="*"/>
 
                     <!-- Пример -->
-                    <DataGridTextColumn Header="Example" Binding="{Binding Example}" Width="1.5*" Foreground="#6B7280">
+                    <DataGridTextColumn Header="{DynamicResource Loc.Grid.ExampleHeader}" 
+                                        Binding="{Binding Example}" 
+                                        Width="1.5*" 
+                                        Foreground="{DynamicResource PrimaryTextBrush}">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
@@ -334,7 +338,7 @@
                     </DataGridTextColumn>
 
                     <!-- Действия -->
-                    <DataGridTemplateColumn Header="Actions" Width="Auto">
+                    <DataGridTemplateColumn Header="{DynamicResource Loc.Grid.ActionsHeader}" Width="Auto">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
@@ -376,11 +380,11 @@
         <!-- 4. FOOTER -->
         <Grid Grid.Row="3" Margin="0,15,0,0">
             <TextBlock VerticalAlignment="Center">
-                <Run Text="Total words: " Foreground="{DynamicResource TertiaryTextBrush}"/>
+                <Run Text="{DynamicResource Loc.DictManager.TotalWordsLabel}" Foreground="{DynamicResource TertiaryTextBrush}"/>
                 <Run Text="{Binding Words.Count, Mode=OneWay}" FontWeight="Bold" Foreground="{DynamicResource TertiaryTextBrush}"/>
             </TextBlock>
 
-            <Button Content="  Share Access  " 
+            <Button Content="{DynamicResource Loc.Button.ShareButton}" 
             Command="{Binding ShareDictionaryCommand}" 
             Style="{StaticResource PrimaryButton}"
             Background="#4B5563" Foreground="White"
@@ -389,11 +393,22 @@
             </Button>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button Content="  Export .json  " Command="{Binding ExportDictionaryCommand}" Style="{StaticResource BaseButton}" Margin="0,0,10,0" Background="White" Foreground="#374151" BorderBrush="#D1D5DB" BorderThickness="1"/>
-                <Button Content=" Delete Dictionary " 
-            Command="{Binding DeleteDictionaryCommand}" 
-            Style="{StaticResource DangerButton}"
-            Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <Button Content="{DynamicResource Loc.Button.ExportButton}" 
+                        Command="{Binding ExportDictionaryCommand}" 
+                        Style="{StaticResource BaseButton}" 
+                        Margin="0,0,10,0" 
+                        MinWidth="120"
+                        MinHeight="30"
+                        Background="{DynamicResource InputBackgroundBrush}" 
+                        Foreground="{DynamicResource PrimaryTextBrush}" 
+                        BorderBrush="{DynamicResource SecondaryMainBackgroundBrush}" 
+                        BorderThickness="1"/>
+                
+                <Button Content="{DynamicResource Loc.Button.DeleteDictButton}" 
+                        MinWidth="130"
+                        Command="{Binding DeleteDictionaryCommand}" 
+                        Style="{StaticResource DangerButton}"
+                        Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             </StackPanel>
         </Grid>
 

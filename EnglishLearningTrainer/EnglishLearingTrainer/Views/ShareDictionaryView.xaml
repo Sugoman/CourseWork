@@ -60,7 +60,7 @@
 
                 <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,0,0,1" Margin="0,0,0,15" Opacity="0.3"/>
 
-                <TextBlock Text="Загрузка студентов..."
+                <TextBlock Text="{DynamicResource Loc.Share.LoadingLabel}"
                            Foreground="{DynamicResource TertiaryTextBrush}"
                            HorizontalAlignment="Center"
                            Margin="0,20,0,20"
@@ -93,7 +93,7 @@
                                         </StackPanel>
 
                                         <CheckBox Grid.Column="1" 
-                                                  Content="Доступ"
+                                                  Content="{DynamicResource Loc.Share.AccessLabel}"
                                                   IsChecked="{Binding IsShared, Mode=TwoWay}"
                                                   Style="{StaticResource ToggleSwitchStyle}"
                                                   Foreground="{DynamicResource SecondaryTextBrush}"
@@ -106,7 +106,7 @@
                     </ItemsControl>
                 </ScrollViewer>
 
-                <TextBlock Text="Студенты не найдены" 
+                <TextBlock Text="{DynamicResource Loc.Share.NotFoundLabel}" 
                            Foreground="{DynamicResource TertiaryTextBrush}"
                            HorizontalAlignment="Center"
                            Margin="0,20,0,0"

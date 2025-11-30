@@ -1,4 +1,139 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+                                <!-- BUTTONS -->
+    <system:String x:Key="Loc.Button.CancelButton">Отмена</system:String>
+    <system:String x:Key="Loc.Button.CreateButton">Создать</system:String>
+    <system:String x:Key="Loc.Button.SaveButton">Сохранить</system:String>
+    <system:String x:Key="Loc.Button.BackButton">Назад</system:String>
+    <system:String x:Key="Loc.Button.ShareButton">Поделиться</system:String>
+    <system:String x:Key="Loc.Button.ExportButton">Экспорт .JSON</system:String>
+    <system:String x:Key="Loc.Button.ImportButton">Импорт.json</system:String>
+    <system:String x:Key="Loc.Button.DeleteDictButton">Удалить словарь</system:String>
+    <system:String x:Key="Loc.Button.AddWordButton">+ Добавить слово</system:String>
+    <system:String x:Key="Loc.Button.LogoutButton">Выйти</system:String>
+    <system:String x:Key="Loc.Button.SettingsButton">Настройки</system:String>
     
+                                <!-- GRID -->
+    <system:String x:Key="Loc.Grid.WordHeader">Слово</system:String>
+    <system:String x:Key="Loc.Grid.TranslationHeader">Перевод</system:String>
+    <system:String x:Key="Loc.Grid.TranscriptionHeader">Транскрипция</system:String>
+    <system:String x:Key="Loc.Grid.ExampleHeader">Пример</system:String>
+    <system:String x:Key="Loc.Grid.ActionsHeader">Действия</system:String>
+    
+                                <!-- LOGIN VIEW -->
+    <system:String x:Key="Loc.Login.Title">С возвращением!</system:String>
+    <system:String x:Key="Loc.Login.RegisterTitle">Регистрация</system:String>
+    <system:String x:Key="Loc.Login.EmailPlaceholder">Email</system:String>
+    <system:String x:Key="Loc.Login.PasswordPlaceholder">Пароль</system:String>
+    <system:String x:Key="Loc.Login.Button">Войти</system:String>
+    <system:String x:Key="Loc.Login.ConfirmPassword">Подтвердите пароль</system:String>
+    <system:String x:Key="Loc.Login.RememberMe">Запомнить меня</system:String>
+    <system:String x:Key="Loc.Login.CodePlaceholder">Код учителя (необязательно)</system:String>
+    <system:String x:Key="Loc.Login.UnderCodePlaceholder">Введите код, чтобы сразу присоединиться к классу.</system:String>
+    <system:String x:Key="Loc.Login.OfflineModeButton">Офлайн-режим</system:String>
+    <system:String x:Key="Loc.Login.SignUpPart2">Зарегистрироваться</system:String>
+    <system:String x:Key="Loc.Login.SignUpPart1">Нет аккаунта?</system:String>
+    <system:String x:Key="Loc.Login.LogInPart1">Уже есть аккаунт?</system:String>
+    <system:String x:Key="Loc.Login.CreateAccountButton">Создать аккаунт</system:String>
+    
+                                <!-- SORT -->
+    <system:String x:Key="Loc.Sort.NameAsc">По имени (А-Я)</system:String>
+    <system:String x:Key="Loc.Sort.NameDesc">По имени (Я-А)</system:String>
+    <system:String x:Key="Loc.Sort.CountMin">Кол-во слов (Min)</system:String>
+    <system:String x:Key="Loc.Sort.CountMax">Кол-во слов (Max)</system:String>
+
+                                <!-- DASHBOARD -->
+    <system:String x:Key="Loc.Dashboard.RuleLabel">Правила</system:String>
+    <system:String x:Key="Loc.Dashboard.VocabLabel">Словарь</system:String>
+    <system:String x:Key="Loc.Dashboard.HomeButton">Главная</system:String>
+    <system:String x:Key="Loc.Dashboard.RuleVocab">Правила и слова</system:String>
+    <system:String x:Key="Loc.Dashboard.AddRule">Добавить правило</system:String>
+    <system:String x:Key="Loc.Dashboard.AddVocabulary">Добавить словарь</system:String>
+    <system:String x:Key="Loc.Dashboard.AddButton">+ Добавить</system:String>
+    <system:String x:Key="Loc.Dashboard.Import">Импорт .json</system:String>
+
+    <system:String x:Key="Loc.Dashboard.SearchPlaceholder">Поиск...</system:String>
+
+    <system:String x:Key="Loc.Dashboard.WordCount">Слов:</system:String>
+    <system:String x:Key="Loc.Dashboard.DictionaryToolTip">Управление словарем (добавить, изменить)</system:String>
+    <system:String x:Key="Loc.Dashboard.DeleteRuleToolTip">Удалить правило</system:String>
+                                
+                                <!-- ADD DICTIONARY -->
+    <system:String x:Key="Loc.AddDict.CreateDict">Создать новый словарь</system:String>
+    <system:String x:Key="Loc.AddDict.TitleDictLabel">Название</system:String>
+    <system:String x:Key="Loc.AddDict.DiscriptionDictLabel">Описание</system:String>
+    <system:String x:Key="Loc.AddDict.StudiedLangLabel">Изучаемый язык</system:String>
+    <system:String x:Key="Loc.AddDict.NativeLangLabel">Родной язык</system:String>
+
+                                <!-- ADD RULE -->
+    <system:String x:Key="Loc.AddRule.CreateRule">Создать новое правило</system:String>
+    <system:String x:Key="Loc.AddRule.TitleRuleLabel">Название</system:String>
+    <system:String x:Key="Loc.AddRule.CategoryLabel">Категория</system:String>
+    <system:String x:Key="Loc.AddRule.DiffLevelLabel">Сложность</system:String>
+    <system:String x:Key="Loc.AddRule.ContainsLabel">Содержание (Markdown)</system:String>
+
+    <system:String x:Key="Loc.AddRule.1_ComboBox">1 - Начинающий</system:String>
+    <system:String x:Key="Loc.AddRule.2_ComboBox">2 - Элементарный</system:String>
+    <system:String x:Key="Loc.AddRule.3_ComboBox">3 - Средний</system:String>
+    <system:String x:Key="Loc.AddRule.4_ComboBox">4 - Продвинутый</system:String>
+    <system:String x:Key="Loc.AddRule.5_ComboBox">5 - Эксперт</system:String>
+
+    <system:String x:Key="Loc.AddRule.GrammarComboBox">Грамматика</system:String>
+    <system:String x:Key="Loc.AddRule.VocabularyComboBox">Лексика</system:String>
+    <system:String x:Key="Loc.AddRule.PronunciationComboBox">Произношение</system:String>
+
+                                <!-- ADD WORD -->
+    <system:String x:Key="Loc.AddWord.CreateDict">Создать новое слово</system:String>
+    <system:String x:Key="Loc.AddWord.TitleDictLabel">Иностранный язык</system:String>
+    <system:String x:Key="Loc.AddWord.AutocorrectionLabel">Возможно, вы имели в виду:</system:String>
+    <system:String x:Key="Loc.AddWord.WordTranslateLabel">Перевод</system:String>
+    <system:String x:Key="Loc.AddWord.WordExampleLabel">Пример использования (опционально)</system:String>
+                                
+                                <!-- DICTIONARY MANAGER -->
+    <system:String x:Key="Loc.DictManager.TotalWordsLabel">Всего слов:</system:String>
+    
+                                <!-- LEARNING -->
+    <system:String x:Key="Loc.Learning.ShowAnswerButton">Показать ответ</system:String>
+    <system:String x:Key="Loc.Learning.AgainLabel">Снова</system:String>
+    <system:String x:Key="Loc.Learning.HardLabel">Сложно</system:String>
+    <system:String x:Key="Loc.Learning.FineLabel">Хорошо</system:String>
+    <system:String x:Key="Loc.Learning.EasyLabel">Легко</system:String>
+                                
+                                <!-- EDIT RULE -->
+    <system:String x:Key="Loc.EditRule.EditRuleLabel">Редактировать правило</system:String>
+    <system:String x:Key="Loc.EditRule.EditorLabel">Редактор</system:String>
+    <system:String x:Key="Loc.EditRule.TitleRuleLabel">Название</system:String>
+    <system:String x:Key="Loc.EditRule.DiscriptionLabel">Описание</system:String>
+    <system:String x:Key="Loc.EditRule.LivePreviewLabel">Предпросмотр</system:String>
+    <system:String x:Key="Loc.EditRule.MarkdownRenderedLabel">Markdown (Результат)</system:String>
+                                
+                                <!-- SETTINGS -->
+    <system:String x:Key="Loc.Settings.GeneralRadio">Общие</system:String>
+    <system:String x:Key="Loc.Settings.AccountRadio">Аккаунт</system:String>
+    <system:String x:Key="Loc.Settings.AppearanceRadio">Внешний вид</system:String>
+                                <!-- SETTINGS GENERAL -->
+    <system:String x:Key="Loc.SettingsGen.TitleLabel">Общие настройки</system:String>
+    <system:String x:Key="Loc.SettingsGen.DailyGoalLabel">Дневная цель</system:String>
+    <system:String x:Key="Loc.SettingsGen.NewWordsPerDayLabel">Новых слов в день:</system:String>
+    <system:String x:Key="Loc.SettingsGen.LanguageLabel">Язык интерфейса</system:String>
+                                <!-- SETTINGS ACCOUNT -->
+    <system:String x:Key="Loc.SettingsAcc.TitleLabel">Аккаунт</system:String>
+    <system:String x:Key="Loc.SettingsAcc.ChangePasswordLabel">Сменить пароль</system:String>
+    <system:String x:Key="Loc.SettingsAcc.OldPasswordLabel">Старый пароль</system:String>
+    <system:String x:Key="Loc.SettingsAcc.NewPasswordLabel">Новый пароль</system:String>
+    <system:String x:Key="Loc.SettingsAcc.TeacherTitleLabel">Инструменты учителя</system:String>
+    <system:String x:Key="Loc.SettingsAcc.GenerateCodeLabel">Создать код приглашения</system:String>
+    <system:String x:Key="Loc.SettingsAcc.BecomeTeacherLabel">Стать учителем</system:String>
+    <system:String x:Key="Loc.SettingsAcc.HelpCodeLabel">Код позволяет студентам присоединиться к вашему классу.</system:String>
+                                <!-- SETTINGS APPEARANCE -->
+    <system:String x:Key="Loc.SettingsApp.TitleLabel">Внешний вид</system:String>
+    <system:String x:Key="Loc.SettingsApp.ChooseThemeLabel">Выбрать тему</system:String>
+    <system:String x:Key="Loc.SettingsApp.ReadabiltyLabel">Выберите цветовую схему для лучшей читаемости.</system:String>
+
+                                <!-- SHARE -->
+    <system:String x:Key="Loc.Share.LoadingLabel">Загрузка студентов...</system:String>
+    <system:String x:Key="Loc.Share.AccessLabel">Доступ</system:String>
+    <system:String x:Key="Loc.Share.NotFoundLabel">Студенты не найдены</system:String>
 </ResourceDictionary>

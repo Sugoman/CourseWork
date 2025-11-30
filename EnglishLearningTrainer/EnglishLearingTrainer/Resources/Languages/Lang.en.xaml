@@ -2,8 +2,27 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
                                 
-                                <!-- LOGIN VIEW -->
+                                <!-- BUTTONS -->
+    <system:String x:Key="Loc.Button.CancelButton">Cancel</system:String>
+    <system:String x:Key="Loc.Button.CreateButton">Create</system:String>
+    <system:String x:Key="Loc.Button.SaveButton">Save</system:String>
+    <system:String x:Key="Loc.Button.BackButton">Back</system:String>
+    <system:String x:Key="Loc.Button.ShareButton">Share Access</system:String>
+    <system:String x:Key="Loc.Button.ExportButton">Export .JSON</system:String>
+    <system:String x:Key="Loc.Button.ImportButton">Import .json</system:String>
+    <system:String x:Key="Loc.Button.DeleteDictButton">Delete Dictionary</system:String>
+    <system:String x:Key="Loc.Button.AddWordButton">+ Add New Word</system:String>
+    <system:String x:Key="Loc.Button.LogoutButton">Log Out</system:String>
+    <system:String x:Key="Loc.Button.SettingsButton">Settings</system:String>
     
+                                <!-- GRID -->
+    <system:String x:Key="Loc.Grid.WordHeader">Word</system:String>
+    <system:String x:Key="Loc.Grid.TranslationHeader">Translation</system:String>
+    <system:String x:Key="Loc.Grid.TranscriptionHeader">Transcription</system:String>
+    <system:String x:Key="Loc.Grid.ExampleHeader">Example</system:String>
+    <system:String x:Key="Loc.Grid.ActionsHeader">Actions</system:String>
+
+                                <!-- LOGIN VIEW -->    
     <system:String x:Key="Loc.Login.Title">Welcome Back!</system:String>
     <system:String x:Key="Loc.Login.RegisterTitle">Register</system:String>
     <system:String x:Key="Loc.Login.EmailPlaceholder">Email</system:String>
@@ -27,27 +46,93 @@
 
                                 <!-- DASHBOARD -->
     <system:String x:Key="Loc.Dashboard.RuleLabel">Rules</system:String>
+    <system:String x:Key="Loc.Dashboard.VocabLabel">Vocabulary</system:String>
     <system:String x:Key="Loc.Dashboard.HomeButton">Home</system:String>
     <system:String x:Key="Loc.Dashboard.RuleVocab">Rules and Vocab</system:String>
     <system:String x:Key="Loc.Dashboard.AddRule">Add Rule</system:String>
     <system:String x:Key="Loc.Dashboard.AddVocabulary">Add Vocabulary</system:String>
     <system:String x:Key="Loc.Dashboard.AddButton">+ Add</system:String>
-    <system:String x:Key="Loc.Dashboard.Import">Import .json</system:String>
-    <system:String x:Key="Loc.Dashboard.Settings">Import .json</system:String>
     <system:String x:Key="Loc.Dashboard.SearchPlaceholder">Search...</system:String>
 
     <system:String x:Key="Loc.Dashboard.WordCount">Words: </system:String>
     <system:String x:Key="Loc.Dashboard.DictionaryToolTip">Dictionary management (Add words, edit)</system:String>
     <system:String x:Key="Loc.Dashboard.DeleteRuleToolTip">DeleteRule</system:String>
 
+                                <!-- ADD DICTIONARY -->
+    <system:String x:Key="Loc.AddDict.CreateDict">Create New Dictionary</system:String>
+    <system:String x:Key="Loc.AddDict.TitleDictLabel">Title</system:String>
+    <system:String x:Key="Loc.AddDict.DescriptionDictLabel">Description</system:String>
+    <system:String x:Key="Loc.AddDict.StudiedLangLabel">Language Studied</system:String>
+    <system:String x:Key="Loc.AddDict.NativeLangLabel">Native Language</system:String>
+    
+                                <!-- ADD RULE -->
+    <system:String x:Key="Loc.AddRule.CreateRule">Create New Rule</system:String>
+    <system:String x:Key="Loc.AddRule.TitleRuleLabel">Title</system:String>
+    <system:String x:Key="Loc.AddRule.CategoryLabel">Category</system:String>
+    <system:String x:Key="Loc.AddRule.DiffLevelLabel">Difficulty</system:String>
+    <system:String x:Key="Loc.AddRule.ContainsLabel">Content (Markdown)</system:String>
 
+    <system:String x:Key="Loc.AddRule.1_ComboBox">1 - Beginner</system:String>
+    <system:String x:Key="Loc.AddRule.2_ComboBox">2 - Basic</system:String>
+    <system:String x:Key="Loc.AddRule.3_ComboBox">3 - Intermediate</system:String>
+    <system:String x:Key="Loc.AddRule.4_ComboBox">4 - Advanced</system:String>
+    <system:String x:Key="Loc.AddRule.5_ComboBox">5 - Expert</system:String>
 
+    <system:String x:Key="Loc.AddRule.GrammarComboBox">Grammar</system:String>
+    <system:String x:Key="Loc.AddRule.VocabularyComboBox">Vocabulary</system:String>
+    <system:String x:Key="Loc.AddRule.PronunciationComboBox">Pronunciation</system:String>
+    
+                                <!-- ADD WORD -->
+    <system:String x:Key="Loc.AddWord.CreateDict">Create New Word</system:String>
+    <system:String x:Key="Loc.AddWord.TitleDictLabel">Foreign Language</system:String>
+    <system:String x:Key="Loc.AddWord.AutocorrectionLabel">Perhaps you meant: </system:String>
+    <system:String x:Key="Loc.AddWord.WordTranslateLabel">Translate</system:String>
+    <system:String x:Key="Loc.AddWord.WordExampleLabel">Example of Use (Optional)</system:String>
 
+                                <!-- DICTIONARY MANAGER -->
+    <system:String x:Key="Loc.DictManager.TotalWordsLabel">Total words: </system:String>
 
+                                <!-- LEARNING -->
+    <system:String x:Key="Loc.Learning.ShowAnswerButton">Show answer</system:String>
+    <system:String x:Key="Loc.Learning.AgainLabel">Again</system:String>
+    <system:String x:Key="Loc.Learning.HardLabel">Hard</system:String>
+    <system:String x:Key="Loc.Learning.FineLabel">Fine</system:String>
+    <system:String x:Key="Loc.Learning.EasyLabel">Easy</system:String>
 
+                                <!-- EDIT RULE -->
+    <system:String x:Key="Loc.EditRule.EditRuleLabel">Edit Rule</system:String>
+    <system:String x:Key="Loc.EditRule.EditorLabel">Editor</system:String>
+    <system:String x:Key="Loc.EditRule.TitleRuleLabel">Title</system:String>
+    <system:String x:Key="Loc.EditRule.DiscriptionLabel">Discription</system:String>
+    <system:String x:Key="Loc.EditRule.LivePreviewLabel">Live Preview</system:String>
+    <system:String x:Key="Loc.EditRule.MarkdownRenderedLabel">Markdown Rendered</system:String>
 
-
-    <system:String x:Key="Loc.Login.qwe">Oqwe</system:String>
-
-    <system:String x:Key="Loc.Login.Change">CHANGE</system:String>
+                                <!-- SETTINGS -->
+    <system:String x:Key="Loc.Settings.GeneralRadio">General</system:String>
+    <system:String x:Key="Loc.Settings.AccountRadio">Account</system:String>
+    <system:String x:Key="Loc.Settings.AppearanceRadio">Appearance</system:String>
+                                <!-- SETTINGS GENERAL -->
+    <system:String x:Key="Loc.SettingsGen.TitleLabel">General Settings</system:String>
+    <system:String x:Key="Loc.SettingsGen.DailyGoalLabel">Daily Goal</system:String>
+    <system:String x:Key="Loc.SettingsGen.NewWordsPerDayLabel">New words per day:</system:String>
+    <system:String x:Key="Loc.SettingsGen.LanguageLabel">Interface Language</system:String>
+                                <!-- SETTINGS ACCOUNT -->
+    <system:String x:Key="Loc.SettingsAcc.TitleLabel">Account</system:String>
+    <system:String x:Key="Loc.SettingsAcc.ChangePasswordLabel">Change Password</system:String>
+    <system:String x:Key="Loc.SettingsAcc.OldPasswordLabel">Old Password</system:String>
+    <system:String x:Key="Loc.SettingsAcc.NewPasswordLabel">New Password</system:String>
+    <system:String x:Key="Loc.SettingsAcc.TeacherTitleLabel">Teacher Tools</system:String>
+    <system:String x:Key="Loc.SettingsAcc.GenerateCodeLabel">Generate Invite Code</system:String>
+    <system:String x:Key="Loc.SettingsAcc.BecomeTeacherLabel">Become Teacher</system:String>
+    <system:String x:Key="Loc.SettingsAcc.HelpCodeLabel">Code allows students to join your class.</system:String>
+                                <!-- SETTINGS APPEARANCE -->
+    <system:String x:Key="Loc.SettingsApp.TitleLabel">Appearance</system:String>
+    <system:String x:Key="Loc.SettingsApp.ChooseThemeLabel">Choose Theme</system:String>
+    <system:String x:Key="Loc.SettingsApp.ReadabiltyLabel">Select a predefined color scheme for better readability.</system:String>
+    
+                                <!-- SHARE -->
+    <system:String x:Key="Loc.Share.LoadingLabel">Loading students...</system:String>
+    <system:String x:Key="Loc.Share.AccessLabel">Access</system:String>
+    <system:String x:Key="Loc.Share.NotFoundLabel">Students Not Found</system:String>
+    
 </ResourceDictionary>
