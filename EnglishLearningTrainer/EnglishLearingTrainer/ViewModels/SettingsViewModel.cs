@@ -1,10 +1,13 @@
 ﻿using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Linq;
+using System;
 
 namespace LearningTrainer.ViewModels
 {
@@ -16,7 +19,6 @@ namespace LearningTrainer.ViewModels
         // --- КОМАНДЫ ---
         public ICommand LogoutCommand { get; }
         public ICommand ChangePasswordCommand { get; }
-        public ICommand ChangeAccentColorCommand { get; }
         public ICommand UpgradeToTeacherCommand { get; }
         public RelayCommand SwitchSectionCommand { get; }
 
@@ -28,22 +30,51 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _currentSection, value);
         }
 
-        private bool _isDarkMode;
-        public bool IsDarkMode
+        // --- ЯЗЫКИ ---
+        private readonly Dictionary<string, string> _languagesMap = new()
         {
-            get => _isDarkMode;
+            { "English", "en" },
+            { "Русский", "ru" },
+            { "Español", "es" },
+            { "Deutsch", "de" },
+            { "中国人", "zh" }
+        };
+        public List<string> AvailableLanguages => _languagesMap.Keys.ToList();
+
+        private string _currentLanguage;
+        public string CurrentLanguage
+        {
+            get => _currentLanguage;
             set
             {
-                if (SetProperty(ref _isDarkMode, value))
+                if (SetProperty(ref _currentLanguage, value))
                 {
-                    SaveSettings();
-                    _settingsService.ApplyCustomColors(reloadBaseTheme: true);
-                    UpdateColorsFromResources();
+                    if (_languagesMap.TryGetValue(value, out string code))
+                    {
+                        _settingsService.ApplyLanguage(code);
+                    }
                 }
             }
         }
 
-        // ШРИФТ
+        // --- ТЕМЫ ---
+        public List<string> AvailableThemes { get; } = new List<string> { "Light", "Dark", "Dracula", "Forest" };
+
+        private string _selectedTheme;
+        public string SelectedTheme
+        {
+            get => _selectedTheme;
+            set
+            {
+                if (SetProperty(ref _selectedTheme, value))
+                {
+                    _settingsService.ApplyTheme(value);
+                    UpdateColorsFromResources(); // Обновляем цвета в UI
+                }
+            }
+        }
+
+        // --- ШРИФТ ---
         private double _selectedFontSize;
         public double SelectedFontSize
         {
@@ -52,16 +83,14 @@ namespace LearningTrainer.ViewModels
             {
                 if (SetProperty(ref _selectedFontSize, value))
                 {
-                    SaveSettings();
+                    // Обновляем напрямую в сервисе
+                    _settingsService.CurrentSettings.BaseFontSize = value;
+                    _settingsService.SaveSettings(_settingsService.CurrentSettings);
+
+                    // Тут можно вызвать применение шрифта, если оно не автоматическое
+                    // Но обычно оно через ресурсы работает
                 }
             }
-        }
-
-        private MarkdownConfig _currentMarkdownConfig;
-        public MarkdownConfig CurrentMarkdownConfig
-        {
-            get => _currentMarkdownConfig;
-            private set => SetProperty(ref _currentMarkdownConfig, value);
         }
 
         // --- СВОЙСТВА УЧИТЕЛЯ ---
@@ -108,76 +137,26 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _dailyGoal, value);
         }
 
+        // --- ЦВЕТА (Только для чтения в UI, менять их лучше через тему) ---
         private string _appBackgroundColor;
         public string AppBackgroundColor
         {
             get => _appBackgroundColor;
-            set
-            {
-                if (SetProperty(ref _appBackgroundColor, value))
-                {
-                    SaveSettings();
-                    _settingsService.ApplyCustomColors();
-                }
-            }
+            set => SetProperty(ref _appBackgroundColor, value);
         }
 
         private string _appTextColor;
         public string AppTextColor
         {
             get => _appTextColor;
-            set
-            {
-                if (SetProperty(ref _appTextColor, value))
-                {
-                    SaveSettings();
-                    _settingsService.ApplyCustomColors();
-                }
-            }
-        }
-
-        private string _selectedTheme;
-        public string SelectedTheme
-        {
-            get => _selectedTheme;
-            set
-            {
-                if (SetProperty(ref _selectedTheme, value))
-                {
-                    _settingsService.ApplyTheme(value);
-                }
-            }
+            set => SetProperty(ref _appTextColor, value);
         }
 
         private string _appAccentColor;
         public string AppAccentColor
         {
             get => _appAccentColor;
-            set
-            {
-                if (SetProperty(ref _appAccentColor, value))
-                {
-                    SaveSettings();
-                    _settingsService.ApplyCustomColors();
-                }
-            }
-        }
-
-        // --- СВОЙСТВА ЛОКАЛИЗАЦИИ ---
-        public List<string> AvailableLanguages { get; } = new List<string> { "English", "Русский", "Español", "Deutsch", "中国人" };
-        public List<string> AvailableThemes { get; } = new List<string> { "Light", "Dark", "Dracula", "Forest" };
-
-        private string _currentLanguage = "English";
-        public string CurrentLanguage
-        {
-            get => _currentLanguage;
-            set
-            {
-                if (SetProperty(ref _currentLanguage, value))
-                {
-                    ChangeLanguage(value);
-                }
-            }
+            set => SetProperty(ref _appAccentColor, value);
         }
 
         // ============================================================
@@ -188,25 +167,34 @@ namespace LearningTrainer.ViewModels
             Title = "Settings";
             _settingsService = settingsService;
             _dataService = dataService;
+
             if (currentUser != null)
             {
                 TeacherCode = currentUser.InviteCode;
             }
 
-            _isDarkMode = _settingsService.CurrentSettings.Theme == "Dark";
+            // --- ИНИЦИАЛИЗАЦИЯ ПОЛЕЙ (БЕЗ ВЫЗОВА СЕТТЕРОВ) ---
+            // Используем приватные поля (_field), чтобы НЕ срабатывала логика сохранения при открытии окна
 
+            _selectedTheme = _settingsService.CurrentSettings.Theme;
+            _selectedFontSize = _settingsService.CurrentSettings.BaseFontSize;
+
+            // Инициализация языка
+            string currentCode = _settingsService.CurrentSettings.Language;
+            _currentLanguage = _languagesMap.FirstOrDefault(x => x.Value == currentCode).Key ?? "English";
+
+            // Команды
             LogoutCommand = new RelayCommand(PerformLogout);
             SwitchSectionCommand = new RelayCommand(sec => CurrentSection = (string)sec);
-
-            SelectedTheme = _settingsService.CurrentSettings.Theme;
             UpgradeToTeacherCommand = new RelayCommand(async (_) => await PerformUpgradeToTeacher());
 
             ChangePasswordCommand = new RelayCommand(
                 async (param) => await ChangePasswordAsync((string)param),
                 (param) => !string.IsNullOrWhiteSpace(OldPassword) && !string.IsNullOrWhiteSpace((string)param)
             );
-            UpdateColorsFromResources();
 
+            // Обновляем квадратики с цветами
+            UpdateColorsFromResources();
         }
 
         // ============================================================
@@ -228,7 +216,6 @@ namespace LearningTrainer.ViewModels
                 }
                 else
                 {
-
                     var result = await _dataService.UpgradeToTeacherAsync();
                     TeacherCode = result.InviteCode;
 
@@ -286,44 +273,14 @@ namespace LearningTrainer.ViewModels
             {
                 if (Application.Current.Resources[key] is SolidColorBrush brush)
                 {
-                    return brush.Color.ToString(); 
+                    return brush.Color.ToString();
                 }
-                return "#000000"; 
+                return "#000000";
             }
 
-
-            _appBackgroundColor = GetHex("MainBackgroundBrush");
-            OnPropertyChanged(nameof(AppBackgroundColor));
-
-            _appTextColor = GetHex("PrimaryTextBrush");
-            OnPropertyChanged(nameof(AppTextColor));
-
-            _appAccentColor = GetHex("PrimaryAccentBrush");
-            OnPropertyChanged(nameof(AppAccentColor));
-
-        }
-        private void SaveSettings()
-        {
-            var newSettings = new SettingsModel
-            {
-                Theme = IsDarkMode ? "Dark" : "Light",
-                BaseFontSize = SelectedFontSize
-            };
-            _settingsService.SaveSettings(newSettings);
-        }
-
-        private void ChangeLanguage(string languageName)
-        {
-            string code = languageName switch
-            {
-                "Русский" => "ru",
-                "English" => "en",
-                "Español" => "es",
-                "Deutsch" => "de",
-                "中国人" => "ch",
-                _ => "en"
-            };
-            LocalizationManager.SetLanguage(code);
+            AppBackgroundColor = GetHex("MainBackgroundBrush");
+            AppTextColor = GetHex("PrimaryTextBrush");
+            AppAccentColor = GetHex("PrimaryAccentBrush");
         }
     }
 }

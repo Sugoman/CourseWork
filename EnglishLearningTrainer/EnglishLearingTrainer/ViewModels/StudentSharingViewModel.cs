@@ -8,9 +8,7 @@ namespace LearningTrainer.ViewModels
     {
         public StudentDto Student { get; }
 
-        // Заменили _dictionaryId на универсальный ID
         private readonly int _entityId;
-        // Добавили поле для типа (Словарь или Правило)
         private readonly ShareContentType _contentType;
         private readonly IDataService _dataService;
 

@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="MigrationsSqlServer\" />
+    <Folder Include="Services\" />
     <Folder Include="Migrations\" />
   </ItemGroup>
 

@@ -53,7 +53,7 @@ namespace LearningTrainer.Services
                 // 404 (Not Found) (слово не найдено)
                 if (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Slovo '{word}' ne naideno v dictionaryapi.dev");
+                    System.Diagnostics.Debug.WriteLine($"Слово '{word}' не найдено в dictionaryapi.dev");
                     return null;
                 }
                 System.Diagnostics.Debug.WriteLine($"API dictionaryapi.dev error: {ex.Message}");

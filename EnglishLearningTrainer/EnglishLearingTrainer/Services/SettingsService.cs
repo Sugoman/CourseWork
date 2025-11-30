@@ -17,9 +17,16 @@ namespace LearningTrainer.Services
         public SettingsService()
         {
             CurrentSettings = LoadSettings();
+            string langCode = NormalizeLanguageCode(CurrentSettings.Language);
+            if (CurrentSettings.Language != langCode)
+            {
+                CurrentSettings.Language = langCode;
+                SaveSettings(CurrentSettings);
+            }
             string savedTheme = string.IsNullOrEmpty(CurrentSettings.Theme) ? "Light" : CurrentSettings.Theme;
             ThemeService.SetTheme(savedTheme);
             ApplyFont();
+            ApplyLanguage(langCode);
         }
 
         private MarkdownConfig DarkConfig => new MarkdownConfig
@@ -55,6 +62,15 @@ namespace LearningTrainer.Services
             }
 
         }
+        public void ApplyLanguage(string languageCode)
+        {
+            CurrentSettings.Language = languageCode;
+            SaveSettings(CurrentSettings);
+
+            LanguageService.SetLanguage(languageCode);
+
+        }
+        
 
         public void ApplyTheme(string themeName)
         {
@@ -89,6 +105,19 @@ namespace LearningTrainer.Services
             _isDarkTheme = isDark;
 
             MarkdownConfigChanged?.Invoke(CurrentMarkdownConfig);
+        }
+
+        private string NormalizeLanguageCode(string input)
+        {
+            return input switch
+            {
+                "English" => "en",
+                "Русский" => "ru",
+                "Español" => "es",
+                "Deutsch" => "de",
+                "中国人" => "ch", 
+                _ => input
+            };
         }
 
     }

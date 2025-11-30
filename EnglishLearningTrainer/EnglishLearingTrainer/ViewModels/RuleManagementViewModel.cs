@@ -10,9 +10,8 @@ namespace LearningTrainer.ViewModels
     public class RuleManagementViewModel : TabViewModelBase
     {
         private readonly IDataService _dataService;
-        private readonly Rule _ruleModel; // Ссылка на оригинал
+        private readonly Rule _ruleModel; 
 
-        // Поля для привязки к TextBox
         public string Title { get; set; }
         public string Description { get; set; }
         public string Category { get; set; }
