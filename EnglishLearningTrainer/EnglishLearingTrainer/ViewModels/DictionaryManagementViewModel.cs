@@ -102,7 +102,11 @@ namespace LearningTrainer.ViewModels
 
             AddWordCommand = new RelayCommand(AddWord, (_) => IsEditable);
             DeleteWordCommand = new RelayCommand(async (p) => await DeleteWord(p), (_) => IsEditable);
-            SaveChangesCommand = new RelayCommand(async (p) => await SaveChanges(), (_) => IsEditable);
+            SaveChangesCommand = new RelayCommand(async (p) =>
+            {
+                System.Diagnostics.Debug.WriteLine(">>> SAVE COMMAND EXECUTED <<<"); 
+                await SaveChanges();
+            }, (_) => IsEditable);
 
             DeleteDictionaryCommand = new RelayCommand(async (p) => await DeleteDictionary(), (_) => IsEditable);
             ShareDictionaryCommand = new RelayCommand(ShareDictionary);
@@ -150,7 +154,21 @@ namespace LearningTrainer.ViewModels
 
             try
             {
-                bool isSuccess = await _dataService.UpdateDictionaryAsync(_dictionaryModel);
+                var dictionaryToUpdate = new Dictionary
+                {
+                    Id = _dictionaryModel.Id,
+                    Name = DictionaryName,
+                    Description = Description,
+                    LanguageFrom = _dictionaryModel.LanguageFrom,
+                    LanguageTo = _dictionaryModel.LanguageTo,
+                    UserId = _dictionaryModel.UserId,
+
+                    Words = new List<Word>(),
+
+                    User = null
+                };
+
+                bool isSuccess = await _dataService.UpdateDictionaryAsync(dictionaryToUpdate);
 
                 if (isSuccess)
                 {
@@ -159,7 +177,8 @@ namespace LearningTrainer.ViewModels
                 }
                 else
                 {
-                    MessageBox.Show("Failed to save changes to the server. Please check your connection.", "Server Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    System.Diagnostics.Debug.WriteLine("UpdateDictionaryAsync returned FALSE.");
+                    MessageBox.Show("Failed to save changes. Server rejected the request.", "Server Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch (System.Exception ex)

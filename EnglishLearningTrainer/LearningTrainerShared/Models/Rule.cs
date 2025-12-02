@@ -25,7 +25,7 @@ namespace LearningTrainerShared.Models
         public int DifficultyLevel { get; set; } = 1;
 
         [JsonIgnore]
-        public virtual User User { get; set; }
+        public virtual User? User { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow; 
         [NotMapped]

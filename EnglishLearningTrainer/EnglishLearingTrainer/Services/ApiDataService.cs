@@ -114,11 +114,21 @@ namespace LearningTrainer.Services
             try
             {
                 var response = await _httpClient.PutAsJsonAsync($"api/dictionaries/{dictionary.Id}", dictionary);
-                return response.IsSuccessStatusCode;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"API ERROR [{response.StatusCode}]: {errorContent}");
+                    return false;
+                }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[EXCEPTION] Ошибка обновления: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"CLIENT EXCEPTION: {ex.Message}");
                 return false;
             }
         }
@@ -167,7 +177,7 @@ namespace LearningTrainer.Services
         public async Task<string> ChangePasswordAsync(ChangePasswordRequest request)
         {
             var response = await _httpClient.PostAsJsonAsync(
-                "/api/auth/change-password", request, _jsonOptions);
+            "/api/auth/change-password", request, _jsonOptions);
 
             var responseDto = await response.Content.ReadFromJsonAsync<ApiResponseDto>();
 
@@ -297,6 +307,29 @@ namespace LearningTrainer.Services
             {
                 System.Diagnostics.Debug.WriteLine($"[EXCEPTION] Rule update error: {ex.Message}");
                 return false;
+            }
+        }
+
+        public async Task<DashboardStats> GetStatsAsync()
+        {
+            try
+            {
+                var dicts = await GetDictionariesAsync();
+
+                int wordCount = dicts.Sum(d => d.Words?.Count ?? 0);
+                int dictCount = dicts.Count;
+
+                return new DashboardStats
+                {
+                    TotalDictionaries = dictCount,
+                    TotalWords = wordCount,
+                    LearnedWords = 0, // Пока заглушка
+                    AverageSuccessRate = 0 // Пока заглушка
+                };
+            }
+            catch
+            {
+                return new DashboardStats();
             }
         }
         private class ApiResponseDto { public string Message { get; set; } }

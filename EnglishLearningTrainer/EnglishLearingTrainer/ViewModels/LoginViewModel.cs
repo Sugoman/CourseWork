@@ -4,6 +4,7 @@ using LearningTrainerShared.Models;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.RegularExpressions;
 
 namespace LearningTrainer.ViewModels
 {
@@ -13,15 +14,17 @@ namespace LearningTrainer.ViewModels
         {
             BaseAddress = new Uri("http://localhost:5077")
         };
-        private readonly SessionService _sessionService = new SessionService();
+        private readonly SessionService _sessionService;
         private string _username;
 
         public event Action<UserSessionDto> LoginSuccessful;
-
         public event Action OfflineLoginRequested;
+
         public RelayCommand ToggleModeCommand { get; }
         public RelayCommand RegisterCommand { get; }
         public RelayCommand OpenGitHubCommand { get; }
+        public RelayCommand LoginCommand { get; }
+        public RelayCommand OfflineLoginCommand { get; }
 
         private readonly IDataService _apiDataService;
 
@@ -62,6 +65,13 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _errorMessage, value);
         }
 
+        private bool _isError;
+        public bool IsError
+        {
+            get => _isError;
+            set => SetProperty(ref _isError, value);
+        }
+
         private string _currentPassword;
         public string CurrentPassword
         {
@@ -92,9 +102,6 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _inviteCode, value);
         }
 
-        public RelayCommand LoginCommand { get; }
-        public RelayCommand OfflineLoginCommand { get; }
-
         public LoginViewModel(SessionService sessionService)
         {
             _apiDataService = new ApiDataService();
@@ -104,14 +111,15 @@ namespace LearningTrainer.ViewModels
             OpenGitHubCommand = new RelayCommand(PerformOpenGitHub);
 
             LoginCommand = new RelayCommand(
-                async (param) => await PerformLogin(CurrentPassword), 
-                (param) => CanLoginExecute()                          
+                async (param) => await PerformLogin(CurrentPassword),
+                (param) => CanLoginExecute()
             );
             RegisterCommand = new RelayCommand(
-                async (param) => await PerformRegister(ConfirmPassword), 
-                (param) => CanRegisterExecute()                          
+                async (param) => await PerformRegister(ConfirmPassword),
+                (param) => CanRegisterExecute()
             );
         }
+
         private void PerformOpenGitHub(object obj)
         {
             string url = "https://github.com/Sugoman";
@@ -122,8 +130,25 @@ namespace LearningTrainer.ViewModels
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Failed to open URL: {ex.Message}");
+                IsError = true;
                 ErrorMessage = "Не удалось открыть ссылку.";
             }
+        }
+        private bool IsValidEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+            string pattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+
+            try
+            {
+                return Regex.IsMatch(email, pattern) && email.Contains("@") && email.LastIndexOf(".") > email.IndexOf("@");
+            }
+            catch
+            {
+                return false;
+            }
+
+            return Regex.IsMatch(email, pattern);
         }
         private bool CanLoginExecute()
         {
@@ -144,18 +169,24 @@ namespace LearningTrainer.ViewModels
         {
             IsRegisterMode = !IsRegisterMode;
             ErrorMessage = "";
+            IsError = false;
         }
-
 
         private async Task PerformRegister(string confirmedPassword)
         {
             ErrorMessage = "";
             if (confirmedPassword != CurrentPassword)
             {
+                IsError = true; 
                 ErrorMessage = "Пароли не совпадают";
                 return;
             }
-
+            if (!IsValidEmail(Username))
+            {
+                IsError = true;
+                ErrorMessage = "Введите корректный Email";
+                return;
+            }
             try
             {
                 var request = new RegisterRequest
@@ -167,21 +198,28 @@ namespace LearningTrainer.ViewModels
 
                 string successMessage = await _apiDataService.RegisterAsync(request);
 
+                IsError = false; 
                 ErrorMessage = successMessage + ". Теперь можете войти.";
                 IsRegisterMode = false;
             }
             catch (Exception ex)
             {
+                IsError = true; 
                 ErrorMessage = ex.Message;
             }
         }
 
         private async Task PerformLogin(string password)
         {
-
             ErrorMessage = "";
+            IsError = false;
+            if (!IsValidEmail(Username))
+            {
+                IsError = true;
+                ErrorMessage = "Некорректный формат Email";
+                return;
+            }
             var loginRequest = new { Username = this.Username, Password = password };
-
             try
             {
                 try
@@ -194,6 +232,7 @@ namespace LearningTrainer.ViewModels
 
                         if (sessionDto == null || string.IsNullOrEmpty(sessionDto.AccessToken))
                         {
+                            IsError = true;
                             ErrorMessage = "Ошибка сервера: не получен токен доступа.";
                             return;
                         }
@@ -204,11 +243,11 @@ namespace LearningTrainer.ViewModels
                             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionDto.AccessToken);
 
                         LoginSuccessful?.Invoke(sessionDto);
-
                     }
                     else
                     {
                         // (401 Unauthorized)
+                        IsError = true; 
                         var errorResponse = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
                         ErrorMessage = errorResponse.Message;
                     }
@@ -216,12 +255,14 @@ namespace LearningTrainer.ViewModels
                 catch (Exception ex)
                 {
                     // API не запущен / нет интернета
+                    IsError = true; 
                     ErrorMessage = "Не удалось подключиться к серверу. Попробуйте автономный режим.";
                     System.Diagnostics.Debug.WriteLine($"API Error: {ex.Message}");
                 }
             }
             catch (Exception ex)
             {
+                IsError = true;
                 ErrorMessage = "Не удалось подключиться к серверу.";
             }
         }
@@ -230,6 +271,7 @@ namespace LearningTrainer.ViewModels
         {
             public string Message { get; set; }
         }
+
         private void PerformOfflineLogin(object obj)
         {
             ErrorMessage = "";

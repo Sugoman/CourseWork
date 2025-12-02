@@ -119,7 +119,6 @@ namespace LearningTrainer.Services
             _context?.Dispose();
         }
 
-        // В вашем DataService
         public async Task<Rule> AddRuleAsync(Rule rule)
         {
             HttpClient _httpClient = new HttpClient();
@@ -295,6 +294,27 @@ namespace LearningTrainer.Services
         public Task<bool> UpdateRuleAsync(Rule rule)
         {
             throw new NotImplementedException();
+        }
+        public async Task<DashboardStats> GetStatsAsync()
+        {
+            await EnsureDatabaseReadyAsync();
+
+            var stats = new DashboardStats
+            {
+                TotalDictionaries = await _context.Dictionaries.CountAsync(),
+                TotalWords = await _context.Words.CountAsync(),
+
+                LearnedWords = await _context.LearningProgresses
+                    .CountAsync(p => p.KnowledgeLevel == 5),
+
+                AverageSuccessRate = await _context.LearningProgresses
+                    .Where(p => p.TotalAttempts > 0)
+                    .Select(p => (double)p.CorrectAnswers / p.TotalAttempts)
+                    .DefaultIfEmpty(0)
+                    .AverageAsync()
+            };
+
+            return stats;
         }
     }
 }

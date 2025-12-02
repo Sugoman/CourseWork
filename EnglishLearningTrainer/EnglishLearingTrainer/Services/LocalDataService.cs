@@ -388,5 +388,10 @@ namespace LearningTrainer.Services
         {
             throw new NotImplementedException();
         }
+
+        public Task<DashboardStats> GetStatsAsync()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -21,10 +21,9 @@
                    FontWeight="Bold" 
                    Foreground="#00b8d4" 
                    TextWrapping="Wrap"
-                   Margin="30,30,30,15"/>
+                   Margin="30,30,30,0"/>
 
-        <Border Grid.Row="1" BorderBrush="#00b8d4" BorderThickness="0,1,0,0" Opacity="0.3" Margin="30,0"/>
-
+       
         <wv2:WebView2 Grid.Row="1" 
                       DefaultBackgroundColor="Transparent"
                       Margin="0,20,0,0"

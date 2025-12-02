@@ -30,7 +30,7 @@ namespace LearningTrainerShared.Models
             = new System.Collections.ObjectModel.ObservableCollection<Word>();
 
         [JsonIgnore]
-        public virtual User User { get; set; }
+        public virtual User? User { get; set; }
 
         [NotMapped]
         public int WordCount => Words?.Count ?? 0;

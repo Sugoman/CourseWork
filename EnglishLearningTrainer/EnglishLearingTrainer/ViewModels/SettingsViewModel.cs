@@ -69,7 +69,7 @@ namespace LearningTrainer.ViewModels
                 if (SetProperty(ref _selectedTheme, value))
                 {
                     _settingsService.ApplyTheme(value);
-                    UpdateColorsFromResources(); // Обновляем цвета в UI
+                    UpdateColorsFromResources();
                 }
             }
         }
@@ -83,12 +83,9 @@ namespace LearningTrainer.ViewModels
             {
                 if (SetProperty(ref _selectedFontSize, value))
                 {
-                    // Обновляем напрямую в сервисе
                     _settingsService.CurrentSettings.BaseFontSize = value;
                     _settingsService.SaveSettings(_settingsService.CurrentSettings);
 
-                    // Тут можно вызвать применение шрифта, если оно не автоматическое
-                    // Но обычно оно через ресурсы работает
                 }
             }
         }
@@ -106,14 +103,26 @@ namespace LearningTrainer.ViewModels
         public string OldPassword
         {
             get => _oldPassword;
-            set => SetProperty(ref _oldPassword, value);
+            set
+            {
+                if (SetProperty(ref _oldPassword, value))
+                {
+                    ((RelayCommand)ChangePasswordCommand).RaiseCanExecuteChanged();
+                }
+            }
         }
 
         private string _newPassword;
         public string NewPassword
         {
             get => _newPassword;
-            set => SetProperty(ref _newPassword, value);
+            set
+            {
+                if (SetProperty(ref _newPassword, value))
+                {
+                    ((RelayCommand)ChangePasswordCommand).RaiseCanExecuteChanged();
+                }
+            }
         }
 
         private string _changePasswordMessage;
@@ -137,7 +146,7 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _dailyGoal, value);
         }
 
-        // --- ЦВЕТА (Только для чтения в UI, менять их лучше через тему) ---
+        // --- ЦВЕТА ---
         private string _appBackgroundColor;
         public string AppBackgroundColor
         {
@@ -173,8 +182,6 @@ namespace LearningTrainer.ViewModels
                 TeacherCode = currentUser.InviteCode;
             }
 
-            // --- ИНИЦИАЛИЗАЦИЯ ПОЛЕЙ (БЕЗ ВЫЗОВА СЕТТЕРОВ) ---
-            // Используем приватные поля (_field), чтобы НЕ срабатывала логика сохранения при открытии окна
 
             _selectedTheme = _settingsService.CurrentSettings.Theme;
             _selectedFontSize = _settingsService.CurrentSettings.BaseFontSize;
@@ -189,11 +196,10 @@ namespace LearningTrainer.ViewModels
             UpgradeToTeacherCommand = new RelayCommand(async (_) => await PerformUpgradeToTeacher());
 
             ChangePasswordCommand = new RelayCommand(
-                async (param) => await ChangePasswordAsync((string)param),
-                (param) => !string.IsNullOrWhiteSpace(OldPassword) && !string.IsNullOrWhiteSpace((string)param)
+                async (param) => await ChangePasswordAsync(NewPassword),
+                (param) => !string.IsNullOrWhiteSpace(OldPassword) && !string.IsNullOrWhiteSpace(NewPassword) 
             );
 
-            // Обновляем квадратики с цветами
             UpdateColorsFromResources();
         }
 

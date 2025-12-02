@@ -294,9 +294,22 @@
                           Visibility="{Binding IsRegisterMode, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
 
                 <!-- Сообщение об ошибке -->
-                <TextBlock Text="{Binding ErrorMessage}" Foreground="#EF4444" 
-                           Margin="0,10,0,0" HorizontalAlignment="Center" TextWrapping="Wrap"
-                           Visibility="{Binding ErrorMessage, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, ConverterParameter=invert}"/>
+                <TextBlock Text="{Binding ErrorMessage}" 
+                           Margin="0,10,0,0" 
+                           HorizontalAlignment="Center" 
+                           TextWrapping="Wrap"
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, ConverterParameter=invert}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#EF4444"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsError}" Value="False">
+                                    <Setter Property="Foreground" Value="#10B981"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
 
                 <!-- Основная кнопка (Login/Register) -->
                 <Button Margin="0,20,0,0">

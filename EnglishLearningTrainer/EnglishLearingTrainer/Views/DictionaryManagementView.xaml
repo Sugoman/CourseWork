@@ -179,54 +179,109 @@
                 <StackPanel Grid.Column="0">
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                        <TextBox Text="{Binding DictionaryName, UpdateSourceTrigger=PropertyChanged}" 
-                                 FontSize="28" 
-                                 FontWeight="Bold" 
-                                 Foreground="{DynamicResource PrimaryTextBrush}"
-                                 Background="Transparent" 
-                                 BorderThickness="0"
-                                 Padding="0" 
-                                 MaxLength="60"/>
 
-                        <Rectangle Width="20" Height="20" 
-                                       Margin="10,0,0,0" 
-                                       Opacity="0.5" 
-                                       Visibility="{Binding IsEditable, 
-                                                    Converter={StaticResource BooleanToVisibilityConverter}}" 
-                                       Fill="{DynamicResource PrimaryTextBrush}">
-                            <Rectangle.OpacityMask>
-                                <VisualBrush Stretch="Uniform">
-                                    <VisualBrush.Visual>
-                                        <svg:SvgViewbox Source="Sources/edit.svg"/>
-                                    </VisualBrush.Visual>
-                                </VisualBrush>
-                            </Rectangle.OpacityMask>
-                        </Rectangle>
-                        <Button Style="{StaticResource SaveButtonStyle}" 
-                                Command="{Binding SaveChangesCommand}" 
-                                Margin="20,0,0,0"
-                                ToolTip="Save Name &amp; Description"
-                                Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBox Text="{Binding DictionaryName, UpdateSourceTrigger=PropertyChanged}" 
+                 FontSize="28" 
+                 FontWeight="Bold" 
+                 Foreground="{DynamicResource PrimaryTextBrush}"
+                 BorderThickness="0,0,0,1" 
+                 BorderBrush="Transparent"
+                 Padding="0,0,0,2" 
+                 MaxLength="60"
+                 VerticalAlignment="Center">
+                            <TextBox.Style>
+                                <Style TargetType="TextBox">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource SeparatorBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsFocused" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+
+                        <Button Command="{Binding DataContext.SaveChangesCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+        Margin="15,0,0,0"
+        VerticalAlignment="Center"
+        ToolTip="Save Changes"
+        Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}"
+        Cursor="Hand"
+        Background="Transparent"
+        BorderThickness="0">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="bdr" Background="{TemplateBinding Background}" CornerRadius="8" Padding="12,6">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Rectangle Width="18" Height="18" Fill="{DynamicResource SuccessBrush}">
+                                                <Rectangle.OpacityMask>
+                                                    <VisualBrush Stretch="Uniform">
+                                                        <VisualBrush.Visual>
+                                                            <svg:SvgViewbox Source="Sources/save.svg"/>
+                                                        </VisualBrush.Visual>
+                                                    </VisualBrush>
+                                                </Rectangle.OpacityMask>
+                                            </Rectangle>
+                                            <TextBlock Text="{DynamicResource Loc.Button.SaveButton}" 
+                                               Foreground="{DynamicResource SuccessBrush}" 
+                                               FontWeight="Bold" 
+                                               FontSize="14"
+                                               Margin="8,0,0,0"
+                                               VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="bdr" Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="bdr" Property="Background" Value="{DynamicResource BorderBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
                         </Button>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,5,0,10">
                         <Border Background="{DynamicResource InputBackgroundBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,5,0">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{Binding LanguageFrom}" Foreground="#7772cf" FontWeight="SemiBold" FontSize="12"/>
-                                <TextBlock Text=" → " Foreground="#7772cf" FontWeight="SemiBold" FontSize="12" Margin="5,0"/>
-                                <TextBlock Text="{Binding LanguageTo}" Foreground="#7772cf" FontWeight="SemiBold" FontSize="12"/>
+                                <TextBlock Text="{Binding LanguageFrom}" Foreground="{DynamicResource PrimaryAccentBrush}" FontWeight="SemiBold" FontSize="12"/>
+                                <TextBlock Text=" → " Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="SemiBold" FontSize="12" Margin="5,0"/>
+                                <TextBlock Text="{Binding LanguageTo}" Foreground="{DynamicResource PrimaryAccentBrush}" FontWeight="SemiBold" FontSize="12"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
 
                     <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" 
-                             FontSize="14" Foreground="#6B7280"
-                             Background="Transparent" BorderThickness="0"
-                             TextWrapping="Wrap"
-                             AcceptsReturn="True"
-                             MaxWidth="700" HorizontalAlignment="Left"
-                             Margin="0,5,0,0" MaxLength="150"/>
+             FontSize="14" 
+             Foreground="{DynamicResource SecondaryTextBrush}"
+             TextWrapping="Wrap"
+             AcceptsReturn="True"
+             MaxWidth="700" 
+             HorizontalAlignment="Left"
+             Margin="0,5,0,0" 
+             MaxLength="150"
+             BorderThickness="0,0,0,1"
+             BorderBrush="Transparent"
+             Padding="0,0,0,2">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource SeparatorBrush}"/>
+                                    </Trigger>
+                                    <Trigger Property="IsFocused" Value="True">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
                 </StackPanel>
             </Grid>
         </StackPanel>

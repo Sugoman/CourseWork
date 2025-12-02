@@ -57,6 +57,13 @@ namespace LearningTrainer.ViewModels
             }
         }
 
+        private DashboardStats _stats;
+        public DashboardStats Stats
+        {
+            get => _stats;
+            set => SetProperty(ref _stats, value);
+        }
+
         private bool _isFeatured;
 
         public bool IsFeatured
@@ -147,7 +154,7 @@ namespace LearningTrainer.ViewModels
             if (parameter is Rule rule)
             {
                 System.Diagnostics.Debug.WriteLine($"Opening EDITOR for: {rule.Title}");
-                var managementVm = new RuleManagementViewModel(_dataService, rule, _currentUser.Id);
+                var managementVm = new RuleManagementViewModel(_dataService, _settingsService, rule, _currentUser.Id);
                 EventAggregator.Instance.Publish(managementVm);
             }
         }
@@ -223,7 +230,7 @@ namespace LearningTrainer.ViewModels
             {
                 Dictionaries.Add(dict);
             }
-
+            EventAggregator.Instance.Publish(new RefreshDataMessage());
             System.Diagnostics.Debug.WriteLine($"Dictionaries collection updated: {Dictionaries.Count} dictionaries");
         }
 
@@ -235,7 +242,6 @@ namespace LearningTrainer.ViewModels
                 SelectedSortKey = SortKey.NameAsc;
                 List<Dictionary> dictionaries;
                 List<Rule> rules;
-
 
                 if (_currentUser?.Role?.Name == "Student")
                 {
@@ -263,6 +269,7 @@ namespace LearningTrainer.ViewModels
                 {
                     DisplayDictionaries.Add(dict);
                 }
+                Stats = await _dataService.GetStatsAsync();
 
                 OnPropertyChanged(nameof(Dictionaries));
             }
@@ -424,14 +431,13 @@ namespace LearningTrainer.ViewModels
 
         public ObservableCollection<SortingDisplayItem> DisplaySortOptions { get; }
 
-        // 2. Выбранный элемент (SelectedValue)
         private SortKey _selectedSortKey;
         public SortKey SelectedSortKey
         {
             get => _selectedSortKey;
             set
             {
-                if (SetProperty(ref _selectedSortKey, value)) // Assuming SetProperty handles INPC
+                if (SetProperty(ref _selectedSortKey, value))
                 {
                     ApplySorting();
                 }

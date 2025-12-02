@@ -166,14 +166,44 @@
         <!-- ===================================== -->
         <Grid Grid.Row="1">
 
-            <Grid Background="White" Margin="30"
-          Visibility="{Binding IsChecked, ElementName=HomeRadio, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid Margin="30" Visibility="{Binding IsChecked, ElementName=HomeRadio, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <ScrollViewer>
+                    <StackPanel>
+                        <TextBlock Text="Your Progress" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,20"/>
 
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                    <TextBlock Text="📊 Тут будет Статистика и Графики" 
-                       FontSize="24" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Center"/>
-                    <TextBlock Text="(Скоро)" FontSize="16" Foreground="LightGray" HorizontalAlignment="Center"/>
-                </StackPanel>
+                        <UniformGrid Columns="2" Rows="2" >
+
+                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,15,15">
+                                <StackPanel>
+                                    <TextBlock Text="Total Words" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
+                                    <TextBlock Text="{Binding Stats.TotalWords}" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="32" FontWeight="Bold" Margin="0,10,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,15">
+                                <StackPanel>
+                                    <TextBlock Text="Learned Words" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
+                                    <TextBlock Text="{Binding Stats.LearnedWords}" Foreground="{DynamicResource SuccessBrush}" FontSize="32" FontWeight="Bold" Margin="0,10,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,15,0">
+                                <StackPanel>
+                                    <TextBlock Text="Dictionaries" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
+                                    <TextBlock Text="{Binding Stats.TotalDictionaries}" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="32" FontWeight="Bold" Margin="0,10,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20">
+                                <StackPanel>
+                                    <TextBlock Text="Avg. Success Rate" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
+                                    <TextBlock Text="{Binding Stats.AverageSuccessRate, StringFormat={}{0:P0}}" Foreground="{DynamicResource PrimaryAccentBrush}" FontSize="32" FontWeight="Bold" Margin="0,10,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                        </UniformGrid>
+                    </StackPanel>
+                </ScrollViewer>
             </Grid>
             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                   Visibility="{Binding IsChecked, ElementName=RulesRadio, Converter={StaticResource BooleanToVisibilityConverter}}">

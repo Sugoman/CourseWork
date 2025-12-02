@@ -3,47 +3,59 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Media;
+using System;
 
 namespace LearningTrainer.Services
 {
     public class SettingsService
     {
         public event Action<MarkdownConfig> MarkdownConfigChanged;
-        private bool _isDarkTheme = false;
-        public MarkdownConfig CurrentMarkdownConfig => _isDarkTheme ? DarkConfig : LightConfig;
+
+        public MarkdownConfig CurrentMarkdownConfig => GetConfigFromCurrentTheme();
+
         private readonly string _settingsFilePath = "settings.json";
         public SettingsModel CurrentSettings { get; private set; }
 
         public SettingsService()
         {
             CurrentSettings = LoadSettings();
+
             string langCode = NormalizeLanguageCode(CurrentSettings.Language);
             if (CurrentSettings.Language != langCode)
             {
                 CurrentSettings.Language = langCode;
                 SaveSettings(CurrentSettings);
             }
+
             string savedTheme = string.IsNullOrEmpty(CurrentSettings.Theme) ? "Light" : CurrentSettings.Theme;
             ThemeService.SetTheme(savedTheme);
+
             ApplyFont();
+
             ApplyLanguage(langCode);
+
+            MarkdownConfigChanged?.Invoke(CurrentMarkdownConfig);
         }
 
-        private MarkdownConfig DarkConfig => new MarkdownConfig
+        private MarkdownConfig GetConfigFromCurrentTheme()
         {
-            BackgroundColor = "#131314", // MainBackgroundBrush
-            TextColor = "#E5E7EB",       // PrimaryTextBrush
-            AccentColor = "#60A5FA",     // PrimaryAccentBrush
-            FontSize = 16
-        };
+            string GetColor(string resourceKey, string fallbackColor)
+            {
+                if (Application.Current.Resources[resourceKey] is SolidColorBrush brush)
+                {
+                    return $"#{brush.Color.R:X2}{brush.Color.G:X2}{brush.Color.B:X2}";
+                }
+                return fallbackColor;
+            }
 
-        private MarkdownConfig LightConfig => new MarkdownConfig
-        {
-            BackgroundColor = "#FFFFFF",
-            TextColor = "#333333",
-            AccentColor = "#0056b3",
-            FontSize = 16
-        };
+            return new MarkdownConfig
+            {
+                BackgroundColor = GetColor("SecondaryMainBackgroundBrush", "#FFFFFF"),
+                TextColor = GetColor("PrimaryTextBrush", "#000000"),
+                AccentColor = GetColor("PrimaryAccentBrush", "#0056b3"),
+                FontSize = (int)CurrentSettings.BaseFontSize // Размер шрифта
+            };
+        }
 
         public void SaveSettings(SettingsModel settings)
         {
@@ -53,24 +65,13 @@ namespace LearningTrainer.Services
 
             ApplyFont();
         }
-        public void ApplyCustomColors(bool reloadBaseTheme = false)
-        {
-            if (reloadBaseTheme)
-            {
-                string currentTheme = string.IsNullOrEmpty(CurrentSettings.Theme) ? "Light" : CurrentSettings.Theme;
-                ThemeService.SetTheme(currentTheme);
-            }
 
-        }
         public void ApplyLanguage(string languageCode)
         {
             CurrentSettings.Language = languageCode;
             SaveSettings(CurrentSettings);
-
             LanguageService.SetLanguage(languageCode);
-
         }
-        
 
         public void ApplyTheme(string themeName)
         {
@@ -78,6 +79,7 @@ namespace LearningTrainer.Services
             SaveSettings(CurrentSettings);
 
             ThemeService.SetTheme(themeName);
+            MarkdownConfigChanged?.Invoke(CurrentMarkdownConfig);
         }
 
         private void ApplyFont()
@@ -85,6 +87,9 @@ namespace LearningTrainer.Services
             if (CurrentSettings.BaseFontSize <= 0) CurrentSettings.BaseFontSize = 14;
             Application.Current.Resources["BaseFontSize"] = CurrentSettings.BaseFontSize;
             Application.Current.Resources["HeaderFontSize"] = CurrentSettings.BaseFontSize + 6;
+
+            // Font size change also affects Markdown
+            MarkdownConfigChanged?.Invoke(CurrentMarkdownConfig);
         }
 
         private SettingsModel LoadSettings()
@@ -98,13 +103,7 @@ namespace LearningTrainer.Services
                 }
                 catch { }
             }
-            return new SettingsModel();
-        }
-        public void SetTheme(bool isDark)
-        {
-            _isDarkTheme = isDark;
-
-            MarkdownConfigChanged?.Invoke(CurrentMarkdownConfig);
+            return new SettingsModel { Language = "en" };
         }
 
         private string NormalizeLanguageCode(string input)
@@ -115,10 +114,9 @@ namespace LearningTrainer.Services
                 "Русский" => "ru",
                 "Español" => "es",
                 "Deutsch" => "de",
-                "中国人" => "ch", 
+                "中国人" => "zh",
                 _ => input
             };
         }
-
     }
 }

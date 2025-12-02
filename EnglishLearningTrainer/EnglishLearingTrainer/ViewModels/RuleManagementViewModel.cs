@@ -1,6 +1,7 @@
 ﻿using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using static LearningTrainer.Core.EventAggregator;
@@ -10,7 +11,8 @@ namespace LearningTrainer.ViewModels
     public class RuleManagementViewModel : TabViewModelBase
     {
         private readonly IDataService _dataService;
-        private readonly Rule _ruleModel; 
+        private readonly SettingsService _settingsService; 
+        private readonly Rule _ruleModel;
 
         public string Title { get; set; }
         public string Description { get; set; }
@@ -22,9 +24,10 @@ namespace LearningTrainer.ViewModels
         public ICommand SaveChangesCommand { get; }
         public ICommand CloseCommand { get; }
 
-        public RuleManagementViewModel(IDataService dataService, Rule rule, int currentUserId)
+        public RuleManagementViewModel(IDataService dataService, SettingsService settingsService, Rule rule, int currentUserId)
         {
             _dataService = dataService;
+            _settingsService = settingsService;
             _ruleModel = rule;
 
             IsEditable = rule.UserId == currentUserId;
@@ -34,10 +37,15 @@ namespace LearningTrainer.ViewModels
             Category = rule.Category;
             DifficultyLevel = rule.DifficultyLevel;
 
+            MarkdownContent = rule.MarkdownContent;
+
+            Config = _settingsService.CurrentMarkdownConfig;
+            _settingsService.MarkdownConfigChanged += OnConfigChanged;
+
             base.Title = $"Edit Rule: {rule.Title}";
 
             SaveChangesCommand = new RelayCommand(async (_) => await SaveChanges(), (_) => IsEditable);
-            CloseCommand = new RelayCommand((_) => EventAggregator.Instance.Publish(new CloseTabMessage(this)));
+            CloseCommand = new RelayCommand((_) => CloseTab());
         }
 
         private string _markdownContent;
@@ -46,12 +54,20 @@ namespace LearningTrainer.ViewModels
             get => _markdownContent;
             set => SetProperty(ref _markdownContent, value);
         }
+
         private MarkdownConfig _config;
         public MarkdownConfig Config
         {
             get => _config;
             set => SetProperty(ref _config, value);
         }
+
+        // Обработчик смены темы
+        private void OnConfigChanged(MarkdownConfig newConfig)
+        {
+            Config = newConfig;
+        }
+
         private async Task SaveChanges()
         {
             _ruleModel.Title = Title;
@@ -72,5 +88,12 @@ namespace LearningTrainer.ViewModels
                 MessageBox.Show("Ошибка при сохранении на сервере.", "Ошибка");
             }
         }
+
+        private void CloseTab()
+        {
+            _settingsService.MarkdownConfigChanged -= OnConfigChanged;
+            EventAggregator.Instance.Publish(new CloseTabMessage(this));
+        }
+
     }
 }

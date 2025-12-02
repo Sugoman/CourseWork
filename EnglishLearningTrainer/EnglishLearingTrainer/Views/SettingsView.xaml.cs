@@ -25,22 +25,7 @@ namespace LearningTrainer.Views
         {
             InitializeComponent();
 
-            this.DataContextChanged += OnDataContextChanged;
-        }
-
-        private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
-        {
-            if (DataContext is ViewModels.SettingsViewModel vm)
-            {
-                if (vm.ChangePasswordCommand is LearningTrainer.Core.RelayCommand command)
-                {
-                    command.Executed += (s, ev) =>
-                    {
-                        OldPasswordBox.Clear();
-                        NewPasswordBox.Clear();
-                    };
-                }
-            }
+            
         }
     }
 }

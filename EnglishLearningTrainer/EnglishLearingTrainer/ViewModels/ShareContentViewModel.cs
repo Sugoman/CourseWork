@@ -39,11 +39,10 @@ namespace LearningTrainer.ViewModels
                 var allStudents = await _dataService.GetMyStudentsAsync();
                 List<int> sharedIds;
 
-                // Выбираем, чей статус проверять
                 if (_contentType == ShareContentType.Dictionary)
                     sharedIds = await _dataService.GetDictionarySharingStatusAsync(_entityId);
                 else
-                    sharedIds = await _dataService.GetRuleSharingStatusAsync(_entityId); // Новый метод
+                    sharedIds = await _dataService.GetRuleSharingStatusAsync(_entityId);
 
                 Students.Clear();
                 foreach (var student in allStudents)
