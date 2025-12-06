@@ -96,6 +96,7 @@
                 </Grid>
 
                 <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,20,0,20" Opacity="0.3"/>
+                
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="{DynamicResource Loc.Button.CancelButton}" 
                             Command="{Binding CancelCommand}"

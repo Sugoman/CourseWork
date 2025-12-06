@@ -53,7 +53,7 @@ namespace LearningTrainer.Services
                 BackgroundColor = GetColor("SecondaryMainBackgroundBrush", "#FFFFFF"),
                 TextColor = GetColor("PrimaryTextBrush", "#000000"),
                 AccentColor = GetColor("PrimaryAccentBrush", "#0056b3"),
-                FontSize = (int)CurrentSettings.BaseFontSize // Размер шрифта
+                FontSize = (int)CurrentSettings.BaseFontSize 
             };
         }
 
@@ -88,7 +88,6 @@ namespace LearningTrainer.Services
             Application.Current.Resources["BaseFontSize"] = CurrentSettings.BaseFontSize;
             Application.Current.Resources["HeaderFontSize"] = CurrentSettings.BaseFontSize + 6;
 
-            // Font size change also affects Markdown
             MarkdownConfigChanged?.Invoke(CurrentMarkdownConfig);
         }
 

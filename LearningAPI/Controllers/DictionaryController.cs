@@ -64,14 +64,13 @@ namespace LearningAPI.Controllers
             return Ok(dictionary);
         }
 
-        [HttpGet("list/available")] // Итоговый путь: /api/dictionaries/list/available
+        [HttpGet("list/available")]
         [Authorize]
         public async Task<ActionResult<List<Dictionary>>> GetAvailableDictionaries()
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdString, out int currentUserId)) return Unauthorized();
 
-            // Логика запроса
             var sharedIds = await _context.DictionarySharings
                 .Where(ds => ds.StudentId == currentUserId)
                 .Select(ds => ds.DictionaryId)
@@ -127,7 +126,6 @@ namespace LearningAPI.Controllers
 
             if (dictionary.Words.Any())
             {
-                // Очистка прогресса (если каскадное удаление не настроено в БД)
                 var wordIds = dictionary.Words.Select(w => w.Id).ToList();
                 var progresses = _context.LearningProgresses.Where(p => wordIds.Contains(p.WordId));
                 _context.LearningProgresses.RemoveRange(progresses);

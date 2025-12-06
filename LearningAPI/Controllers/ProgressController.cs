@@ -27,6 +27,11 @@ namespace LearningAPI.Controllers
                 return Unauthorized();
             }
 
+            var wordExists = await _context.Words.AnyAsync(w => w.Id == request.WordId);
+            if (!wordExists)
+            {
+                return NotFound(new { message = $"Слово с ID {request.WordId} не найдено." });
+            }
             var progress = await _context.LearningProgresses
                 .FirstOrDefaultAsync(p => p.UserId == userId && p.WordId == request.WordId);
 

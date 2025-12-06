@@ -213,12 +213,12 @@ namespace LearningTrainer.ViewModels
         {
             ErrorMessage = "";
             IsError = false;
-            if (!IsValidEmail(Username))
+            /*if (!IsValidEmail(Username))
             {
                 IsError = true;
                 ErrorMessage = "Некорректный формат Email";
                 return;
-            }
+            }*/
             var loginRequest = new { Username = this.Username, Password = password };
             try
             {

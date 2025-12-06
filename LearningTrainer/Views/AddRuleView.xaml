@@ -221,12 +221,12 @@
                 <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,20,0,20" Opacity="0.3"/>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Отмена" 
+                    <Button Content="{DynamicResource Loc.Button.CancelButton}" 
                             Command="{Binding CancelCommand}"
                             Style="{StaticResource DangerButton}" 
                             Width="100" 
                             Margin="0,0,15,0"/>
-                    <Button Content="Создать" 
+                    <Button Content="{DynamicResource Loc.Button.CreateButton}" 
                             Command="{Binding SaveCommand}"
                             Style="{StaticResource SuccessButton}" 
                             Width="120"

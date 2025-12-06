@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # -------------------------------
+  # 1. API 
+  # -------------------------------
+  learningapi:
+    image: ${DOCKER_REGISTRY-}learningapi
+    build:
+      context: .
+      dockerfile: LearningAPI/Dockerfile
+    ports:
+      - "5077:8080" 
+    depends_on:
+      - db
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True
+      - ASPNETCORE_URLS=http://+:8080
+
+  # -------------------------------
+  # 2. Data Base
+  # -------------------------------
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: learning_sql_server
+    user: root
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=MySuperStrong!Pass123 
+    ports:
+      - "14333:1433" 
+    volumes:
+      - sql_data:/var/opt/mssql/data 
+
+volumes:
+  sql_data:

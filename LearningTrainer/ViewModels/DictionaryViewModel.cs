@@ -2,6 +2,7 @@
 using LearningTrainerShared.Models;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using static LearningTrainer.Core.EventAggregator;
 
 namespace LearningTrainer.ViewModels
 {
@@ -80,5 +81,6 @@ namespace LearningTrainer.ViewModels
                 OnPropertyChanged(nameof(WordCount));
             };
         }
+        
     }
 }
