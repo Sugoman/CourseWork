@@ -20,7 +20,7 @@ namespace LearningTrainer.ViewModels
         public AddDictionaryViewModel(IDataService dataService)
         {
             _dataService = dataService;
-            Title = "Создать новый словарь";
+            Title = "Create new Dictionary";
 
             SaveCommand = new RelayCommand(async (param) => await SaveDictionaryAsync());
             CancelCommand = new RelayCommand((param) => Cancel());

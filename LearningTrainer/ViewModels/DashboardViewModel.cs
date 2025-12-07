@@ -188,7 +188,6 @@ namespace LearningTrainer.ViewModels
                         await _dataService.AddWordAsync(word);
                     }
                     EventAggregator.Instance.Publish(new DictionaryAddedMessage(savedDictionary));
-                    EventAggregator.Instance.Publish(new RefreshDataMessage());
 
                     System.Windows.MessageBox.Show(
                         $"Словарь '{savedDictionary.Name}' ({wordsToImport.Count} слов) успешно импортирован!",
@@ -230,7 +229,9 @@ namespace LearningTrainer.ViewModels
             {
                 Dictionaries.Add(dict);
             }
-            EventAggregator.Instance.Publish(new RefreshDataMessage());
+
+            ApplySorting();
+
             System.Diagnostics.Debug.WriteLine($"Dictionaries collection updated: {Dictionaries.Count} dictionaries");
         }
 
