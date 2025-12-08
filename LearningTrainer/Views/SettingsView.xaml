@@ -470,22 +470,55 @@
                                 </Grid.ColumnDefinitions>
 
                                 <Button Grid.Column="0" 
-                                        Content="{DynamicResource Loc.SettingsAcc.BecomeTeacherLabel}"
-                                        Command="{Binding UpgradeToTeacherCommand}"
-                                        Style="{StaticResource PrimaryButton}"
-                                        Width="180" Height="40" 
-                                        HorizontalAlignment="Left"
-                                        Visibility="{Binding TeacherCode, 
-                                                    Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+            Content="{DynamicResource Loc.SettingsAcc.BecomeTeacherLabel}"
+            Command="{Binding UpgradeToTeacherCommand}"
+            Style="{StaticResource PrimaryButton}"
+            Width="180" Height="40" 
+            HorizontalAlignment="Left"
+            Visibility="{Binding TeacherCode, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
 
-                                <TextBlock Grid.Column="0" Text="{Binding TeacherCode}"
-                                    FontSize="{DynamicResource HeaderFontSize}" 
-                                    FontWeight="Bold"
-                                    Foreground="{DynamicResource PrimaryTextBrush}"
-                                    VerticalAlignment="Center"
-                                    Visibility="{Binding TeacherCode, 
-                                                Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, 
-                                                ConverterParameter=invert}"/>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal"
+                Visibility="{Binding TeacherCode, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, ConverterParameter=invert}">
+
+                                    <Border Background="{DynamicResource InputBackgroundBrush}" 
+                BorderBrush="{DynamicResource PrimaryAccentBrush}" 
+                BorderThickness="1" 
+                CornerRadius="6"
+                Padding="15,8"
+                Margin="0,0,10,0">
+                                        <TextBox Text="{Binding TeacherCode, Mode=OneWay}"
+                     IsReadOnly="True"
+                     FontSize="{DynamicResource HeaderFontSize}"
+                     FontWeight="Bold"
+                     Foreground="{DynamicResource PrimaryTextBrush}"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     VerticalAlignment="Center"
+                     MinWidth="120"
+                     TextAlignment="Center"/>
+                                    </Border>
+
+                                    <Button Command="{Binding CopyTeacherCodeCommand}"
+                                        Style="{StaticResource BaseButton}"
+                                        ToolTip="Copy Code"
+                                        Cursor="Hand"
+                                        Padding="10,0"
+                                        MinWidth="70"
+                                        Height="40">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Rectangle Width="16" Height="16" Fill="{DynamicResource PrimaryTextBrush}" Margin="0,0,5,0">
+                                                <Rectangle.OpacityMask>
+                                                    <VisualBrush Stretch="Uniform">
+                                                        <VisualBrush.Visual>
+                                                            <Path Data="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" Fill="Black" />
+                                                        </VisualBrush.Visual>
+                                                    </VisualBrush>
+                                                </Rectangle.OpacityMask>
+                                            </Rectangle>
+                                            <TextBlock Text="Copy" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
                             </Grid>
 
                             <TextBlock Text="{DynamicResource Loc.SettingsAcc.HelpCodeLabel}"               
@@ -503,6 +536,7 @@
                                 Command="{Binding LogoutCommand}" 
                                 Style="{StaticResource DangerButton}" 
                                 Width="120" 
+                                MinHeight="30"
                                 HorizontalAlignment="Left"/>
                     </StackPanel>
 

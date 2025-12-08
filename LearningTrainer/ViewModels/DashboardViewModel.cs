@@ -36,6 +36,7 @@ namespace LearningTrainer.ViewModels
         public ICommand DeleteRuleCommand { get; }
         public ICommand ManageDictionaryCommand { get; }
         public ICommand EditRuleCommand { get; }
+        public ICommand RefreshCommand { get; }
 
         private bool _isOverviewMode;
         public bool IsOverviewMode
@@ -110,7 +111,11 @@ namespace LearningTrainer.ViewModels
                 new SortingDisplayItem { Key = SortKey.CountMax, DisplayName = GetLocalized("Loc.Sort.CountMax") }
             };
 
-
+            RefreshCommand = new RelayCommand((_) =>
+            {
+                System.Diagnostics.Debug.WriteLine(">>> Manual Refresh Triggered");
+                LoadDataAsync();
+            });
             EventAggregator.Instance.Subscribe<DictionaryDeletedMessage>(OnDictionaryDeleted);
             EventAggregator.Instance.Subscribe<RefreshDataMessage>(OnRefreshData);
             EventAggregator.Instance.Subscribe<RuleAddedMessage>(OnRuleAdded);

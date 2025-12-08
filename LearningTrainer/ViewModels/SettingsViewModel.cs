@@ -20,6 +20,7 @@ namespace LearningTrainer.ViewModels
         public ICommand LogoutCommand { get; }
         public ICommand ChangePasswordCommand { get; }
         public ICommand UpgradeToTeacherCommand { get; }
+        public ICommand CopyTeacherCodeCommand { get; }
         public RelayCommand SwitchSectionCommand { get; }
 
         // --- СВОЙСТВА НАВИГАЦИИ ---
@@ -168,6 +169,16 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _appAccentColor, value);
         }
 
+        // БУФЕР ОБМЕНА
+        private void CopyTeacherCode(object obj)
+        {
+            if (!string.IsNullOrEmpty(TeacherCode))
+            {
+                Clipboard.SetText(TeacherCode);
+                MessageBox.Show("Код скопирован в буфер обмена!", "Успешно", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
         // ============================================================
         // КОНСТРУКТОР
         // ============================================================
@@ -182,7 +193,6 @@ namespace LearningTrainer.ViewModels
                 TeacherCode = currentUser.InviteCode;
             }
 
-
             _selectedTheme = _settingsService.CurrentSettings.Theme;
             _selectedFontSize = _settingsService.CurrentSettings.BaseFontSize;
 
@@ -194,6 +204,7 @@ namespace LearningTrainer.ViewModels
             LogoutCommand = new RelayCommand(PerformLogout);
             SwitchSectionCommand = new RelayCommand(sec => CurrentSection = (string)sec);
             UpgradeToTeacherCommand = new RelayCommand(async (_) => await PerformUpgradeToTeacher());
+            CopyTeacherCodeCommand = new RelayCommand(CopyTeacherCode);
 
             ChangePasswordCommand = new RelayCommand(
                 async (param) => await ChangePasswordAsync(NewPassword),

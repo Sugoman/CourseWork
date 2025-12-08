@@ -120,44 +120,63 @@
                      MinWidth="210"/>
                 </StackPanel>
 
-                <Grid Grid.Column="2" 
-                      VerticalAlignment="Center" 
-                      Margin="10,0,0,0">
-                    <Border 
-                        Background="{DynamicResource SecondaryMainBackgroundBrush}" 
-                        BorderBrush="{DynamicResource SeparatorBrush}"
-                        BorderThickness="1"
-                        CornerRadius="8" 
-                        Width="300" Height="35"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
 
-                    <StackPanel Orientation="Horizontal">
+                    <Grid>
+                        <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                BorderBrush="{DynamicResource SeparatorBrush}"
+                BorderThickness="1"
+                CornerRadius="8" 
+                Width="300" Height="35"/>
 
-                        <Rectangle
-                            Fill="{DynamicResource PrimaryTextBrush}"
-                            Height="20" Width="20"
-                            Stretch="Uniform" 
-                            Margin="12,0,5,0" 
-                            VerticalAlignment="Center">
-                            <Rectangle.OpacityMask>
-                                <VisualBrush Stretch="Uniform">
-                                    <VisualBrush.Visual>
-                                        <svg:SvgViewbox Source="Sources/search.svg"/>
-                                    </VisualBrush.Visual>
-                                </VisualBrush>
-                            </Rectangle.OpacityMask>
-                        </Rectangle>
+                        <StackPanel Orientation="Horizontal">
+                            <Rectangle Fill="{DynamicResource PrimaryTextBrush}"
+                       Height="20" Width="20"
+                       Stretch="Uniform" 
+                       Margin="12,0,5,0" 
+                       VerticalAlignment="Center">
+                                <Rectangle.OpacityMask>
+                                    <VisualBrush Stretch="Uniform">
+                                        <VisualBrush.Visual>
+                                            <svg:SvgViewbox Source="Sources/search.svg"/>
+                                        </VisualBrush.Visual>
+                                    </VisualBrush>
+                                </Rectangle.OpacityMask>
+                            </Rectangle>
 
-                        <TextBox Background="Transparent" BorderThickness="0" Padding="8" Foreground="{DynamicResource PrimaryTextBrush}"
-                         VerticalContentAlignment="Center" Width="250" FontSize="14"
-                         x:Name="SearchTextBox"
-                         Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"/>
-                    </StackPanel>
-                    <TextBlock Text="{DynamicResource Loc.Dashboard.SearchPlaceholder}" 
-                               Foreground="{DynamicResource PrimaryTextBrush}" 
-                               VerticalAlignment="Center" 
-                       Margin="50,0,0,0" IsHitTestVisible="False"
-                       Visibility="{Binding Text, ElementName=SearchTextBox, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
-                </Grid>
+                            <TextBox Background="Transparent" BorderThickness="0" Padding="8" Foreground="{DynamicResource PrimaryTextBrush}"
+                     VerticalContentAlignment="Center" Width="250" FontSize="14"
+                     x:Name="SearchTextBox"
+                     Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"/>
+                        </StackPanel>
+
+                        <TextBlock Text="{DynamicResource Loc.Dashboard.SearchPlaceholder}" 
+                   Foreground="{DynamicResource PrimaryTextBrush}" 
+                   VerticalAlignment="Center" 
+                   Margin="50,0,0,0" IsHitTestVisible="False"
+                   Visibility="{Binding Text, ElementName=SearchTextBox, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                    </Grid>
+
+                    <Button Command="{Binding RefreshCommand}" 
+            Style="{StaticResource NavButtonStyle}" 
+            Margin="10,0,0,0"
+            ToolTip="Refresh Data"
+            Width="35" Height="35"
+            Padding="0">
+                        <Button.Content>
+                            <Rectangle Width="18" Height="18" Fill="{DynamicResource PrimaryTextBrush}">
+                                <Rectangle.OpacityMask>
+                                    <VisualBrush Stretch="Uniform">
+                                        <VisualBrush.Visual>
+                                            <Path Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" Fill="Black"/>
+                                        </VisualBrush.Visual>
+                                    </VisualBrush>
+                                </Rectangle.OpacityMask>
+                            </Rectangle>
+                        </Button.Content>
+                    </Button>
+
+                </StackPanel>
             </Grid>
         </Border>
 
