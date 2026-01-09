@@ -17,7 +17,19 @@ namespace LearningTrainer.Services
 
             using (var db = Context)
             {
-                db.Database.EnsureCreated();
+                // ✅ Пересоздать БД с актуальной схемой
+                // Удаляем старую схему и создаем новую
+                try
+                {
+                    db.Database.EnsureDeleted(); // Удалить старую БД
+                    db.Database.EnsureCreated(); // Создать новую с актуальной схемой
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Database recreation error: {ex.Message}");
+                    // Если не получилось удалить, просто создаем
+                    db.Database.EnsureCreated();
+                }
 
                 if (!string.IsNullOrEmpty(_userLogin))
                 {
@@ -38,7 +50,10 @@ namespace LearningTrainer.Services
                         {
                             Login = _userLogin,
                             PasswordHash = safeRandomHash, 
-                            RoleId = studentRole.Id
+                            RoleId = studentRole.Id,
+                            RefreshToken = null,
+                            RefreshTokenExpiryTime = null,
+                            IsRefreshTokenRevoked = false
                         };
                         db.Users.Add(localUser);
                         db.SaveChanges();

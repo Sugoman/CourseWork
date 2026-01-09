@@ -5,16 +5,14 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Configuration;
 
 namespace LearningTrainer.ViewModels
 {
     public class LoginViewModel : ObservableObject
     {
-        private static readonly HttpClient _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri("http://localhost:5077")
-        };
         private readonly SessionService _sessionService;
+        private readonly IConfiguration _configuration;
         private string _username;
 
         public event Action<UserSessionDto> LoginSuccessful;
@@ -102,10 +100,11 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _inviteCode, value);
         }
 
-        public LoginViewModel(SessionService sessionService)
+        public LoginViewModel(SessionService sessionService, IConfiguration configuration)
         {
-            _apiDataService = new ApiDataService();
             _sessionService = sessionService;
+            _configuration = configuration;
+            _apiDataService = new ApiDataService(_configuration);
             OfflineLoginCommand = new RelayCommand(PerformOfflineLogin);
             ToggleModeCommand = new RelayCommand(ToggleRegisterMode);
             OpenGitHubCommand = new RelayCommand(PerformOpenGitHub);
@@ -224,33 +223,20 @@ namespace LearningTrainer.ViewModels
             {
                 try
                 {
-                    HttpResponseMessage response = await _httpClient.PostAsJsonAsync("/api/auth/login", loginRequest);
+                    UserSessionDto sessionDto = await _apiDataService.LoginAsync(loginRequest);
 
-                    if (response.IsSuccessStatusCode)
+                    if (sessionDto == null || string.IsNullOrEmpty(sessionDto.AccessToken))
                     {
-                        UserSessionDto sessionDto = await _apiDataService.LoginAsync(loginRequest);
-
-                        if (sessionDto == null || string.IsNullOrEmpty(sessionDto.AccessToken))
-                        {
-                            IsError = true;
-                            ErrorMessage = "Ошибка сервера: не получен токен доступа.";
-                            return;
-                        }
-
-                        _sessionService.SaveSession(sessionDto);
-
-                        _httpClient.DefaultRequestHeaders.Authorization =
-                            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", sessionDto.AccessToken);
-
-                        LoginSuccessful?.Invoke(sessionDto);
+                        IsError = true;
+                        ErrorMessage = "Ошибка сервера: не получен токен доступа.";
+                        return;
                     }
-                    else
-                    {
-                        // (401 Unauthorized)
-                        IsError = true; 
-                        var errorResponse = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
-                        ErrorMessage = errorResponse.Message;
-                    }
+
+                    _sessionService.SaveSession(sessionDto);
+
+                    _apiDataService.SetToken(sessionDto.AccessToken);
+
+                    LoginSuccessful?.Invoke(sessionDto);
                 }
                 catch (Exception ex)
                 {

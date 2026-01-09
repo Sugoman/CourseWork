@@ -476,6 +476,7 @@
             Width="180" Height="40" 
             HorizontalAlignment="Left"
             Visibility="{Binding TeacherCode, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                                
 
                                 <StackPanel Grid.Column="0" Orientation="Horizontal"
                 Visibility="{Binding TeacherCode, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, ConverterParameter=invert}">

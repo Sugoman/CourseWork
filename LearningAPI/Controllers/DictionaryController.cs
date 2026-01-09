@@ -1,60 +1,88 @@
-﻿using LearningTrainer.Context;
+﻿using LearningAPI.Features.Dictionaries.Queries.GetDictionaries;
+using LearningTrainer.Context;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Constants;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Security.Claims;
 
 namespace LearningAPI.Controllers
 {
     [ApiController]
     [Route("api/dictionaries")]
-    public class DictionaryController : Controller
+    public class DictionaryController : BaseApiController
     {
-        private readonly ApiDbContext _context;
+        private readonly ApiDbContext _context; 
+        private readonly IMediator _mediator;
+        private readonly ILogger<DictionaryController> _logger;
 
-        public DictionaryController(ApiDbContext context)
+        // Конструктор принимает ОБА параметра
+        public DictionaryController(ApiDbContext context, IMediator mediator, ILogger<DictionaryController> logger)
         {
             _context = context;
+            _mediator = mediator;
+            _logger = logger;
         }
 
         // GET: /api/dictionaries
         [HttpGet]
-        public async Task<IActionResult> GetDictionaries()
+        public async Task<IActionResult> GetDictionaries(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string orderBy = "Id",
+            [FromQuery] bool descending = true)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
+            const int maxPageSize = 100;
+            if (pageSize > maxPageSize)
+                pageSize = maxPageSize;
 
-            var currentUser = await _context.Users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Id == userId);
+            if (page < 1)
+                page = 1;
 
-            var teacherId = currentUser?.UserId;
+            var userId = GetUserId();
 
-            var dictionaries = await _context.Dictionaries
-                .Where(d => d.UserId == userId || (teacherId != null && d.UserId == teacherId))
-                .Select(d => new
-                {
-                    d.Id,
-                    d.UserId,
-                    d.Name,
-                    d.Description,
-                    d.LanguageFrom,
-                    d.LanguageTo,
-                    d.WordCount,
-                    IsReadOnly = d.UserId != userId,
-                    Words = d.Words.ToList()
-                })
+            var query = _context.Dictionaries
+                .Where(d => d.UserId == userId)
+                .Include(d => d.Words)
+                .AsNoTracking();
+
+            // Сортировка
+            query = orderBy switch
+            {
+                "Name" => descending ? query.OrderByDescending(d => d.Name) : query.OrderBy(d => d.Name),
+                "Id" => descending ? query.OrderByDescending(d => d.Id) : query.OrderBy(d => d.Id),
+                _ => query.OrderByDescending(d => d.Id)
+            };
+
+            var total = await query.CountAsync();
+            var dictionaries = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
-            return Ok(dictionaries);
+            Response.Headers.Add("X-Total-Count", total.ToString());
+            Response.Headers.Add("X-Page-Size", pageSize.ToString());
+
+            return Ok(new
+            {
+                data = dictionaries,
+                pagination = new
+                {
+                    page,
+                    pageSize,
+                    total,
+                    pageCount = (int)Math.Ceiling(total / (double)pageSize)
+                }
+            });
         }
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetDictionaryById(int id)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
+            var userId = GetUserId();
 
             var dictionary = await _context.Dictionaries
                  .Include(d => d.Words)
@@ -65,11 +93,9 @@ namespace LearningAPI.Controllers
         }
 
         [HttpGet("list/available")]
-        [Authorize]
         public async Task<ActionResult<List<Dictionary>>> GetAvailableDictionaries()
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out int currentUserId)) return Unauthorized();
+            var currentUserId = GetUserId();
 
             var sharedIds = await _context.DictionarySharings
                 .Where(ds => ds.StudentId == currentUserId)
@@ -84,37 +110,51 @@ namespace LearningAPI.Controllers
             return Ok(dictionaries);
         }
 
-        // POST: /api/dictionaries
+        // POST: /api/dictionaries - только для учителей и админов
         [HttpPost]
+        [Authorize(Roles = $"{UserRoles.Teacher},{UserRoles.Admin}")]
         public async Task<IActionResult> AddDictionary([FromBody] CreateDictionaryRequest requestDto)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
-
-            if (requestDto == null || string.IsNullOrWhiteSpace(requestDto.Name))
-                return BadRequest("Name is required.");
-
-            var newDictionary = new Dictionary
+            if (!ModelState.IsValid)
             {
-                Name = requestDto.Name,
-                Description = requestDto.Description,
-                LanguageFrom = requestDto.LanguageFrom,
-                LanguageTo = requestDto.LanguageTo,
-                Words = new List<Word>(),
-                UserId = userId
-            };
+                return BadRequest(ModelState);
+            }
 
-            _context.Dictionaries.Add(newDictionary);
-            await _context.SaveChangesAsync();
+            try
+            {
+                var userId = GetUserId();
 
-            return CreatedAtAction(nameof(GetDictionaries), new { id = newDictionary.Id }, newDictionary);
+                _logger.LogInformation("Creating dictionary: Name={DictionaryName}, LanguageFrom={From}, LanguageTo={To}, UserId={UserId}",
+                    requestDto.Name, requestDto.LanguageFrom, requestDto.LanguageTo, userId);
+
+                var newDictionary = new Dictionary
+                {
+                    Name = requestDto.Name,
+                    Description = requestDto.Description,
+                    LanguageFrom = requestDto.LanguageFrom,
+                    LanguageTo = requestDto.LanguageTo,
+                    Words = new List<Word>(),
+                    UserId = userId
+                };
+
+                _context.Dictionaries.Add(newDictionary);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Dictionary created successfully with ID {DictionaryId}", newDictionary.Id);
+
+                return CreatedAtAction(nameof(GetDictionaries), new { id = newDictionary.Id }, newDictionary);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating dictionary for user {UserId}", GetUserId());
+                throw;
+            }
         }
 
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> DeleteDictionary(int id)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
+            var userId = GetUserId();
 
             var dictionary = await _context.Dictionaries
                 .Include(d => d.Words).ThenInclude(w => w.Progress)

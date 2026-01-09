@@ -24,6 +24,11 @@ namespace LearningTrainerShared.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        // Refresh Token поля
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiryTime { get; set; }
+        public bool IsRefreshTokenRevoked { get; set; } = false;
+
         public int? UserId { get; set; }
         [JsonIgnore]
         [ForeignKey("UserId")] 

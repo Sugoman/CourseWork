@@ -1,5 +1,5 @@
 ﻿using LearningTrainer.Context;
-using LearningTrainer.Services;
+using LearningTrainerShared.Services;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,12 +15,13 @@ namespace LearningAPI.Controllers
     {
         private readonly ApiDbContext _context;
         private readonly TokenService _tokenService;
-        private HttpClient _httpClient;
+        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(ApiDbContext context, TokenService tokenService)
+        public AuthController(ApiDbContext context, TokenService tokenService, ILogger<AuthController> logger)
         {
             _context = context;
             _tokenService = tokenService;
+            _logger = logger;
         }
 
         public class LoginRequest
@@ -30,28 +31,50 @@ namespace LearningAPI.Controllers
         }
         private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
         private string GenerateInviteCode() => $"TR-{Nanoid.Generate(size: 6)}";
+        
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _context.Users
-                               .Include(u => u.Role)
-                               .FirstOrDefaultAsync(u => u.Login == request.Username);
-
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            try
             {
-                return Unauthorized(new { message = "Неверный логин или пароль" });
+                var user = await _context.Users
+                                   .Include(u => u.Role)
+                                   .FirstOrDefaultAsync(u => u.Login == request.Username);
+
+                if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+                {
+                    _logger.LogWarning("Failed login attempt for user {Username}", request.Username);
+                    return Unauthorized(new { message = "Неверный логин или пароль" });
+                }
+
+                var accessToken = _tokenService.GenerateAccessToken(user);
+                var refreshToken = _tokenService.GenerateRefreshToken();
+
+                // Сохранить refresh token в БД
+                user.RefreshToken = refreshToken;
+                user.RefreshTokenExpiryTime = _tokenService.GetRefreshTokenExpiryTime();
+                user.IsRefreshTokenRevoked = false;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("User {UserId} logged in successfully", user.Id);
+
+                return Ok(new
+                {
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
+                    TokenType = "Bearer",
+                    ExpiresIn = 7200, // 2 hours in seconds
+                    UserLogin = user.Login,
+                    UserRole = user.Role.Name,
+                    UserId = user.Id,         
+                    InviteCode = user.InviteCode
+                });
             }
-
-            var accessToken = _tokenService.GenerateAccessToken(user);
-
-            return Ok(new
+            catch (Exception ex)
             {
-                AccessToken = accessToken,
-                UserLogin = user.Login,
-                UserRole = user.Role.Name,
-                UserId = user.Id,         
-                InviteCode = user.InviteCode
-            });
+                _logger.LogError(ex, "Error during login");
+                return StatusCode(500, new { message = "An error occurred during login" });
+            }
         }
 
         [Authorize]

@@ -2,6 +2,10 @@
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Text;
 
 namespace LearningTrainer.Services
 {
@@ -12,17 +16,22 @@ namespace LearningTrainer.Services
 
         private readonly HttpClient _httpClient;
         private readonly JsonSerializerOptions _jsonOptions;
-        public ApiDataService()
+        private readonly IConfiguration _configuration;
+
+        public ApiDataService(IConfiguration configuration)
         {
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri("http://localhost:5077")
-            };
+            _configuration = configuration;
+            _httpClient = new HttpClient();
+            
+            var apiBaseUrl = _configuration["Api:BaseUrl"] 
+                ?? "http://localhost:5077";
+            _httpClient.BaseAddress = new Uri(apiBaseUrl);
 
             _jsonOptions = new JsonSerializerOptions
             {
                 ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve,
-                PropertyNameCaseInsensitive = true
+                PropertyNameCaseInsensitive = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
             };
         }
 
@@ -223,8 +232,21 @@ namespace LearningTrainer.Services
 
             if (!response.IsSuccessStatusCode)
             {
-                var errorResponse = await response.Content.ReadFromJsonAsync<ApiResponseDto>();
-                throw new HttpRequestException(errorResponse?.Message ?? "Неверный логин или пароль");
+                var errorContent = await response.Content.ReadAsStringAsync();
+                
+                try
+                {
+                    var errorDto = System.Text.Json.JsonSerializer.Deserialize<ApiResponseDto>(errorContent, _jsonOptions);
+                    if (!string.IsNullOrEmpty(errorDto?.Message))
+                    {
+                        throw new HttpRequestException(errorDto.Message);
+                    }
+                }
+                catch (System.Text.Json.JsonException)
+                {
+                }
+                
+                throw new HttpRequestException(errorContent ?? "Неверный логин или пароль");
             }
 
             return await response.Content.ReadFromJsonAsync<UserSessionDto>(_jsonOptions);

@@ -13,6 +13,7 @@ services:
       - "5077:8080" 
     depends_on:
       - db 
+      - redis
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True
       - ASPNETCORE_URLS=http://+:8080
@@ -31,5 +32,16 @@ services:
       - "14333:1433" 
     volumes:
       - sql_data:/var/opt/mssql/data 
+
+  # -------------------------------
+  # 3. Redis
+  # -------------------------------
+  redis:
+    image: redis:alpine        
+    container_name: learning-redis
+    ports:
+      - "6379:6379"           
+    restart: always
+    
 volumes:
   sql_data:

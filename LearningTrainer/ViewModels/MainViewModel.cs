@@ -3,6 +3,7 @@ using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using Microsoft.Extensions.Configuration;
 
 namespace LearningTrainer.ViewModels
 {
@@ -14,6 +15,7 @@ namespace LearningTrainer.ViewModels
         private IDataService _localDataService;
         private readonly SettingsService _settingsService;
         private readonly SessionService _sessionService;
+        private readonly IConfiguration _configuration;
         public MarkdownConfig CurrentMarkdownConfig { get; private set; } = new MarkdownConfig();
         public event Action<MarkdownConfig> MarkdownConfigChanged;
         MarkdownConfig markdownConfig;
@@ -28,15 +30,17 @@ namespace LearningTrainer.ViewModels
             }
         }
 
-        public MainViewModel()
+        public MainViewModel(IConfiguration configuration)
         {
+            _configuration = configuration;
             _settingsService = new SettingsService();
             _sessionService = new SessionService(); 
             ShowLoginView();
         }
 
-        public MainViewModel(UserSessionDto savedSession)
+        public MainViewModel(UserSessionDto savedSession, IConfiguration configuration)
         {
+            _configuration = configuration;
             CurrentUser = new User
             {
                 Id = savedSession.UserId,
@@ -46,7 +50,7 @@ namespace LearningTrainer.ViewModels
             };
             _settingsService = new SettingsService();
             _sessionService = new SessionService();
-            _apiDataService = new ApiDataService();
+            _apiDataService = new ApiDataService(_configuration);
             _localDataService = new LocalDataService(CurrentUser.Login);
 
 
@@ -78,7 +82,7 @@ namespace LearningTrainer.ViewModels
         }
         private void ShowLoginView()
         {
-            var loginVM = new LoginViewModel(_sessionService);
+            var loginVM = new LoginViewModel(_sessionService, _configuration);
             loginVM.LoginSuccessful += OnLoginSuccessful;
             loginVM.OfflineLoginRequested += OnOfflineLoginRequested;
 
@@ -98,7 +102,7 @@ namespace LearningTrainer.ViewModels
                 InviteCode = sessionDto.InviteCode
             };
 
-            _apiDataService = new ApiDataService();
+            _apiDataService = new ApiDataService(_configuration);
             _localDataService = new LocalDataService(CurrentUser.Login);
 
             _apiDataService.SetToken(sessionDto.AccessToken);

@@ -13,10 +13,6 @@
         AllowsTransparency="True"
         Background="Transparent"
         Name="AppWindow">
-    
-    <Window.DataContext>
-        <viewmodels:MainViewModel/>
-    </Window.DataContext>
 
     <Border Background="{DynamicResource MainBackgroundBrush}" CornerRadius="10" BorderThickness="1" BorderBrush="#DCDCDC">
         <Border.Effect>
