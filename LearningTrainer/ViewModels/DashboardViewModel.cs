@@ -9,6 +9,13 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows;
 using System.Windows.Input;
+using LiveChartsCore;
+using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Painting;
+using SkiaSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace LearningTrainer.ViewModels
 {
@@ -19,11 +26,14 @@ namespace LearningTrainer.ViewModels
         private readonly bool _isOnlineMode;
         private readonly IDialogService _dialogService;
         private readonly SettingsService _settingsService;
+        private readonly PermissionService _permissionService;
+        private readonly AccessNotificationService _notificationService;
         public ObservableCollection<DictionaryViewModel> Dictionaries { get; set; }
         public ObservableCollection<Rule> Rules { get; set; }
         public ObservableCollection<DictionaryViewModel> DisplayDictionaries { get; set; }
 
         public bool CanManage { get; }
+        public AccessNotificationViewModel NotificationViewModel { get; private set; }
 
         public ICommand OpenSettingsCommand { get; }
         public ICommand CreateDictionaryCommand { get; }
@@ -62,66 +72,148 @@ namespace LearningTrainer.ViewModels
         public DashboardStats Stats
         {
             get => _stats;
-            set => SetProperty(ref _stats, value);
-        }
-
-        private bool _isFeatured;
-
-        public bool IsFeatured
-        {
-            get => _isFeatured;
-            set => SetProperty(ref _isFeatured, value);
-        }
-
-        public DashboardViewModel(User? user, IDataService dataService, SettingsService settingsService)
-        {
-            IsOverviewMode = false;
-
-            Dictionaries = new ObservableCollection<DictionaryViewModel>();
-            Rules = new ObservableCollection<Rule>();
-            _dataService = dataService;
-            _currentUser = user;
-            _dialogService = new DialogService();
-            _settingsService = settingsService;
-            _isOnlineMode = (_currentUser != null);
-
-            CanManage = _isOnlineMode
-            && _currentUser.Role != null
-            && _currentUser.Role.Name != "Student";
-
-            Title = "HOME";
-
-            StartLearningCommand = new RelayCommand(async (param) => await StartLearning(param));
-            OpenRuleCommand = new RelayCommand(OpenRule);
-            EditRuleCommand = new RelayCommand(EditRule);
-            CreateDictionaryCommand = new RelayCommand((param) => CreateDictionary());
-            CreateRuleCommand = new RelayCommand((param) => CreateRule());
-            AddWordCommand = new RelayCommand((param) => AddWord(param));
-            DeleteWordCommand = new RelayCommand(async (param) => await DeleteWord(param));
-            DeleteRuleCommand = new RelayCommand(async (param) => await DeleteRule(param));
-            ManageDictionaryCommand = new RelayCommand((param) => ManageDictionary(param));
-            ImportDictionaryCommand = new RelayCommand(async (param) => await ImportDictionary());
-            DisplayDictionaries = new ObservableCollection<DictionaryViewModel>();
-            OpenSettingsCommand = new RelayCommand(OpenSettings);
-            DisplaySortOptions = new ObservableCollection<SortingDisplayItem>()
+            set
             {
-                new SortingDisplayItem { Key = SortKey.NameAsc, DisplayName = GetLocalized("Loc.Sort.NameAsc") },
-                new SortingDisplayItem { Key = SortKey.NameDesc, DisplayName = GetLocalized("Loc.Sort.NameDesc") },
-                new SortingDisplayItem { Key = SortKey.CountMin, DisplayName = GetLocalized("Loc.Sort.CountMin") },
-                new SortingDisplayItem { Key = SortKey.CountMax, DisplayName = GetLocalized("Loc.Sort.CountMax") }
+                if (SetProperty(ref _stats, value))
+                {
+                    UpdateCharts();
+                }
+            }
+        }
+
+        private ISeries[] _activitySeries = Array.Empty<ISeries>();
+        public ISeries[] ActivitySeries
+        {
+            get => _activitySeries;
+            set => SetProperty(ref _activitySeries, value);
+        }
+
+        private Axis[] _activityXAxis = Array.Empty<Axis>();
+        public Axis[] ActivityXAxis
+        {
+            get => _activityXAxis;
+            set => SetProperty(ref _activityXAxis, value);
+        }
+
+        private Axis[] _activityYAxis = Array.Empty<Axis>();
+        public Axis[] ActivityYAxis
+        {
+            get => _activityYAxis;
+            set => SetProperty(ref _activityYAxis, value);
+        }
+
+        private ISeries[] _knowledgeSeries = Array.Empty<ISeries>();
+        public ISeries[] KnowledgeSeries
+        {
+            get => _knowledgeSeries;
+            set => SetProperty(ref _knowledgeSeries, value);
+        }
+
+        private Axis[] _knowledgeXAxis = Array.Empty<Axis>();
+        public Axis[] KnowledgeXAxis
+        {
+            get => _knowledgeXAxis;
+            set => SetProperty(ref _knowledgeXAxis, value);
+        }
+
+        private Axis[] _knowledgeYAxis = Array.Empty<Axis>();
+        public Axis[] KnowledgeYAxis
+        {
+            get => _knowledgeYAxis;
+            set => SetProperty(ref _knowledgeYAxis, value);
+        }
+
+        private SolidColorPaint _legendTextPaint;
+        public SolidColorPaint LegendTextPaint
+        {
+            get => _legendTextPaint;
+            set => SetProperty(ref _legendTextPaint, value);
+        }
+
+        private void UpdateLegendTextPaint()
+        {
+            var colorResource = Application.Current.TryFindResource("PrimaryTextColor");
+            if (colorResource is System.Windows.Media.Color mediaColor)
+            {
+                LegendTextPaint = new SolidColorPaint(new SKColor(mediaColor.R, mediaColor.G, mediaColor.B, mediaColor.A));
+            }
+            else
+            {
+                LegendTextPaint = new SolidColorPaint(SKColors.Black);
+            }
+        }
+
+        private void UpdateCharts()
+        {
+            var stats = Stats ?? new DashboardStats();
+
+            var today = DateTime.UtcNow.Date;
+            var days = Enumerable.Range(0, 7)
+                .Select(i => today.AddDays(-6 + i))
+                .ToList();
+
+            var activityLookup = stats.ActivityLast7Days
+                ?.GroupBy(a => a.Date.Date)
+                .ToDictionary(g => g.Key, g => g.First())
+                ?? new Dictionary<DateTime, ActivityPoint>();
+
+            var reviewed = days.Select(d => activityLookup.TryGetValue(d, out var v) ? v.Reviewed : 0).ToArray();
+            var learned = days.Select(d => activityLookup.TryGetValue(d, out var v) ? v.Learned : 0).ToArray();
+
+            ActivitySeries = new ISeries[]
+            {
+                new ColumnSeries<int>
+                {
+                    Name = "Повторено",
+                    Values = reviewed,
+                    Fill = new SolidColorPaint(new SKColor(59,130,246))
+                },
+                new LineSeries<int>
+                {
+                    Name = "Выучено",
+                    Values = learned,
+                    GeometrySize = 8,
+                    Stroke = new SolidColorPaint(new SKColor(48,169,102), 3),
+                    Fill = null
+                }
             };
 
-            RefreshCommand = new RelayCommand((_) =>
+            ActivityXAxis = new[]
             {
-                System.Diagnostics.Debug.WriteLine(">>> Manual Refresh Triggered");
-                LoadDataAsync();
-            });
-            EventAggregator.Instance.Subscribe<DictionaryDeletedMessage>(OnDictionaryDeleted);
-            EventAggregator.Instance.Subscribe<RefreshDataMessage>(OnRefreshData);
-            EventAggregator.Instance.Subscribe<RuleAddedMessage>(OnRuleAdded);
-            EventAggregator.Instance.Subscribe<DictionaryAddedMessage>(OnDictionaryAdded);
-            EventAggregator.Instance.Subscribe<WordAddedMessage>(OnWordAdded);
-            LoadDataAsync();
+                new Axis
+                {
+                    Labels = days.Select(d => d.ToString("dd.MM")).ToArray(),
+                    LabelsRotation = 0
+                }
+            };
+            ActivityYAxis = new[] { new Axis { MinLimit = 0 } };
+
+            var distributionLookup = stats.KnowledgeDistribution
+                ?.ToDictionary(k => k.Level, k => k.Count)
+                ?? new Dictionary<int, int>();
+
+            var levelValues = Enumerable.Range(0, 6)
+                .Select(level => distributionLookup.TryGetValue(level, out var count) ? count : 0)
+                .ToArray();
+
+            KnowledgeSeries = new ISeries[]
+            {
+                new ColumnSeries<int>
+                {
+                    Name = "Уровень знаний",
+                    Values = levelValues,
+                    Fill = new SolidColorPaint(new SKColor(139,92,246))
+                }
+            };
+
+            KnowledgeXAxis = new[]
+            {
+                new Axis
+                {
+                    Labels = new[] { "0", "1", "2", "3", "4", "5" }
+                }
+            };
+            KnowledgeYAxis = new[] { new Axis { MinLimit = 0 } };
         }
         private void OpenSettings(object obj)
         {
@@ -481,6 +573,94 @@ namespace LearningTrainer.ViewModels
             {
                 DisplayDictionaries.Add(item);
             }
+        }
+
+        public DashboardViewModel(User? user, IDataService dataService, SettingsService settingsService)
+        {
+            IsOverviewMode = false;
+
+            Dictionaries = new ObservableCollection<DictionaryViewModel>();
+            Rules = new ObservableCollection<Rule>();
+            _dataService = dataService;
+            _currentUser = user;
+            _dialogService = new DialogService();
+            _settingsService = settingsService;
+            _isOnlineMode = (_currentUser != null);
+
+            _permissionService = _isOnlineMode ? new PermissionService(_currentUser) : null;
+            _notificationService = new AccessNotificationService();
+            NotificationViewModel = new AccessNotificationViewModel(_currentUser, _notificationService);
+
+            CanManage = _isOnlineMode
+                && _currentUser?.Role != null
+                && _currentUser.Role.Name != "Student";
+
+            Title = "HOME";
+
+            StartLearningCommand = new RelayCommand(async (param) => await StartLearning(param));
+            OpenRuleCommand = new RelayCommand(OpenRule);
+            EditRuleCommand = new RelayCommand(EditRule);
+            CreateDictionaryCommand = new RelayCommand((param) =>
+            {
+                if (!NotificationViewModel.CheckPermissionAndNotify("Создать словарь", _permissionService?.CanCreateDictionary ?? true, "CreateDictionary"))
+                    return;
+                CreateDictionary();
+            });
+            CreateRuleCommand = new RelayCommand((param) =>
+            {
+                if (!NotificationViewModel.CheckPermissionAndNotify("Создать правило", _permissionService?.CanCreateRules ?? true, "CreateRule"))
+                    return;
+                CreateRule();
+            });
+            AddWordCommand = new RelayCommand((param) =>
+            {
+                if (!NotificationViewModel.CheckPermissionAndNotify("Добавить слово", _permissionService?.CanCreateDictionary ?? true, "AddWord"))
+                    return;
+                AddWord(param);
+            });
+            DeleteWordCommand = new RelayCommand(async (param) => await DeleteWord(param));
+            DeleteRuleCommand = new RelayCommand(async (param) => await DeleteRule(param));
+            ManageDictionaryCommand = new RelayCommand((param) =>
+            {
+                if (!NotificationViewModel.CheckPermissionAndNotify("Управлять словарём", _permissionService?.CanEditDictionaries ?? true, "ManageDictionary"))
+                    return;
+                ManageDictionary(param);
+            });
+            ImportDictionaryCommand = new RelayCommand(async (param) =>
+            {
+                if (!NotificationViewModel.CheckPermissionAndNotify("Импортировать словарь", _permissionService?.CanCreateDictionary ?? true, "ImportDictionary"))
+                    return;
+                await ImportDictionary();
+            });
+            DisplayDictionaries = new ObservableCollection<DictionaryViewModel>();
+            OpenSettingsCommand = new RelayCommand(OpenSettings);
+            DisplaySortOptions = new ObservableCollection<SortingDisplayItem>()
+            {
+                new SortingDisplayItem { Key = SortKey.NameAsc, DisplayName = GetLocalized("Loc.Sort.NameAsc") },
+                new SortingDisplayItem { Key = SortKey.NameDesc, DisplayName = GetLocalized("Loc.Sort.NameDesc") },
+                new SortingDisplayItem { Key = SortKey.CountMin, DisplayName = GetLocalized("Loc.Sort.CountMin") },
+                new SortingDisplayItem { Key = SortKey.CountMax, DisplayName = GetLocalized("Loc.Sort.CountMax") }
+            };
+
+            RefreshCommand = new RelayCommand((_) =>
+            {
+                System.Diagnostics.Debug.WriteLine(">>> Manual Refresh Triggered");
+                LoadDataAsync();
+            });
+            EventAggregator.Instance.Subscribe<DictionaryDeletedMessage>(OnDictionaryDeleted);
+            EventAggregator.Instance.Subscribe<RefreshDataMessage>(OnRefreshData);
+            EventAggregator.Instance.Subscribe<RuleAddedMessage>(OnRuleAdded);
+            EventAggregator.Instance.Subscribe<DictionaryAddedMessage>(OnDictionaryAdded);
+            EventAggregator.Instance.Subscribe<WordAddedMessage>(OnWordAdded);
+
+            UpdateLegendTextPaint();
+            _settingsService.MarkdownConfigChanged += OnThemeChanged;
+            LoadDataAsync();
+        }
+
+        private void OnThemeChanged(MarkdownConfig config)
+        {
+            UpdateLegendTextPaint();
         }
     }
 }

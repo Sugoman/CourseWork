@@ -44,8 +44,13 @@ namespace LearningAPI.Controllers
 
             var userId = GetUserId();
 
+            var sharedIds = await _context.DictionarySharings
+                .Where(ds => ds.StudentId == userId)
+                .Select(ds => ds.DictionaryId)
+                .ToListAsync();
+
             var query = _context.Dictionaries
-                .Where(d => d.UserId == userId)
+                .Where(d => d.UserId == userId || sharedIds.Contains(d.Id))
                 .Include(d => d.Words)
                 .AsNoTracking();
 

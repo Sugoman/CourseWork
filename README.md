@@ -101,7 +101,7 @@ API будет доступен на `http://localhost:5077`
 - **Validation:** Data Annotations
 
 ### Frontend
-- **Technology:** WPF (.NET Framework)
+- **Technology:** WPF (.NET 8.0, Windows)
 - **Architecture:** MVVM
 
 ### DevOps

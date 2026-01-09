@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Text;
+using System.Net.Http.Headers;
 
 namespace LearningTrainer.Services
 {
@@ -35,9 +36,21 @@ namespace LearningTrainer.Services
             };
         }
 
+        public void SetToken(string accessToken)
+        {
+            if (string.IsNullOrWhiteSpace(accessToken)) return;
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        }
+
+        private class PagedResponse<T>
+        {
+            public List<T>? data { get; set; }
+        }
+
         public async Task<List<Dictionary>> GetDictionariesAsync()
         {
-            return await _httpClient.GetFromJsonAsync<List<Dictionary>>("/api/dictionaries", _jsonOptions);
+            var resp = await _httpClient.GetFromJsonAsync<PagedResponse<Dictionary>>("/api/dictionaries", _jsonOptions);
+            return resp?.data ?? new List<Dictionary>();
         }
 
         public async Task<Dictionary> GetDictionaryByIdAsync(int id)
@@ -160,11 +173,6 @@ namespace LearningTrainer.Services
         public Task WipeAndStoreRulesAsync(List<Rule> rulesFromServer)
         {
             throw new NotImplementedException();
-        }
-        public void SetToken(string accessToken)
-        {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
         }
 
         public async Task<List<Word>> GetReviewSessionAsync(int dictionaryId)
@@ -336,21 +344,12 @@ namespace LearningTrainer.Services
         {
             try
             {
-                var dicts = await GetDictionariesAsync();
-
-                int wordCount = dicts.Sum(d => d.Words?.Count ?? 0);
-                int dictCount = dicts.Count;
-
-                return new DashboardStats
-                {
-                    TotalDictionaries = dictCount,
-                    TotalWords = wordCount,
-                    LearnedWords = 0, // Пока заглушка
-                    AverageSuccessRate = 0 // Пока заглушка
-                };
+                var stats = await _httpClient.GetFromJsonAsync<DashboardStats>("/api/progress/stats", _jsonOptions);
+                return stats ?? new DashboardStats();
             }
-            catch
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"[STATS] Failed to load stats: {ex.Message}");
                 return new DashboardStats();
             }
         }

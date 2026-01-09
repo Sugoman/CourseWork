@@ -15,6 +15,7 @@
     <SolidColorBrush x:Key="SecondaryTextBrush" Color="#C7B8D6"/>
     <SolidColorBrush x:Key="TertiaryTextBrush" Color="#8B8399"/>
 
+    <Color x:Key="PrimaryTextColor">#FAF0E6</Color>
     <SolidColorBrush x:Key="PrimaryAccentBrush" Color="#A50044"/>
     <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FAF0E6"/>
 

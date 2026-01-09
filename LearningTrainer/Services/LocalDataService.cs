@@ -17,19 +17,8 @@ namespace LearningTrainer.Services
 
             using (var db = Context)
             {
-                // ✅ Пересоздать БД с актуальной схемой
-                // Удаляем старую схему и создаем новую
-                try
-                {
-                    db.Database.EnsureDeleted(); // Удалить старую БД
-                    db.Database.EnsureCreated(); // Создать новую с актуальной схемой
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Database recreation error: {ex.Message}");
-                    // Если не получилось удалить, просто создаем
-                    db.Database.EnsureCreated();
-                }
+                // Обеспечиваем актуальную схему без удаления пользовательских данных при каждом запуске
+                db.Database.EnsureCreated();
 
                 if (!string.IsNullOrEmpty(_userLogin))
                 {
@@ -38,7 +27,7 @@ namespace LearningTrainer.Services
                     {
                         studentRole = new Role { Id = 3, Name = "Student" };
                         db.Roles.Add(studentRole);
-                        db.SaveChanges(); 
+                        db.SaveChanges();
                     }
 
                     var localUser = db.Users.FirstOrDefault(u => u.Login == _userLogin);
@@ -49,7 +38,7 @@ namespace LearningTrainer.Services
                         localUser = new User
                         {
                             Login = _userLogin,
-                            PasswordHash = safeRandomHash, 
+                            PasswordHash = safeRandomHash,
                             RoleId = studentRole.Id,
                             RefreshToken = null,
                             RefreshTokenExpiryTime = null,
@@ -168,6 +157,8 @@ namespace LearningTrainer.Services
 
         public async Task WipeAndStoreDictionariesAsync(List<Dictionary> dictionariesFromServer)
         {
+            if (dictionariesFromServer == null) return;
+
             using (var db = Context)
             {
                 await db.Database.ExecuteSqlRawAsync("DELETE FROM LearningProgresses");
@@ -200,12 +191,14 @@ namespace LearningTrainer.Services
                 }
 
                 await db.Dictionaries.AddRangeAsync(dictionariesFromServer);
-                await db.SaveChangesAsync(); 
+                await db.SaveChangesAsync();
             }
         }
 
         public async Task WipeAndStoreRulesAsync(List<Rule> rulesFromServer)
         {
+            if (rulesFromServer == null) return;
+
             using (var db = Context)
             {
                 await db.Database.ExecuteSqlRawAsync("DELETE FROM Rules");

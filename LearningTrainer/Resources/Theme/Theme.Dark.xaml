@@ -27,6 +27,7 @@
     
     <SolidColorBrush x:Key="DangerBrush" Color="#F87171"/>
     
+    <Color x:Key="PrimaryTextColor">#E5E7EB</Color>
     <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#1E1E1E"/>
 
     

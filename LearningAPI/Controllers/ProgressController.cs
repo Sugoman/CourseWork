@@ -119,5 +119,66 @@ namespace LearningAPI.Controllers
                 return StatusCode(500, "Произошла ошибка при обновлении прогресса.");
             }
         }
+
+        // GET /api/progress/stats
+        [HttpGet("stats")]
+        public async Task<IActionResult> GetStats()
+        {
+            var userId = GetUserId();
+
+            var progresses = _context.LearningProgresses
+                .Where(p => p.UserId == userId);
+
+            var stats = new DashboardStats();
+
+            stats.LearnedWords = await progresses.CountAsync(p => p.KnowledgeLevel >= 4);
+
+            var successSamples = await progresses
+                .Where(p => p.TotalAttempts > 0)
+                .Select(p => new { p.CorrectAnswers, p.TotalAttempts })
+                .ToListAsync();
+
+            stats.AverageSuccessRate = successSamples.Count == 0
+                ? 0
+                : successSamples.Average(s => (double)s.CorrectAnswers / s.TotalAttempts);
+
+            var wordIds = await progresses
+                .Select(p => p.WordId)
+                .Distinct()
+                .ToListAsync();
+
+            stats.TotalWords = wordIds.Count;
+
+            stats.TotalDictionaries = await _context.Words
+                .Where(w => wordIds.Contains(w.Id))
+                .Select(w => w.DictionaryId)
+                .Distinct()
+                .CountAsync();
+
+            var today = DateTime.UtcNow.Date;
+            var fromDate = today.AddDays(-6);
+
+            stats.ActivityLast7Days = await progresses
+                .Where(p => p.LastPracticed >= fromDate)
+                .GroupBy(p => p.LastPracticed.Date)
+                .Select(g => new ActivityPoint
+                {
+                    Date = g.Key,
+                    Reviewed = g.Count(),
+                    Learned = g.Count(p => p.KnowledgeLevel >= 4)
+                })
+                .ToListAsync();
+
+            stats.KnowledgeDistribution = await progresses
+                .GroupBy(p => p.KnowledgeLevel)
+                .Select(g => new KnowledgeDistributionPoint
+                {
+                    Level = g.Key,
+                    Count = g.Count()
+                })
+                .ToListAsync();
+
+            return Ok(stats);
+        }
     }
 }

@@ -299,20 +299,47 @@ namespace LearningTrainer.Services
         {
             await EnsureDatabaseReadyAsync();
 
-            var stats = new DashboardStats
-            {
-                TotalDictionaries = await _context.Dictionaries.CountAsync(),
-                TotalWords = await _context.Words.CountAsync(),
+            var stats = new DashboardStats();
 
-                LearnedWords = await _context.LearningProgresses
-                    .CountAsync(p => p.KnowledgeLevel == 5),
+            stats.TotalDictionaries = await _context.Dictionaries.CountAsync();
+            stats.TotalWords = await _context.Words.CountAsync();
 
-                AverageSuccessRate = await _context.LearningProgresses
-                    .Where(p => p.TotalAttempts > 0)
-                    .Select(p => (double)p.CorrectAnswers / p.TotalAttempts)
-                    .DefaultIfEmpty(0)
-                    .AverageAsync()
-            };
+            var progresses = _context.LearningProgresses.AsQueryable();
+
+            stats.LearnedWords = await progresses.CountAsync(p => p.KnowledgeLevel >= 4);
+
+            stats.AverageSuccessRate = await progresses
+                .Where(p => p.TotalAttempts > 0)
+                .Select(p => (double)p.CorrectAnswers / p.TotalAttempts)
+                .DefaultIfEmpty(0)
+                .AverageAsync();
+
+            var today = DateTime.UtcNow.Date;
+            var fromDate = today.AddDays(-6);
+
+            var activity = await progresses
+                .Where(p => p.LastPracticed >= fromDate)
+                .GroupBy(p => p.LastPracticed.Date)
+                .Select(g => new ActivityPoint
+                {
+                    Date = g.Key,
+                    Reviewed = g.Count(),
+                    Learned = g.Count(p => p.KnowledgeLevel >= 4)
+                })
+                .ToListAsync();
+
+            stats.ActivityLast7Days = activity;
+
+            var distribution = await progresses
+                .GroupBy(p => p.KnowledgeLevel)
+                .Select(g => new KnowledgeDistributionPoint
+                {
+                    Level = g.Key,
+                    Count = g.Count()
+                })
+                .ToListAsync();
+
+            stats.KnowledgeDistribution = distribution;
 
             return stats;
         }

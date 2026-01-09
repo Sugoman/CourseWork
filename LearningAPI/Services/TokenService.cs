@@ -20,7 +20,9 @@ namespace LearningTrainer.Services
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()), // ID 
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), // NameIdentifier
                 new Claim(JwtRegisteredClaimNames.Name, user.Login),        // Login
+                new Claim(ClaimTypes.Name, user.Login),                     // Name
                 new Claim(ClaimTypes.Role, user.Role.Name)                  // Role
             };
 

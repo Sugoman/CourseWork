@@ -110,6 +110,7 @@ namespace LearningTrainer.ViewModels
             {
                 // POST /api/progress/update
                 await _dataService.UpdateProgressAsync(request);
+                EventAggregator.Instance.Publish(new RefreshDataMessage());
             }
             catch (System.Net.Http.HttpRequestException ex)
             {

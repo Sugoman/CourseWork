@@ -1,4 +1,4 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <SolidColorBrush x:Key="MainBackgroundBrush" Color="#FFFFFF"/>
@@ -15,9 +15,19 @@
     <SolidColorBrush x:Key="ActionBrush" Color="#0056b3"/>
     <SolidColorBrush x:Key="MouseOverActionBrush" Color="#007BFF"/>
     <SolidColorBrush x:Key="DangerBrush" Color="#F87171"/>
+    <Color x:Key="PrimaryTextColor">#1F2937</Color>
     <SolidColorBrush x:Key="PrimaryTextBrush" Color="#1F2937"/>
     <SolidColorBrush x:Key="SecondaryTextBrush" Color="#6B7280"/>
     <SolidColorBrush x:Key="TertiaryTextBrush" Color="#9CA3AF"/>
     <SolidColorBrush x:Key="PrimaryAccentBrush" Color="#2563EB"/>
     <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FFFFFF"/>
+    
+    <!-- Notification Colors -->
+    <SolidColorBrush x:Key="NotificationAccessDeniedBrush" Color="#F87171"/>
+    <SolidColorBrush x:Key="NotificationInfoBrush" Color="#3B82F6"/>
+    <SolidColorBrush x:Key="NotificationSuccessBrush" Color="#30A966"/>
+    <SolidColorBrush x:Key="NotificationErrorBrush" Color="#EF4444"/>
+    <SolidColorBrush x:Key="NotificationRoleInfoBrush" Color="#8B5CF6"/>
+    <SolidColorBrush x:Key="NotificationWarningBrush" Color="#FBBF24"/>
+
 </ResourceDictionary>
