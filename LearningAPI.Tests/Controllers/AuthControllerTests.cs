@@ -114,9 +114,9 @@ public class AuthControllerTests : IDisposable
     [Fact]
     public async Task Register_WithNewUser_ReturnsCreated()
     {
-        // Arrange
-        var adminRole = new Role { Id = 1, Name = "Admin" };
-        _context.Roles.Add(adminRole);
+        // Arrange - now registration without invite code creates "User" role
+        var userRole = new Role { Id = 4, Name = "User" };
+        _context.Roles.Add(userRole);
         await _context.SaveChangesAsync();
 
         var request = new RegisterRequest

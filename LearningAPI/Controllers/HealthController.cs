@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+п»їusing Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using LearningTrainer.Context;
 
@@ -18,9 +18,9 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Проверка состояния API
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ API
         /// </summary>
-        /// <returns>Статус здоровья приложения</returns>
+        /// <returns>пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ</returns>
         [HttpGet]
         [AllowAnonymous]
         public async Task<IActionResult> Get()
@@ -34,7 +34,7 @@ namespace LearningAPI.Controllers
                     Services = new ServiceStatus()
                 };
 
-                // Проверка подключения к БД
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅ
                 try
                 {
                     var dbConnected = await _context.Database.CanConnectAsync();
@@ -53,17 +53,17 @@ namespace LearningAPI.Controllers
                     _logger.LogError(ex, "Database health check failed");
                 }
 
-                // Проверка памяти
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
                 var memoryUsage = GC.GetTotalMemory(false) / (1024 * 1024); // MB
                 response.Services.Memory = $"{memoryUsage} MB";
                 
-                if (memoryUsage > 500) // Если память > 500 MB
+                if (memoryUsage > 500) // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ > 500 MB
                 {
                     response.Status = "Degraded";
                     _logger.LogWarning("High memory usage: {MemoryUsage} MB", memoryUsage);
                 }
 
-                // Проверка дискового пространства
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 var driveInfo = new DriveInfo(Path.GetPathRoot(Environment.CurrentDirectory));
                 response.Services.DiskSpace = $"{driveInfo.AvailableFreeSpace / (1024 * 1024 * 1024)} GB available";
 
@@ -93,7 +93,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Расширенная проверка здоровья (детальная)
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
         /// </summary>
         [HttpGet("detailed")]
         [AllowAnonymous]
@@ -106,10 +106,10 @@ namespace LearningAPI.Controllers
                 Environment = System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"
             };
 
-            // Базовая информация
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             response.Status = "Healthy";
 
-            // Проверка БД
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ
             try
             {
                 var canConnect = await _context.Database.CanConnectAsync();
@@ -140,7 +140,7 @@ namespace LearningAPI.Controllers
                 response.Status = "Unhealthy";
             }
 
-            // Информация о системе
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             response.System = new SystemInfo
             {
                 UpTime = TimeSpan.FromMilliseconds(Environment.TickCount),

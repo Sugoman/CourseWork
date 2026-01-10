@@ -8,6 +8,7 @@ public static class TestDataSeeder
     public static Role CreateTeacherRole() => new Role { Id = 1, Name = "Teacher" };
     public static Role CreateStudentRole() => new Role { Id = 2, Name = "Student" };
     public static Role CreateAdminRole() => new Role { Id = 3, Name = "Admin" };
+    public static Role CreateUserRole() => new Role { Id = 4, Name = "User" };
 
     public static User CreateTestUser(string login = "testuser", string password = "password123", Role? role = null)
     {

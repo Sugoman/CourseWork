@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+п»їusing Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using LearningTrainer.Context;
@@ -23,7 +23,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Получить всех пользователей (только для админов)
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetAllUsers(
@@ -35,7 +35,7 @@ namespace LearningAPI.Controllers
             {
                 var query = _context.Users.Include(u => u.Role).AsQueryable();
 
-                // Фильтр по роли если указана
+                // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 if (!string.IsNullOrEmpty(role))
                 {
                     query = query.Where(u => u.Role.Name == role);
@@ -77,7 +77,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Изменить роль пользователя
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
         /// </summary>
         [HttpPut("{userId}/role")]
         public async Task<IActionResult> ChangeUserRole(int userId, [FromBody] ChangeRoleRequest request)
@@ -126,7 +126,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Удалить пользователя (только для админов)
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
         /// </summary>
         [HttpDelete("{userId}")]
         public async Task<IActionResult> DeleteUser(int userId)
@@ -135,7 +135,7 @@ namespace LearningAPI.Controllers
             {
                 var currentUserId = GetUserId();
                 
-                // Админ не может удалить себя
+                // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ
                 if (userId == currentUserId)
                 {
                     return BadRequest(new { message = "Cannot delete yourself" });
@@ -162,7 +162,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Получить статистику по пользователям
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
         /// </summary>
         [HttpGet("statistics")]
         public async Task<IActionResult> GetUserStatistics()

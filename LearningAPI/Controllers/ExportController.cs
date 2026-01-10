@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+п»їusing Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using LearningTrainer.Context;
@@ -25,7 +25,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Экспортировать словарь в JSON
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ JSON
         /// </summary>
         [HttpGet("{dictionaryId}/json")]
         public async Task<IActionResult> ExportAsJson(int dictionaryId)
@@ -80,7 +80,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Экспортировать словарь в CSV
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ CSV
         /// </summary>
         [HttpGet("{dictionaryId}/csv")]
         public async Task<IActionResult> ExportAsCsv(int dictionaryId)
@@ -101,14 +101,14 @@ namespace LearningAPI.Controllers
                 using (var writer = new StringWriter())
                 using (var csv = new CsvWriter(writer, CultureInfo.InvariantCulture))
                 {
-                    // Написать заголовок
+                    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                     csv.WriteField("Original");
                     csv.WriteField("Translation");
                     csv.WriteField("Part of Speech");
                     csv.WriteField("Example");
                     csv.NextRecord();
 
-                    // Написать слова
+                    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ
                     foreach (var word in dictionary.Words)
                     {
                         csv.WriteField(word.OriginalWord);
@@ -135,7 +135,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Экспортировать все словари в одном ZIP архиве
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅ ZIP пїЅпїЅпїЅпїЅпїЅпїЅ
         /// </summary>
         [HttpGet("all/zip")]
         public async Task<IActionResult> ExportAllAsZip()
@@ -159,7 +159,7 @@ namespace LearningAPI.Controllers
                 {
                     foreach (var dictionary in dictionaries)
                     {
-                        // Экспортировать как JSON
+                        // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ JSON
                         var exportData = new DictionaryExportData
                         {
                             Name = dictionary.Name,

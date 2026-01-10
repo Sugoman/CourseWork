@@ -8,7 +8,18 @@ namespace LearningTrainerShared.Constants
         public const string Admin = "Admin";
         public const string Teacher = "Teacher";
         public const string Student = "Student";
+        public const string User = "User";
 
-        public static readonly string[] AllRoles = { Admin, Teacher, Student };
+        public static readonly string[] AllRoles = { Admin, Teacher, Student, User };
+        
+        /// <summary>
+        /// Роли с полным доступом к созданию контента (Admin, User, Teacher)
+        /// </summary>
+        public const string ContentCreators = $"{Admin},{User},{Teacher}";
+        
+        /// <summary>
+        /// Роли с доступом к админ-панели (только Admin)
+        /// </summary>
+        public const string AdminPanelAccess = Admin;
     }
 }

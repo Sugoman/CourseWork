@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+п»їusing Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using LearningTrainer.Context;
@@ -23,7 +23,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Обновить access token используя refresh token
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ access token пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ refresh token
         /// </summary>
         [HttpPost("refresh")]
         [AllowAnonymous]
@@ -37,7 +37,7 @@ namespace LearningAPI.Controllers
                     return BadRequest(new { message = "Refresh token is required" });
                 }
 
-                // Найти пользователя с этим refresh token
+                // пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ refresh token
                 var user = await _context.Users
                     .Include(u => u.Role)
                     .FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
@@ -48,25 +48,25 @@ namespace LearningAPI.Controllers
                     return Unauthorized(new { message = "Invalid refresh token" });
                 }
 
-                // Проверить, не истёк ли refresh token
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ refresh token
                 if (user.RefreshTokenExpiryTime < DateTime.UtcNow)
                 {
                     _logger.LogWarning("Refresh token expired for user {UserId}", user.Id);
                     return Unauthorized(new { message = "Refresh token has expired" });
                 }
 
-                // Проверить, не был ли отозван refresh token
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ refresh token
                 if (user.IsRefreshTokenRevoked)
                 {
                     _logger.LogWarning("Refresh token is revoked for user {UserId}", user.Id);
                     return Unauthorized(new { message = "Refresh token has been revoked" });
                 }
 
-                // Сгенерировать новый access token
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ access token
                 var newAccessToken = _tokenService.GenerateAccessToken(user);
                 var newRefreshToken = _tokenService.GenerateRefreshToken();
 
-                // Обновить refresh token в БД
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ refresh token пїЅ пїЅпїЅ
                 user.RefreshToken = newRefreshToken;
                 user.RefreshTokenExpiryTime = _tokenService.GetRefreshTokenExpiryTime();
                 await _context.SaveChangesAsync();
@@ -89,7 +89,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Отозвать refresh token (выход из системы)
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ refresh token (пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
         /// </summary>
         [HttpPost("revoke")]
         [Authorize]
@@ -109,7 +109,7 @@ namespace LearningAPI.Controllers
                     return NotFound();
                 }
 
-                // Отозвать текущий refresh token
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ refresh token
                 if (!string.IsNullOrEmpty(request?.RefreshToken))
                 {
                     user.IsRefreshTokenRevoked = true;
@@ -130,7 +130,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Отозвать все refresh tokens пользователя (выход из всех устройств)
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ refresh tokens пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ)
         /// </summary>
         [HttpPost("revoke-all")]
         [Authorize]
@@ -150,7 +150,7 @@ namespace LearningAPI.Controllers
                     return NotFound();
                 }
 
-                // Отозвать все refresh tokens пользователя
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ refresh tokens пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 user.RefreshToken = null;
                 user.IsRefreshTokenRevoked = true;
                 user.RefreshTokenExpiryTime = null;

@@ -24,6 +24,14 @@ namespace LearningTrainer.Context
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Seed roles including new User role
+            modelBuilder.Entity<Role>().HasData(
+                new Role { Id = 1, Name = "Admin" },
+                new Role { Id = 2, Name = "Teacher" },
+                new Role { Id = 3, Name = "Student" },
+                new Role { Id = 4, Name = "User" }
+            );
+
             modelBuilder.Entity<LearningProgress>()
                 .HasAlternateKey(p => new { p.UserId, p.WordId });
 

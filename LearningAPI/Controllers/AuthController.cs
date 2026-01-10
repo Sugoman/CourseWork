@@ -50,7 +50,7 @@ namespace LearningAPI.Controllers
                 var accessToken = _tokenService.GenerateAccessToken(user);
                 var refreshToken = _tokenService.GenerateRefreshToken();
 
-                // Сохранить refresh token в БД
+                // Сохраняем refresh token в БД
                 user.RefreshToken = refreshToken;
                 user.RefreshTokenExpiryTime = _tokenService.GetRefreshTokenExpiryTime();
                 user.IsRefreshTokenRevoked = false;
@@ -136,7 +136,7 @@ namespace LearningAPI.Controllers
             else
             {
                 roleToAssign = await _context.Roles.AsNoTracking()
-                    .FirstOrDefaultAsync(r => r.Name == "Admin");
+                    .FirstOrDefaultAsync(r => r.Name == "User");
             }
 
             if (roleToAssign == null)
@@ -187,7 +187,7 @@ namespace LearningAPI.Controllers
 
             return Ok(new
             {
-                Message = "Вы стали учителем. Код сгенерирован.",
+                Message = "Вы стали учителем. Вот приглашение.",
                 InviteCode = user.InviteCode,
                 AccessToken = newAccessToken,
                 UserRole = "Teacher"
@@ -195,3 +195,4 @@ namespace LearningAPI.Controllers
         }
     }
 }
+

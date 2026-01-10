@@ -115,9 +115,9 @@ namespace LearningAPI.Controllers
             return Ok(dictionaries);
         }
 
-        // POST: /api/dictionaries - только для учителей и админов
+        // POST: /api/dictionaries - только для учителей, админов и пользователей
         [HttpPost]
-        [Authorize(Roles = $"{UserRoles.Teacher},{UserRoles.Admin}")]
+        [Authorize(Roles = UserRoles.ContentCreators)]
         public async Task<IActionResult> AddDictionary([FromBody] CreateDictionaryRequest requestDto)
         {
             if (!ModelState.IsValid)

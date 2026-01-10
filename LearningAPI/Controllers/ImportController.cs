@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+п»їusing Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using LearningTrainer.Context;
 using LearningTrainerShared.Models;
@@ -23,7 +23,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Импортировать словарь из JSON файла
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ JSON пїЅпїЅпїЅпїЅпїЅ
         /// </summary>
         [HttpPost("json")]
         [Consumes("multipart/form-data")]
@@ -53,7 +53,7 @@ namespace LearningAPI.Controllers
                         return BadRequest(new { message = "Invalid JSON format" });
                     }
 
-                    // Создать новый словарь
+                    // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                     var dictionary = new Dictionary
                     {
                         Name = importData.Name ?? "Imported Dictionary",
@@ -98,7 +98,7 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
-        /// Импортировать словарь из CSV файла
+        /// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ CSV пїЅпїЅпїЅпїЅпїЅ
         /// </summary>
         [HttpPost("csv")]
         [Consumes("multipart/form-data")]
@@ -148,7 +148,7 @@ namespace LearningAPI.Controllers
                     return BadRequest(new { message = "No valid words found in CSV" });
                 }
 
-                // Создать новый словарь
+                // пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 var dictionary = new Dictionary
                 {
                     Name = dictionaryName ?? "Imported Dictionary",

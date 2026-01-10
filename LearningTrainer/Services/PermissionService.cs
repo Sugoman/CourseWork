@@ -117,7 +117,7 @@ namespace LearningTrainer.Services
         private bool IsTeacherOrAdmin()
         {
             var role = _currentUser.Role?.Name ?? "";
-            return role == "Teacher" || role == "Admin";
+            return role == "Teacher" || role == "Admin" || role == "User";
         }
 
         private bool IsAdmin()
@@ -132,6 +132,7 @@ namespace LearningTrainer.Services
             {
                 "Admin" => "администраторов",
                 "Teacher" => "учителей и администраторов",
+                "User" => "пользователей",
                 "Student" => "студентов",
                 _ => "пользователей"
             };
@@ -143,7 +144,8 @@ namespace LearningTrainer.Services
             {
                 "Admin" => "?? Администратор - полный доступ ко всем функциям",
                 "Teacher" => "????? Учитель - может создавать и делиться материалами",
-                "Student" => "????? Студент - может только изучать материалы",
+                "User" => "?? Пользователь - может создавать и редактировать материалы",
+                "Student" => "???? Студент - может только изучать материалы",
                 _ => "? Неизвестная роль"
             };
         }
@@ -152,14 +154,14 @@ namespace LearningTrainer.Services
         {
             return actionType switch
             {
-                "CreateDictionary" => "Teacher, Admin",
-                "CreateRule" => "Teacher, Admin",
-                "ShareDictionary" => "Teacher, Admin",
-                "ShareRule" => "Teacher, Admin",
-                "EditDictionary" => "Teacher, Admin",
-                "EditRule" => "Teacher, Admin",
+                "CreateDictionary" => "Teacher, Admin, User",
+                "CreateRule" => "Teacher, Admin, User",
+                "ShareDictionary" => "Teacher",
+                "ShareRule" => "Teacher",
+                "EditDictionary" => "Teacher, Admin, User",
+                "EditRule" => "Teacher, Admin, User",
                 "ManageUsers" => "Admin",
-                _ => "Teacher, Admin"
+                _ => "Teacher, Admin, User"
             };
         }
 
