@@ -263,7 +263,28 @@ namespace LearningTrainer.Services
         public async Task<UpgradeResultDto> UpgradeToTeacherAsync()
         {
             var response = await _httpClient.PostAsync("/api/auth/upgrade-to-teacher", null);
-            response.EnsureSuccessStatusCode();
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                
+                // Парсим JSON ответ для получения понятного сообщения
+                string errorMessage;
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(errorContent);
+                    errorMessage = doc.RootElement.TryGetProperty("message", out var msgElement) 
+                        ? msgElement.GetString() 
+                        : errorContent;
+                }
+                catch
+                {
+                    errorMessage = errorContent;
+                }
+                
+                throw new HttpRequestException(errorMessage);
+            }
+            
             return await response.Content.ReadFromJsonAsync<UpgradeResultDto>(_jsonOptions);
         }
 

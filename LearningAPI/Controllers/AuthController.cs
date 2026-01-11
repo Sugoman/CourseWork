@@ -168,9 +168,10 @@ namespace LearningAPI.Controllers
 
             if (user == null) return NotFound("User not found.");
 
-            if (user.Role.Name != "Admin" && user.Role.Name != "IndependentUser")
+            // User, Admin и IndependentUser могут стать учителем
+            if (user.Role.Name != "Admin" && user.Role.Name != "User" && user.Role.Name != "IndependentUser")
             {
-                return StatusCode(403, new { message = "Только администратор может стать учителем." });
+                return StatusCode(403, new { message = "Только пользователь или администратор может стать учителем." });
             }
 
             var teacherRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Teacher");

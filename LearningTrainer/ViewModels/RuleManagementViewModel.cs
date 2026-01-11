@@ -80,12 +80,16 @@ namespace LearningTrainer.ViewModels
 
             if (success)
             {
-                MessageBox.Show("Правило успешно сохранено!", "Успех");
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
+                    "Сохранено",
+                    "Правило успешно сохранено!"));
                 base.Title = $"Edit Rule: {Title}";
             }
             else
             {
-                MessageBox.Show("Ошибка при сохранении на сервере.", "Ошибка");
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Ошибка",
+                    "Ошибка при сохранении на сервере"));
             }
         }
 

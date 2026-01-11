@@ -155,5 +155,10 @@
             </TabControl.ItemTemplate>
 
         </TabControl>
+        
+        <!-- Global Notification Panel - Overlay in top-right corner -->
+        <views:NotificationPanel HorizontalAlignment="Right" 
+                                 VerticalAlignment="Top"
+                                 Margin="0,50,10,0"/>
     </Grid>
 </UserControl>

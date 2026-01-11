@@ -15,504 +15,515 @@
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <converters:StringNullOrEmptyToVisibilityConverter x:Key="StringNullOrEmptyToVisibilityConverter" />
-
-
-
-
     </UserControl.Resources>
 
-    <!-- ОСНОВНОЙ МАКЕТ -->
+    <!-- ОСНОВНОЙ МАКЕТ с наложением уведомлений -->
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        <!-- Основной контент -->
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <!-- ===================================== -->
-        <!--        Row 0: НАВИГАЦИОННАЯ ПАНЕЛЬ    -->
-        <!-- ===================================== -->
-        <Border Grid.Row="0" 
-                Background="{DynamicResource SecondaryMainBackgroundBrush}" 
-                BorderBrush="{DynamicResource BorderBrush}" 
-                BorderThickness="0,0,0,1">
-            <Grid Margin="20,10">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+            <!-- ===================================== -->
+            <!--        Row 0: НАВИГАЦИОННАЯ ПАНЕЛЬ    -->
+            <!-- ===================================== -->
+            <Border Grid.Row="0" 
+                    Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                    BorderBrush="{DynamicResource BorderBrush}" 
+                    BorderThickness="0,0,0,1">
+                <Grid Margin="20,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
 
-                        <RadioButton x:Name="HomeRadio" 
-                 Content="{DynamicResource Loc.Dashboard.HomeButton}" 
-                 GroupName="MainNav" 
-                 Style="{StaticResource NavRadioButtonStyle}" Cursor="Hand"/>
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
 
-                        <RadioButton x:Name="RulesRadio" 
-                 Content="{DynamicResource Loc.Dashboard.RuleVocab}" 
-                 GroupName="MainNav" 
-                 Style="{StaticResource NavRadioButtonStyle}" 
-                 IsChecked="True"/>
+                            <RadioButton x:Name="HomeRadio" 
+                     Content="{DynamicResource Loc.Dashboard.HomeButton}" 
+                     GroupName="MainNav" 
+                     Style="{StaticResource NavRadioButtonStyle}" Cursor="Hand"/>
 
+                            <RadioButton x:Name="RulesRadio" 
+                     Content="{DynamicResource Loc.Dashboard.RuleVocab}" 
+                     GroupName="MainNav" 
+                     Style="{StaticResource NavRadioButtonStyle}" 
+                     IsChecked="True"/>
+
+                        </StackPanel>
+
+                        <Border BorderBrush="#E5E7EB" BorderThickness="1,0,0,0" Height="24" Margin="15,0"/>
+
+                        <Button x:Name="AddButton" 
+                                Content="{DynamicResource Loc.Dashboard.AddButton}" 
+                                Style="{StaticResource NavButtonStyle}" 
+                                Click="AddButton_Click"
+                        Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Button.ContextMenu>
+                                <ContextMenu Background="{DynamicResource SecondaryMainBackgroundBrush}" >
+                                    <MenuItem Header="{DynamicResource Loc.Dashboard.AddRule}" 
+                                              Foreground="{DynamicResource PrimaryTextBrush}" 
+                                              Command="{Binding CreateRuleCommand}"/>
+
+                                    <MenuItem Header="{DynamicResource Loc.Dashboard.AddVocabulary}" 
+                                              Foreground="{DynamicResource PrimaryTextBrush}" 
+                                              Command="{Binding CreateDictionaryCommand}"/>
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+
+                        <Button Content="{DynamicResource Loc.Button.ImportButton}" 
+                        Style="{StaticResource NavButtonStyle}"
+                        Command="{Binding ImportDictionaryCommand}"
+                        Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                        <Button Content="Settings" Style="{StaticResource NavButtonStyle}" Command="{Binding OpenSettingsCommand}" Margin="20,0,0,0">
+                            <Button.ContentTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Rectangle Height="20" Width="20" Fill="{DynamicResource PrimaryTextBrush}">
+                                            <Rectangle.OpacityMask>
+                                                <VisualBrush Stretch="Uniform">
+                                                    <VisualBrush.Visual>
+                                                        <svg:SvgViewbox Source="Sources/settings.svg" />
+                                                    </VisualBrush.Visual>
+                                                </VisualBrush>
+                                            </Rectangle.OpacityMask>
+                                        </Rectangle>
+
+
+
+
+                                        <TextBlock Text="{DynamicResource Loc.Button.SettingsButton}" 
+                                                   Margin="5 0 0 0"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </Button.ContentTemplate>
+                        </Button>
                     </StackPanel>
 
-                    <Border BorderBrush="#E5E7EB" BorderThickness="1,0,0,0" Height="24" Margin="15,0"/>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
+                        <ComboBox ItemsSource="{Binding DisplaySortOptions}"
+                         ItemContainerStyle="{StaticResource ComboBoxItemContainerStyle}"
+                         SelectedValue="{Binding SelectedSortKey}"
+                         Foreground="{DynamicResource PrimaryTextBrush}"
+                         Style="{StaticResource SortComboBoxStyle}"
+                         DisplayMemberPath="DisplayName"
+                         SelectedValuePath="Key"
+                         MinWidth="210"/>
+                    </StackPanel>
 
-                    <Button x:Name="AddButton" 
-                            Content="{DynamicResource Loc.Dashboard.AddButton}" 
-                            Style="{StaticResource NavButtonStyle}" 
-                            Click="AddButton_Click"
-                    Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <Button.ContextMenu>
-                            <ContextMenu Background="{DynamicResource SecondaryMainBackgroundBrush}" >
-                                <MenuItem Header="{DynamicResource Loc.Dashboard.AddRule}" 
-                                          Foreground="{DynamicResource PrimaryTextBrush}" 
-                                          Command="{Binding CreateRuleCommand}"/>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
 
-                                <MenuItem Header="{DynamicResource Loc.Dashboard.AddVocabulary}" 
-                                          Foreground="{DynamicResource PrimaryTextBrush}" 
-                                          Command="{Binding CreateDictionaryCommand}"/>
-                            </ContextMenu>
-                        </Button.ContextMenu>
-                    </Button>
+                        <Grid>
+                            <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                    BorderBrush="{DynamicResource SeparatorBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8" 
+                    Width="300" Height="35"/>
 
-                    <Button Content="{DynamicResource Loc.Button.ImportButton}" 
-                    Style="{StaticResource NavButtonStyle}"
-                    Command="{Binding ImportDictionaryCommand}"
-                    Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Rectangle Fill="{DynamicResource PrimaryTextBrush}"
+                           Height="20" Width="20"
+                           Stretch="Uniform" 
+                           Margin="12,0,5,0" 
+                           VerticalAlignment="Center">
+                                    <Rectangle.OpacityMask>
+                                        <VisualBrush Stretch="Uniform">
+                                            <VisualBrush.Visual>
+                                                <svg:SvgViewbox Source="Sources/search.svg"/>
+                                            </VisualBrush.Visual>
+                                        </VisualBrush>
+                                    </Rectangle.OpacityMask>
+                                </Rectangle>
 
-                    <Button Content="Settings" Style="{StaticResource NavButtonStyle}" Command="{Binding OpenSettingsCommand}" Margin="20,0,0,0">
-                        <Button.ContentTemplate>
-                            <DataTemplate>
-                                <StackPanel Orientation="Horizontal">
-                                    <Rectangle Height="20" Width="20" Fill="{DynamicResource PrimaryTextBrush}">
-                                        <Rectangle.OpacityMask>
-                                            <VisualBrush Stretch="Uniform">
-                                                <VisualBrush.Visual>
-                                                    <svg:SvgViewbox Source="Sources/settings.svg" />
-                                                </VisualBrush.Visual>
-                                            </VisualBrush>
-                                        </Rectangle.OpacityMask>
-                                    </Rectangle>
-
-
-
-
-
-                                    <TextBlock Text="{DynamicResource Loc.Button.SettingsButton}" 
-                                               Margin="5 0 0 0"
-                                               VerticalAlignment="Center"/>
-                                </StackPanel>
-                            </DataTemplate>
-                        </Button.ContentTemplate>
-                    </Button>
-                </StackPanel>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
-                    <ComboBox ItemsSource="{Binding DisplaySortOptions}"
-                     ItemContainerStyle="{StaticResource ComboBoxItemContainerStyle}"
-                     SelectedValue="{Binding SelectedSortKey}"
-                     Foreground="{DynamicResource PrimaryTextBrush}"
-                     Style="{StaticResource SortComboBoxStyle}"
-                     DisplayMemberPath="DisplayName"
-                     SelectedValuePath="Key"
-                     MinWidth="210"/>
-                </StackPanel>
-
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="10,0,0,0">
-
-                    <Grid>
-                        <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
-                BorderBrush="{DynamicResource SeparatorBrush}"
-                BorderThickness="1"
-                CornerRadius="8" 
-                Width="300" Height="35"/>
-
-                        <StackPanel Orientation="Horizontal">
-                            <Rectangle Fill="{DynamicResource PrimaryTextBrush}"
-                       Height="20" Width="20"
-                       Stretch="Uniform" 
-                       Margin="12,0,5,0" 
-                       VerticalAlignment="Center">
-                                <Rectangle.OpacityMask>
-                                    <VisualBrush Stretch="Uniform">
-                                        <VisualBrush.Visual>
-                                            <svg:SvgViewbox Source="Sources/search.svg"/>
-                                        </VisualBrush.Visual>
-                                    </VisualBrush>
-                                </Rectangle.OpacityMask>
-                            </Rectangle>
-
-                            <TextBox Background="Transparent" BorderThickness="0" Padding="8" Foreground="{DynamicResource PrimaryTextBrush}"
+                                <TextBox Background="Transparent" BorderThickness="0" Padding="8" Foreground="{DynamicResource PrimaryTextBrush}"
                      VerticalContentAlignment="Center" Width="250" FontSize="14"
                      x:Name="SearchTextBox"
                      Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"/>
+                            </StackPanel>
+
+                            <TextBlock Text="{DynamicResource Loc.Dashboard.SearchPlaceholder}" 
+                       Foreground="{DynamicResource PrimaryTextBrush}" 
+                       VerticalAlignment="Center" 
+                       Margin="50,0,0,0" IsHitTestVisible="False"
+                       Visibility="{Binding Text, ElementName=SearchTextBox, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                        </Grid>
+
+                        <Button Command="{Binding RefreshCommand}" 
+                Style="{StaticResource NavButtonStyle}" 
+                Margin="10,0,0,0"
+                ToolTip="Refresh Data"
+                Width="35" Height="35"
+                Padding="0">
+                            <Button.Content>
+                                <Rectangle Width="18" Height="18" Fill="{DynamicResource PrimaryTextBrush}">
+                                    <Rectangle.OpacityMask>
+                                        <VisualBrush Stretch="Uniform">
+                                            <VisualBrush.Visual>
+                                                <Path Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" Fill="Black"/>
+                                            </VisualBrush.Visual>
+                                        </VisualBrush>
+                                    </Rectangle.OpacityMask>
+                                </Rectangle>
+                            </Button.Content>
+                        </Button>
+
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ===================================== -->
+            <!--        Row 1: КОНТЕНТНАЯ ЗОНА         -->
+            <!-- ===================================== -->
+            <Grid Grid.Row="1">
+
+                <Grid Margin="30" Visibility="{Binding IsChecked, ElementName=HomeRadio, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <ScrollViewer>
+                        <StackPanel>
+                            <TextBlock Text="Your Progress" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,20"/>
+
+                            <UniformGrid Columns="2" Rows="2" >
+
+                                <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,15,15">
+                                    <StackPanel>
+                                        <TextBlock Text="Total Words" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
+                                        <TextBlock Text="{Binding Stats.TotalWords}" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="32" FontWeight="Bold" Margin="0,10,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,15">
+                                    <StackPanel>
+                                        <TextBlock Text="Learned Words" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
+                                        <TextBlock Text="{Binding Stats.LearnedWords}" Foreground="{DynamicResource SuccessBrush}" FontSize="32" FontWeight="Bold" Margin="0,10,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,15,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Dictionaries" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
+                                        <TextBlock Text="{Binding Stats.TotalDictionaries}" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="32" FontWeight="Bold" Margin="0,10,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20">
+                                    <StackPanel>
+                                        <TextBlock Text="Avg. Success Rate" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
+                                        <TextBlock Text="{Binding Stats.AverageSuccessRate, StringFormat={}{0:P0}}" Foreground="{DynamicResource PrimaryAccentBrush}" FontSize="32" FontWeight="Bold" Margin="0,10,0,0"/>
+                                    </StackPanel>
+                                </Border>
+
+                            </UniformGrid>
+
+                            <StackPanel Margin="0,20,0,0">
+                                <TextBlock Text="Активность за 7 дней" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+                                <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <lvc:CartesianChart Height="240"
+                                                       Series="{Binding ActivitySeries}"
+                                                       XAxes="{Binding ActivityXAxis}"
+                                                       YAxes="{Binding ActivityYAxis}"
+                                                       LegendPosition="Right"
+                                                       LegendTextPaint="{Binding LegendTextPaint}" />
+                                </Border>
+                            </StackPanel>
+
+                            <StackPanel Margin="0,20,0,0">
+                                <TextBlock Text="Распределение уровней знаний" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+                                <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                    <lvc:CartesianChart Height="240"
+                                                       Series="{Binding KnowledgeSeries}"
+                                                       XAxes="{Binding KnowledgeXAxis}"
+                                                       YAxes="{Binding KnowledgeYAxis}"
+                                                       LegendPosition="Right"
+                                                       LegendTextPaint="{Binding LegendTextPaint}" />
+                                </Border>
+                            </StackPanel>
+
                         </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                      Visibility="{Binding IsChecked, ElementName=RulesRadio, Converter={StaticResource BooleanToVisibilityConverter}}">
 
-                        <TextBlock Text="{DynamicResource Loc.Dashboard.SearchPlaceholder}" 
-                   Foreground="{DynamicResource PrimaryTextBrush}" 
-                   VerticalAlignment="Center" 
-                   Margin="50,0,0,0" IsHitTestVisible="False"
-                   Visibility="{Binding Text, ElementName=SearchTextBox, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
-                    </Grid>
+                    <StackPanel Margin="30">
+                        <StackPanel.Resources>
+                            <Style x:Key="RuleCardStyle" TargetType="Border">
+                                <Setter Property="MinWidth" Value="200"/>
+                                <Setter Property="MinHeight" Value="100"/>
+                                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                                <Setter Property="CornerRadius" Value="12"/>
+                                <Setter Property="BorderThickness" Value="3"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                <Setter Property="Margin" Value="8"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsFeatured}" Value="True">
+                                        <Setter Property="Background" Value="#3B82F6"/>
+                                        <Setter Property="BorderBrush" Value="#3B82F6"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
 
-                    <Button Command="{Binding RefreshCommand}" 
-            Style="{StaticResource NavButtonStyle}" 
-            Margin="10,0,0,0"
-            ToolTip="Refresh Data"
-            Width="35" Height="35"
-            Padding="0">
-                        <Button.Content>
-                            <Rectangle Width="18" Height="18" Fill="{DynamicResource PrimaryTextBrush}">
-                                <Rectangle.OpacityMask>
-                                    <VisualBrush Stretch="Uniform">
-                                        <VisualBrush.Visual>
-                                            <Path Data="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" Fill="Black"/>
-                                        </VisualBrush.Visual>
-                                    </VisualBrush>
-                                </Rectangle.OpacityMask>
-                            </Rectangle>
-                        </Button.Content>
-                    </Button>
+                            <Style x:Key="VocabCardStyle" TargetType="Border">
+                                <Setter Property="Width" Value="300"/>
+                                <Setter Property="Height" Value="200"/>
+                                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                                <Setter Property="CornerRadius" Value="12"/>
+                                <Setter Property="BorderThickness" Value="5"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                <Setter Property="Margin" Value="8"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsFeatured}" Value="True">
+                                        <Setter Property="Background" Value="#3B82F6"/>
+                                        <Setter Property="BorderBrush" Value="#3B82F6"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
 
-                </StackPanel>
-            </Grid>
-        </Border>
+                            <Style x:Key="PlayButtonStyle" TargetType="Button">
+                                <Setter Property="Width" Value="44"/>
+                                <Setter Property="Height" Value="44"/>
+                                <Setter Property="Background" Value="#FFFFFF"/>
+                                <Setter Property="Foreground" Value="#3B82F6"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Cursor" Value="Hand"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}" CornerRadius="22">
+                                                <Rectangle Width="30" Height="30" Fill="{DynamicResource SecondaryTextBrush}">
+                                                    <Rectangle.OpacityMask>
+                                                        <VisualBrush Stretch="Uniform">
+                                                            <VisualBrush.Visual>
+                                                                <svg:SvgViewbox Source="Sources/start.svg"/>
+                                                            </VisualBrush.Visual>
+                                                        </VisualBrush>
+                                                    </Rectangle.OpacityMask>
+                                                </Rectangle>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#F0F9FF"/>
+                                    </Trigger>
+                                    <DataTrigger Binding="{Binding IsFeatured}" Value="True">
+                                        <Setter Property="Background" Value="#2563EB"/>
+                                        <Setter Property="Foreground" Value="White"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Resources>
 
-        <!-- ===================================== -->
-        <!--        Row 1: КОНТЕНТНАЯ ЗОНА         -->
-        <!-- ===================================== -->
-        <Grid Grid.Row="1">
 
-            <Grid Margin="30" Visibility="{Binding IsChecked, ElementName=HomeRadio, Converter={StaticResource BooleanToVisibilityConverter}}">
-                <ScrollViewer>
-                    <StackPanel>
-                        <TextBlock Text="Your Progress" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,20"/>
+                        <TextBlock Text="{DynamicResource Loc.Dashboard.RuleLabel}" 
+                               Style="{StaticResource SectionHeaderStyle}" 
+                               FontSize="28"
+                               Foreground="{DynamicResource PrimaryTextBrush}"/>
 
-                        <UniformGrid Columns="2" Rows="2" >
+                        <ItemsControl ItemsSource="{Binding Rules}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource RuleCardStyle}" Cursor="Hand">
+                                        <Border.InputBindings>
+                                            <MouseBinding Gesture="LeftClick" 
+                  Command="{Binding Path=DataContext.OpenRuleCommand, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ItemsControl}}}"
+                  CommandParameter="{Binding}"/>
+                                        </Border.InputBindings>
 
-                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,15,15">
-                                <StackPanel>
-                                    <TextBlock Text="Total Words" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
-                                    <TextBlock Text="{Binding Stats.TotalWords}" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="32" FontWeight="Bold" Margin="0,10,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
-                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,15">
-                                <StackPanel>
-                                    <TextBlock Text="Learned Words" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
-                                    <TextBlock Text="{Binding Stats.LearnedWords}" Foreground="{DynamicResource SuccessBrush}" FontSize="32" FontWeight="Bold" Margin="0,10,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <TextBlock Grid.Row="0" Text="{Binding Title}" 
+                                                       Foreground="{DynamicResource PrimaryTextBrush}" 
+                                                       FontWeight="Bold" 
+                                                       TextAlignment="Center" TextWrapping="Wrap"
+                                                       VerticalAlignment="Center" 
+                                                       Margin="10" 
+                                                       FontSize="16"
+                                                       MaxWidth="200" MinWidth="200"/>
 
-                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,15,0">
-                                <StackPanel>
-                                    <TextBlock Text="Dictionaries" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
-                                    <TextBlock Text="{Binding Stats.TotalDictionaries}" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="32" FontWeight="Bold" Margin="0,10,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <TextBlock Grid.Row="1" Text="{Binding Description}" 
+                                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                                       FontWeight="Thin" 
+                                                       TextAlignment="Center" 
+                                                       TextWrapping="Wrap"
+                                                       VerticalAlignment="Center" 
+                                                       Margin="10" 
+                                                       FontSize="{DynamicResource BaseFontSize}"
+                                                       MaxWidth="200" MinWidth="200"/>
 
-                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20">
-                                <StackPanel>
-                                    <TextBlock Text="Avg. Success Rate" Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
-                                    <TextBlock Text="{Binding Stats.AverageSuccessRate, StringFormat={}{0:P0}}" Foreground="{DynamicResource PrimaryAccentBrush}" FontSize="32" FontWeight="Bold" Margin="0,10,0,0"/>
-                                </StackPanel>
-                            </Border>
+                                            <StackPanel Grid.Row="2" 
+                                                        Orientation="Horizontal" 
+                                                        HorizontalAlignment="Right" 
+                                                        Margin="0,0,10,10"
+                                                        Visibility="{Binding DataContext.CanManage, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
 
-                        </UniformGrid>
+                                                <!-- Share Button -->
+                                                <Button Content="📤"
+                                                        Command="{Binding DataContext.ShareRuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"                                                    
+                                                        Foreground="{DynamicResource PrimaryAccentBrush}"
+                                                        Background="Transparent" 
+                                                        BorderThickness="0" 
+                                                        Cursor="Hand"
+                                                        FontSize="16" 
+                                                        Margin="0,0,5,0" 
+                                                        ToolTip="Share Rule"/>
 
-                        <StackPanel Margin="0,20,0,0">
-                            <TextBlock Text="Активность за 7 дней" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,8"/>
-                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                                <lvc:CartesianChart Height="240"
-                                                   Series="{Binding ActivitySeries}"
-                                                   XAxes="{Binding ActivityXAxis}"
-                                                   YAxes="{Binding ActivityYAxis}"
-                                                   LegendPosition="Right"
-                                                   LegendTextPaint="{Binding LegendTextPaint}" />
-                            </Border>
-                        </StackPanel>
+                                                <Button Content="✏️"
+                                                        Command="{Binding DataContext.EditRuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"                                                    
+                                                        Foreground="{DynamicResource PrimaryTextBrush}"
+                                                        Background="Transparent" 
+                                                        BorderThickness="0" 
+                                                        Cursor="Hand"
+                                                        FontSize="16" 
+                                                        Margin="0,0,5,0" 
+                                                        ToolTip="Edit Rule"/>
 
-                        <StackPanel Margin="0,20,0,0">
-                            <TextBlock Text="Распределение уровней знаний" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,8"/>
-                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                                <lvc:CartesianChart Height="240"
-                                                   Series="{Binding KnowledgeSeries}"
-                                                   XAxes="{Binding KnowledgeXAxis}"
-                                                   YAxes="{Binding KnowledgeYAxis}"
-                                                   LegendPosition="Right"
-                                                   LegendTextPaint="{Binding LegendTextPaint}" />
-                            </Border>
-                        </StackPanel>
+                                                <Button Content="🗑️"
+                                                        Command="{Binding DataContext.DeleteRuleCommand, 
+                                                                 RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                        CommandParameter="{Binding}"
+                                                        Background="Transparent" 
+                                                        BorderThickness="0" 
+                                                        Cursor="Hand"
+                                                        Foreground="{DynamicResource DangerBrush}" 
+                                                        FontSize="16" 
+                                                        ToolTip="Delete"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
+                        <Separator Margin="20"/>
+
+                        <TextBlock Text="{DynamicResource Loc.Dashboard.VocabLabel}" 
+                               Style="{StaticResource SectionHeaderStyle}" 
+                               FontSize="28"
+                               Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        <ItemsControl ItemsSource="{Binding DisplayDictionaries}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource VocabCardStyle}">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+
+                                            <Grid Grid.Row="0" Margin="20,15,15,5">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Grid.Column="0" Text="{Binding Name}" 
+                                                           FontSize="{DynamicResource HeaderFontSize}" 
+                                                           Foreground="{DynamicResource PrimaryTextBrush}"
+                                                           FontWeight="Bold" 
+                                                           TextWrapping="Wrap" 
+                                                           MaxHeight="40" 
+                                                           TextTrimming="CharacterEllipsis">
+                                                    <TextBlock.ToolTip>
+                                                        <ToolTip Content="{Binding Name}"/>
+                                                    </TextBlock.ToolTip>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#1F2937"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsFeatured}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+
+                                                <Button Grid.Column="1"
+                                                    Command="{Binding DataContext.ManageDictionaryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}"
+                                                    Width="30" Height="30"
+                                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                                    ToolTip="{DynamicResource Loc.Dashboard.DictionaryToolTip}">
+                                                    <Button.Content>
+                                                        <TextBlock Text="⚙️" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="16"/>
+                                                    </Button.Content>
+                                                </Button>
+                                            </Grid>
+
+                                            <StackPanel Grid.Row="1" Margin="20,0,20,0">
+                                                <TextBlock Text="{Binding Description}" 
+                                                            FontSize="14" Opacity="0.8" Margin="0,5,0,5" 
+                                                            TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsFeatured}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+
+                                                <TextBlock FontSize="12" Opacity="0.6">
+                                                    <Run Text="{DynamicResource Loc.Dashboard.WordCount}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                                    <Run Text="{Binding WordCount, Mode=OneWay}" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="SemiBold"/>
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#1F2937"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsFeatured}" Value="True">
+                                                                    <Setter Property="Foreground" Value="White"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </StackPanel>
+
+                                            <Button Grid.Row="2" 
+                                                Style="{StaticResource PlayButtonStyle}"
+                                                Background="Transparent"
+                                                Command="{Binding DataContext.StartLearningCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Bottom"
+                                                Margin="15"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </ScrollViewer>
             </Grid>
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                  Visibility="{Binding IsChecked, ElementName=RulesRadio, Converter={StaticResource BooleanToVisibilityConverter}}">
-
-                <StackPanel Margin="30">
-                    <StackPanel.Resources>
-                        <Style x:Key="RuleCardStyle" TargetType="Border">
-                            <Setter Property="MinWidth" Value="200"/>
-                            <Setter Property="MinHeight" Value="100"/>
-                            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-                            <Setter Property="CornerRadius" Value="12"/>
-                            <Setter Property="BorderThickness" Value="3"/>
-                            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
-                            <Setter Property="Margin" Value="8"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                    <Setter Property="Background" Value="#3B82F6"/>
-                                    <Setter Property="BorderBrush" Value="#3B82F6"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-
-                        <Style x:Key="VocabCardStyle" TargetType="Border">
-                            <Setter Property="Width" Value="300"/>
-                            <Setter Property="Height" Value="200"/>
-                            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-                            <Setter Property="CornerRadius" Value="12"/>
-                            <Setter Property="BorderThickness" Value="5"/>
-                            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
-                            <Setter Property="Margin" Value="8"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                    <Setter Property="Background" Value="#3B82F6"/>
-                                    <Setter Property="BorderBrush" Value="#3B82F6"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-
-                        <Style x:Key="PlayButtonStyle" TargetType="Button">
-                            <Setter Property="Width" Value="44"/>
-                            <Setter Property="Height" Value="44"/>
-                            <Setter Property="Background" Value="#FFFFFF"/>
-                            <Setter Property="Foreground" Value="#3B82F6"/>
-                            <Setter Property="BorderThickness" Value="0"/>
-                            <Setter Property="Cursor" Value="Hand"/>
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border Background="{TemplateBinding Background}" CornerRadius="22">
-                                            <Rectangle Width="30" Height="30" Fill="{DynamicResource SecondaryTextBrush}">
-                                                <Rectangle.OpacityMask>
-                                                    <VisualBrush Stretch="Uniform">
-                                                        <VisualBrush.Visual>
-                                                            <svg:SvgViewbox Source="Sources/start.svg"/>
-                                                        </VisualBrush.Visual>
-                                                    </VisualBrush>
-                                                </Rectangle.OpacityMask>
-                                            </Rectangle>
-                                        </Border>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                            <Style.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#F0F9FF"/>
-                                </Trigger>
-                                <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                    <Setter Property="Background" Value="#2563EB"/>
-                                    <Setter Property="Foreground" Value="White"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </StackPanel.Resources>
-
-
-                    <TextBlock Text="{DynamicResource Loc.Dashboard.RuleLabel}" 
-                           Style="{StaticResource SectionHeaderStyle}" 
-                           FontSize="28"
-                           Foreground="{DynamicResource PrimaryTextBrush}"/>
-
-                    <ItemsControl ItemsSource="{Binding Rules}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource RuleCardStyle}" Cursor="Hand">
-                                    <Border.InputBindings>
-                                        <MouseBinding Gesture="LeftClick" 
-              Command="{Binding Path=DataContext.OpenRuleCommand, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ItemsControl}}}"
-              CommandParameter="{Binding}"/>
-                                    </Border.InputBindings>
-
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*"/>
-                                            <RowDefinition Height="*"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-
-                                        <TextBlock Grid.Row="0" Text="{Binding Title}" 
-                                                   Foreground="{DynamicResource PrimaryTextBrush}" 
-                                                   FontWeight="Bold" 
-                                                   TextAlignment="Center" TextWrapping="Wrap"
-                                                   VerticalAlignment="Center" 
-                                                   Margin="10" 
-                                                   FontSize="16"
-                                                   MaxWidth="200" MinWidth="200"/>
-
-                                        <TextBlock Grid.Row="1" Text="{Binding Description}" 
-                                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                                   FontWeight="Thin" 
-                                                   TextAlignment="Center" 
-                                                   TextWrapping="Wrap"
-                                                   VerticalAlignment="Center" 
-                                                   Margin="10" 
-                                                   FontSize="{DynamicResource BaseFontSize}"
-                                                   MaxWidth="200" MinWidth="200"/>
-
-                                        <StackPanel Grid.Row="2" 
-                                                    Orientation="Horizontal" 
-                                                    HorizontalAlignment="Right" 
-                                                    Margin="0,0,10,10">
-
-                                            <Button Content="✏️"
-                                                    Command="{Binding DataContext.EditRuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}"                                                    
-                                                    Foreground="{DynamicResource PrimaryTextBrush}"
-                                                    Background="Transparent" 
-                                                    BorderThickness="0" 
-                                                    Cursor="Hand"
-                                                    FontSize="16" 
-                                                    Margin="0,0,5,0" 
-                                                    ToolTip="Edit Rule"/>
-
-                                            <Button Content="🗑️"
-                                                    Command="{Binding DataContext.DeleteRuleCommand, 
-                                                             RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}"
-                                                    Background="Transparent" 
-                                                    BorderThickness="0" 
-                                                    Cursor="Hand"
-                                                    Foreground="{DynamicResource DangerBrush}" 
-                                                    FontSize="16" 
-                                                    ToolTip="Delete"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <Separator Margin="20"/>
-
-                    <TextBlock Text="{DynamicResource Loc.Dashboard.VocabLabel}" 
-                           Style="{StaticResource SectionHeaderStyle}" 
-                           FontSize="28"
-                           Foreground="{DynamicResource PrimaryTextBrush}"/>
-                    <ItemsControl ItemsSource="{Binding DisplayDictionaries}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource VocabCardStyle}">
-                                    <Grid>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="*"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-
-                                        <Grid Grid.Row="0" Margin="20,15,15,5">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <TextBlock Grid.Column="0" Text="{Binding Name}" 
-                                                       FontSize="{DynamicResource HeaderFontSize}" 
-                                                       Foreground="{DynamicResource PrimaryTextBrush}"
-                                                       FontWeight="Bold" 
-                                                       TextWrapping="Wrap" 
-                                                       MaxHeight="40" 
-                                                       TextTrimming="CharacterEllipsis">
-                                                <TextBlock.ToolTip>
-                                                    <ToolTip Content="{Binding Name}"/>
-                                                </TextBlock.ToolTip>
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="#1F2937"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                                                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-
-                                            <Button Grid.Column="1"
-                                                Command="{Binding DataContext.ManageDictionaryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}"
-                                                Width="30" Height="30"
-                                                Background="Transparent" BorderThickness="0" Cursor="Hand"
-                                                ToolTip="{DynamicResource Loc.Dashboard.DictionaryToolTip}">
-                                                <Button.Content>
-                                                    <TextBlock Text="⚙️" Foreground="{DynamicResource PrimaryTextBrush}" FontSize="16"/>
-                                                </Button.Content>
-                                            </Button>
-                                        </Grid>
-
-                                        <StackPanel Grid.Row="1" Margin="20,0,20,0">
-                                            <TextBlock Text="{Binding Description}" 
-                                                FontSize="14" Opacity="0.8" Margin="0,5,0,5" 
-                                                TextWrapping="Wrap" MaxHeight="40" TextTrimming="CharacterEllipsis">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                                                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-
-                                            <TextBlock FontSize="12" Opacity="0.6">
-                                                <Run Text="{DynamicResource Loc.Dashboard.WordCount}" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                                                <Run Text="{Binding WordCount, Mode=OneWay}" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="SemiBold"/>
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="#1F2937"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                                                <Setter Property="Foreground" Value="White"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
-                                        </StackPanel>
-
-                                        <Button Grid.Row="2" 
-                                            Style="{StaticResource PlayButtonStyle}"
-                                            Background="Transparent"
-                                            Command="{Binding DataContext.StartLearningCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            CommandParameter="{Binding}"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Bottom"
-                                            Margin="15"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
-            </ScrollViewer>
         </Grid>
     </Grid>
 </UserControl>

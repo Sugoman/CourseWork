@@ -19,13 +19,22 @@ namespace LearningTrainer.ViewModels
         public ObservableCollection<TabViewModelBase> Tabs { get; }
         private readonly User? _currentUser;
         private readonly IDataService _dataService;
+        private readonly AccessNotificationService _notificationService;
+        
         public ICommand CloseTabCommand { get; }
+        
+        // Global notification ViewModel for Shell level
+        public AccessNotificationViewModel NotificationViewModel { get; }
 
 
         public ShellViewModel(User? user, IDataService dataService, TabViewModelBase initialDashboard, SettingsService settingsService)
         {
             _currentUser = user;
             _dataService = dataService;
+            
+            // Create global notification service
+            _notificationService = new AccessNotificationService();
+            NotificationViewModel = new AccessNotificationViewModel(user, _notificationService);
 
             Tabs = new ObservableCollection<TabViewModelBase>();
             CloseTabCommand = new RelayCommand(CloseTab, CanCloseTab);
@@ -40,13 +49,36 @@ namespace LearningTrainer.ViewModels
             EventAggregator.Instance.Subscribe<SettingsViewModel>(OpenTab);
             EventAggregator.Instance.Subscribe<ShareContentViewModel>(OpenTab);
             EventAggregator.Instance.Subscribe<RuleManagementViewModel>(OpenTab);
+            
+            // Subscribe to global notifications
+            EventAggregator.Instance.Subscribe<ShowNotificationMessage>(OnShowNotification);
 
             var dashboard = initialDashboard;
             Tabs.Add(dashboard);
             SelectedTab = dashboard;
         }
 
-        
+        private void OnShowNotification(ShowNotificationMessage message)
+        {
+            switch (message.Type)
+            {
+                case NotificationType.Success:
+                    _notificationService.AddSuccessNotification(message.Title, message.Message);
+                    break;
+                case NotificationType.Error:
+                    _notificationService.AddErrorNotification(message.Title, message.Message);
+                    break;
+                case NotificationType.Info:
+                    _notificationService.AddInfoNotification(message.Title, message.Message);
+                    break;
+                case NotificationType.Warning:
+                    _notificationService.AddInfoNotification(message.Title, message.Message);
+                    break;
+                case NotificationType.AccessDenied:
+                    _notificationService.AddAccessDeniedNotification(message.Title, message.Message, "");
+                    break;
+            }
+        }
 
         private void OpenTab(TabViewModelBase tab)
         {

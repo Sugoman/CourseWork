@@ -176,11 +176,11 @@
                                    Foreground="{DynamicResource SecondaryTextBrush}" 
                                    FontWeight="Medium" Margin="0,0,0,5"/>
                         <ComboBox SelectedValue="{Binding Category}"
-                                  SelectedValuePath="Content"
+                                  SelectedValuePath="Tag"
                                   Height="40">
-                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.GrammarComboBox}"/>
-                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.VocabularyComboBox}"/>
-                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.PronunciationComboBox}"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.GrammarComboBox}" Tag="Grammar"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.VocabularyComboBox}" Tag="Vocabulary"/>
+                            <ComboBoxItem Content="{DynamicResource Loc.AddRule.PronunciationComboBox}" Tag="Pronunciation"/>
                         </ComboBox>
                     </StackPanel>
 

@@ -93,7 +93,9 @@ namespace LearningTrainer.ViewModels
             catch (System.Net.Http.HttpRequestException ex)
             {
                 // 401, 500
-                MessageBox.Show($"Ошибка загрузки сессии: {ex.Message}");
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Ошибка загрузки",
+                    $"Ошибка загрузки сессии: {ex.Message}"));
                 CloseTab(null);
             }
         }
@@ -114,7 +116,9 @@ namespace LearningTrainer.ViewModels
             }
             catch (System.Net.Http.HttpRequestException ex)
             {
-                MessageBox.Show($"Ошибка сохранения прогресса: {ex.Message}");
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Ошибка",
+                    $"Ошибка сохранения прогресса: {ex.Message}"));
             }
 
             var wordToRequeue = _wordsQueue.Dequeue(); 

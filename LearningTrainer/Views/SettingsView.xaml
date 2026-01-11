@@ -469,24 +469,26 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
 
+                                <!-- Кнопка "Стать учителем" - только для User и Admin -->
                                 <Button Grid.Column="0" 
-            Content="{DynamicResource Loc.SettingsAcc.BecomeTeacherLabel}"
-            Command="{Binding UpgradeToTeacherCommand}"
-            Style="{StaticResource PrimaryButton}"
-            Width="180" Height="40" 
-            HorizontalAlignment="Left"
-            Visibility="{Binding TeacherCode, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                                        Content="{DynamicResource Loc.SettingsAcc.BecomeTeacherLabel}"
+                                        Command="{Binding UpgradeToTeacherCommand}"
+                                        Style="{StaticResource PrimaryButton}"
+                                        Width="180" Height="40" 
+                                        HorizontalAlignment="Left"
+                                        Visibility="{Binding CanBecomeTeacher, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                 
 
+                                <!-- Код приглашения - только для Teacher -->
                                 <StackPanel Grid.Column="0" Orientation="Horizontal"
-                Visibility="{Binding TeacherCode, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, ConverterParameter=invert}">
+                                            Visibility="{Binding IsTeacher, Converter={StaticResource BooleanToVisibilityConverter}}">
 
                                     <Border Background="{DynamicResource InputBackgroundBrush}" 
-                BorderBrush="{DynamicResource PrimaryAccentBrush}" 
-                BorderThickness="1" 
-                CornerRadius="6"
-                Padding="15,8"
-                Margin="0,0,10,0">
+                                            BorderBrush="{DynamicResource PrimaryAccentBrush}" 
+                                            BorderThickness="1" 
+                                            CornerRadius="6"
+                                            Padding="15,8"
+                                            Margin="0,0,10,0">
                                         <TextBox Text="{Binding TeacherCode, Mode=OneWay}"
                      IsReadOnly="True"
                      FontSize="{DynamicResource HeaderFontSize}"

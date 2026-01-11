@@ -85,7 +85,9 @@ namespace LearningTrainer.ViewModels
         {
             if (string.IsNullOrWhiteSpace(RuleTitle) || string.IsNullOrWhiteSpace(MarkdownContent))
             {
-                MessageBox.Show("Заполните заголовок и содержание!", "Ошибка");
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Ошибка валидации",
+                    "Заполните заголовок и содержание!"));
                 return;
             }
 
@@ -108,7 +110,9 @@ namespace LearningTrainer.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка создания: {ex.Message}");
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Ошибка создания",
+                    ex.Message));
             }
         }
 

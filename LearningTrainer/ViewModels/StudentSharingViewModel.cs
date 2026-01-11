@@ -57,13 +57,17 @@ namespace LearningTrainer.ViewModels
                 if ((share && result.Status != "Shared") || (!share && result.Status != "Unshared"))
                 {
                     SetProperty(ref _isShared, !share, nameof(IsShared));
-                    System.Windows.MessageBox.Show($"Ошибка обмена: {result.Message ?? "Статус не совпал"}", "Ошибка");
+                    EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                        "Ошибка обмена",
+                        result.Message ?? "Статус не совпал"));
                 }
             }
             catch (System.Exception ex)
             {
                 SetProperty(ref _isShared, !share, nameof(IsShared));
-                System.Windows.MessageBox.Show($"Ошибка API: {ex.Message}", "Ошибка связи");
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Ошибка связи",
+                    $"Ошибка API: {ex.Message}"));
             }
         }
     }

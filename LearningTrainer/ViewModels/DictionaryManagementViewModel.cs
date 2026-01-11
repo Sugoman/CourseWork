@@ -172,18 +172,24 @@ namespace LearningTrainer.ViewModels
 
                 if (isSuccess)
                 {
-                    MessageBox.Show("Changes saved successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                    EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
+                        "Сохранено",
+                        "Изменения успешно сохранены!"));
                     Title = $"Edit: {DictionaryName}";
                 }
                 else
                 {
                     System.Diagnostics.Debug.WriteLine("UpdateDictionaryAsync returned FALSE.");
-                    MessageBox.Show("Failed to save changes. Server rejected the request.", "Server Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                        "Ошибка сервера",
+                        "Не удалось сохранить изменения"));
                 }
             }
             catch (System.Exception ex)
             {
-                MessageBox.Show($"Critical error: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Критическая ошибка",
+                    ex.Message));
             }
         }
 
@@ -225,7 +231,7 @@ namespace LearningTrainer.ViewModels
 
         private async Task DeleteDictionary()
         {
-            if (MessageBox.Show($"Are you sure you want to delete dictionary '{DictionaryName}'?", "DELETE DICTIONARY", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
+            if (MessageBox.Show($"А ты уверен, что хочешь удалить словарь '{DictionaryName}'?", "УДАЛЕНИЕ СЛОВАРЯ", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes)
             {
                 var success = await _dataService.DeleteDictionaryAsync(_dictionaryModel.Id);
                 if (success)
@@ -255,20 +261,16 @@ namespace LearningTrainer.ViewModels
 
                     File.WriteAllText(filePath, json);
 
-                    MessageBox.Show(
-                        $"Словарь '{_dictionary.Name}' успешно экспортирован!",
+                    EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
                         "Экспорт завершен",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                        $"Словарь '{_dictionary.Name}' успешно экспортирован!"));
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Ошибка экспорта: {ex.Message}");
-                    MessageBox.Show(
-                        $"Произошла ошибка: {ex.Message}",
+                    EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
                         "Ошибка экспорта",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        $"Произошла ошибка: {ex.Message}"));
                 }
             }
         }

@@ -99,6 +99,20 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _teacherCode, value);
         }
 
+        private bool _canBecomeTeacher;
+        public bool CanBecomeTeacher
+        {
+            get => _canBecomeTeacher;
+            set => SetProperty(ref _canBecomeTeacher, value);
+        }
+
+        private bool _isTeacher;
+        public bool IsTeacher
+        {
+            get => _isTeacher;
+            set => SetProperty(ref _isTeacher, value);
+        }
+
         // --- СВОЙСТВА АККАУНТА ---
         private string _oldPassword;
         public string OldPassword
@@ -175,7 +189,9 @@ namespace LearningTrainer.ViewModels
             if (!string.IsNullOrEmpty(TeacherCode))
             {
                 Clipboard.SetText(TeacherCode);
-                MessageBox.Show("Код скопирован в буфер обмена!", "Успешно", MessageBoxButton.OK, MessageBoxImage.Information);
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
+                    "Скопировано",
+                    "Код приглашения скопирован в буфер обмена"));
             }
         }
 
@@ -191,6 +207,12 @@ namespace LearningTrainer.ViewModels
             if (currentUser != null)
             {
                 TeacherCode = currentUser.InviteCode;
+                
+                // Определяем роль пользователя
+                var roleName = currentUser.Role?.Name ?? "";
+                IsTeacher = roleName == "Teacher";
+                // User и Admin могут стать учителем, Teacher и Student - нет
+                CanBecomeTeacher = roleName == "User" || roleName == "Admin";
             }
 
             _selectedTheme = _settingsService.CurrentSettings.Theme;
@@ -203,7 +225,9 @@ namespace LearningTrainer.ViewModels
             // Команды
             LogoutCommand = new RelayCommand(PerformLogout);
             SwitchSectionCommand = new RelayCommand(sec => CurrentSection = (string)sec);
-            UpgradeToTeacherCommand = new RelayCommand(async (_) => await PerformUpgradeToTeacher());
+            UpgradeToTeacherCommand = new RelayCommand(
+                async (_) => await PerformUpgradeToTeacher(),
+                (_) => CanBecomeTeacher);
             CopyTeacherCodeCommand = new RelayCommand(CopyTeacherCode);
 
             ChangePasswordCommand = new RelayCommand(
@@ -227,24 +251,32 @@ namespace LearningTrainer.ViewModels
         {
             try
             {
-                if (_dataService.UpgradeToTeacherAsync() == null)
+                var result = await _dataService.UpgradeToTeacherAsync();
+                
+                if (result == null)
                 {
-                    throw new InvalidOperationException("Невозможно использовать онлайн функции в офлайн режиме");
+                    throw new InvalidOperationException("Не удалось получить ответ от сервера");
                 }
-                else
-                {
-                    var result = await _dataService.UpgradeToTeacherAsync();
-                    TeacherCode = result.InviteCode;
+                
+                TeacherCode = result.InviteCode;
 
-                    MessageBox.Show($"Поздравляем! Вы стали учителем.\nВаш код приглашения: {result.InviteCode}",
-                                    "Статус обновлен", MessageBoxButton.OK, MessageBoxImage.Information);
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
+                    "Статус обновлен",
+                    $"Поздравляем! Вы стали учителем. Ваш код: {result.InviteCode}"));
 
-                    EventAggregator.Instance.Publish(new RoleChangedMessage { NewToken = result.AccessToken, NewRole = result.UserRole });
-                }
+                EventAggregator.Instance.Publish(new RoleChangedMessage { NewToken = result.AccessToken, NewRole = result.UserRole });
             }
             catch (HttpRequestException ex)
             {
-                MessageBox.Show($"Ошибка: {ex.Message}", "Не удалось обновить статус", MessageBoxButton.OK, MessageBoxImage.Error);
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Не удалось обновить статус",
+                    $"Ошибка сервера: {ex.Message}"));
+            }
+            catch (Exception ex)
+            {
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Ошибка",
+                    ex.Message));
             }
         }
 

@@ -38,7 +38,7 @@ namespace LearningTrainer.Converters
     }
 
     /// <summary>
-    /// Конвертер для преобразования типа уведомления в иконку
+    /// Конвертер для преобразования типа уведомления в иконку (ASCII символы)
     /// </summary>
     public class NotificationTypeToIconConverter : IValueConverter
     {
@@ -48,17 +48,17 @@ namespace LearningTrainer.Converters
             {
                 return type switch
                 {
-                    NotificationType.AccessDenied => "?",
-                    NotificationType.Info => "??",
-                    NotificationType.Success => "?",
-                    NotificationType.Error => "??",
-                    NotificationType.RoleInfo => "??",
-                    NotificationType.Warning => "?",
-                    _ => "•"
+                    NotificationType.AccessDenied => "X",
+                    NotificationType.Info => "i",
+                    NotificationType.Success => "\u2713", // ?
+                    NotificationType.Error => "?",
+                    NotificationType.RoleInfo => "\u263A", // ?
+                    NotificationType.Warning => "\u26A0", // ?
+                    _ => "*"
                 };
             }
 
-            return "•";
+            return "*";
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
@@ -68,7 +68,7 @@ namespace LearningTrainer.Converters
     }
 
     /// <summary>
-    /// Конвертер для преобразования типа уведомления в шрифт
+    /// Конвертер для преобразования типа уведомления в вес шрифта
     /// </summary>
     public class NotificationTypeToFontWeightConverter : IValueConverter
     {
@@ -78,8 +78,8 @@ namespace LearningTrainer.Converters
             {
                 return type switch
                 {
-                    NotificationType.Error or NotificationType.AccessDenied => 
-                        System.Windows.FontWeights.Bold,
+                    NotificationType.AccessDenied => System.Windows.FontWeights.Bold,
+                    NotificationType.Error => System.Windows.FontWeights.Bold,
                     _ => System.Windows.FontWeights.Normal
                 };
             }

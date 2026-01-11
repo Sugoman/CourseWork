@@ -29,7 +29,7 @@ namespace LearningTrainer.Services
             {
                 Id = ++_notificationId,
                 Type = NotificationType.AccessDenied,
-                Title = "? Доступ запрещен",
+                Title = "Доступ запрещён",
                 Message = $"Действие '{actionName}' недоступно для роли '{userRole}'",
                 ActionName = actionName,
                 RequiredRole = requiredRole,
@@ -42,7 +42,6 @@ namespace LearningTrainer.Services
             _notifications.Add(notification);
             NotificationAdded?.Invoke(notification);
 
-            // Автоматически удалить через Duration
             AutoRemoveNotification(notification.Id, notification.Duration);
         }
 
@@ -55,7 +54,7 @@ namespace LearningTrainer.Services
             {
                 Id = ++_notificationId,
                 Type = NotificationType.Info,
-                Title = $"?? {title}",
+                Title = title,
                 Message = message,
                 Timestamp = DateTime.UtcNow,
                 IsRead = false,
@@ -77,7 +76,7 @@ namespace LearningTrainer.Services
             {
                 Id = ++_notificationId,
                 Type = NotificationType.Success,
-                Title = $"? {title}",
+                Title = title,
                 Message = message,
                 Timestamp = DateTime.UtcNow,
                 IsRead = false,
@@ -99,7 +98,7 @@ namespace LearningTrainer.Services
             {
                 Id = ++_notificationId,
                 Type = NotificationType.Error,
-                Title = $"?? {title}",
+                Title = title,
                 Message = message,
                 Timestamp = DateTime.UtcNow,
                 IsRead = false,
@@ -113,7 +112,7 @@ namespace LearningTrainer.Services
         }
 
         /// <summary>
-        /// Добавить уведомление о ролях пользователя
+        /// Добавить уведомление о роли пользователя
         /// </summary>
         public void AddRoleInfoNotification(string username, string roleName, string roleDescription)
         {
@@ -121,7 +120,7 @@ namespace LearningTrainer.Services
             {
                 Id = ++_notificationId,
                 Type = NotificationType.RoleInfo,
-                Title = "?? Информация о роли",
+                Title = "Информация о роли",
                 Message = $"{username}\n{roleDescription}",
                 UserRole = roleName,
                 Timestamp = DateTime.UtcNow,
@@ -162,7 +161,7 @@ namespace LearningTrainer.Services
         }
 
         /// <summary>
-        /// Пометить уведомление как прочитанное
+        /// Отметить уведомление как прочитанное
         /// </summary>
         public void MarkAsRead(int id)
         {
@@ -233,10 +232,10 @@ namespace LearningTrainer.Services
         {
             return Type switch
             {
-                NotificationType.AccessDenied => "?",
-                NotificationType.Info => "??",
+                NotificationType.AccessDenied => "??",
+                NotificationType.Info => "?",
                 NotificationType.Success => "?",
-                NotificationType.Error => "??",
+                NotificationType.Error => "?",
                 NotificationType.RoleInfo => "??",
                 NotificationType.Warning => "?",
                 _ => "•"

@@ -47,6 +47,7 @@ namespace LearningTrainer.ViewModels
         public ICommand ManageDictionaryCommand { get; }
         public ICommand EditRuleCommand { get; }
         public ICommand RefreshCommand { get; }
+        public ICommand ShareRuleCommand { get; }
 
         private bool _isOverviewMode;
         public bool IsOverviewMode
@@ -225,7 +226,11 @@ namespace LearningTrainer.ViewModels
 
             if (dictionaryVM != null)
             {
+                var name = dictionaryVM.Name;
                 Dictionaries.Remove(dictionaryVM);
+                _notificationService.AddInfoNotification(
+                    "Словарь удалён",
+                    $"Словарь '{name}' был удалён");
                 System.Diagnostics.Debug.WriteLine($"Словарь ID {message.DictionaryId} удален из коллекции Dashboard.");
             }
         }
@@ -242,6 +247,10 @@ namespace LearningTrainer.ViewModels
             {
                 Rules.Add(rule);
             }
+
+            _notificationService.AddSuccessNotification(
+                "Правило создано",
+                $"Правило '{message.Rule.Title}' успешно добавлено");
 
             System.Diagnostics.Debug.WriteLine($"Rules collection updated: {Rules.Count} rules");
         }
@@ -286,20 +295,16 @@ namespace LearningTrainer.ViewModels
                     }
                     EventAggregator.Instance.Publish(new DictionaryAddedMessage(savedDictionary));
 
-                    System.Windows.MessageBox.Show(
-                        $"Словарь '{savedDictionary.Name}' ({wordsToImport.Count} слов) успешно импортирован!",
+                    _notificationService.AddSuccessNotification(
                         "Импорт завершен",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                        $"Словарь '{savedDictionary.Name}' ({wordsToImport.Count} слов) успешно импортирован!");
                 }
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Ошибка импорта: {ex.Message}");
-                    System.Windows.MessageBox.Show(
-                        $"Не удалось импортировать словарь. Убедитесь, что это корректный .json файл.\nОшибка: {ex.Message}",
+                    _notificationService.AddErrorNotification(
                         "Ошибка импорта",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error);
+                        $"Не удалось импортировать словарь: {ex.Message}");
                 }
             }
         }
@@ -311,6 +316,9 @@ namespace LearningTrainer.ViewModels
             if (dictionaryVM != null)
             {
                 dictionaryVM.Words.Add(message.Word);
+                _notificationService.AddSuccessNotification(
+                    "Слово добавлено",
+                    $"'{message.Word.OriginalWord}' добавлено в словарь");
             }
         }
 
@@ -328,6 +336,10 @@ namespace LearningTrainer.ViewModels
             }
 
             ApplySorting();
+
+            _notificationService.AddSuccessNotification(
+                "Словарь создан",
+                $"Словарь '{message.Dictionary.Name}' успешно добавлен");
 
             System.Diagnostics.Debug.WriteLine($"Dictionaries collection updated: {Dictionaries.Count} dictionaries");
         }
@@ -376,16 +388,25 @@ namespace LearningTrainer.ViewModels
                 if (httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
                     System.Diagnostics.Debug.WriteLine("!!! 401 (Unauthorized) ПОЙМАН в Dashboard. Запуск принудительного выхода");
+                    _notificationService.AddErrorNotification(
+                        "Сессия истекла",
+                        "Требуется повторный вход в систему");
                     EventAggregator.Instance.Publish(new LogoutRequestedMessage());
                 }
                 else
                 {
                     System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА HTTP в Dashboard: {httpEx.Message}");
+                    _notificationService.AddErrorNotification(
+                        "Ошибка соединения",
+                        "Не удалось загрузить данные с сервера");
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"!!! КРИТИЧЕСКАЯ ОШИБКА в Dashboard.LoadData: {ex.Message}");
+                _notificationService.AddErrorNotification(
+                    "Ошибка загрузки",
+                    "Произошла ошибка при загрузке данных");
             }
         }
 
@@ -442,12 +463,16 @@ namespace LearningTrainer.ViewModels
         {
             if (parameter is Word word)
             {
+                var wordName = word.OriginalWord;
                 var success = await _dataService.DeleteWordAsync(word.Id);
                 if (success)
                 {
                     var dictionary = Dictionaries.FirstOrDefault(d => d.Id == word.DictionaryId);
                     dictionary?.Words.Remove(word);
                     OnPropertyChanged(nameof(Dictionaries));
+                    _notificationService.AddInfoNotification(
+                        "Слово удалено",
+                        $"'{wordName}' удалено из словаря");
                 }
             }
         }
@@ -456,11 +481,15 @@ namespace LearningTrainer.ViewModels
         {
             if (parameter is Rule rule)
             {
+                var ruleName = rule.Title;
                 var success = await _dataService.DeleteRuleAsync(rule.Id);
                 if (success)
                 {
                     Rules.Remove(rule);
                     OnPropertyChanged(nameof(Rules));
+                    _notificationService.AddInfoNotification(
+                        "Правило удалено",
+                        $"'{ruleName}' удалено");
                 }
             }
         }
@@ -489,7 +518,9 @@ namespace LearningTrainer.ViewModels
             {
                 if (_currentUser == null)
                 {
-                    MessageBox.Show("Невозможно изменять словари в офлайн режиме");
+                    _notificationService.AddErrorNotification(
+                        "Офлайн режим",
+                        "Невозможно изменять словари в офлайн режиме");
                 }
                 else
                 {
@@ -620,6 +651,12 @@ namespace LearningTrainer.ViewModels
             });
             DeleteWordCommand = new RelayCommand(async (param) => await DeleteWord(param));
             DeleteRuleCommand = new RelayCommand(async (param) => await DeleteRule(param));
+            ShareRuleCommand = new RelayCommand((param) =>
+            {
+                if (!NotificationViewModel.CheckPermissionAndNotify("Поделиться правилом", _permissionService?.CanShareRules ?? true, "ShareRule"))
+                    return;
+                ShareRule(param);
+            });
             ManageDictionaryCommand = new RelayCommand((param) =>
             {
                 if (!NotificationViewModel.CheckPermissionAndNotify("Управлять словарём", _permissionService?.CanEditDictionaries ?? true, "ManageDictionary"))
@@ -652,6 +689,7 @@ namespace LearningTrainer.ViewModels
             EventAggregator.Instance.Subscribe<RuleAddedMessage>(OnRuleAdded);
             EventAggregator.Instance.Subscribe<DictionaryAddedMessage>(OnDictionaryAdded);
             EventAggregator.Instance.Subscribe<WordAddedMessage>(OnWordAdded);
+            // ShowNotificationMessage is now handled globally in ShellViewModel
 
             UpdateLegendTextPaint();
             _settingsService.MarkdownConfigChanged += OnThemeChanged;

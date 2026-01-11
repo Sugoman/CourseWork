@@ -60,7 +60,9 @@ namespace LearningTrainer.ViewModels
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Error: {ex.Message}");
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Ошибка",
+                    ex.Message));
             }
             finally { IsLoading = false; }
         }
