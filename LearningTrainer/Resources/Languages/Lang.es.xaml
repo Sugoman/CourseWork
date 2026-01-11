@@ -122,4 +122,33 @@
     <system:String x:Key="Loc.Share.AccessLabel">Acceso</system:String>
     <system:String x:Key="Loc.Share.NotFoundLabel">No se encontraron estudiantes</system:String>
 
+                                <!-- TAB TITLES -->
+    <system:String x:Key="Loc.Tab.Home">Inicio</system:String>
+    <system:String x:Key="Loc.Tab.Settings">Configuración</system:String>
+    <system:String x:Key="Loc.Tab.CreateDictionary">Crear diccionario</system:String>
+    <system:String x:Key="Loc.Tab.CreateRule">Crear regla</system:String>
+    <system:String x:Key="Loc.Tab.AddWord">Agregar palabra</system:String>
+    <system:String x:Key="Loc.Tab.EditDictionary">Editar diccionario</system:String>
+    <system:String x:Key="Loc.Tab.EditRule">Editar regla</system:String>
+    <system:String x:Key="Loc.Tab.ViewRule">Ver regla</system:String>
+    <system:String x:Key="Loc.Tab.Learning">Aprendizaje</system:String>
+    <system:String x:Key="Loc.Tab.ShareAccess">Gestionar acceso</system:String>
+
+                                <!-- SETTINGS - NEW -->
+    <system:String x:Key="Loc.Settings.NotificationsRadio">Notificaciones</system:String>
+    
+    <system:String x:Key="Loc.SettingsApp.FontFamilyLabel">Fuente</system:String>
+    <system:String x:Key="Loc.SettingsApp.EnableAnimationsLabel">Activar animaciones</system:String>
+    <system:String x:Key="Loc.SettingsApp.FontSizeLabel">Tamaño de fuente</system:String>
+    
+    <system:String x:Key="Loc.SettingsNotif.TitleLabel">Notificaciones</system:String>
+    <system:String x:Key="Loc.SettingsNotif.EnableLabel">Activar notificaciones</system:String>
+    <system:String x:Key="Loc.SettingsNotif.DurationLabel">Duración de visualización (segundos)</system:String>
+    
+    <system:String x:Key="Loc.SettingsGen.SoundEffectsLabel">Efectos de sonido</system:String>
+    <system:String x:Key="Loc.SettingsGen.ShowTranscriptionLabel">Mostrar transcripción en tarjetas</system:String>
+    
+    <system:String x:Key="Loc.SettingsAcc.KeepLoggedInLabel">Mantener sesión iniciada</system:String>
+    <system:String x:Key="Loc.SettingsAcc.AutoSyncLabel">Sincronización automática</system:String>
+
 </ResourceDictionary>

@@ -122,4 +122,33 @@
     <system:String x:Key="Loc.Share.AccessLabel">Zugriff</system:String>
     <system:String x:Key="Loc.Share.NotFoundLabel">Keine Schüler gefunden</system:String>
 
+                                <!-- TAB TITLES -->
+    <system:String x:Key="Loc.Tab.Home">Startseite</system:String>
+    <system:String x:Key="Loc.Tab.Settings">Einstellungen</system:String>
+    <system:String x:Key="Loc.Tab.CreateDictionary">Wörterbuch erstellen</system:String>
+    <system:String x:Key="Loc.Tab.CreateRule">Regel erstellen</system:String>
+    <system:String x:Key="Loc.Tab.AddWord">Wort hinzufügen</system:String>
+    <system:String x:Key="Loc.Tab.EditDictionary">Wörterbuch bearbeiten</system:String>
+    <system:String x:Key="Loc.Tab.EditRule">Regel bearbeiten</system:String>
+    <system:String x:Key="Loc.Tab.ViewRule">Regel anzeigen</system:String>
+    <system:String x:Key="Loc.Tab.Learning">Lernen</system:String>
+    <system:String x:Key="Loc.Tab.ShareAccess">Zugriff verwalten</system:String>
+
+                                <!-- SETTINGS - NEW -->
+    <system:String x:Key="Loc.Settings.NotificationsRadio">Benachrichtigungen</system:String>
+    
+    <system:String x:Key="Loc.SettingsApp.FontFamilyLabel">Schriftart</system:String>
+    <system:String x:Key="Loc.SettingsApp.EnableAnimationsLabel">Animationen aktivieren</system:String>
+    <system:String x:Key="Loc.SettingsApp.FontSizeLabel">Schriftgröße</system:String>
+    
+    <system:String x:Key="Loc.SettingsNotif.TitleLabel">Benachrichtigungen</system:String>
+    <system:String x:Key="Loc.SettingsNotif.EnableLabel">Benachrichtigungen aktivieren</system:String>
+    <system:String x:Key="Loc.SettingsNotif.DurationLabel">Anzeigedauer (Sekunden)</system:String>
+    
+    <system:String x:Key="Loc.SettingsGen.SoundEffectsLabel">Soundeffekte</system:String>
+    <system:String x:Key="Loc.SettingsGen.ShowTranscriptionLabel">Transkription auf Karten anzeigen</system:String>
+    
+    <system:String x:Key="Loc.SettingsAcc.KeepLoggedInLabel">Angemeldet bleiben</system:String>
+    <system:String x:Key="Loc.SettingsAcc.AutoSyncLabel">Automatische Synchronisierung</system:String>
+
 </ResourceDictionary>

@@ -86,7 +86,147 @@ namespace LearningTrainer.ViewModels
                 {
                     _settingsService.CurrentSettings.BaseFontSize = value;
                     _settingsService.SaveSettings(_settingsService.CurrentSettings);
+                }
+            }
+        }
 
+        // --- ШРИФТЫ (СЕМЕЙСТВО) ---
+        public List<string> AvailableFontFamilies { get; } = new List<string> 
+        { 
+            "Segoe UI", 
+            "Arial", 
+            "Consolas", 
+            "Calibri", 
+            "Times New Roman" 
+        };
+
+        private string _selectedFontFamily;
+        public string SelectedFontFamily
+        {
+            get => _selectedFontFamily;
+            set
+            {
+                if (SetProperty(ref _selectedFontFamily, value))
+                {
+                    _settingsService.CurrentSettings.FontFamily = value;
+                    _settingsService.SaveSettings(_settingsService.CurrentSettings);
+                    Application.Current.Resources["BaseFontFamily"] = new System.Windows.Media.FontFamily(value);
+                }
+            }
+        }
+
+        // --- АНИМАЦИИ ---
+        private bool _enableAnimations;
+        public bool EnableAnimations
+        {
+            get => _enableAnimations;
+            set
+            {
+                if (SetProperty(ref _enableAnimations, value))
+                {
+                    _settingsService.CurrentSettings.EnableAnimations = value;
+                    _settingsService.SaveSettings(_settingsService.CurrentSettings);
+                }
+            }
+        }
+
+        // --- УВЕДОМЛЕНИЯ ---
+        private bool _enableNotifications;
+        public bool EnableNotifications
+        {
+            get => _enableNotifications;
+            set
+            {
+                if (SetProperty(ref _enableNotifications, value))
+                {
+                    _settingsService.CurrentSettings.EnableNotifications = value;
+                    _settingsService.SaveSettings(_settingsService.CurrentSettings);
+                }
+            }
+        }
+
+        private int _notificationDuration;
+        public int NotificationDuration
+        {
+            get => _notificationDuration;
+            set
+            {
+                if (SetProperty(ref _notificationDuration, value))
+                {
+                    _settingsService.CurrentSettings.NotificationDurationSeconds = value;
+                    _settingsService.SaveSettings(_settingsService.CurrentSettings);
+                }
+            }
+        }
+
+        // --- ОБУЧЕНИЕ ---
+        private int _dailyGoal;
+        public int DailyGoal
+        {
+            get => _dailyGoal;
+            set
+            {
+                if (SetProperty(ref _dailyGoal, value))
+                {
+                    _settingsService.CurrentSettings.DailyGoal = value;
+                    _settingsService.SaveSettings(_settingsService.CurrentSettings);
+                }
+            }
+        }
+
+        private bool _enableSoundEffects;
+        public bool EnableSoundEffects
+        {
+            get => _enableSoundEffects;
+            set
+            {
+                if (SetProperty(ref _enableSoundEffects, value))
+                {
+                    _settingsService.CurrentSettings.EnableSoundEffects = value;
+                    _settingsService.SaveSettings(_settingsService.CurrentSettings);
+                }
+            }
+        }
+
+        private bool _showTranscription;
+        public bool ShowTranscription
+        {
+            get => _showTranscription;
+            set
+            {
+                if (SetProperty(ref _showTranscription, value))
+                {
+                    _settingsService.CurrentSettings.ShowTranscription = value;
+                    _settingsService.SaveSettings(_settingsService.CurrentSettings);
+                }
+            }
+        }
+
+        // --- ПРИВАТНОСТЬ ---
+        private bool _keepMeLoggedIn;
+        public bool KeepMeLoggedIn
+        {
+            get => _keepMeLoggedIn;
+            set
+            {
+                if (SetProperty(ref _keepMeLoggedIn, value))
+                {
+                    _settingsService.CurrentSettings.KeepMeLoggedIn = value;
+                    _settingsService.SaveSettings(_settingsService.CurrentSettings);
+                }
+            }
+        }
+
+        private bool _autoSync;
+        public bool AutoSync
+        {
+            get => _autoSync;
+            set
+            {
+                if (SetProperty(ref _autoSync, value))
+                {
+                    _settingsService.CurrentSettings.AutoSync = value;
+                    _settingsService.SaveSettings(_settingsService.CurrentSettings);
                 }
             }
         }
@@ -154,13 +294,6 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _isError, value);
         }
 
-        private int _dailyGoal = 20;
-        public int DailyGoal
-        {
-            get => _dailyGoal;
-            set => SetProperty(ref _dailyGoal, value);
-        }
-
         // --- ЦВЕТА ---
         private string _appBackgroundColor;
         public string AppBackgroundColor
@@ -200,7 +333,7 @@ namespace LearningTrainer.ViewModels
         // ============================================================
         public SettingsViewModel(SettingsService settingsService, IDataService dataService, User currentUser)
         {
-            Title = "Settings";
+            SetLocalizedTitle("Loc.Tab.Settings");
             _settingsService = settingsService;
             _dataService = dataService;
 
@@ -215,8 +348,24 @@ namespace LearningTrainer.ViewModels
                 CanBecomeTeacher = roleName == "User" || roleName == "Admin";
             }
 
+            // Инициализация внешнего вида
             _selectedTheme = _settingsService.CurrentSettings.Theme;
             _selectedFontSize = _settingsService.CurrentSettings.BaseFontSize;
+            _selectedFontFamily = _settingsService.CurrentSettings.FontFamily;
+            _enableAnimations = _settingsService.CurrentSettings.EnableAnimations;
+
+            // Инициализация уведомлений
+            _enableNotifications = _settingsService.CurrentSettings.EnableNotifications;
+            _notificationDuration = _settingsService.CurrentSettings.NotificationDurationSeconds;
+
+            // Инициализация обучения
+            _dailyGoal = _settingsService.CurrentSettings.DailyGoal;
+            _enableSoundEffects = _settingsService.CurrentSettings.EnableSoundEffects;
+            _showTranscription = _settingsService.CurrentSettings.ShowTranscription;
+
+            // Инициализация приватности
+            _keepMeLoggedIn = _settingsService.CurrentSettings.KeepMeLoggedIn;
+            _autoSync = _settingsService.CurrentSettings.AutoSync;
 
             // Инициализация языка
             string currentCode = _settingsService.CurrentSettings.Language;

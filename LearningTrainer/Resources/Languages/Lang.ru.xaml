@@ -136,4 +136,34 @@
     <system:String x:Key="Loc.Share.LoadingLabel">Загрузка студентов...</system:String>
     <system:String x:Key="Loc.Share.AccessLabel">Доступ</system:String>
     <system:String x:Key="Loc.Share.NotFoundLabel">Студенты не найдены</system:String>
+
+                                <!-- TAB TITLES -->
+    <system:String x:Key="Loc.Tab.Home">Главная</system:String>
+    <system:String x:Key="Loc.Tab.Settings">Настройки</system:String>
+    <system:String x:Key="Loc.Tab.CreateDictionary">Создать словарь</system:String>
+    <system:String x:Key="Loc.Tab.CreateRule">Создать правило</system:String>
+    <system:String x:Key="Loc.Tab.AddWord">Добавить слово</system:String>
+    <system:String x:Key="Loc.Tab.EditDictionary">Редактировать словарь</system:String>
+    <system:String x:Key="Loc.Tab.EditRule">Редактировать правило</system:String>
+    <system:String x:Key="Loc.Tab.ViewRule">Просмотр правила</system:String>
+    <system:String x:Key="Loc.Tab.Learning">Обучение</system:String>
+    <system:String x:Key="Loc.Tab.ShareAccess">Управление доступом</system:String>
+
+                                <!-- SETTINGS - NEW -->
+    <system:String x:Key="Loc.Settings.NotificationsRadio">Уведомления</system:String>
+    
+    <system:String x:Key="Loc.SettingsApp.FontFamilyLabel">Шрифт</system:String>
+    <system:String x:Key="Loc.SettingsApp.EnableAnimationsLabel">Включить анимации</system:String>
+    <system:String x:Key="Loc.SettingsApp.FontSizeLabel">Размер шрифта</system:String>
+    
+    <system:String x:Key="Loc.SettingsNotif.TitleLabel">Уведомления</system:String>
+    <system:String x:Key="Loc.SettingsNotif.EnableLabel">Включить уведомления</system:String>
+    <system:String x:Key="Loc.SettingsNotif.DurationLabel">Длительность показа (секунды)</system:String>
+    
+    <system:String x:Key="Loc.SettingsGen.SoundEffectsLabel">Звуковые эффекты</system:String>
+    <system:String x:Key="Loc.SettingsGen.ShowTranscriptionLabel">Показывать транскрипцию на карточках</system:String>
+    
+    <system:String x:Key="Loc.SettingsAcc.KeepLoggedInLabel">Оставаться в системе</system:String>
+    <system:String x:Key="Loc.SettingsAcc.AutoSyncLabel">Авто-синхронизация данных</system:String>
+    
 </ResourceDictionary>

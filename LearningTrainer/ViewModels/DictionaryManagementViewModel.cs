@@ -95,7 +95,7 @@ namespace LearningTrainer.ViewModels
 
             System.Diagnostics.Debug.WriteLine($"UserId: {dictionary.UserId}, Current: {currentUserId}, IsReadOnly: {IsReadOnly}, IsEditable: {IsEditable}");
            
-            Title = $"Edit: {dictionary.Name}";
+            SetLocalizedTitle("Loc.Tab.EditDictionary", $": {dictionary.Name}");
 
             _allWords = words;
             Words = new ObservableCollection<Word>(words);
@@ -175,7 +175,8 @@ namespace LearningTrainer.ViewModels
                     EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
                         "Сохранено",
                         "Изменения успешно сохранены!"));
-                    Title = $"Edit: {DictionaryName}";
+                    TitleSuffix = $": {DictionaryName}";
+                    UpdateLocalizedTitle();
                 }
                 else
                 {

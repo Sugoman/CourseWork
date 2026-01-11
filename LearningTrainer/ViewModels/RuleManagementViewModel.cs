@@ -42,7 +42,8 @@ namespace LearningTrainer.ViewModels
             Config = _settingsService.CurrentMarkdownConfig;
             _settingsService.MarkdownConfigChanged += OnConfigChanged;
 
-            base.Title = $"Edit Rule: {rule.Title}";
+            var tabTitleKey = IsEditable ? "Loc.Tab.EditRule" : "Loc.Tab.ViewRule";
+            SetLocalizedTitle(tabTitleKey, $": {rule.Title}");
 
             SaveChangesCommand = new RelayCommand(async (_) => await SaveChanges(), (_) => IsEditable);
             CloseCommand = new RelayCommand((_) => CloseTab());
@@ -83,7 +84,8 @@ namespace LearningTrainer.ViewModels
                 EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
                     "Сохранено",
                     "Правило успешно сохранено!"));
-                base.Title = $"Edit Rule: {Title}";
+                TitleSuffix = $": {Title}";
+                UpdateLocalizedTitle();
             }
             else
             {
@@ -98,6 +100,5 @@ namespace LearningTrainer.ViewModels
             _settingsService.MarkdownConfigChanged -= OnConfigChanged;
             EventAggregator.Instance.Publish(new CloseTabMessage(this));
         }
-
     }
 }

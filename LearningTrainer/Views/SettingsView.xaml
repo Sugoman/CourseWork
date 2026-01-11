@@ -269,6 +269,11 @@
                          Style="{StaticResource SidebarButtonStyle}" 
                          Command="{Binding SwitchSectionCommand}" CommandParameter="Appearance"
                          IsChecked="{Binding CurrentSection, Converter={StaticResource StringMatchToBooleanConverter}, ConverterParameter=Appearance, Mode=TwoWay}"/>
+
+            <RadioButton Content="{DynamicResource Loc.Settings.NotificationsRadio}" Tag="Sources/general.svg"
+                         Style="{StaticResource SidebarButtonStyle}" 
+                         Command="{Binding SwitchSectionCommand}" CommandParameter="Notifications"
+                         IsChecked="{Binding CurrentSection, Converter={StaticResource StringMatchToBooleanConverter}, ConverterParameter=Notifications, Mode=TwoWay}"/>
         </StackPanel>
 
         <!-- КОНТЕНТ -->
@@ -297,6 +302,7 @@
                                    FontWeight="Bold" 
                                    Margin="0,0,0,20"/>
 
+                        <!-- Daily Goal -->
                         <TextBlock Text="{DynamicResource Loc.SettingsGen.DailyGoalLabel}" 
                                    Foreground="{DynamicResource PrimaryTextBrush}" 
                                    FontWeight="SemiBold" 
@@ -312,12 +318,30 @@
                             </StackPanel>
                         </Border>
 
+                        <!-- Sound Effects -->
+                        <CheckBox Content="{DynamicResource Loc.SettingsGen.SoundEffectsLabel}"
+                                  IsChecked="{Binding EnableSoundEffects}"
+                                  Foreground="{DynamicResource PrimaryTextBrush}"
+                                  FontSize="{DynamicResource BaseFontSize}"
+                                  Margin="0,20,0,0"
+                                  Style="{StaticResource ToggleSwitchStyle}"/>
 
+                        <!-- Show Transcription -->
+                        <CheckBox Content="{DynamicResource Loc.SettingsGen.ShowTranscriptionLabel}"
+                                  IsChecked="{Binding ShowTranscription}"
+                                  Foreground="{DynamicResource PrimaryTextBrush}"
+                                  FontSize="{DynamicResource BaseFontSize}"
+                                  Margin="0,15,0,0"
+                                  Style="{StaticResource ToggleSwitchStyle}"/>
+
+                        <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,0,0,1" Margin="0,25,0,25"/>
+
+                        <!-- Language -->
                         <TextBlock Text="{DynamicResource Loc.SettingsGen.LanguageLabel}" 
                                    Foreground="{DynamicResource PrimaryTextBrush}" 
                                    FontSize="{DynamicResource BaseFontSize}"
                                    FontWeight="SemiBold" 
-                                   Margin="0,20,0,10"/>
+                                   Margin="0,0,0,10"/>
 
                         <ComboBox Grid.Column="1"
                             ItemsSource="{Binding AvailableLanguages}"
@@ -535,6 +559,25 @@
                                 BorderThickness="0,0,0,1" 
                                 Margin="0,30,0,30"/>
 
+                        <!-- Keep Logged In -->
+                        <CheckBox Content="{DynamicResource Loc.SettingsAcc.KeepLoggedInLabel}"
+                                  IsChecked="{Binding KeepMeLoggedIn}"
+                                  Foreground="{DynamicResource PrimaryTextBrush}"
+                                  FontSize="{DynamicResource BaseFontSize}"
+                                  Margin="0,0,0,15"
+                                  Style="{StaticResource ToggleSwitchStyle}"/>
+
+                        <!-- Auto Sync -->
+                        <CheckBox Content="{DynamicResource Loc.SettingsAcc.AutoSyncLabel}"
+                                  IsChecked="{Binding AutoSync}"
+                                  Foreground="{DynamicResource PrimaryTextBrush}"
+                                  FontSize="{DynamicResource BaseFontSize}"
+                                  Style="{StaticResource ToggleSwitchStyle}"/>
+
+                        <Border BorderBrush="{DynamicResource SeparatorBrush}" 
+                                BorderThickness="0,0,0,1" 
+                                Margin="0,30,0,30"/>
+
                         <Button Content="{DynamicResource Loc.Button.LogoutButton}" 
                                 Command="{Binding LogoutCommand}" 
                                 Style="{StaticResource DangerButton}" 
@@ -562,6 +605,7 @@
                                    FontWeight="Bold" 
                                    Margin="0,0,0,20"/>
 
+                        <!-- Theme -->
                         <TextBlock Text="{DynamicResource Loc.SettingsApp.ChooseThemeLabel}" 
                                    FontWeight="SemiBold"
                                    FontSize="{DynamicResource BaseFontSize}"
@@ -578,6 +622,97 @@
                                    FontSize="12" 
                                    Foreground="{DynamicResource SecondaryTextBrush}" 
                                    Margin="0,10,0,0"/>
+
+                        <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,0,0,1" Margin="0,25,0,25"/>
+
+                        <!-- Font Family -->
+                        <TextBlock Text="{DynamicResource Loc.SettingsApp.FontFamilyLabel}" 
+                                   FontWeight="SemiBold"
+                                   FontSize="{DynamicResource BaseFontSize}"
+                                   Margin="0,0,0,10" 
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+
+                        <ComboBox ItemsSource="{Binding AvailableFontFamilies}"
+                                  SelectedItem="{Binding SelectedFontFamily}"
+                                  Foreground="{DynamicResource PrimaryTextBrush}"
+                                  Width="200"
+                                  HorizontalAlignment="Left"/>
+
+                        <!-- Font Size -->
+                        <TextBlock Text="{DynamicResource Loc.SettingsApp.FontSizeLabel}" 
+                                   FontWeight="SemiBold"
+                                   FontSize="{DynamicResource BaseFontSize}"
+                                   Margin="0,20,0,10" 
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+
+                        <Border Style="{StaticResource InputContainerStyle}" Width="300" HorizontalAlignment="Left">
+                            <StackPanel Margin="5">
+                                <Grid>
+                                    <TextBlock Text="px" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                    <TextBlock Text="{Binding ElementName=FontSizeSlider, Path=Value, StringFormat={}{0:F0}}" 
+                                               HorizontalAlignment="Right" FontWeight="Bold" Foreground="#3B82F6"/>
+                                </Grid>
+                                <Slider x:Name="FontSizeSlider" Minimum="12" Maximum="20" Value="{Binding SelectedFontSize}" 
+                                        TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,0,0,1" Margin="0,25,0,25"/>
+
+                        <!-- Enable Animations -->
+                        <CheckBox Content="{DynamicResource Loc.SettingsApp.EnableAnimationsLabel}"
+                                  IsChecked="{Binding EnableAnimations}"
+                                  Foreground="{DynamicResource PrimaryTextBrush}"
+                                  FontSize="{DynamicResource BaseFontSize}"
+                                  Style="{StaticResource ToggleSwitchStyle}"/>
+
+                    </StackPanel>
+
+                    <!-- NOTIFICATIONS SECTION -->
+                    <StackPanel x:Name="NotificationsSection">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentSection}" Value="Notifications">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+
+                        <TextBlock Text="{DynamicResource Loc.SettingsNotif.TitleLabel}" 
+                                   FontSize="{DynamicResource BiggerHeaderFontSize}" 
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   FontWeight="Bold" 
+                                   Margin="0,0,0,20"/>
+
+                        <!-- Enable Notifications -->
+                        <CheckBox Content="{DynamicResource Loc.SettingsNotif.EnableLabel}"
+                                  IsChecked="{Binding EnableNotifications}"
+                                  Foreground="{DynamicResource PrimaryTextBrush}"
+                                  FontSize="{DynamicResource BaseFontSize}"
+                                  Style="{StaticResource ToggleSwitchStyle}"/>
+
+                        <!-- Notification Duration -->
+                        <TextBlock Text="{DynamicResource Loc.SettingsNotif.DurationLabel}" 
+                                   FontWeight="SemiBold"
+                                   FontSize="{DynamicResource BaseFontSize}"
+                                   Margin="0,25,0,10" 
+                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+
+                        <Border Style="{StaticResource InputContainerStyle}" Width="300" HorizontalAlignment="Left">
+                            <StackPanel Margin="5">
+                                <Grid>
+                                    <TextBlock Text="sec" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                    <TextBlock Text="{Binding ElementName=NotifDurationSlider, Path=Value}" 
+                                               HorizontalAlignment="Right" FontWeight="Bold" Foreground="#3B82F6"/>
+                                </Grid>
+                                <Slider x:Name="NotifDurationSlider" Minimum="2" Maximum="10" Value="{Binding NotificationDuration}" 
+                                        TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
+
                     </StackPanel>
                 </Grid>
             </ScrollViewer>

@@ -25,7 +25,7 @@ namespace LearningTrainer.ViewModels
             _dataService = dataService;
             _entityId = entityId;
             _contentType = type;
-            Title = $"Share: {title}";
+            SetLocalizedTitle("Loc.Tab.ShareAccess", $": {title}");
 
             CloseCommand = new RelayCommand(_ => EventAggregator.Instance.Publish(new CloseTabMessage(this)));
             LoadSharingDataAsync();

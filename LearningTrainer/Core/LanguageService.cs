@@ -6,6 +6,11 @@ namespace LearningTrainer.Services
 {
     public static class LanguageService
     {
+        /// <summary>
+        /// Событие, вызываемое при смене языка
+        /// </summary>
+        public static event Action<string> LanguageChanged;
+
         public static void SetLanguage(string langName) 
         {
             string uriStr = $"/Resources/Languages/Lang.{langName}.xaml";
@@ -25,6 +30,9 @@ namespace LearningTrainer.Services
             {
                 appDictionaries.Add(newDict);
             }
+
+            // Уведомляем подписчиков о смене языка
+            LanguageChanged?.Invoke(langName);
         }
     }
 }

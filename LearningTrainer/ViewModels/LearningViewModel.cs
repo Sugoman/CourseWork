@@ -51,7 +51,7 @@ namespace LearningTrainer.ViewModels
         {
             _dataService = dataService;
             _dictionaryId = dictionaryId;
-            Title = dictionaryName; 
+            SetLocalizedTitle("Loc.Tab.Learning", $": {dictionaryName}"); 
 
             FlipCardCommand = new RelayCommand(
                 (param) => IsFlipped = true,

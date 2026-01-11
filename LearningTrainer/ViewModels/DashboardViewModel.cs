@@ -626,7 +626,7 @@ namespace LearningTrainer.ViewModels
                 && _currentUser?.Role != null
                 && _currentUser.Role.Name != "Student";
 
-            Title = "HOME";
+            SetLocalizedTitle("Loc.Tab.Home");
 
             StartLearningCommand = new RelayCommand(async (param) => await StartLearning(param));
             OpenRuleCommand = new RelayCommand(OpenRule);

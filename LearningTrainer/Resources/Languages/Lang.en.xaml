@@ -135,4 +135,33 @@
     <system:String x:Key="Loc.Share.AccessLabel">Access</system:String>
     <system:String x:Key="Loc.Share.NotFoundLabel">Students Not Found</system:String>
     
+                                <!-- TAB TITLES -->
+    <system:String x:Key="Loc.Tab.Home">Home</system:String>
+    <system:String x:Key="Loc.Tab.Settings">Settings</system:String>
+    <system:String x:Key="Loc.Tab.CreateDictionary">Create Dictionary</system:String>
+    <system:String x:Key="Loc.Tab.CreateRule">Create Rule</system:String>
+    <system:String x:Key="Loc.Tab.AddWord">Add Word</system:String>
+    <system:String x:Key="Loc.Tab.EditDictionary">Edit Dictionary</system:String>
+    <system:String x:Key="Loc.Tab.EditRule">Edit Rule</system:String>
+    <system:String x:Key="Loc.Tab.ViewRule">View Rule</system:String>
+    <system:String x:Key="Loc.Tab.Learning">Learning</system:String>
+    <system:String x:Key="Loc.Tab.ShareAccess">Share Access</system:String>
+
+                                <!-- SETTINGS - NEW -->
+    <system:String x:Key="Loc.Settings.NotificationsRadio">Notifications</system:String>
+    
+    <system:String x:Key="Loc.SettingsApp.FontFamilyLabel">Font</system:String>
+    <system:String x:Key="Loc.SettingsApp.EnableAnimationsLabel">Enable animations</system:String>
+    <system:String x:Key="Loc.SettingsApp.FontSizeLabel">Font Size</system:String>
+    
+    <system:String x:Key="Loc.SettingsNotif.TitleLabel">Notifications</system:String>
+    <system:String x:Key="Loc.SettingsNotif.EnableLabel">Enable notifications</system:String>
+    <system:String x:Key="Loc.SettingsNotif.DurationLabel">Display duration (seconds)</system:String>
+    
+    <system:String x:Key="Loc.SettingsGen.SoundEffectsLabel">Sound effects</system:String>
+    <system:String x:Key="Loc.SettingsGen.ShowTranscriptionLabel">Show transcription on cards</system:String>
+    
+    <system:String x:Key="Loc.SettingsAcc.KeepLoggedInLabel">Keep me logged in</system:String>
+    <system:String x:Key="Loc.SettingsAcc.AutoSyncLabel">Auto-sync data</system:String>
+    
 </ResourceDictionary>

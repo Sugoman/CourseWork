@@ -66,7 +66,7 @@ namespace LearningTrainer.ViewModels
         {
             _dataService = dataService;
             _settingsService = settingsService;
-            Title = "Создать новое правило";
+            SetLocalizedTitle("Loc.Tab.CreateRule");
 
             // Загружаем цвета темы
             Config = _settingsService.CurrentMarkdownConfig;

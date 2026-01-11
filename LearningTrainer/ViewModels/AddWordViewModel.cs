@@ -1,6 +1,7 @@
 ﻿using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using System.Windows;
 using System.Windows.Input;
 
 namespace LearningTrainer.ViewModels
@@ -39,7 +40,8 @@ namespace LearningTrainer.ViewModels
             _dataService = dataService;
             _selectedDictionary = dictionary;
             _spellCheckService = new SpellCheckService();
-            Title = $"Добавить слово в {dictionary.Name}";
+            
+            SetLocalizedTitle("Loc.Tab.AddWord", $": {dictionary.Name}");
 
             SaveCommand = new RelayCommand(async (param) => await SaveWordAsync());
             CancelCommand = new RelayCommand((param) => Cancel());
