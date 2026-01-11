@@ -1,4 +1,4 @@
-using System.Net;
+п»їusing System.Net;
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
@@ -32,7 +32,6 @@ namespace LearningAPI.Middleware
         private static Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
             context.Response.ContentType = "application/json; charset=utf-8";
-            context.Response.Headers["Content-Encoding"] = "utf-8";
 
             var response = new ErrorResponse();
 
@@ -40,11 +39,11 @@ namespace LearningAPI.Middleware
             {
                 case UnauthorizedAccessException:
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    response.Message = "Не авторизован";
+                    response.Message = "РќРµ Р°РІС‚РѕСЂРёР·РѕРІР°РЅ";
                     break;
                 case KeyNotFoundException:
                     context.Response.StatusCode = StatusCodes.Status404NotFound;
-                    response.Message = "Ресурс не найден";
+                    response.Message = "Р РµСЃСѓСЂСЃ РЅРµ РЅР°Р№РґРµРЅ";
                     break;
                 case InvalidOperationException:
                     context.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -52,7 +51,7 @@ namespace LearningAPI.Middleware
                     break;
                 default:
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                    response.Message = "Внутренняя ошибка сервера";
+                    response.Message = "Р’РЅСѓС‚СЂРµРЅРЅСЏСЏ РѕС€РёР±РєР° СЃРµСЂРІРµСЂР°";
                     break;
             }
 
@@ -67,7 +66,7 @@ namespace LearningAPI.Middleware
 
         public class ErrorResponse
         {
-            public string Message { get; set; }
+            public string Message { get; set; } = "";
             public List<string> Errors { get; set; } = new();
         }
     }

@@ -15,6 +15,9 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
+// Настройка кодировки консоли для корректного вывода UTF-8
+Console.OutputEncoding = Encoding.UTF8;
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -68,7 +71,14 @@ builder.Services.AddHttpClient<LearningTrainer.Services.ExternalDictionaryServic
 
 // Добавить CORS конфигурацию
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-    ?? new[] { "http://localhost:5173", "http://localhost:3000" };
+    ?? new[] { 
+        "http://localhost:5173", 
+        "http://localhost:3000", 
+        "https://localhost:5001", 
+        "http://localhost:5000",
+        "https://localhost:57854",
+        "http://localhost:57855"
+    };
 
 builder.Services.AddCors(options =>
 {
@@ -81,7 +91,7 @@ builder.Services.AddCors(options =>
               .WithExposedHeaders("Content-Disposition", "X-Total-Count");
     });
 
-    // Для development
+    // Для development - разрешаем все
     options.AddPolicy("AllowAll", policy =>
     {
         policy.AllowAnyOrigin()

@@ -1,0 +1,36 @@
+@inject IAuthService AuthService
+@rendermode InteractiveServer
+
+@if (IsAuthenticated)
+{
+    <div class="d-flex align-items-center">
+        <span class="me-3">Привет, @UserName!</span>
+        <button class="btn btn-outline-light btn-sm" @onclick="Logout">Выйти</button>
+    </div>
+}
+else
+{
+    <div class="d-flex align-items-center gap-2">
+        <a href="login" class="btn btn-outline-light btn-sm">Войти</a>
+        <a href="register" class="btn btn-primary btn-sm">Регистрация</a>
+    </div>
+}
+
+@code {
+    private bool IsAuthenticated { get; set; }
+    private string UserName { get; set; } = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = await AuthService.GetCurrentSessionAsync();
+        IsAuthenticated = session != null;
+        UserName = session?.UserName ?? "";
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        IsAuthenticated = false;
+        UserName = "";
+    }
+}

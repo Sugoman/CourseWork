@@ -1,0 +1,201 @@
+@page "/rules"
+@inject IContentApiService ContentApi
+@rendermode InteractiveServer
+
+<PageTitle>Правила - LearningTrainer</PageTitle>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>?? Правила</h1>
+    </div>
+
+    <!-- Фильтры и поиск -->
+    <div class="row mb-4">
+        <div class="col-md-5">
+            <div class="input-group">
+                <span class="input-group-text">??</span>
+                <input type="text" class="form-control" placeholder="Поиск правил..." 
+                       @bind="SearchQuery" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="SelectedCategory">
+                <option value="">Все категории</option>
+                <option value="Grammar">Грамматика</option>
+                <option value="Vocabulary">Лексика</option>
+                <option value="Pronunciation">Произношение</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select class="form-select" @bind="SelectedDifficulty">
+                <option value="0">Любой уровень</option>
+                <option value="1">Начальный</option>
+                <option value="2">Средний</option>
+                <option value="3">Продвинутый</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100" @onclick="ApplyFilters">Применить</button>
+        </div>
+    </div>
+
+    <!-- Список правил -->
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+        </div>
+    }
+    else if (RuleItems == null || !RuleItems.Any())
+    {
+        <div class="alert alert-info">
+            Правила не найдены. Попробуйте изменить параметры поиска.
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var rule in RuleItems)
+            {
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">@rule.Title</h5>
+                                <span class="badge @GetDifficultyBadgeClass(rule.DifficultyLevel)">
+                                    @GetDifficultyText(rule.DifficultyLevel)
+                                </span>
+                            </div>
+                            <p class="card-text text-muted">@rule.Description</p>
+                            <div class="d-flex gap-2 mb-3">
+                                <span class="badge bg-secondary">@rule.Category</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-warning">? @rule.Rating.ToString("F1")</span>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="rule/@rule.Id" class="btn btn-outline-primary">Читать</a>
+                                    <button class="btn btn-success" @onclick="() => DownloadRule(rule.Id)">
+                                        ?? Скачать
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer text-muted small">
+                            <div class="d-flex justify-content-between">
+                                <span>Автор: @rule.AuthorName</span>
+                                <span>@rule.CreatedAt.ToString("dd.MM.yyyy")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Пагинация -->
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => LoadPage(CurrentPage - 1)">Назад</button>
+                </li>
+                @for (int i = 1; i <= TotalPages; i++)
+                {
+                    var pageNum = i;
+                    <li class="page-item @(pageNum == CurrentPage ? "active" : "")">
+                        <button class="page-link" @onclick="() => LoadPage(pageNum)">@pageNum</button>
+                    </li>
+                }
+                <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => LoadPage(CurrentPage + 1)">Вперёд</button>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
+
+@code {
+    private List<RuleListItem>? RuleItems;
+    private bool IsLoading = true;
+    private string SearchQuery = "";
+    private string SelectedCategory = "";
+    private int SelectedDifficulty = 0;
+    private int CurrentPage = 1;
+    private int TotalPages = 1;
+    private const int PageSize = 8;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRules();
+    }
+
+    private async Task LoadRules()
+    {
+        IsLoading = true;
+        try
+        {
+            var result = await ContentApi.GetPublicRulesAsync(
+                SearchQuery, SelectedCategory, SelectedDifficulty, CurrentPage, PageSize);
+            RuleItems = result.Items;
+            TotalPages = result.TotalPages;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading rules: {ex.Message}");
+            RuleItems = new List<RuleListItem>();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ApplyFilters();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        CurrentPage = 1;
+        await LoadRules();
+    }
+
+    private async Task LoadPage(int page)
+    {
+        if (page < 1 || page > TotalPages) return;
+        CurrentPage = page;
+        await LoadRules();
+    }
+
+    private async Task DownloadRule(int ruleId)
+    {
+        try
+        {
+            await ContentApi.DownloadRuleAsync(ruleId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Download error: {ex.Message}");
+        }
+    }
+
+    private string GetDifficultyBadgeClass(int level) => level switch
+    {
+        1 => "bg-success",
+        2 => "bg-warning text-dark",
+        3 => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private string GetDifficultyText(int level) => level switch
+    {
+        1 => "Начальный",
+        2 => "Средний",
+        3 => "Продвинутый",
+        _ => "Неизвестно"
+    };
+}

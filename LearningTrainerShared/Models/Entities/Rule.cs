@@ -24,6 +24,17 @@ namespace LearningTrainerShared.Models
         
         public int DifficultyLevel { get; set; } = 1;
 
+        // Marketplace fields
+        public bool IsPublished { get; set; } = false;
+        public double Rating { get; set; } = 0;
+        public int RatingCount { get; set; } = 0;
+        public int DownloadCount { get; set; } = 0;
+        
+        /// <summary>
+        /// Ссылка на оригинальное правило, если это было скачано
+        /// </summary>
+        public int? SourceRuleId { get; set; }
+
         [JsonIgnore]
         public virtual User? User { get; set; }
 

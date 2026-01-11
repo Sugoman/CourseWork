@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StressTestClient", "StressT
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LearningAPI.Tests", "LearningAPI.Tests\LearningAPI.Tests.csproj", "{285B6B24-8CE5-43DF-981F-139D89DD05C9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LearningTrainerWeb", "LearningTrainerWeb\LearningTrainerWeb.csproj", "{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,18 @@ Global
 		{285B6B24-8CE5-43DF-981F-139D89DD05C9}.Release|x64.Build.0 = Release|Any CPU
 		{285B6B24-8CE5-43DF-981F-139D89DD05C9}.Release|x86.ActiveCfg = Release|Any CPU
 		{285B6B24-8CE5-43DF-981F-139D89DD05C9}.Release|x86.Build.0 = Release|Any CPU
+		{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}.Debug|x64.Build.0 = Debug|Any CPU
+		{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}.Debug|x86.Build.0 = Debug|Any CPU
+		{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}.Release|x64.ActiveCfg = Release|Any CPU
+		{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}.Release|x64.Build.0 = Release|Any CPU
+		{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}.Release|x86.ActiveCfg = Release|Any CPU
+		{3A0D2027-FB77-45B8-B8AA-0EFCAF2B9C7B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -19,6 +19,10 @@ namespace LearningTrainer.Context
         public DbSet<Role> Roles { get; set; }
         public DbSet<DictionarySharing> DictionarySharings { get; set; } = null!;
         public DbSet<RuleSharing> RuleSharings { get; set; } = null!;
+        
+        // Marketplace entities
+        public DbSet<Comment> Comments { get; set; } = null!;
+        public DbSet<Download> Downloads { get; set; } = null!;
 
 
 

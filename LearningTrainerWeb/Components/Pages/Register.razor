@@ -1,0 +1,144 @@
+@page "/register"
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Регистрация - LearningTrainer</PageTitle>
+
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Регистрация</h2>
+
+                    @if (!string.IsNullOrEmpty(ErrorMessage))
+                    {
+                        <div class="alert alert-danger">@ErrorMessage</div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(SuccessMessage))
+                    {
+                        <div class="alert alert-success">@SuccessMessage</div>
+                    }
+
+                    <EditForm Model="RegisterModel" OnValidSubmit="HandleRegister" FormName="RegisterForm">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Имя пользователя</label>
+                            <InputText @bind-Value="RegisterModel.Username" class="form-control" placeholder="username" />
+                            <ValidationMessage For="() => RegisterModel.Username" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <InputText @bind-Value="RegisterModel.Email" class="form-control" placeholder="user@example.com" />
+                            <ValidationMessage For="() => RegisterModel.Email" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Пароль</label>
+                            <InputText @bind-Value="RegisterModel.Password" type="password" class="form-control" />
+                            <ValidationMessage For="() => RegisterModel.Password" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Подтверждение пароля</label>
+                            <InputText @bind-Value="RegisterModel.ConfirmPassword" type="password" class="form-control" />
+                            <ValidationMessage For="() => RegisterModel.ConfirmPassword" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Код приглашения (необязательно)</label>
+                            <InputText @bind-Value="RegisterModel.InviteCode" class="form-control" placeholder="XXXXXX" />
+                            <small class="text-muted">Если у вас есть код от учителя</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100" disabled="@IsLoading">
+                            @if (IsLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            }
+                            Зарегистрироваться
+                        </button>
+                    </EditForm>
+
+                    <hr />
+
+                    <p class="text-center mb-0">
+                        Уже есть аккаунт? <a href="login">Войти</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private RegisterFormModel RegisterModel { get; set; } = new();
+    
+    private bool IsLoading = false;
+    private string? ErrorMessage;
+    private string? SuccessMessage;
+
+    private async Task HandleRegister()
+    {
+        if (RegisterModel.Password != RegisterModel.ConfirmPassword)
+        {
+            ErrorMessage = "Пароли не совпадают";
+            return;
+        }
+
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            var success = await AuthService.RegisterAsync(
+                RegisterModel.Username, 
+                RegisterModel.Email, 
+                RegisterModel.Password,
+                RegisterModel.InviteCode);
+            
+            if (success)
+            {
+                SuccessMessage = "Регистрация успешна! Теперь вы можете войти.";
+                RegisterModel = new();
+            }
+            else
+            {
+                ErrorMessage = "Ошибка регистрации. Попробуйте другое имя пользователя.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private class RegisterFormModel
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Введите имя пользователя")]
+        [System.ComponentModel.DataAnnotations.MinLength(3, ErrorMessage = "Минимум 3 символа")]
+        public string Username { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Введите email")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Неверный формат email")]
+        public string Email { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Введите пароль")]
+        [System.ComponentModel.DataAnnotations.MinLength(6, ErrorMessage = "Минимум 6 символов")]
+        public string Password { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Подтвердите пароль")]
+        public string ConfirmPassword { get; set; } = "";
+
+        public string? InviteCode { get; set; }
+    }
+}

@@ -1,0 +1,243 @@
+@page "/my-content"
+@inject IContentApiService ContentApi
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Мой контент - LearningTrainer</PageTitle>
+
+<div class="container">
+    @if (!IsAuthenticated)
+    {
+        <div class="alert alert-warning">
+            <a href="login">Войдите</a>, чтобы управлять своим контентом.
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Мой контент</h1>
+            <div class="btn-group">
+                <button class="btn btn-success" @onclick="ShowPublishDictionaryModal">
+                    ? Опубликовать словарь
+                </button>
+                <button class="btn btn-success" @onclick="ShowPublishRuleModal">
+                    ? Опубликовать правило
+                </button>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <button class="nav-link @(ActiveTab == "dictionaries" ? "active" : "")" 
+                        @onclick="@(() => ActiveTab = "dictionaries")">
+                    Мои словари
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link @(ActiveTab == "rules" ? "active" : "")" 
+                        @onclick="@(() => ActiveTab = "rules")">
+                    Мои правила
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link @(ActiveTab == "downloaded" ? "active" : "")" 
+                        @onclick="@(() => ActiveTab = "downloaded")">
+                    Скачанное
+                </button>
+            </li>
+        </ul>
+
+        @if (ActiveTab == "dictionaries")
+        {
+            <div class="row g-4">
+                @if (MyDictionaries != null && MyDictionaries.Any())
+                {
+                    @foreach (var dict in MyDictionaries)
+                    {
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <h5 class="card-title">@dict.Name</h5>
+                                        <span class="badge @(dict.IsPublished ? "bg-success" : "bg-secondary")">
+                                            @(dict.IsPublished ? "Опубликован" : "Черновик")
+                                        </span>
+                                    </div>
+                                    <p class="text-muted small">@dict.WordCount слов</p>
+                                    <div class="btn-group btn-group-sm">
+                                        @if (!dict.IsPublished)
+                                        {
+                                            <button class="btn btn-primary" @onclick="() => PublishDictionary(dict.Id)">
+                                                Опубликовать
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-outline-danger" @onclick="() => UnpublishDictionary(dict.Id)">
+                                                Снять
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="card-footer text-muted small">
+                                    ? @dict.Rating.ToString("F1") • @dict.Downloads скачиваний
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12">
+                        <p class="text-muted">У вас пока нет опубликованных словарей.</p>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (ActiveTab == "rules")
+        {
+            <div class="row g-4">
+                @if (MyRules != null && MyRules.Any())
+                {
+                    @foreach (var rule in MyRules)
+                    {
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between">
+                                        <h5 class="card-title">@rule.Title</h5>
+                                        <span class="badge @(rule.IsPublished ? "bg-success" : "bg-secondary")">
+                                            @(rule.IsPublished ? "Опубликовано" : "Черновик")
+                                        </span>
+                                    </div>
+                                    <span class="badge bg-info mb-2">@rule.Category</span>
+                                    <div class="btn-group btn-group-sm">
+                                        @if (!rule.IsPublished)
+                                        {
+                                            <button class="btn btn-primary" @onclick="() => PublishRule(rule.Id)">
+                                                Опубликовать
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-outline-danger" @onclick="() => UnpublishRule(rule.Id)">
+                                                Снять
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="card-footer text-muted small">
+                                    ? @rule.Rating.ToString("F1") • @rule.Downloads скачиваний
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12">
+                        <p class="text-muted">У вас пока нет опубликованных правил.</p>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (ActiveTab == "downloaded")
+        {
+            <div class="row g-4">
+                @if (DownloadedContent != null && DownloadedContent.Any())
+                {
+                    @foreach (var item in DownloadedContent)
+                    {
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <span class="badge bg-secondary mb-2">@item.Type</span>
+                                    <h5 class="card-title">@item.Title</h5>
+                                    <p class="text-muted small">От: @item.AuthorName</p>
+                                    <small class="text-muted">Скачано: @item.DownloadedAt.ToString("dd.MM.yyyy")</small>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="col-12">
+                        <p class="text-muted">Вы ещё ничего не скачивали.</p>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private bool IsAuthenticated = false;
+    private string ActiveTab = "dictionaries";
+    
+    private List<MyDictionaryItem>? MyDictionaries;
+    private List<MyRuleItem>? MyRules;
+    private List<DownloadedItem>? DownloadedContent;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = await AuthService.GetCurrentSessionAsync();
+        IsAuthenticated = session != null;
+
+        if (IsAuthenticated)
+        {
+            await LoadMyContent();
+        }
+    }
+
+    private async Task LoadMyContent()
+    {
+        try
+        {
+            MyDictionaries = await ContentApi.GetMyDictionariesAsync();
+            MyRules = await ContentApi.GetMyRulesAsync();
+            DownloadedContent = await ContentApi.GetDownloadedContentAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+
+    private void ShowPublishDictionaryModal()
+    {
+        // TODO: Implement modal
+    }
+
+    private void ShowPublishRuleModal()
+    {
+        // TODO: Implement modal
+    }
+
+    private async Task PublishDictionary(int id)
+    {
+        await ContentApi.PublishDictionaryAsync(id);
+        await LoadMyContent();
+    }
+
+    private async Task UnpublishDictionary(int id)
+    {
+        await ContentApi.UnpublishDictionaryAsync(id);
+        await LoadMyContent();
+    }
+
+    private async Task PublishRule(int id)
+    {
+        await ContentApi.PublishRuleAsync(id);
+        await LoadMyContent();
+    }
+
+    private async Task UnpublishRule(int id)
+    {
+        await ContentApi.UnpublishRuleAsync(id);
+        await LoadMyContent();
+    }
+}

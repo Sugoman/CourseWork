@@ -1,0 +1,215 @@
+@page "/dictionary/{Id:int}"
+@inject IContentApiService ContentApi
+@rendermode InteractiveServer
+
+<PageTitle>@(Dictionary?.Name ?? "Словарь") - LearningTrainer</PageTitle>
+
+<div class="container">
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+        </div>
+    }
+    else if (Dictionary == null)
+    {
+        <div class="alert alert-danger">Словарь не найден</div>
+    }
+    else
+    {
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="dictionaries">Словари</a></li>
+                <li class="breadcrumb-item active">@Dictionary.Name</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h1>@Dictionary.Name</h1>
+                                <p class="text-muted">@Dictionary.Description</p>
+                            </div>
+                            <button class="btn btn-success btn-lg" @onclick="DownloadDictionary">
+                                ?? Скачать
+                            </button>
+                        </div>
+                        
+                        <div class="d-flex gap-3 mt-3">
+                            <span class="badge bg-info fs-6">@Dictionary.WordCount слов</span>
+                            <span class="badge bg-secondary fs-6">@Dictionary.LanguageFrom ? @Dictionary.LanguageTo</span>
+                            <span class="text-warning fs-5">? @Dictionary.Rating.ToString("F1") (@Dictionary.RatingCount оценок)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Предпросмотр слов -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Предпросмотр слов</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Dictionary.PreviewWords != null && Dictionary.PreviewWords.Any())
+                        {
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Слово</th>
+                                        <th>Перевод</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var word in Dictionary.PreviewWords)
+                                    {
+                                        <tr>
+                                            <td>@word.Term</td>
+                                            <td>@word.Translation</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            <p class="text-muted small">Показано первые @Dictionary.PreviewWords.Count слов из @Dictionary.WordCount</p>
+                        }
+                        else
+                        {
+                            <p class="text-muted">Предпросмотр недоступен</p>
+                        }
+                    </div>
+                </div>
+
+                <!-- Комментарии -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Отзывы (@(Comments?.Count ?? 0))</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Comments != null && Comments.Any())
+                        {
+                            @foreach (var comment in Comments)
+                            {
+                                <div class="border-bottom pb-3 mb-3">
+                                    <div class="d-flex justify-content-between">
+                                        <strong>@comment.AuthorName</strong>
+                                        <span class="text-muted small">@comment.CreatedAt.ToString("dd.MM.yyyy")</span>
+                                    </div>
+                                    <div class="text-warning mb-2">
+                                        @for (int i = 0; i < comment.Rating; i++)
+                                        {
+                                            <span>?</span>
+                                        }
+                                    </div>
+                                    <p class="mb-0">@comment.Text</p>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-muted">Пока нет отзывов</p>
+                        }
+
+                        <hr />
+                        <h6>Оставить отзыв</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Оценка</label>
+                            <select class="form-select" @bind="NewRating">
+                                <option value="5">????? Отлично</option>
+                                <option value="4">???? Хорошо</option>
+                                <option value="3">??? Нормально</option>
+                                <option value="2">?? Плохо</option>
+                                <option value="1">? Ужасно</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <textarea class="form-control" rows="3" placeholder="Ваш комментарий..." @bind="NewComment"></textarea>
+                        </div>
+                        <button class="btn btn-primary" @onclick="SubmitComment">Отправить</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Об авторе</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
+                             style="width: 80px; height: 80px; font-size: 2rem;">
+                            @Dictionary.AuthorName[0]
+                        </div>
+                        <h5>@Dictionary.AuthorName</h5>
+                        <p class="text-muted small">Опубликованных материалов: @Dictionary.AuthorContentCount</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private DictionaryDetailDto? Dictionary;
+    private List<CommentItem>? Comments;
+    private bool IsLoading = true;
+
+    private int NewRating = 5;
+    private string NewComment = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDictionary();
+    }
+
+    private async Task LoadDictionary()
+    {
+        IsLoading = true;
+        try
+        {
+            Dictionary = await ContentApi.GetDictionaryDetailsAsync(Id);
+            Comments = await ContentApi.GetDictionaryCommentsAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task DownloadDictionary()
+    {
+        try
+        {
+            await ContentApi.DownloadDictionaryAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Download error: {ex.Message}");
+        }
+    }
+
+    private async Task SubmitComment()
+    {
+        if (string.IsNullOrWhiteSpace(NewComment)) return;
+        
+        try
+        {
+            await ContentApi.AddDictionaryCommentAsync(Id, NewRating, NewComment);
+            NewComment = "";
+            await LoadDictionary();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
+    }
+}

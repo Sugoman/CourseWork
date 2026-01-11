@@ -1,0 +1,184 @@
+@page "/dictionaries"
+@inject IContentApiService ContentApi
+@rendermode InteractiveServer
+
+<PageTitle>Словари - LearningTrainer</PageTitle>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>?? Словари</h1>
+    </div>
+
+    <!-- Фильтры и поиск -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="input-group">
+                <span class="input-group-text">??</span>
+                <input type="text" class="form-control" placeholder="Поиск словарей..." 
+                       @bind="SearchQuery" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="SelectedLanguageFrom">
+                <option value="">Все языки (откуда)</option>
+                <option value="en">English</option>
+                <option value="ru">Русский</option>
+                <option value="de">Deutsch</option>
+                <option value="es">Espa?ol</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" @bind="SelectedLanguageTo">
+                <option value="">Все языки (куда)</option>
+                <option value="en">English</option>
+                <option value="ru">Русский</option>
+                <option value="de">Deutsch</option>
+                <option value="es">Espa?ol</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-primary w-100" @onclick="ApplyFilters">Применить</button>
+        </div>
+    </div>
+
+    <!-- Список словарей -->
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+        </div>
+    }
+    else if (DictionaryItems == null || !DictionaryItems.Any())
+    {
+        <div class="alert alert-info">
+            Словари не найдены. Попробуйте изменить параметры поиска.
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var dict in DictionaryItems)
+            {
+                <div class="col-md-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">@dict.Name</h5>
+                                <span class="badge bg-info">@dict.WordCount слов</span>
+                            </div>
+                            <p class="card-text text-muted small">@dict.Description</p>
+                            <div class="d-flex gap-2 mb-3">
+                                <span class="badge bg-secondary">@dict.LanguageFrom</span>
+                                <span>?</span>
+                                <span class="badge bg-secondary">@dict.LanguageTo</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-warning">? @dict.Rating.ToString("F1")</span>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="dictionary/@dict.Id" class="btn btn-outline-primary">Подробнее</a>
+                                    <button class="btn btn-success" @onclick="() => DownloadDictionary(dict.Id)">
+                                        ?? Скачать
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer text-muted small">
+                            Автор: @dict.AuthorName
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Пагинация -->
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => LoadPage(CurrentPage - 1)">Назад</button>
+                </li>
+                @for (int i = 1; i <= TotalPages; i++)
+                {
+                    var pageNum = i;
+                    <li class="page-item @(pageNum == CurrentPage ? "active" : "")">
+                        <button class="page-link" @onclick="() => LoadPage(pageNum)">@pageNum</button>
+                    </li>
+                }
+                <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                    <button class="page-link" @onclick="() => LoadPage(CurrentPage + 1)">Вперёд</button>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>
+
+@code {
+    private List<DictionaryListItem>? DictionaryItems;
+    private bool IsLoading = true;
+    private string SearchQuery = "";
+    private string SelectedLanguageFrom = "";
+    private string SelectedLanguageTo = "";
+    private int CurrentPage = 1;
+    private int TotalPages = 1;
+    private const int PageSize = 9;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDictionaries();
+    }
+
+    private async Task LoadDictionaries()
+    {
+        IsLoading = true;
+        try
+        {
+            var result = await ContentApi.GetPublicDictionariesAsync(
+                SearchQuery, SelectedLanguageFrom, SelectedLanguageTo, CurrentPage, PageSize);
+            DictionaryItems = result.Items;
+            TotalPages = result.TotalPages;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dictionaries: {ex.Message}");
+            DictionaryItems = new List<DictionaryListItem>();
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ApplyFilters();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        CurrentPage = 1;
+        await LoadDictionaries();
+    }
+
+    private async Task LoadPage(int page)
+    {
+        if (page < 1 || page > TotalPages) return;
+        CurrentPage = page;
+        await LoadDictionaries();
+    }
+
+    private async Task DownloadDictionary(int dictionaryId)
+    {
+        try
+        {
+            await ContentApi.DownloadDictionaryAsync(dictionaryId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Download error: {ex.Message}");
+        }
+    }
+}

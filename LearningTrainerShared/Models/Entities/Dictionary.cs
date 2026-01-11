@@ -26,6 +26,17 @@ namespace LearningTrainerShared.Models
         [MaxLength(50)]
         public string LanguageTo { get; set; }
 
+        // Marketplace fields
+        public bool IsPublished { get; set; } = false;
+        public double Rating { get; set; } = 0;
+        public int RatingCount { get; set; } = 0;
+        public int DownloadCount { get; set; } = 0;
+        
+        /// <summary>
+        /// Ссылка на оригинальный словарь, если этот был скачан
+        /// </summary>
+        public int? SourceDictionaryId { get; set; }
+
         public virtual ICollection<Word> Words { get; set; }
             = new System.Collections.ObjectModel.ObservableCollection<Word>();
 

@@ -12,13 +12,36 @@ services:
     ports:
       - "5077:8080" 
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      migrations:
+        condition: service_completed_successfully
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True
       - ASPNETCORE_URLS=http://+:8080
 
   # -------------------------------
-  # 2. Data Base
+  # 2. Migrations (runs once)
+  # -------------------------------
+  migrations:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    working_dir: /src
+    volumes:
+      - .:/src
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True
+    command: >
+      bash -c "
+        dotnet tool install --global dotnet-ef --version 8.0.0 || true &&
+        export PATH=\"$$PATH:/root/.dotnet/tools\" &&
+        dotnet ef database update --project LearningTrainerShared --startup-project LearningAPI
+      "
+
+  # -------------------------------
+  # 3. Data Base
   # -------------------------------
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -30,7 +53,22 @@ services:
     ports:
       - "14333:1433" 
     volumes:
-      - sql_data:/var/opt/mssql/data 
+      - sql_data:/var/opt/mssql/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P MySuperStrong!Pass123 -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # -------------------------------
+  # 4. Redis Cache
+  # -------------------------------
+  redis:
+    image: redis:alpine
+    container_name: learning_redis
+    ports:
+      - "6379:6379"
 
 volumes:
   sql_data:

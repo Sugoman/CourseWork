@@ -1,0 +1,82 @@
+@page "/"
+
+<PageTitle>LearningTrainer - Платформа обмена контентом</PageTitle>
+
+<div class="container">
+    <div class="text-center py-5">
+        <h1 class="display-4">Добро пожаловать в LearningTrainer</h1>
+        <p class="lead">Платформа для обмена словарями и правилами изучения языков</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="card-title">?? Словари</h3>
+                    <p class="card-text">
+                        Находите и скачивайте словари, созданные другими пользователями.
+                        Делитесь своими словарями с сообществом.
+                    </p>
+                    <a href="dictionaries" class="btn btn-primary">Просмотреть словари</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <h3 class="card-title">?? Правила</h3>
+                    <p class="card-text">
+                        Изучайте грамматические правила от опытных преподавателей.
+                        Публикуйте свои материалы для других.
+                    </p>
+                    <a href="rules" class="btn btn-primary">Просмотреть правила</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-12">
+            <h2 class="mb-4">?? Популярное</h2>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        @if (FeaturedContent != null)
+        {
+            @foreach (var item in FeaturedContent)
+            {
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <span class="badge bg-secondary mb-2">@item.Type</span>
+                            <h5 class="card-title">@item.Title</h5>
+                            <p class="card-text text-muted small">@item.Author</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-warning">? @item.Rating.ToString("F1")</span>
+                                <span class="text-muted small">@item.Downloads скачиваний</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private List<FeaturedItem>? FeaturedContent;
+
+    protected override void OnInitialized()
+    {
+        // TODO: Load from API
+        FeaturedContent = new List<FeaturedItem>
+        {
+            new("Словарь", "Business English", "Teacher123", 4.8, 156),
+            new("Правило", "Present Perfect", "GrammarPro", 4.9, 234),
+            new("Словарь", "Travel Vocabulary", "Polyglot", 4.5, 89)
+        };
+    }
+
+    private record FeaturedItem(string Type, string Title, string Author, double Rating, int Downloads);
+}
