@@ -34,6 +34,11 @@ namespace LearningTrainer.Services
         Task<SharingResultDto> ToggleRuleSharingAsync(int ruleId, int studentId);
         Task<DashboardStats> GetStatsAsync();
         void SetToken(string accessToken);
-
+        
+        // Marketplace publishing
+        Task<bool> PublishDictionaryAsync(int dictionaryId);
+        Task<bool> UnpublishDictionaryAsync(int dictionaryId);
+        Task<bool> PublishRuleAsync(int ruleId);
+        Task<bool> UnpublishRuleAsync(int ruleId);
     }
 }

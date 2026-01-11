@@ -1,7 +1,7 @@
-namespace LearningTrainerShared.Constants
+п»їnamespace LearningTrainerShared.Constants
 {
     /// <summary>
-    /// Константы для ролей пользователей
+    /// РљРѕРЅСЃС‚Р°РЅС‚С‹ РґР»СЏ СЂРѕР»РµР№ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№
     /// </summary>
     public static class UserRoles
     {
@@ -13,12 +13,12 @@ namespace LearningTrainerShared.Constants
         public static readonly string[] AllRoles = { Admin, Teacher, Student, User };
         
         /// <summary>
-        /// Роли с полным доступом к созданию контента (Admin, User, Teacher)
+        /// Р РѕР»Рё СЃ РїРѕР»РЅС‹Рј РґРѕСЃС‚СѓРїРѕРј Рє СЃРѕР·РґР°РЅРёСЋ РєРѕРЅС‚РµРЅС‚Р° (Admin, User, Teacher)
         /// </summary>
         public const string ContentCreators = $"{Admin},{User},{Teacher}";
         
         /// <summary>
-        /// Роли с доступом к админ-панели (только Admin)
+        /// Р РѕР»Рё СЃ РґРѕСЃС‚СѓРїРѕРј Рє Р°РґРјРёРЅ-РїР°РЅРµР»Рё (С‚РѕР»СЊРєРѕ Admin)
         /// </summary>
         public const string AdminPanelAccess = Admin;
     }

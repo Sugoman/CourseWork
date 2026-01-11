@@ -23,6 +23,16 @@ namespace LearningTrainer.ViewModels
 
         public ICommand SaveChangesCommand { get; }
         public ICommand CloseCommand { get; }
+        public ICommand PublishToMarketplaceCommand { get; }
+        
+        private bool _isPublished;
+        public bool IsPublished
+        {
+            get => _isPublished;
+            set => SetProperty(ref _isPublished, value);
+        }
+
+        public string PublishButtonText => IsPublished ? "Снять с публикации" : "Опубликовать на сайте";
 
         public RuleManagementViewModel(IDataService dataService, SettingsService settingsService, Rule rule, int currentUserId)
         {
@@ -31,6 +41,7 @@ namespace LearningTrainer.ViewModels
             _ruleModel = rule;
 
             IsEditable = rule.UserId == currentUserId;
+            IsPublished = rule.IsPublished;
 
             Title = rule.Title;
             Description = rule.Description;
@@ -47,6 +58,41 @@ namespace LearningTrainer.ViewModels
 
             SaveChangesCommand = new RelayCommand(async (_) => await SaveChanges(), (_) => IsEditable);
             CloseCommand = new RelayCommand((_) => CloseTab());
+            PublishToMarketplaceCommand = new RelayCommand(async (_) => await TogglePublish(), (_) => IsEditable);
+        }
+        
+        private async Task TogglePublish()
+        {
+            bool success;
+            string action;
+            
+            if (IsPublished)
+            {
+                success = await _dataService.UnpublishRuleAsync(_ruleModel.Id);
+                action = "снято с публикации";
+            }
+            else
+            {
+                success = await _dataService.PublishRuleAsync(_ruleModel.Id);
+                action = "опубликовано на сайте";
+            }
+            
+            if (success)
+            {
+                IsPublished = !IsPublished;
+                _ruleModel.IsPublished = IsPublished;
+                OnPropertyChanged(nameof(PublishButtonText));
+                
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
+                    "Успешно",
+                    $"Правило '{Title}' {action}!"));
+            }
+            else
+            {
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Ошибка",
+                    "Не удалось изменить статус публикации"));
+            }
         }
 
         private string _markdownContent;

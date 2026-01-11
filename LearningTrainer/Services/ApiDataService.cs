@@ -374,6 +374,64 @@ namespace LearningTrainer.Services
                 return new DashboardStats();
             }
         }
+        
+        // Marketplace publishing methods
+        public async Task<bool> PublishDictionaryAsync(int dictionaryId)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync($"/api/marketplace/dictionaries/{dictionaryId}/publish", null);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PUBLISH] Dictionary publish error: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> UnpublishDictionaryAsync(int dictionaryId)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync($"/api/marketplace/dictionaries/{dictionaryId}/unpublish", null);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[UNPUBLISH] Dictionary unpublish error: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> PublishRuleAsync(int ruleId)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync($"/api/marketplace/rules/{ruleId}/publish", null);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PUBLISH] Rule publish error: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> UnpublishRuleAsync(int ruleId)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync($"/api/marketplace/rules/{ruleId}/unpublish", null);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[UNPUBLISH] Rule unpublish error: {ex.Message}");
+                return false;
+            }
+        }
+        
         private class ApiResponseDto { public string Message { get; set; } }
     }
 }

@@ -9,41 +9,51 @@
 <div class="container">
     @if (!IsAuthenticated)
     {
-        <div class="alert alert-warning">
-            <a href="login">Войдите</a>, чтобы управлять своим контентом.
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-lock"></i></div>
+            <h2>Требуется авторизация</h2>
+            <p class="text-muted mb-4">Войдите, чтобы управлять своим контентом</p>
+            <a href="login" class="btn btn-primary btn-lg">
+                <i class="bi bi-box-arrow-in-right me-2"></i> Войти
+            </a>
         </div>
     }
     else
     {
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1>Мой контент</h1>
-            <div class="btn-group">
+        <!-- Header -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div class="section-heading" style="margin-bottom: 0;">
+                <i class="bi bi-folder2-open"></i>
+                <h1 style="margin-bottom: 0;">Мой контент</h1>
+            </div>
+            <div class="d-flex gap-2">
                 <button class="btn btn-success" @onclick="ShowPublishDictionaryModal">
-                    ? Опубликовать словарь
+                    <i class="bi bi-plus-circle me-1"></i> Словарь
                 </button>
                 <button class="btn btn-success" @onclick="ShowPublishRuleModal">
-                    ? Опубликовать правило
+                    <i class="bi bi-plus-circle me-1"></i> Правило
                 </button>
             </div>
         </div>
 
+        <!-- Tabs -->
         <ul class="nav nav-tabs mb-4">
             <li class="nav-item">
                 <button class="nav-link @(ActiveTab == "dictionaries" ? "active" : "")" 
                         @onclick="@(() => ActiveTab = "dictionaries")">
-                    Мои словари
+                    <i class="bi bi-book me-1"></i> Мои словари
                 </button>
             </li>
             <li class="nav-item">
                 <button class="nav-link @(ActiveTab == "rules" ? "active" : "")" 
                         @onclick="@(() => ActiveTab = "rules")">
-                    Мои правила
+                    <i class="bi bi-journal-text me-1"></i> Мои правила
                 </button>
             </li>
             <li class="nav-item">
                 <button class="nav-link @(ActiveTab == "downloaded" ? "active" : "")" 
                         @onclick="@(() => ActiveTab = "downloaded")">
-                    Скачанное
+                    <i class="bi bi-download me-1"></i> Скачанное
                 </button>
             </li>
         </ul>
@@ -56,32 +66,43 @@
                     @foreach (var dict in MyDictionaries)
                     {
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card h-100">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <h5 class="card-title">@dict.Name</h5>
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title mb-0">@dict.Name</h5>
                                         <span class="badge @(dict.IsPublished ? "bg-success" : "bg-secondary")">
-                                            @(dict.IsPublished ? "Опубликован" : "Черновик")
+                                            @(dict.IsPublished ? "? Опубликован" : "Черновик")
                                         </span>
                                     </div>
-                                    <p class="text-muted small">@dict.WordCount слов</p>
-                                    <div class="btn-group btn-group-sm">
+                                    <p class="text-muted small mb-3">
+                                        <i class="bi bi-collection me-1"></i> @dict.WordCount слов
+                                    </p>
+                                    <div class="d-flex gap-2">
                                         @if (!dict.IsPublished)
                                         {
-                                            <button class="btn btn-primary" @onclick="() => PublishDictionary(dict.Id)">
-                                                Опубликовать
+                                            <button class="btn btn-sm btn-primary" @onclick="() => PublishDictionary(dict.Id)">
+                                                <i class="bi bi-cloud-upload me-1"></i> Опубликовать
                                             </button>
                                         }
                                         else
                                         {
-                                            <button class="btn btn-outline-danger" @onclick="() => UnpublishDictionary(dict.Id)">
-                                                Снять
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => UnpublishDictionary(dict.Id)">
+                                                <i class="bi bi-x-circle me-1"></i> Снять
                                             </button>
                                         }
                                     </div>
                                 </div>
-                                <div class="card-footer text-muted small">
-                                    ? @dict.Rating.ToString("F1") • @dict.Downloads скачиваний
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between align-items-center text-muted small">
+                                        <span>
+                                            <i class="bi bi-star-fill me-1" style="color: var(--accent-yellow);"></i>
+                                            @dict.Rating.ToString("F1")
+                                        </span>
+                                        <span>
+                                            <i class="bi bi-download me-1"></i>
+                                            @dict.Downloads
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -90,7 +111,13 @@
                 else
                 {
                     <div class="col-12">
-                        <p class="text-muted">У вас пока нет опубликованных словарей.</p>
+                        <div class="text-center py-5">
+                            <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-book"></i></div>
+                            <p class="text-muted">У вас пока нет словарей</p>
+                            <button class="btn btn-primary" @onclick="ShowPublishDictionaryModal">
+                                <i class="bi bi-plus-circle me-1"></i> Создать словарь
+                            </button>
+                        </div>
                     </div>
                 }
             </div>
@@ -104,32 +131,41 @@
                     @foreach (var rule in MyRules)
                     {
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card h-100">
                                 <div class="card-body">
-                                    <div class="d-flex justify-content-between">
-                                        <h5 class="card-title">@rule.Title</h5>
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="card-title mb-0">@rule.Title</h5>
                                         <span class="badge @(rule.IsPublished ? "bg-success" : "bg-secondary")">
-                                            @(rule.IsPublished ? "Опубликовано" : "Черновик")
+                                            @(rule.IsPublished ? "? Опубликовано" : "Черновик")
                                         </span>
                                     </div>
-                                    <span class="badge bg-info mb-2">@rule.Category</span>
-                                    <div class="btn-group btn-group-sm">
+                                    <span class="badge bg-info mb-3">@rule.Category</span>
+                                    <div class="d-flex gap-2">
                                         @if (!rule.IsPublished)
                                         {
-                                            <button class="btn btn-primary" @onclick="() => PublishRule(rule.Id)">
-                                                Опубликовать
+                                            <button class="btn btn-sm btn-primary" @onclick="() => PublishRule(rule.Id)">
+                                                <i class="bi bi-cloud-upload me-1"></i> Опубликовать
                                             </button>
                                         }
                                         else
                                         {
-                                            <button class="btn btn-outline-danger" @onclick="() => UnpublishRule(rule.Id)">
-                                                Снять
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => UnpublishRule(rule.Id)">
+                                                <i class="bi bi-x-circle me-1"></i> Снять
                                             </button>
                                         }
                                     </div>
                                 </div>
-                                <div class="card-footer text-muted small">
-                                    ? @rule.Rating.ToString("F1") • @rule.Downloads скачиваний
+                                <div class="card-footer">
+                                    <div class="d-flex justify-content-between align-items-center text-muted small">
+                                        <span>
+                                            <i class="bi bi-star-fill me-1" style="color: var(--accent-yellow);"></i>
+                                            @rule.Rating.ToString("F1")
+                                        </span>
+                                        <span>
+                                            <i class="bi bi-download me-1"></i>
+                                            @rule.Downloads
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -138,7 +174,13 @@
                 else
                 {
                     <div class="col-12">
-                        <p class="text-muted">У вас пока нет опубликованных правил.</p>
+                        <div class="text-center py-5">
+                            <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-journal-text"></i></div>
+                            <p class="text-muted">У вас пока нет правил</p>
+                            <button class="btn btn-primary" @onclick="ShowPublishRuleModal">
+                                <i class="bi bi-plus-circle me-1"></i> Создать правило
+                            </button>
+                        </div>
                     </div>
                 }
             </div>
@@ -152,12 +194,17 @@
                     @foreach (var item in DownloadedContent)
                     {
                         <div class="col-md-4">
-                            <div class="card">
+                            <div class="card h-100">
                                 <div class="card-body">
-                                    <span class="badge bg-secondary mb-2">@item.Type</span>
+                                    <span class="badge @(item.Type == "Словарь" ? "bg-info" : "bg-warning") mb-2">@item.Type</span>
                                     <h5 class="card-title">@item.Title</h5>
-                                    <p class="text-muted small">От: @item.AuthorName</p>
-                                    <small class="text-muted">Скачано: @item.DownloadedAt.ToString("dd.MM.yyyy")</small>
+                                    <p class="text-muted small mb-0">
+                                        <i class="bi bi-person-circle me-1"></i> @item.AuthorName
+                                    </p>
+                                </div>
+                                <div class="card-footer text-muted small">
+                                    <i class="bi bi-calendar3 me-1"></i>
+                                    Скачано: @item.DownloadedAt.ToString("dd.MM.yyyy")
                                 </div>
                             </div>
                         </div>
@@ -166,7 +213,13 @@
                 else
                 {
                     <div class="col-12">
-                        <p class="text-muted">Вы ещё ничего не скачивали.</p>
+                        <div class="text-center py-5">
+                            <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-download"></i></div>
+                            <p class="text-muted">Вы ещё ничего не скачивали</p>
+                            <a href="dictionaries" class="btn btn-primary">
+                                <i class="bi bi-search me-1"></i> Найти контент
+                            </a>
+                        </div>
                     </div>
                 }
             </div>

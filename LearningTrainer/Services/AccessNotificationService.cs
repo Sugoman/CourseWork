@@ -1,9 +1,9 @@
-using System.Collections.ObjectModel;
+п»їusing System.Collections.ObjectModel;
 
 namespace LearningTrainer.Services
 {
     /// <summary>
-    /// Сервис для управления уведомлениями о правах доступа
+    /// РЎРµСЂРІРёСЃ РґР»СЏ СѓРїСЂР°РІР»РµРЅРёСЏ СѓРІРµРґРѕРјР»РµРЅРёСЏРјРё Рѕ РїСЂР°РІР°С… РґРѕСЃС‚СѓРїР°
     /// </summary>
     public class AccessNotificationService
     {
@@ -21,7 +21,7 @@ namespace LearningTrainer.Services
         }
 
         /// <summary>
-        /// Добавить уведомление об отказе в доступе
+        /// Р”РѕР±Р°РІРёС‚СЊ СѓРІРµРґРѕРјР»РµРЅРёРµ РѕР± РѕС‚РєР°Р·Рµ РІ РґРѕСЃС‚СѓРїРµ
         /// </summary>
         public void AddAccessDeniedNotification(string actionName, string userRole, string requiredRole)
         {
@@ -29,8 +29,8 @@ namespace LearningTrainer.Services
             {
                 Id = ++_notificationId,
                 Type = NotificationType.AccessDenied,
-                Title = "Доступ запрещён",
-                Message = $"Действие '{actionName}' недоступно для роли '{userRole}'",
+                Title = "Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰С‘РЅ",
+                Message = $"Р”РµР№СЃС‚РІРёРµ '{actionName}' РЅРµРґРѕСЃС‚СѓРїРЅРѕ РґР»СЏ СЂРѕР»Рё '{userRole}'",
                 ActionName = actionName,
                 RequiredRole = requiredRole,
                 UserRole = userRole,
@@ -46,7 +46,7 @@ namespace LearningTrainer.Services
         }
 
         /// <summary>
-        /// Добавить информационное уведомление
+        /// Р”РѕР±Р°РІРёС‚СЊ РёРЅС„РѕСЂРјР°С†РёРѕРЅРЅРѕРµ СѓРІРµРґРѕРјР»РµРЅРёРµ
         /// </summary>
         public void AddInfoNotification(string title, string message)
         {
@@ -68,7 +68,7 @@ namespace LearningTrainer.Services
         }
 
         /// <summary>
-        /// Добавить уведомление об успехе
+        /// Р”РѕР±Р°РІРёС‚СЊ СѓРІРµРґРѕРјР»РµРЅРёРµ РѕР± СѓСЃРїРµС…Рµ
         /// </summary>
         public void AddSuccessNotification(string title, string message)
         {
@@ -90,7 +90,7 @@ namespace LearningTrainer.Services
         }
 
         /// <summary>
-        /// Добавить уведомление об ошибке
+        /// Р”РѕР±Р°РІРёС‚СЊ СѓРІРµРґРѕРјР»РµРЅРёРµ РѕР± РѕС€РёР±РєРµ
         /// </summary>
         public void AddErrorNotification(string title, string message)
         {
@@ -112,7 +112,7 @@ namespace LearningTrainer.Services
         }
 
         /// <summary>
-        /// Добавить уведомление о роли пользователя
+        /// Р”РѕР±Р°РІРёС‚СЊ СѓРІРµРґРѕРјР»РµРЅРёРµ Рѕ СЂРѕР»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
         /// </summary>
         public void AddRoleInfoNotification(string username, string roleName, string roleDescription)
         {
@@ -120,7 +120,7 @@ namespace LearningTrainer.Services
             {
                 Id = ++_notificationId,
                 Type = NotificationType.RoleInfo,
-                Title = "Информация о роли",
+                Title = "РРЅС„РѕСЂРјР°С†РёСЏ Рѕ СЂРѕР»Рё",
                 Message = $"{username}\n{roleDescription}",
                 UserRole = roleName,
                 Timestamp = DateTime.UtcNow,
@@ -135,7 +135,7 @@ namespace LearningTrainer.Services
         }
 
         /// <summary>
-        /// Удалить уведомление по ID
+        /// РЈРґР°Р»РёС‚СЊ СѓРІРµРґРѕРјР»РµРЅРёРµ РїРѕ ID
         /// </summary>
         public void RemoveNotification(int id)
         {
@@ -148,7 +148,7 @@ namespace LearningTrainer.Services
         }
 
         /// <summary>
-        /// Удалить все уведомления
+        /// РЈРґР°Р»РёС‚СЊ РІСЃРµ СѓРІРµРґРѕРјР»РµРЅРёСЏ
         /// </summary>
         public void ClearAllNotifications()
         {
@@ -161,7 +161,7 @@ namespace LearningTrainer.Services
         }
 
         /// <summary>
-        /// Отметить уведомление как прочитанное
+        /// РћС‚РјРµС‚РёС‚СЊ СѓРІРµРґРѕРјР»РµРЅРёРµ РєР°Рє РїСЂРѕС‡РёС‚Р°РЅРЅРѕРµ
         /// </summary>
         public void MarkAsRead(int id)
         {
@@ -180,7 +180,7 @@ namespace LearningTrainer.Services
     }
 
     /// <summary>
-    /// Тип уведомления
+    /// РўРёРї СѓРІРµРґРѕРјР»РµРЅРёСЏ
     /// </summary>
     public enum NotificationType
     {
@@ -193,7 +193,7 @@ namespace LearningTrainer.Services
     }
 
     /// <summary>
-    /// Модель уведомления о доступе
+    /// РњРѕРґРµР»СЊ СѓРІРµРґРѕРјР»РµРЅРёСЏ Рѕ РґРѕСЃС‚СѓРїРµ
     /// </summary>
     public class AccessNotification
     {
@@ -209,7 +209,7 @@ namespace LearningTrainer.Services
         public TimeSpan Duration { get; set; } = TimeSpan.FromSeconds(6);
 
         /// <summary>
-        /// Получить цвет для типа уведомления
+        /// РџРѕР»СѓС‡РёС‚СЊ С†РІРµС‚ РґР»СЏ С‚РёРїР° СѓРІРµРґРѕРјР»РµРЅРёСЏ
         /// </summary>
         public string GetTypeColor()
         {
@@ -226,7 +226,7 @@ namespace LearningTrainer.Services
         }
 
         /// <summary>
-        /// Получить иконку для типа уведомления
+        /// РџРѕР»СѓС‡РёС‚СЊ РёРєРѕРЅРєСѓ РґР»СЏ С‚РёРїР° СѓРІРµРґРѕРјР»РµРЅРёСЏ
         /// </summary>
         public string GetTypeIcon()
         {
@@ -238,7 +238,7 @@ namespace LearningTrainer.Services
                 NotificationType.Error => "?",
                 NotificationType.RoleInfo => "??",
                 NotificationType.Warning => "?",
-                _ => "•"
+                _ => "вЂў"
             };
         }
     }

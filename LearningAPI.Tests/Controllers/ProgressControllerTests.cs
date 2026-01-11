@@ -1,4 +1,4 @@
-using FluentAssertions;
+ï»¿using FluentAssertions;
 using LearningAPI.Controllers;
 using LearningAPI.Tests.Helpers;
 using LearningTrainer.Context;
@@ -66,7 +66,7 @@ public class ProgressControllerTests : IDisposable
         var word = new Word
         {
             OriginalWord = "Hello",
-            Translation = "Ïðèâåò",
+            Translation = "ÐŸÑ€Ð¸Ð²ÐµÑ‚",
             Transcription = "[h??lo?]",
             Example = "Hello, world!",
             DictionaryId = dictionary.Id,

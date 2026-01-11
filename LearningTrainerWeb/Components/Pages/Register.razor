@@ -7,68 +7,90 @@
 
 <div class="container">
     <div class="row justify-content-center mt-5">
-        <div class="col-md-6 col-lg-4">
-            <div class="card shadow">
-                <div class="card-body">
-                    <h2 class="card-title text-center mb-4">Регистрация</h2>
-
+        <div class="col-md-6 col-lg-5">
+            <div class="text-center mb-4">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem; color: var(--primary-500);"><i class="bi bi-person-plus-fill"></i></div>
+                <h1 class="h2">Создайте аккаунт</h1>
+                <p class="text-muted">Присоединяйтесь к сообществу LearningTrainer</p>
+            </div>
+            
+            <div class="card" style="border-radius: var(--radius-xl);">
+                <div class="card-body p-4 p-md-5">
                     @if (!string.IsNullOrEmpty(ErrorMessage))
                     {
-                        <div class="alert alert-danger">@ErrorMessage</div>
+                        <div class="alert alert-danger d-flex align-items-center gap-2">
+                            <i class="bi bi-exclamation-circle"></i>
+                            @ErrorMessage
+                        </div>
                     }
 
                     @if (!string.IsNullOrEmpty(SuccessMessage))
                     {
-                        <div class="alert alert-success">@SuccessMessage</div>
+                        <div class="alert alert-success d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle"></i>
+                            @SuccessMessage
+                        </div>
                     }
 
                     <EditForm Model="RegisterModel" OnValidSubmit="HandleRegister" FormName="RegisterForm">
                         <DataAnnotationsValidator />
                         
-                        <div class="mb-3">
-                            <label class="form-label">Имя пользователя</label>
-                            <InputText @bind-Value="RegisterModel.Username" class="form-control" placeholder="username" />
-                            <ValidationMessage For="() => RegisterModel.Username" class="text-danger" />
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-person me-1"></i> Имя пользователя
+                            </label>
+                            <InputText @bind-Value="RegisterModel.Username" class="form-control form-control-lg" placeholder="username" />
+                            <ValidationMessage For="() => RegisterModel.Username" class="text-danger small mt-1" />
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <InputText @bind-Value="RegisterModel.Email" class="form-control" placeholder="user@example.com" />
-                            <ValidationMessage For="() => RegisterModel.Email" class="text-danger" />
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-envelope me-1"></i> Email
+                            </label>
+                            <InputText @bind-Value="RegisterModel.Email" class="form-control form-control-lg" placeholder="user@example.com" />
+                            <ValidationMessage For="() => RegisterModel.Email" class="text-danger small mt-1" />
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Пароль</label>
-                            <InputText @bind-Value="RegisterModel.Password" type="password" class="form-control" />
-                            <ValidationMessage For="() => RegisterModel.Password" class="text-danger" />
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-lock me-1"></i> Пароль
+                            </label>
+                            <InputText @bind-Value="RegisterModel.Password" type="password" class="form-control form-control-lg" />
+                            <ValidationMessage For="() => RegisterModel.Password" class="text-danger small mt-1" />
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Подтверждение пароля</label>
-                            <InputText @bind-Value="RegisterModel.ConfirmPassword" type="password" class="form-control" />
-                            <ValidationMessage For="() => RegisterModel.ConfirmPassword" class="text-danger" />
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-lock-fill me-1"></i> Подтверждение пароля
+                            </label>
+                            <InputText @bind-Value="RegisterModel.ConfirmPassword" type="password" class="form-control form-control-lg" />
+                            <ValidationMessage For="() => RegisterModel.ConfirmPassword" class="text-danger small mt-1" />
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Код приглашения (необязательно)</label>
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-ticket-perforated me-1"></i> Код приглашения
+                                <span class="text-muted fw-normal">(необязательно)</span>
+                            </label>
                             <InputText @bind-Value="RegisterModel.InviteCode" class="form-control" placeholder="XXXXXX" />
                             <small class="text-muted">Если у вас есть код от учителя</small>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100" disabled="@IsLoading">
+                        <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@IsLoading">
                             @if (IsLoading)
                             {
                                 <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                             }
-                            Зарегистрироваться
+                            <i class="bi bi-person-plus me-2"></i>Зарегистрироваться
                         </button>
                     </EditForm>
 
-                    <hr />
-
-                    <p class="text-center mb-0">
-                        Уже есть аккаунт? <a href="login">Войти</a>
-                    </p>
+                    <div class="text-center mt-4 pt-4" style="border-top: 1px solid var(--gray-200);">
+                        <p class="text-muted mb-0">
+                            Уже есть аккаунт? 
+                            <a href="login" class="fw-semibold">Войти</a>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

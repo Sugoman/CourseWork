@@ -37,9 +37,10 @@ namespace LearningAPI.Controllers
         {
             try
             {
+                // Ищем по Login или Email
                 var user = await _context.Users
                                    .Include(u => u.Role)
-                                   .FirstOrDefaultAsync(u => u.Login == request.Username);
+                                   .FirstOrDefaultAsync(u => u.Login == request.Username || u.Email == request.Username);
 
                 if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
                 {

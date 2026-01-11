@@ -1,4 +1,4 @@
-using Microsoft.IdentityModel.Tokens;
+п»їusing Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -51,7 +51,7 @@ namespace LearningTrainerShared.Services
         }
 
         /// <summary>
-        /// Получить время истечения refresh token
+        /// РџРѕР»СѓС‡РёС‚СЊ РІСЂРµРјСЏ РёСЃС‚РµС‡РµРЅРёСЏ refresh token
         /// </summary>
         public DateTime GetRefreshTokenExpiryTime()
         {

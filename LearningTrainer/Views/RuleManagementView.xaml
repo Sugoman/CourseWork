@@ -300,6 +300,34 @@
         </Grid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <!-- Кнопка публикации на сайте -->
+            <Button Content="{Binding PublishButtonText}" 
+                    Command="{Binding PublishToMarketplaceCommand}" 
+                    Padding="20,12"
+                    MinWidth="180"
+                    MinHeight="30"
+                    Margin="0,0,15,0"
+                    Foreground="White"
+                    FontWeight="SemiBold"
+                    Cursor="Hand"
+                    Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsPublished}" Value="True">
+                                <Setter Property="Background" Value="#F59E0B"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsPublished}" Value="False">
+                                <Setter Property="Background" Value="#10B981"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <Button.Effect>
+                    <DropShadowEffect Color="Black" Opacity="0.15" BlurRadius="8" ShadowDepth="2"/>
+                </Button.Effect>
+            </Button>
+            
             <Button Content="{DynamicResource Loc.Button.SaveButton}" 
                     Command="{Binding SaveChangesCommand}" 
                     Style="{StaticResource PrimaryButton}"

@@ -343,5 +343,26 @@ namespace LearningTrainer.Services
 
             return stats;
         }
+        
+        // Marketplace - недоступно в локальном режиме
+        public Task<bool> PublishDictionaryAsync(int dictionaryId)
+        {
+            throw new NotImplementedException("Публикация недоступна в локальном режиме");
+        }
+
+        public Task<bool> UnpublishDictionaryAsync(int dictionaryId)
+        {
+            throw new NotImplementedException("Публикация недоступна в локальном режиме");
+        }
+
+        public Task<bool> PublishRuleAsync(int ruleId)
+        {
+            throw new NotImplementedException("Публикация недоступна в локальном режиме");
+        }
+
+        public Task<bool> UnpublishRuleAsync(int ruleId)
+        {
+            throw new NotImplementedException("Публикация недоступна в локальном режиме");
+        }
     }
 }

@@ -1,4 +1,4 @@
-using LearningTrainer.Context;
+п»їusing LearningTrainer.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +8,7 @@ using System.Security.Claims;
 namespace LearningAPI.Controllers;
 
 /// <summary>
-/// Контроллер для маркетплейса - публичного обмена словарями и правилами
+/// РљРѕРЅС‚СЂРѕР»Р»РµСЂ РґР»СЏ РјР°СЂРєРµС‚РїР»РµР№СЃР° - РїСѓР±Р»РёС‡РЅРѕРіРѕ РѕР±РјРµРЅР° СЃР»РѕРІР°СЂСЏРјРё Рё РїСЂР°РІРёР»Р°РјРё
 /// </summary>
 [ApiController]
 [Route("api/marketplace")]
@@ -26,7 +26,7 @@ public class MarketplaceController : BaseApiController
     #region Public Dictionaries
 
     /// <summary>
-    /// Получить список публичных словарей с пагинацией и фильтрацией
+    /// РџРѕР»СѓС‡РёС‚СЊ СЃРїРёСЃРѕРє РїСѓР±Р»РёС‡РЅС‹С… СЃР»РѕРІР°СЂРµР№ СЃ РїР°РіРёРЅР°С†РёРµР№ Рё С„РёР»СЊС‚СЂР°С†РёРµР№
     /// </summary>
     [HttpGet("dictionaries")]
     [AllowAnonymous]
@@ -42,7 +42,7 @@ public class MarketplaceController : BaseApiController
             .Include(d => d.Words)
             .Where(d => d.IsPublished);
 
-        // Фильтрация
+        // Р¤РёР»СЊС‚СЂР°С†РёСЏ
         if (!string.IsNullOrWhiteSpace(search))
         {
             query = query.Where(d => 
@@ -60,11 +60,11 @@ public class MarketplaceController : BaseApiController
             query = query.Where(d => d.LanguageTo == languageTo);
         }
 
-        // Подсчёт
+        // РџРѕРґСЃС‡С‘С‚
         var totalCount = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-        // Пагинация
+        // РџР°РіРёРЅР°С†РёСЏ
         var items = await query
             .OrderByDescending(d => d.Rating)
             .ThenByDescending(d => d.DownloadCount)
@@ -94,7 +94,7 @@ public class MarketplaceController : BaseApiController
     }
 
     /// <summary>
-    /// Получить детальную информацию о словаре
+    /// РџРѕР»СѓС‡РёС‚СЊ РґРµС‚Р°Р»СЊРЅСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ СЃР»РѕРІР°СЂРµ
     /// </summary>
     [HttpGet("dictionaries/{id}")]
     [AllowAnonymous]
@@ -140,7 +140,7 @@ public class MarketplaceController : BaseApiController
     }
 
     /// <summary>
-    /// Скачать словарь (добавить в свой аккаунт)
+    /// РЎРєР°С‡Р°С‚СЊ СЃР»РѕРІР°СЂСЊ (РґРѕР±Р°РІРёС‚СЊ РІ СЃРІРѕР№ Р°РєРєР°СѓРЅС‚)
     /// </summary>
     [HttpPost("dictionaries/{id}/download")]
     [Authorize]
@@ -155,12 +155,12 @@ public class MarketplaceController : BaseApiController
         if (originalDict == null)
             return NotFound();
 
-        // Создаём копию словаря для пользователя
+        // РЎРѕР·РґР°С‘Рј РєРѕРїРёСЋ СЃР»РѕРІР°СЂСЏ РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
         var newDict = new Dictionary
         {
             UserId = userId,
             Name = originalDict.Name,
-            Description = $"[Скачано] {originalDict.Description}",
+            Description = $"[РЎРєР°С‡Р°РЅРѕ] {originalDict.Description}",
             LanguageFrom = originalDict.LanguageFrom,
             LanguageTo = originalDict.LanguageTo,
             SourceDictionaryId = originalDict.Id
@@ -169,7 +169,7 @@ public class MarketplaceController : BaseApiController
         _context.Dictionaries.Add(newDict);
         await _context.SaveChangesAsync();
 
-        // Копируем слова
+        // РљРѕРїРёСЂСѓРµРј СЃР»РѕРІР°
         foreach (var word in originalDict.Words)
         {
             var newWord = new Word
@@ -184,10 +184,10 @@ public class MarketplaceController : BaseApiController
             _context.Words.Add(newWord);
         }
 
-        // Увеличиваем счётчик скачиваний
+        // РЈРІРµР»РёС‡РёРІР°РµРј СЃС‡С‘С‚С‡РёРє СЃРєР°С‡РёРІР°РЅРёР№
         originalDict.DownloadCount++;
 
-        // Записываем историю скачивания
+        // Р—Р°РїРёСЃС‹РІР°РµРј РёСЃС‚РѕСЂРёСЋ СЃРєР°С‡РёРІР°РЅРёСЏ
         _context.Downloads.Add(new Download
         {
             UserId = userId,
@@ -198,7 +198,7 @@ public class MarketplaceController : BaseApiController
 
         await _context.SaveChangesAsync();
 
-        return Ok(new { Message = "Словарь успешно скачан", NewDictionaryId = newDict.Id });
+        return Ok(new { Message = "РЎР»РѕРІР°СЂСЊ СѓСЃРїРµС€РЅРѕ СЃРєР°С‡Р°РЅ", NewDictionaryId = newDict.Id });
     }
 
     #endregion
@@ -206,7 +206,7 @@ public class MarketplaceController : BaseApiController
     #region Public Rules
 
     /// <summary>
-    /// Получить список публичных правил с пагинацией и фильтрацией
+    /// РџРѕР»СѓС‡РёС‚СЊ СЃРїРёСЃРѕРє РїСѓР±Р»РёС‡РЅС‹С… РїСЂР°РІРёР» СЃ РїР°РіРёРЅР°С†РёРµР№ Рё С„РёР»СЊС‚СЂР°С†РёРµР№
     /// </summary>
     [HttpGet("rules")]
     [AllowAnonymous]
@@ -221,7 +221,7 @@ public class MarketplaceController : BaseApiController
             .Include(r => r.User)
             .Where(r => r.IsPublished);
 
-        // Фильтрация
+        // Р¤РёР»СЊС‚СЂР°С†РёСЏ
         if (!string.IsNullOrWhiteSpace(search))
         {
             query = query.Where(r => 
@@ -240,11 +240,11 @@ public class MarketplaceController : BaseApiController
             query = query.Where(r => r.DifficultyLevel == difficulty);
         }
 
-        // Подсчёт
+        // РџРѕРґСЃС‡С‘С‚
         var totalCount = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
-        // Пагинация
+        // РџР°РіРёРЅР°С†РёСЏ
         var items = await query
             .OrderByDescending(r => r.Rating)
             .ThenByDescending(r => r.DownloadCount)
@@ -274,7 +274,7 @@ public class MarketplaceController : BaseApiController
     }
 
     /// <summary>
-    /// Получить детальную информацию о правиле
+    /// РџРѕР»СѓС‡РёС‚СЊ РґРµС‚Р°Р»СЊРЅСѓСЋ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РїСЂР°РІРёР»Рµ
     /// </summary>
     [HttpGet("rules/{id}")]
     [AllowAnonymous]
@@ -292,7 +292,7 @@ public class MarketplaceController : BaseApiController
             .Where(r => r.UserId == rule.UserId && r.IsPublished)
             .CountAsync();
 
-        // Конвертируем Markdown в HTML (упрощённо)
+        // РљРѕРЅРІРµСЂС‚РёСЂСѓРµРј Markdown РІ HTML (СѓРїСЂРѕС‰С‘РЅРЅРѕ)
         var htmlContent = ConvertMarkdownToHtml(rule.MarkdownContent);
 
         return Ok(new RuleDetailsDto
@@ -313,7 +313,7 @@ public class MarketplaceController : BaseApiController
     }
 
     /// <summary>
-    /// Скачать правило (добавить в свой аккаунт)
+    /// РЎРєР°С‡Р°С‚СЊ РїСЂР°РІРёР»Рѕ (РґРѕР±Р°РІРёС‚СЊ РІ СЃРІРѕР№ Р°РєРєР°СѓРЅС‚)
     /// </summary>
     [HttpPost("rules/{id}/download")]
     [Authorize]
@@ -327,12 +327,12 @@ public class MarketplaceController : BaseApiController
         if (originalRule == null)
             return NotFound();
 
-        // Создаём копию правила для пользователя
+        // РЎРѕР·РґР°С‘Рј РєРѕРїРёСЋ РїСЂР°РІРёР»Р° РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
         var newRule = new Rule
         {
             UserId = userId,
             Title = originalRule.Title,
-            Description = $"[Скачано] {originalRule.Description}",
+            Description = $"[РЎРєР°С‡Р°РЅРѕ] {originalRule.Description}",
             MarkdownContent = originalRule.MarkdownContent,
             Category = originalRule.Category,
             DifficultyLevel = originalRule.DifficultyLevel,
@@ -341,10 +341,10 @@ public class MarketplaceController : BaseApiController
 
         _context.Rules.Add(newRule);
 
-        // Увеличиваем счётчик скачиваний
+        // РЈРІРµР»РёС‡РёРІР°РµРј СЃС‡С‘С‚С‡РёРє СЃРєР°С‡РёРІР°РЅРёР№
         originalRule.DownloadCount++;
 
-        // Записываем историю скачивания
+        // Р—Р°РїРёСЃС‹РІР°РµРј РёСЃС‚РѕСЂРёСЋ СЃРєР°С‡РёРІР°РЅРёСЏ
         _context.Downloads.Add(new Download
         {
             UserId = userId,
@@ -355,11 +355,11 @@ public class MarketplaceController : BaseApiController
 
         await _context.SaveChangesAsync();
 
-        return Ok(new { Message = "Правило успешно скачано", NewRuleId = newRule.Id });
+        return Ok(new { Message = "РџСЂР°РІРёР»Рѕ СѓСЃРїРµС€РЅРѕ СЃРєР°С‡Р°РЅРѕ", NewRuleId = newRule.Id });
     }
 
     /// <summary>
-    /// Получить похожие правила
+    /// РџРѕР»СѓС‡РёС‚СЊ РїРѕС…РѕР¶РёРµ РїСЂР°РІРёР»Р°
     /// </summary>
     [HttpGet("rules/{id}/related")]
     [AllowAnonymous]
@@ -423,13 +423,13 @@ public class MarketplaceController : BaseApiController
         };
 
         _context.Comments.Add(comment);
-
-        // Обновляем средний рейтинг словаря
-        await UpdateDictionaryRating(id);
-
         await _context.SaveChangesAsync();
 
-        return Ok(new { Message = "Комментарий добавлен" });
+        // РћР±РЅРѕРІР»СЏРµРј СЃСЂРµРґРЅРёР№ СЂРµР№С‚РёРЅРі СЃР»РѕРІР°СЂСЏ РїРѕСЃР»Рµ СЃРѕС…СЂР°РЅРµРЅРёСЏ РєРѕРјРјРµРЅС‚Р°СЂРёСЏ
+        await UpdateDictionaryRating(id);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Message = "РљРѕРјРјРµРЅС‚Р°СЂРёР№ РґРѕР±Р°РІР»РµРЅ" });
     }
 
     [HttpGet("rules/{id}/comments")]
@@ -470,13 +470,13 @@ public class MarketplaceController : BaseApiController
         };
 
         _context.Comments.Add(comment);
-
-        // Обновляем средний рейтинг правила
-        await UpdateRuleRating(id);
-
         await _context.SaveChangesAsync();
 
-        return Ok(new { Message = "Комментарий добавлен" });
+        // РћР±РЅРѕРІР»СЏРµРј СЃСЂРµРґРЅРёР№ СЂРµР№С‚РёРЅРі РїСЂР°РІРёР»Р° РїРѕСЃР»Рµ СЃРѕС…СЂР°РЅРµРЅРёСЏ РєРѕРјРјРµРЅС‚Р°СЂРёСЏ
+        await UpdateRuleRating(id);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { Message = "РљРѕРјРјРµРЅС‚Р°СЂРёР№ РґРѕР±Р°РІР»РµРЅ" });
     }
 
     #endregion
@@ -552,7 +552,7 @@ public class MarketplaceController : BaseApiController
                 var dict = await _context.Dictionaries
                     .Include(d => d.User)
                     .FirstOrDefaultAsync(d => d.Id == download.ContentId);
-                title = dict?.Name ?? "Удалено";
+                title = dict?.Name ?? "РЈРґР°Р»РµРЅРѕ";
                 authorName = dict?.User?.Login ?? "Unknown";
             }
             else if (download.ContentType == "Rule")
@@ -560,7 +560,7 @@ public class MarketplaceController : BaseApiController
                 var rule = await _context.Rules
                     .Include(r => r.User)
                     .FirstOrDefaultAsync(r => r.Id == download.ContentId);
-                title = rule?.Title ?? "Удалено";
+                title = rule?.Title ?? "РЈРґР°Р»РµРЅРѕ";
                 authorName = rule?.User?.Login ?? "Unknown";
             }
 
@@ -591,7 +591,7 @@ public class MarketplaceController : BaseApiController
         dictionary.IsPublished = true;
         await _context.SaveChangesAsync();
 
-        return Ok(new { Message = "Словарь опубликован" });
+        return Ok(new { Message = "РЎР»РѕРІР°СЂСЊ РѕРїСѓР±Р»РёРєРѕРІР°РЅ" });
     }
 
     [HttpPost("dictionaries/{id}/unpublish")]
@@ -608,7 +608,7 @@ public class MarketplaceController : BaseApiController
         dictionary.IsPublished = false;
         await _context.SaveChangesAsync();
 
-        return Ok(new { Message = "Словарь снят с публикации" });
+        return Ok(new { Message = "РЎР»РѕРІР°СЂСЊ СЃРЅСЏС‚ СЃ РїСѓР±Р»РёРєР°С†РёРё" });
     }
 
     [HttpPost("rules/{id}/publish")]
@@ -625,7 +625,7 @@ public class MarketplaceController : BaseApiController
         rule.IsPublished = true;
         await _context.SaveChangesAsync();
 
-        return Ok(new { Message = "Правило опубликовано" });
+        return Ok(new { Message = "РџСЂР°РІРёР»Рѕ РѕРїСѓР±Р»РёРєРѕРІР°РЅРѕ" });
     }
 
     [HttpPost("rules/{id}/unpublish")]
@@ -642,7 +642,7 @@ public class MarketplaceController : BaseApiController
         rule.IsPublished = false;
         await _context.SaveChangesAsync();
 
-        return Ok(new { Message = "Правило снято с публикации" });
+        return Ok(new { Message = "РџСЂР°РІРёР»Рѕ СЃРЅСЏС‚Рѕ СЃ РїСѓР±Р»РёРєР°С†РёРё" });
     }
 
     #endregion
@@ -688,24 +688,24 @@ public class MarketplaceController : BaseApiController
         if (string.IsNullOrEmpty(markdown))
             return "";
 
-        // Базовая конвертация Markdown в HTML
+        // Р‘Р°Р·РѕРІР°СЏ РєРѕРЅРІРµСЂС‚Р°С†РёСЏ Markdown РІ HTML
         var html = markdown
             .Replace("\r\n", "\n")
             .Replace("\r", "\n");
 
-        // Заголовки
+        // Р—Р°РіРѕР»РѕРІРєРё
         html = System.Text.RegularExpressions.Regex.Replace(html, @"^### (.+)$", "<h3>$1</h3>", System.Text.RegularExpressions.RegexOptions.Multiline);
         html = System.Text.RegularExpressions.Regex.Replace(html, @"^## (.+)$", "<h2>$1</h2>", System.Text.RegularExpressions.RegexOptions.Multiline);
         html = System.Text.RegularExpressions.Regex.Replace(html, @"^# (.+)$", "<h1>$1</h1>", System.Text.RegularExpressions.RegexOptions.Multiline);
 
-        // Жирный и курсив
+        // Р–РёСЂРЅС‹Р№ Рё РєСѓСЂСЃРёРІ
         html = System.Text.RegularExpressions.Regex.Replace(html, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
         html = System.Text.RegularExpressions.Regex.Replace(html, @"\*(.+?)\*", "<em>$1</em>");
 
-        // Код
+        // РљРѕРґ
         html = System.Text.RegularExpressions.Regex.Replace(html, @"`(.+?)`", "<code>$1</code>");
 
-        // Параграфы
+        // РџР°СЂР°РіСЂР°С„С‹
         var paragraphs = html.Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries);
         html = string.Join("", paragraphs.Select(p => 
             p.StartsWith("<h") ? p : $"<p>{p.Replace("\n", "<br/>")}</p>"));

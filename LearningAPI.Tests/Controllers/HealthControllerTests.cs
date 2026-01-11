@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LearningAPI.Controllers;
 using LearningAPI.Tests.Helpers;
 using LearningTrainer.Context;

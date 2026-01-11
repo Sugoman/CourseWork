@@ -1,4 +1,4 @@
-using LearningTrainer.Services;
+п»їusing LearningTrainer.Services;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -6,7 +6,7 @@ using System.Windows.Media;
 namespace LearningTrainer.Converters
 {
     /// <summary>
-    /// Конвертер для преобразования типа уведомления в цвет
+    /// РљРѕРЅРІРµСЂС‚РµСЂ РґР»СЏ РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёСЏ С‚РёРїР° СѓРІРµРґРѕРјР»РµРЅРёСЏ РІ С†РІРµС‚
     /// </summary>
     public class NotificationTypeToColorConverter : IValueConverter
     {
@@ -38,7 +38,7 @@ namespace LearningTrainer.Converters
     }
 
     /// <summary>
-    /// Конвертер для преобразования типа уведомления в иконку (ASCII символы)
+    /// РљРѕРЅРІРµСЂС‚РµСЂ РґР»СЏ РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёСЏ С‚РёРїР° СѓРІРµРґРѕРјР»РµРЅРёСЏ РІ РёРєРѕРЅРєСѓ (ASCII СЃРёРјРІРѕР»С‹)
     /// </summary>
     public class NotificationTypeToIconConverter : IValueConverter
     {
@@ -68,7 +68,7 @@ namespace LearningTrainer.Converters
     }
 
     /// <summary>
-    /// Конвертер для преобразования типа уведомления в вес шрифта
+    /// РљРѕРЅРІРµСЂС‚РµСЂ РґР»СЏ РїСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёСЏ С‚РёРїР° СѓРІРµРґРѕРјР»РµРЅРёСЏ РІ РІРµСЃ С€СЂРёС„С‚Р°
     /// </summary>
     public class NotificationTypeToFontWeightConverter : IValueConverter
     {

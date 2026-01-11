@@ -14,13 +14,16 @@ namespace LearningTrainerShared.Models
 
         [Required]
         [MaxLength(50)]
-        public string Login { get; set; }
+        public string Login { get; set; } = "";
+
+        [MaxLength(100)]
+        public string? Email { get; set; }
 
         [Required]
         [MaxLength(100)]
-        public string PasswordHash { get; set; }
+        public string PasswordHash { get; set; } = "";
 
-        public Role Role { get; set; } // "Admin", "Teacher", "Student"
+        public Role Role { get; set; } = null!;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
@@ -34,7 +37,7 @@ namespace LearningTrainerShared.Models
         [ForeignKey("UserId")] 
         public User? Teacher { get; set; }
         [JsonIgnore]
-        public virtual ICollection<User> Students { get; set; }
+        public virtual ICollection<User> Students { get; set; } = new List<User>();
         public string? InviteCode { get; set; }
     }
 }

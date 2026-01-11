@@ -1,48 +1,88 @@
 ﻿# 📚 LearningTrainer
 
+<div align="center">
+
 ![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
+![Blazor](https://img.shields.io/badge/Blazor-Server-512BD4?style=for-the-badge&logo=blazor&logoColor=white)
 ![WPF](https://img.shields.io/badge/WPF-Desktop-0078D4?style=for-the-badge&logo=windows&logoColor=white)
 ![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-8.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
-![SQL Server](https://img.shields.io/badge/SQL_Server-2019+-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)
+![SQL Server](https://img.shields.io/badge/SQL_Server-2022-CC2927?style=for-the-badge&logo=microsoftsqlserver&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-> 🌍 Универсальное приложение для изучения иностранных языков с интервальным повторением
+### 🌍 Универсальная платформа для изучения иностранных языков
+
+*Интервальное повторение • Маркетплейс контента • Сообщество*
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)
 ![Tests](https://img.shields.io/badge/tests-22%20passed-success?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
+</div>
+
 ---
 
-## 📖 О проекте
+## ✨ Что такое LearningTrainer?
 
-**LearningTrainer** — десктопное WPF-приложение для изучения иностранных языков с использованием алгоритма интервального повторения SM-2. Поддерживает любые языковые пары (английский, немецкий, французский, японский и др.). Включает REST API на ASP.NET Core и систему ролей (Учитель/Ученик).
+**LearningTrainer** — кроссплатформенная система для изучения иностранных языков с современным веб-интерфейсом в стиле Stripe/Dribbble:
 
-### 🌐 Поддерживаемые языки для изучения
+| Платформа | Описание |
+|-----------|----------|
+| 🖥️ **WPF Desktop** | Полнофункциональный клиент для Windows с offline-режимом |
+| 🌐 **Blazor Web** | Современный Landing Page с маркетплейсом контента |
+| 🔧 **REST API** | Бэкенд на ASP.NET Core с JWT-аутентификацией |
 
-Приложение не ограничено конкретными языками — вы можете создавать словари для любой языковой пары:
+### 🎨 Современный веб-дизайн
 
-| Примеры | Описание |
+Веб-приложение построено по принципам современного UI/UX:
+- **Hero секция** на всю ширину с градиентом и декоративными элементами
+- **Glassmorphism** карточки с многослойными тенями
+- **Адаптивная вёрстка** для всех устройств (включая iPhone SE)
+- **Горизонтальное меню** вместо классического сайдбара
+- **Шрифты** Inter + Poppins
+
+---
+
+## 🛒 Маркетплейс контента
+
+Делитесь знаниями с сообществом:
+
+| Функция | Описание |
 |---------|----------|
-| 🇬🇧 English → 🇷🇺 Русский | Английский для русскоговорящих |
-| 🇩🇪 Deutsch → 🇬🇧 English | Немецкий для англоговорящих |
-| 🇯🇵 日本語 → 🇷🇺 Русский | Японский для русскоговорящих |
-| 🇫🇷 Français → 🇪🇸 Español | Французский для испаноговорящих |
-| 🇨🇳 中文 → 🇩🇪 Deutsch | Китайский для немецкоговорящих |
+| 📤 **Публикация** | Опубликуйте свои словари и правила одним кликом |
+| 📥 **Скачивание** | Находите и скачивайте материалы других пользователей |
+| ⭐ **Рейтинги** | Оценивайте контент от 1 до 5 звёзд |
+| 💬 **Комментарии** | Оставляйте отзывы и обратную связь |
+| 🔍 **Поиск** | Находите по языкам, категориям, уровню сложности |
 
-### ✨ Ключевые возможности
+---
+
+## 🌐 Поддерживаемые языки
+
+Создавайте словари для **любой языковой пары**:
+
+| Примеры | Направление |
+|---------|-------------|
+| 🇬🇧 → 🇷🇺 | Английский для русскоговорящих |
+| 🇩🇪 → 🇬🇧 | Немецкий для англоговорящих |
+| 🇯🇵 → 🇷🇺 | Японский для русскоговорящих |
+| 🇫🇷 → 🇪🇸 | Французский для испаноговорящих |
+| 🇨🇳 → 🇩🇪 | Китайский для немецкоговорящих |
+
+---
+
+## ⚡ Ключевые возможности
 
 | Функция | Описание |
 |---------|----------|
 | 🔐 **Аутентификация** | JWT токены, регистрация с кодом учителя |
 | 👥 **Роли** | User, Teacher, Student, Admin |
-| 📚 **Словари** | Создание для любых языковых пар, импорт/экспорт JSON |
-| 📝 **Правила** | Markdown-редактор с live-preview для грамматики любого языка |
+| 📚 **Словари** | Любые языковые пары, импорт/экспорт JSON |
+| 📝 **Правила** | Markdown-редактор с live-preview |
 | 🎓 **Обучение** | Интервальное повторение (SM-2 алгоритм) |
 | 📊 **Статистика** | Графики прогресса, streak |
-| 🔤 **Транскрипция** | Поддержка IPA, ромадзи, пиньинь и др. |
+| 🔤 **Транскрипция** | IPA, ромадзи, пиньинь |
 | 🎨 **Темы** | Light, Dark, Dracula, Forest |
-| 🌍 **Интерфейс** | EN, RU, ES, DE, ZH |
-| 🔔 **Уведомления** | Toast-notifications |
+| 🌍 **Локализация** | EN, RU, ES, DE, ZH |
 | 📤 **Sharing** | Учитель → Ученики |
 
 ---
@@ -51,20 +91,26 @@
 
 ```
 CourseWork/
-├── LearningTrainer/           # 🖥️ WPF Desktop клиент
-│   ├── Views/                 # XAML представления
-│   ├── ViewModels/            # MVVM ViewModels
-│   ├── Services/              # API, Settings, Permissions
-│   └── Resources/             # Темы, языки интерфейса, иконки
-├── LearningAPI/               # 🌐 REST API Backend
-│   ├── Controllers/           # API контроллеры
-│   └── Middleware/            # Exception handling
-├── LearningTrainerShared/     # 📦 Общая библиотека
-│   ├── Models/                # Entity модели, DTOs
-│   └── Context/               # EF DbContext
-├── LearningAPI.Tests/         # 🧪 Unit-тесты (22)
-├── StressTestClient/          # 📈 Нагрузочное тестирование
-└── docs/                      # 📄 Документация
+├── 🖥️ LearningTrainer/        # WPF Desktop клиент
+│   ├── Views/                  # XAML представления
+│   ├── ViewModels/             # MVVM ViewModels
+│   ├── Services/               # API, Settings, Permissions
+│   └── Resources/              # Темы, языки, иконки
+├── 🌐 LearningTrainerWeb/      # Blazor Server веб-приложение
+│   ├── Components/
+│   │   ├── Layout/             # MainLayout, NavMenu, AuthStatus
+│   │   └── Pages/              # Home, Dictionaries, Rules, etc.
+│   ├── Services/               # AuthService, ContentApiService
+│   └── wwwroot/css/            # Современные CSS стили
+├── 🔧 LearningAPI/             # REST API Backend
+│   ├── Controllers/            # Auth, Marketplace, Progress
+│   └── Middleware/             # Exception handling
+├── 📦 LearningTrainerShared/   # Общая библиотека
+│   ├── Models/                 # Entities, DTOs
+│   └── Context/                # EF DbContext
+├── 🧪 LearningAPI.Tests/       # Unit-тесты (22)
+├── 📈 StressTestClient/        # Нагрузочное тестирование
+└── 📄 docs/                    # Документация
 ```
 
 ---
@@ -74,73 +120,92 @@ CourseWork/
 ### Требования
 
 - [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- SQL Server 2019+ (или Docker)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (рекомендуется)
 - Visual Studio 2022 / JetBrains Rider
 
-### Запуск
+### Вариант 1: Docker Compose (рекомендуется)
+
+```bash
+# Клонировать и запустить
+git clone https://github.com/Sugoman/CourseWork.git
+cd CourseWork/LearningTrainer
+docker-compose up --build
+```
+
+После запуска:
+| Сервис | URL |
+|--------|-----|
+| 🔧 API + Swagger | http://localhost:5077/swagger |
+| 🌐 Web App | http://localhost:5078 |
+| 🗄️ SQL Server | localhost:14333 |
+
+### Вариант 2: Локальный запуск
 
 ```bash
 # 1. Клонировать репозиторий
 git clone https://github.com/Sugoman/CourseWork.git
 cd CourseWork
 
-# 2. Применить миграции
-cd LearningAPI
-dotnet ef database update
+# 2. Запустить SQL Server (Docker)
+docker run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=MySuperStrong!Pass123" \
+  -p 14333:1433 --name learning_sql -d mcr.microsoft.com/mssql/server:2022-latest
 
-# 3. Запустить API
+# 3. Применить миграции и запустить API
+cd LearningAPI
+dotnet ef database update --project ../LearningTrainerShared
 dotnet run
 
-# 4. Запустить WPF клиент (в новом терминале)
+# 4. Запустить Web-приложение (новый терминал)
+cd ../LearningTrainerWeb
+dotnet run
+
+# 5. Или запустить WPF клиент (новый терминал)
 cd ../LearningTrainer
 dotnet run
 ```
-
-### Docker (альтернатива)
-
-```bash
-docker-compose up
-```
-
-API доступен на `http://localhost:5077/swagger/index.html`
 
 ---
 
 ## 🛠️ Технологии
 
-| Слой | Технология |
-|------|------------|
-| **Frontend** | WPF, MVVM, WebView2, LiveCharts2 |
-| **Backend** | ASP.NET Core 8.0, EF Core 8.0 |
-| **Database** | SQL Server 2019+ |
-| **Auth** | JWT Bearer Tokens |
+| Слой | Стек |
+|------|------|
+| **Desktop** | WPF, MVVM, WebView2, LiveCharts2 |
+| **Web** | Blazor Server, Bootstrap 5, CSS3 (Custom Properties, Gradients, Animations) |
+| **Backend** | ASP.NET Core 8.0, EF Core 9.0, MediatR |
+| **Database** | SQL Server 2022, SQLite (offline) |
+| **Auth** | JWT Bearer Tokens, BCrypt |
+| **Container** | Docker, Docker Compose |
 | **Markdown** | Markdig |
 | **Tests** | xUnit, Moq |
 
 ---
 
-## ⚙️ Настройки приложения
-
-| Секция | Параметры |
-|--------|-----------|
-| **General** | Daily Goal, Sound Effects, Show Transcription, Interface Language |
-| **Appearance** | Theme, Font Family, Font Size, Animations |
-| **Notifications** | Enable, Duration |
-| **Account** | Keep Logged In, Auto Sync, Password |
-
----
-
 ## 📊 API Endpoints
 
-| Категория | Endpoints |
-|-----------|-----------|
-| **Auth** | `POST /api/auth/login`, `POST /api/auth/register` |
-| **Dictionaries** | `GET/POST/PUT/DELETE /api/dictionary` |
-| **Words** | `GET/POST/DELETE /api/word` |
-| **Rules** | `GET/POST/PUT/DELETE /api/rule` |
-| **Progress** | `GET /api/progress/session/{id}`, `POST /api/progress/update` |
-| **Sharing** | `POST /api/sharing/dictionary/toggle` |
-| **Health** | `GET /api/health` |
+### Аутентификация
+| Method | Endpoint | Описание |
+|--------|----------|----------|
+| POST | `/api/auth/login` | Вход (Login или Email) |
+| POST | `/api/auth/register` | Регистрация |
+| POST | `/api/auth/refresh` | Обновление токена |
+
+### Маркетплейс
+| Method | Endpoint | Описание |
+|--------|----------|----------|
+| GET | `/api/marketplace/dictionaries` | Публичные словари |
+| GET | `/api/marketplace/rules` | Публичные правила |
+| POST | `/api/marketplace/{type}/{id}/download` | Скачать контент |
+| POST | `/api/marketplace/{type}/{id}/publish` | Опубликовать |
+| POST | `/api/marketplace/{type}/{id}/comments` | Добавить отзыв |
+
+### Контент и прогресс
+| Method | Endpoint | Описание |
+|--------|----------|----------|
+| GET/POST | `/api/dictionaries` | Словари пользователя |
+| GET/POST | `/api/rules` | Правила пользователя |
+| GET | `/api/progress/session/{id}` | Сессия обучения |
+| POST | `/api/progress/update` | Обновить прогресс |
 
 ---
 
@@ -160,8 +225,24 @@ dotnet test LearningAPI.Tests
 |----------|----------|
 | [docs/README.md](docs/README.md) | 📑 Индекс документации |
 | [docs/QUICKSTART.md](docs/QUICKSTART.md) | 🚀 Быстрый старт |
-| [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) | 🧪 Эксперименты (с бейджами) |
+| [docs/MARKETPLACE.md](docs/MARKETPLACE.md) | 🛒 Маркетплейс |
 | [docs/TECHNICAL_SUMMARY.md](docs/TECHNICAL_SUMMARY.md) | 🔬 Техническое описание |
+| [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md) | 🧪 Эксперименты |
+
+---
+
+## 📸 Скриншоты
+
+### 🌐 Web Marketplace
+- Современный Landing Page с градиентным Hero
+- Каталог словарей и правил с hover-эффектами
+- Детальные страницы с комментариями (адаптивные)
+- Публикация контента через личный кабинет
+
+### 🖥️ WPF Desktop
+- Интерфейс обучения с интервальным повторением
+- Markdown редактор правил с live-preview
+- Dashboard со статистикой и графиками
 
 ---
 
@@ -181,8 +262,12 @@ MIT License © 2025
 
 <div align="center">
 
-Made with ❤️ using ![.NET](https://img.shields.io/badge/.NET-512BD4?style=flat-square&logo=dotnet&logoColor=white) and ![WPF](https://img.shields.io/badge/WPF-0078D4?style=flat-square&logo=windows&logoColor=white)
+Made with ❤️ using 
 
-**🌍 Learn any language you want!**
+![.NET](https://img.shields.io/badge/.NET-512BD4?style=flat-square&logo=dotnet&logoColor=white)
+![Blazor](https://img.shields.io/badge/Blazor-512BD4?style=flat-square&logo=blazor&logoColor=white)
+![WPF](https://img.shields.io/badge/WPF-0078D4?style=flat-square&logo=windows&logoColor=white)
+
+**🌍 Learn any language you want! Share with the community!**
 
 </div>

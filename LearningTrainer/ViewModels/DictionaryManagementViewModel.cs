@@ -76,6 +76,16 @@ namespace LearningTrainer.ViewModels
         public ICommand SaveChangesCommand { get; }
         public ICommand CloseCommand { get; }
         public ICommand ShareDictionaryCommand { get; }
+        public ICommand PublishToMarketplaceCommand { get; }
+        
+        private bool _isPublished;
+        public bool IsPublished
+        {
+            get => _isPublished;
+            set => SetProperty(ref _isPublished, value);
+        }
+
+        public string PublishButtonText => IsPublished ? "Снять с публикации" : "Опубликовать на сайте";
 
 
 
@@ -92,6 +102,7 @@ namespace LearningTrainer.ViewModels
             DictionaryName = dictionary.Name;
             Description = dictionary.Description;
             IsReadOnly = dictionary.UserId != currentUserId;
+            IsPublished = dictionary.IsPublished;
 
             System.Diagnostics.Debug.WriteLine($"UserId: {dictionary.UserId}, Current: {currentUserId}, IsReadOnly: {IsReadOnly}, IsEditable: {IsEditable}");
            
@@ -111,11 +122,46 @@ namespace LearningTrainer.ViewModels
             DeleteDictionaryCommand = new RelayCommand(async (p) => await DeleteDictionary(), (_) => IsEditable);
             ShareDictionaryCommand = new RelayCommand(ShareDictionary);
             ExportDictionaryCommand = new RelayCommand((param) => ExportDictionary());
-
+            PublishToMarketplaceCommand = new RelayCommand(async (p) => await TogglePublish(), (_) => IsEditable);
 
             CloseCommand = new RelayCommand(CloseTab);
             EventAggregator.Instance.Subscribe<WordAddedMessage>(OnWordAdded);
         }
+        
+        private async Task TogglePublish()
+        {
+            bool success;
+            string action;
+            
+            if (IsPublished)
+            {
+                success = await _dataService.UnpublishDictionaryAsync(_dictionaryModel.Id);
+                action = "снят с публикации";
+            }
+            else
+            {
+                success = await _dataService.PublishDictionaryAsync(_dictionaryModel.Id);
+                action = "опубликован на сайте";
+            }
+            
+            if (success)
+            {
+                IsPublished = !IsPublished;
+                _dictionaryModel.IsPublished = IsPublished;
+                OnPropertyChanged(nameof(PublishButtonText));
+                
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
+                    "Успешно",
+                    $"Словарь '{DictionaryName}' {action}!"));
+            }
+            else
+            {
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Ошибка",
+                    "Не удалось изменить статус публикации"));
+            }
+        }
+        
         private void ShareDictionary(object obj)
         {
             var shareVm = new ShareContentViewModel(

@@ -7,50 +7,62 @@
 
 <div class="container">
     <div class="row justify-content-center mt-5">
-        <div class="col-md-6 col-lg-4">
-            <div class="card shadow">
-                <div class="card-body">
-                    <h2 class="card-title text-center mb-4">Вход</h2>
-
+        <div class="col-md-6 col-lg-5">
+            <div class="text-center mb-4">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;"><i class="bi bi-hand-wave"></i></div>
+                <h1 class="h2">Добро пожаловать!</h1>
+                <p class="text-muted">Войдите в свой аккаунт</p>
+            </div>
+            
+            <div class="card" style="border-radius: var(--radius-xl);">
+                <div class="card-body p-4 p-md-5">
                     @if (!string.IsNullOrEmpty(ErrorMessage))
                     {
-                        <div class="alert alert-danger">@ErrorMessage</div>
+                        <div class="alert alert-danger d-flex align-items-center gap-2">
+                            <i class="bi bi-exclamation-circle"></i>
+                            @ErrorMessage
+                        </div>
                     }
 
                     <EditForm Model="LoginModel" OnValidSubmit="HandleLogin" FormName="LoginForm">
                         <DataAnnotationsValidator />
                         
-                        <div class="mb-3">
-                            <label class="form-label">Email или имя пользователя</label>
-                            <InputText @bind-Value="LoginModel.Username" class="form-control" placeholder="user@example.com" />
-                            <ValidationMessage For="() => LoginModel.Username" class="text-danger" />
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-envelope me-1"></i> Email или имя пользователя
+                            </label>
+                            <InputText @bind-Value="LoginModel.Username" class="form-control form-control-lg" placeholder="user@example.com" />
+                            <ValidationMessage For="() => LoginModel.Username" class="text-danger small mt-1" />
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">Пароль</label>
-                            <InputText @bind-Value="LoginModel.Password" type="password" class="form-control" />
-                            <ValidationMessage For="() => LoginModel.Password" class="text-danger" />
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-lock me-1"></i> Пароль
+                            </label>
+                            <InputText @bind-Value="LoginModel.Password" type="password" class="form-control form-control-lg" />
+                            <ValidationMessage For="() => LoginModel.Password" class="text-danger small mt-1" />
                         </div>
 
-                        <div class="mb-3 form-check">
+                        <div class="mb-4 form-check">
                             <InputCheckbox @bind-Value="LoginModel.RememberMe" class="form-check-input" id="rememberMe" />
                             <label class="form-check-label" for="rememberMe">Запомнить меня</label>
                         </div>
 
-                        <button type="submit" class="btn btn-primary w-100" disabled="@IsLoading">
+                        <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@IsLoading">
                             @if (IsLoading)
                             {
                                 <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                             }
-                            Войти
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Войти
                         </button>
                     </EditForm>
 
-                    <hr />
-
-                    <p class="text-center mb-0">
-                        Нет аккаунта? <a href="register">Зарегистрироваться</a>
-                    </p>
+                    <div class="text-center mt-4 pt-4" style="border-top: 1px solid var(--gray-200);">
+                        <p class="text-muted mb-0">
+                            Нет аккаунта? 
+                            <a href="register" class="fw-semibold">Зарегистрироваться</a>
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -74,7 +86,7 @@
             var success = await AuthService.LoginAsync(LoginModel.Username, LoginModel.Password, LoginModel.RememberMe);
             if (success)
             {
-                Navigation.NavigateTo("/");
+                Navigation.NavigateTo("/", forceLoad: true);
             }
             else
             {

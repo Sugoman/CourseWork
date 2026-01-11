@@ -1,4 +1,4 @@
-using LearningTrainer;
+п»їusing LearningTrainer;
 using LearningTrainer.Context;
 using LearningTrainerShared.Services;
 using LearningAPI.Middleware;
@@ -15,7 +15,7 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// Настройка кодировки консоли для корректного вывода UTF-8
+// РќР°СЃС‚СЂРѕР№РєР° РєРѕРґРёСЂРѕРІРєРё РєРѕРЅСЃРѕР»Рё РґР»СЏ РєРѕСЂСЂРµРєС‚РЅРѕРіРѕ РІС‹РІРѕРґР° UTF-8
 Console.OutputEncoding = Encoding.UTF8;
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -25,7 +25,7 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
-        Description = "Пожалуйста, введите 'Bearer' [пробел] и ваш токен",
+        Description = "РџРѕР¶Р°Р»СѓР№СЃС‚Р°, РІРІРµРґРёС‚Рµ 'Bearer' [РїСЂРѕР±РµР»] Рё РІР°С€ С‚РѕРєРµРЅ",
         Name = "Authorization",
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
@@ -69,7 +69,7 @@ builder.Services.AddControllers()
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddHttpClient<LearningTrainer.Services.ExternalDictionaryService>();
 
-// Добавить CORS конфигурацию
+// Р”РѕР±Р°РІРёС‚СЊ CORS РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? new[] { 
         "http://localhost:5173", 
@@ -91,7 +91,7 @@ builder.Services.AddCors(options =>
               .WithExposedHeaders("Content-Disposition", "X-Total-Count");
     });
 
-    // Для development - разрешаем все
+    // Р”Р»СЏ development - СЂР°Р·СЂРµС€Р°РµРј РІСЃРµ
     options.AddPolicy("AllowAll", policy =>
     {
         policy.AllowAnyOrigin()
@@ -120,10 +120,10 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// Глобальная обработка исключений
+// Р“Р»РѕР±Р°Р»СЊРЅР°СЏ РѕР±СЂР°Р±РѕС‚РєР° РёСЃРєР»СЋС‡РµРЅРёР№
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// Использовать CORS
+// РСЃРїРѕР»СЊР·РѕРІР°С‚СЊ CORS
 var environment = app.Environment;
 if (environment.IsDevelopment())
 {

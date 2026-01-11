@@ -11,6 +11,10 @@ services:
       dockerfile: LearningAPI/Dockerfile
     ports:
       - "5077:8080" 
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     depends_on:
       - db 
       - redis

@@ -19,6 +19,9 @@ namespace LearningTrainer.Services
             {
                 // Обеспечиваем актуальную схему без удаления пользовательских данных при каждом запуске
                 db.Database.EnsureCreated();
+                
+                // Проверяем и добавляем колонку Email если её нет
+                EnsureEmailColumnExists(db);
 
                 if (!string.IsNullOrEmpty(_userLogin))
                 {
@@ -52,6 +55,28 @@ namespace LearningTrainer.Services
                 }
             }
         }
+        
+        private void EnsureEmailColumnExists(LocalDbContext db)
+        {
+            try
+            {
+                // Проверяем, есть ли колонка Email
+                db.Database.ExecuteSqlRaw("SELECT Email FROM Users LIMIT 1");
+            }
+            catch
+            {
+                // Колонки нет, добавляем
+                try
+                {
+                    db.Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN Email TEXT NULL");
+                }
+                catch
+                {
+                    // Игнорируем если уже существует
+                }
+            }
+        }
+        
         private LocalDbContext Context => new LocalDbContext(_userLogin);
         public async Task<List<Dictionary>> GetDictionariesAsync()
         {
@@ -400,6 +425,31 @@ namespace LearningTrainer.Services
         public Task<DashboardStats> GetStatsAsync()
         {
             throw new NotImplementedException();
+        }
+        
+        // Marketplace - недоступно в оффлайн режиме
+        public Task<bool> PublishDictionaryAsync(int dictionaryId)
+        {
+            MessageBox.Show("Публикация в маркетплейс недоступна в оффлайн-режиме", "Офлайн режим", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return Task.FromResult(false);
+        }
+
+        public Task<bool> UnpublishDictionaryAsync(int dictionaryId)
+        {
+            MessageBox.Show("Управление публикацией недоступно в оффлайн-режиме", "Офлайн режим", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return Task.FromResult(false);
+        }
+
+        public Task<bool> PublishRuleAsync(int ruleId)
+        {
+            MessageBox.Show("Публикация в маркетплейс недоступна в оффлайн-режиме", "Офлайн режим", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return Task.FromResult(false);
+        }
+
+        public Task<bool> UnpublishRuleAsync(int ruleId)
+        {
+            MessageBox.Show("Управление публикацией недоступно в оффлайн-режиме", "Офлайн режим", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return Task.FromResult(false);
         }
     }
 }

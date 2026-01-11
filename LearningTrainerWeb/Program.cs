@@ -1,4 +1,4 @@
-using LearningTrainerWeb.Components;
+﻿using LearningTrainerWeb.Components;
 using LearningTrainerWeb.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,18 +7,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "https://localhost:5001";
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5077";
 
-// Configure HttpClient for API calls
-builder.Services.AddHttpClient<IContentApiService, ContentApiService>(client =>
+// Регистрируем общий HttpClient
+builder.Services.AddScoped(sp => 
 {
-    client.BaseAddress = new Uri(apiBaseUrl);
+    var client = new HttpClient { BaseAddress = new Uri(apiBaseUrl) };
+    return client;
 });
 
-builder.Services.AddHttpClient<IAuthService, AuthService>(client =>
-{
-    client.BaseAddress = new Uri(apiBaseUrl);
-});
+// Регистрируем сервисы
+builder.Services.AddScoped<IContentApiService, ContentApiService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 

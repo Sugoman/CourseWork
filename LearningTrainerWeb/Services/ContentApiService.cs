@@ -1,9 +1,9 @@
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 
 namespace LearningTrainerWeb.Services;
 
 /// <summary>
-/// ������ ��� ������ � ��������� ��������� (������� � �������)
+/// Сервис для работы с публичным контентом (словари и правила)
 /// </summary>
 public interface IContentApiService
 {
@@ -32,6 +32,9 @@ public interface IContentApiService
     Task UnpublishDictionaryAsync(int id);
     Task PublishRuleAsync(int id);
     Task UnpublishRuleAsync(int id);
+    
+    // Token management
+    void SetAuthToken(string? token);
 }
 
 public class ContentApiService : IContentApiService
@@ -41,6 +44,19 @@ public class ContentApiService : IContentApiService
     public ContentApiService(HttpClient httpClient)
     {
         _httpClient = httpClient;
+    }
+    
+    public void SetAuthToken(string? token)
+    {
+        if (string.IsNullOrEmpty(token))
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = null;
+        }
+        else
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = 
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        }
     }
 
     #region Dictionaries
@@ -71,12 +87,22 @@ public class ContentApiService : IContentApiService
     public async Task AddDictionaryCommentAsync(int dictionaryId, int rating, string text)
     {
         var request = new { Rating = rating, Text = text };
-        await _httpClient.PostAsJsonAsync($"api/marketplace/dictionaries/{dictionaryId}/comments", request);
+        var response = await _httpClient.PostAsJsonAsync($"api/marketplace/dictionaries/{dictionaryId}/comments", request);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException($"Не удалось добавить комментарий: {response.StatusCode}. {error}");
+        }
     }
 
     public async Task DownloadDictionaryAsync(int dictionaryId)
     {
-        await _httpClient.PostAsync($"api/marketplace/dictionaries/{dictionaryId}/download", null);
+        var response = await _httpClient.PostAsync($"api/marketplace/dictionaries/{dictionaryId}/download", null);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException($"Не удалось скачать словарь: {response.StatusCode}");
+        }
     }
 
     #endregion
@@ -109,12 +135,22 @@ public class ContentApiService : IContentApiService
     public async Task AddRuleCommentAsync(int ruleId, int rating, string text)
     {
         var request = new { Rating = rating, Text = text };
-        await _httpClient.PostAsJsonAsync($"api/marketplace/rules/{ruleId}/comments", request);
+        var response = await _httpClient.PostAsJsonAsync($"api/marketplace/rules/{ruleId}/comments", request);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException($"Не удалось добавить комментарий: {response.StatusCode}. {error}");
+        }
     }
 
     public async Task DownloadRuleAsync(int ruleId)
     {
-        await _httpClient.PostAsync($"api/marketplace/rules/{ruleId}/download", null);
+        var response = await _httpClient.PostAsync($"api/marketplace/rules/{ruleId}/download", null);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new InvalidOperationException($"Не удалось скачать правило: {response.StatusCode}");
+        }
     }
 
     public async Task<List<RuleListItem>> GetRelatedRulesAsync(int ruleId, string category)

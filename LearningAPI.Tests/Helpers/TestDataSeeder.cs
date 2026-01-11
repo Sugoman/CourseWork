@@ -1,4 +1,4 @@
-using LearningTrainerShared.Models;
+ï»¿using LearningTrainerShared.Models;
 using BCrypt.Net;
 
 namespace LearningAPI.Tests.Helpers;
@@ -42,7 +42,7 @@ public static class TestDataSeeder
         {
             Id = 0,
             OriginalWord = "Hello",
-            Translation = "Ïðèâåò",
+            Translation = "ÐŸÑ€Ð¸Ð²ÐµÑ‚",
             Transcription = "[h??lo?]",
             Example = "Hello, world!",
             DictionaryId = dictionaryId,

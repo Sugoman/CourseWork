@@ -439,13 +439,35 @@
                 <Run Text="{Binding Words.Count, Mode=OneWay}" FontWeight="Bold" Foreground="{DynamicResource TertiaryTextBrush}"/>
             </TextBlock>
 
-            <Button Content="{DynamicResource Loc.Button.ShareButton}" 
-            Command="{Binding ShareDictionaryCommand}" 
-            Style="{StaticResource PrimaryButton}"
-            Background="#4B5563" Foreground="White"
-            Width="150" Margin="0,0,10,0"
-            Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}">
-            </Button>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button Content="{DynamicResource Loc.Button.ShareButton}" 
+                    Command="{Binding ShareDictionaryCommand}" 
+                    Style="{StaticResource PrimaryButton}"
+                    Background="#4B5563" Foreground="White"
+                    Width="150" Margin="0,0,10,0"
+                    Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                
+                <!-- Кнопка публикации на сайте -->
+                <Button Content="{Binding PublishButtonText}" 
+                    Command="{Binding PublishToMarketplaceCommand}" 
+                    MinWidth="180"
+                    Margin="0,0,10,0"
+                    Foreground="White"
+                    FontWeight="SemiBold"
+                    Cursor="Hand"
+                    Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                            <Setter Property="Background" Value="#10B981"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPublished}" Value="True">
+                                    <Setter Property="Background" Value="#F59E0B"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="{DynamicResource Loc.Button.ExportButton}" 

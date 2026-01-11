@@ -1,4 +1,4 @@
-using LearningTrainer.Context;
+﻿using LearningTrainer.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace LearningAPI.Tests.Helpers;

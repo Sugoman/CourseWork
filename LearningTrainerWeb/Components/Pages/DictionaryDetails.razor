@@ -1,5 +1,6 @@
 @page "/dictionary/{Id:int}"
 @inject IContentApiService ContentApi
+@inject IAuthService AuthService
 @rendermode InteractiveServer
 
 <PageTitle>@(Dictionary?.Name ?? "Словарь") - LearningTrainer</PageTitle>
@@ -8,114 +9,182 @@
     @if (IsLoading)
     {
         <div class="text-center py-5">
-            <div class="spinner-border" role="status">
+            <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
                 <span class="visually-hidden">Загрузка...</span>
             </div>
+            <p class="text-muted mt-3">Загрузка словаря...</p>
         </div>
     }
     else if (Dictionary == null)
     {
-        <div class="alert alert-danger">Словарь не найден</div>
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--gray-400);"><i class="bi bi-emoji-frown"></i></div>
+            <h2>Словарь не найден</h2>
+            <p class="text-muted mb-4">Возможно, он был удалён или вы перешли по неверной ссылке</p>
+            <a href="dictionaries" class="btn btn-primary">
+                <i class="bi bi-arrow-left me-2"></i> К списку словарей
+            </a>
+        </div>
     }
     else
     {
+        <!-- Breadcrumb -->
         <nav aria-label="breadcrumb" class="mb-4">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="dictionaries">Словари</a></li>
-                <li class="breadcrumb-item active">@Dictionary.Name</li>
+            <ol class="breadcrumb" style="background: transparent; padding: 0;">
+                <li class="breadcrumb-item">
+                    <a href="dictionaries" style="color: var(--primary-600);">
+                        <i class="bi bi-book me-1"></i> Словари
+                    </a>
+                </li>
+                <li class="breadcrumb-item active" style="color: var(--gray-500);">@Dictionary.Name</li>
             </ol>
         </nav>
 
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <!-- Main Info Card -->
+                <div class="card mb-4" style="border-radius: var(--radius-xl); overflow: hidden;">
+                    <div style="background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%); padding: 2rem; color: white;">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
                             <div>
-                                <h1>@Dictionary.Name</h1>
-                                <p class="text-muted">@Dictionary.Description</p>
+                                <h1 style="color: white; margin-bottom: 0.5rem;">@Dictionary.Name</h1>
+                                <p style="opacity: 0.9; margin-bottom: 0;">@Dictionary.Description</p>
                             </div>
-                            <button class="btn btn-success btn-lg" @onclick="DownloadDictionary">
-                                ?? Скачать
+                            <button class="btn btn-light btn-lg" style="color: var(--primary-700); font-weight: 600;" @onclick="DownloadDictionary">
+                                <i class="bi bi-download me-2"></i> Скачать
                             </button>
                         </div>
-                        
-                        <div class="d-flex gap-3 mt-3">
-                            <span class="badge bg-info fs-6">@Dictionary.WordCount слов</span>
-                            <span class="badge bg-secondary fs-6">@Dictionary.LanguageFrom ? @Dictionary.LanguageTo</span>
-                            <span class="text-warning fs-5">? @Dictionary.Rating.ToString("F1") (@Dictionary.RatingCount оценок)</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="d-flex align-items-center gap-2 px-3 py-2" style="background: var(--accent-blue-light); border-radius: var(--radius-full);">
+                                <i class="bi bi-collection" style="color: var(--accent-blue);"></i>
+                                <span style="font-weight: 600; color: #1e40af;">@Dictionary.WordCount слов</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 px-3 py-2" style="background: var(--gray-100); border-radius: var(--radius-full);">
+                                <span style="font-weight: 500;">@Dictionary.LanguageFrom</span>
+                                <i class="bi bi-arrow-right" style="color: var(--gray-400);"></i>
+                                <span style="font-weight: 500;">@Dictionary.LanguageTo</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 px-3 py-2" style="background: var(--accent-yellow-light); border-radius: var(--radius-full);">
+                                <i class="bi bi-star-fill" style="color: var(--accent-yellow);"></i>
+                                <span style="font-weight: 600; color: #92400e;">@Dictionary.Rating.ToString("F1")</span>
+                                <span style="color: #92400e;">(@Dictionary.RatingCount оценок)</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Предпросмотр слов -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Предпросмотр слов</h5>
-                    </div>
+                <!-- Preview Words -->
+                <div class="card mb-4" style="border-radius: var(--radius-lg);">
                     <div class="card-body">
+                        <h5 class="d-flex align-items-center gap-2 mb-4">
+                            <i class="bi bi-eye" style="color: var(--primary-500);"></i>
+                            Предпросмотр слов
+                        </h5>
                         @if (Dictionary.PreviewWords != null && Dictionary.PreviewWords.Any())
                         {
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>Слово</th>
-                                        <th>Перевод</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var word in Dictionary.PreviewWords)
-                                    {
-                                        <tr>
-                                            <td>@word.Term</td>
-                                            <td>@word.Translation</td>
+                            <div class="table-responsive">
+                                <table class="table" style="border-collapse: separate; border-spacing: 0 0.5rem;">
+                                    <thead>
+                                        <tr style="background: transparent;">
+                                            <th style="border: none; color: var(--gray-500); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Слово</th>
+                                            <th style="border: none; color: var(--gray-500); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Перевод</th>
                                         </tr>
-                                    }
-                                </tbody>
-                            </table>
-                            <p class="text-muted small">Показано первые @Dictionary.PreviewWords.Count слов из @Dictionary.WordCount</p>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var word in Dictionary.PreviewWords)
+                                        {
+                                            <tr style="background: var(--gray-50); border-radius: var(--radius);">
+                                                <td style="border: none; padding: 1rem; border-radius: var(--radius) 0 0 var(--radius); font-weight: 500;">@word.Term</td>
+                                                <td style="border: none; padding: 1rem; border-radius: 0 var(--radius) var(--radius) 0; color: var(--gray-600);">@word.Translation</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="text-muted small mb-0">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Показано первые @Dictionary.PreviewWords.Count слов из @Dictionary.WordCount
+                            </p>
                         }
                         else
                         {
-                            <p class="text-muted">Предпросмотр недоступен</p>
+                            <div class="text-center py-4 text-muted">
+                                <i class="bi bi-eye-slash" style="font-size: 2rem;"></i>
+                                <p class="mt-2 mb-0">Предпросмотр недоступен</p>
+                            </div>
                         }
                     </div>
                 </div>
 
-                <!-- Комментарии -->
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Отзывы (@(Comments?.Count ?? 0))</h5>
-                    </div>
+                <!-- Comments -->
+                <div class="card" style="border-radius: var(--radius-lg);">
                     <div class="card-body">
+                        <h5 class="d-flex align-items-center gap-2 mb-4">
+                            <i class="bi bi-chat-dots" style="color: var(--primary-500);"></i>
+                            Отзывы (@(Comments?.Count ?? 0))
+                        </h5>
+                        
                         @if (Comments != null && Comments.Any())
                         {
                             @foreach (var comment in Comments)
                             {
-                                <div class="border-bottom pb-3 mb-3">
-                                    <div class="d-flex justify-content-between">
-                                        <strong>@comment.AuthorName</strong>
+                                <div class="p-3 mb-3" style="background: var(--gray-50); border-radius: var(--radius);">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-400), var(--primary-600)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                                                @(comment.AuthorName?.FirstOrDefault() ?? '?')
+                                            </div>
+                                            <strong>@comment.AuthorName</strong>
+                                        </div>
                                         <span class="text-muted small">@comment.CreatedAt.ToString("dd.MM.yyyy")</span>
                                     </div>
-                                    <div class="text-warning mb-2">
+                                    <div class="mb-2" style="color: var(--accent-yellow);">
                                         @for (int i = 0; i < comment.Rating; i++)
                                         {
-                                            <span>?</span>
+                                            <i class="bi bi-star-fill"></i>
+                                        }
+                                        @for (int i = comment.Rating; i < 5; i++)
+                                        {
+                                            <i class="bi bi-star" style="opacity: 0.3;"></i>
                                         }
                                     </div>
-                                    <p class="mb-0">@comment.Text</p>
+                                    <p class="mb-0" style="color: var(--gray-700);">@comment.Text</p>
                                 </div>
                             }
                         }
                         else
                         {
-                            <p class="text-muted">Пока нет отзывов</p>
+                            <div class="text-center py-4 text-muted">
+                                <i class="bi bi-chat" style="font-size: 2rem; opacity: 0.5;"></i>
+                                <p class="mt-2 mb-0">Пока нет отзывов. Будьте первым!</p>
+                            </div>
                         }
 
-                        <hr />
-                        <h6>Оставить отзыв</h6>
+                        <hr style="border-color: var(--gray-200); margin: 1.5rem 0;" />
+                        
+                        <h6 class="mb-3">
+                            <i class="bi bi-pencil me-1"></i> Оставить отзыв
+                        </h6>
+                        
+                        @if (!string.IsNullOrEmpty(CommentError))
+                        {
+                            <div class="alert alert-danger d-flex align-items-center gap-2">
+                                <i class="bi bi-exclamation-circle"></i> @CommentError
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(CommentSuccess))
+                        {
+                            <div class="alert alert-success d-flex align-items-center gap-2">
+                                <i class="bi bi-check-circle"></i> @CommentSuccess
+                            </div>
+                        }
+                        
                         <div class="mb-3">
-                            <label class="form-label">Оценка</label>
+                            <label class="form-label">
+                                <i class="bi bi-star me-1"></i> Оценка
+                            </label>
                             <select class="form-select" @bind="NewRating">
                                 <option value="5">????? Отлично</option>
                                 <option value="4">???? Хорошо</option>
@@ -125,31 +194,53 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <textarea class="form-control" rows="3" placeholder="Ваш комментарий..." @bind="NewComment"></textarea>
+                            <label class="form-label">
+                                <i class="bi bi-chat-text me-1"></i> Комментарий
+                            </label>
+                            <textarea class="form-control" rows="3" placeholder="Поделитесь своим мнением..." @bind="NewComment"></textarea>
                         </div>
-                        <button class="btn btn-primary" @onclick="SubmitComment">Отправить</button>
+                        <button class="btn btn-primary" @onclick="SubmitComment" disabled="@IsSubmitting">
+                            @if (IsSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            <i class="bi bi-send me-1"></i> Отправить
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Об авторе</h5>
-                    </div>
-                    <div class="card-body text-center">
-                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
-                             style="width: 80px; height: 80px; font-size: 2rem;">
-                            @Dictionary.AuthorName[0]
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <div class="card" style="border-radius: var(--radius-lg); position: sticky; top: 1.5rem;">
+                    <div class="card-body text-center py-4">
+                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary-400), var(--primary-700)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 2.5rem; font-weight: 700; box-shadow: var(--shadow-colored);">
+                            @(Dictionary.AuthorName?.FirstOrDefault() ?? '?')
                         </div>
-                        <h5>@Dictionary.AuthorName</h5>
-                        <p class="text-muted small">Опубликованных материалов: @Dictionary.AuthorContentCount</p>
+                        <h4 style="margin-bottom: 0.25rem;">@Dictionary.AuthorName</h4>
+                        <p class="text-muted small mb-3">Автор словаря</p>
+                        <div class="d-inline-flex align-items-center gap-2 px-3 py-2" style="background: var(--gray-100); border-radius: var(--radius-full);">
+                            <i class="bi bi-folder" style="color: var(--primary-500);"></i>
+                            <span style="font-weight: 500;">@Dictionary.AuthorContentCount материалов</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     }
 </div>
+
+@if (!string.IsNullOrEmpty(DownloadMessage))
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
+        <div class="d-flex align-items-center gap-2 px-4 py-3 text-white" 
+             style="background: @(DownloadSuccess ? "var(--accent-green)" : "var(--accent-red)"); border-radius: var(--radius); box-shadow: var(--shadow-lg);">
+            <i class="bi @(DownloadSuccess ? "bi-check-circle" : "bi-exclamation-circle")"></i>
+            @DownloadMessage
+            <button type="button" class="btn-close btn-close-white ms-2" @onclick="() => DownloadMessage = null" style="font-size: 0.75rem;"></button>
+        </div>
+    </div>
+}
 
 @code {
     [Parameter]
@@ -158,12 +249,18 @@
     private DictionaryDetailDto? Dictionary;
     private List<CommentItem>? Comments;
     private bool IsLoading = true;
+    private bool IsSubmitting = false;
 
     private int NewRating = 5;
     private string NewComment = "";
+    private string? CommentError;
+    private string? CommentSuccess;
+    private string? DownloadMessage;
+    private bool DownloadSuccess;
 
     protected override async Task OnInitializedAsync()
     {
+        await AuthService.InitializeAsync();
         await LoadDictionary();
     }
 
@@ -187,29 +284,62 @@
 
     private async Task DownloadDictionary()
     {
+        var session = await AuthService.GetCurrentSessionAsync();
+        if (session == null)
+        {
+            DownloadMessage = "Войдите в аккаунт для скачивания";
+            DownloadSuccess = false;
+            return;
+        }
+        
         try
         {
             await ContentApi.DownloadDictionaryAsync(Id);
+            DownloadMessage = "Словарь успешно скачан!";
+            DownloadSuccess = true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Download error: {ex.Message}");
+            DownloadMessage = $"Ошибка: {ex.Message}";
+            DownloadSuccess = false;
         }
     }
 
     private async Task SubmitComment()
     {
-        if (string.IsNullOrWhiteSpace(NewComment)) return;
+        CommentError = null;
+        CommentSuccess = null;
+        
+        var session = await AuthService.GetCurrentSessionAsync();
+        if (session == null)
+        {
+            CommentError = "Войдите в аккаунт чтобы оставить отзыв";
+            return;
+        }
+        
+        if (string.IsNullOrWhiteSpace(NewComment))
+        {
+            CommentError = "Введите текст комментария";
+            return;
+        }
+        
+        IsSubmitting = true;
         
         try
         {
             await ContentApi.AddDictionaryCommentAsync(Id, NewRating, NewComment);
+            CommentSuccess = "Отзыв успешно добавлен!";
             NewComment = "";
-            await LoadDictionary();
+            NewRating = 5;
+            Comments = await ContentApi.GetDictionaryCommentsAsync(Id);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            CommentError = $"Ошибка: {ex.Message}";
+        }
+        finally
+        {
+            IsSubmitting = false;
         }
     }
 }

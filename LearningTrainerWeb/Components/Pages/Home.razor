@@ -2,67 +2,173 @@
 
 <PageTitle>LearningTrainer - Платформа обмена контентом</PageTitle>
 
-<div class="container">
-    <div class="text-center py-5">
-        <h1 class="display-4">Добро пожаловать в LearningTrainer</h1>
-        <p class="lead">Платформа для обмена словарями и правилами изучения языков</p>
+<!-- Hero Section - Full Width -->
+<section class="hero-landing">
+    <div class="hero-bg-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
     </div>
-
-    <div class="row g-4">
-        <div class="col-md-6">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body text-center">
-                    <h3 class="card-title">?? Словари</h3>
-                    <p class="card-text">
-                        Находите и скачивайте словари, созданные другими пользователями.
-                        Делитесь своими словарями с сообществом.
-                    </p>
-                    <a href="dictionaries" class="btn btn-primary">Просмотреть словари</a>
-                </div>
+    <div class="hero-content">
+        <div class="hero-badge">
+            <i class="bi bi-stars me-2"></i> Новая версия 2.0
+        </div>
+        <h1 class="hero-title">
+            Учитесь вместе с 
+            <span class="text-highlight">сообществом</span>
+        </h1>
+        <p class="hero-subtitle">
+            Платформа для обмена словарями и правилами изучения языков. 
+            Находите лучший контент, делитесь своими знаниями.
+        </p>
+        <div class="hero-actions">
+            <a href="dictionaries" class="btn btn-hero-primary">
+                <i class="bi bi-book me-2"></i>Смотреть словари
+            </a>
+            <a href="rules" class="btn btn-hero-outline">
+                <i class="bi bi-play-circle me-2"></i>Изучить правила
+            </a>
+        </div>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <span class="hero-stat-value">500+</span>
+                <span class="hero-stat-label">Словарей</span>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat">
+                <span class="hero-stat-value">300+</span>
+                <span class="hero-stat-label">Правил</span>
+            </div>
+            <div class="hero-stat-divider"></div>
+            <div class="hero-stat">
+                <span class="hero-stat-value">2000+</span>
+                <span class="hero-stat-label">Пользователей</span>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body text-center">
-                    <h3 class="card-title">?? Правила</h3>
-                    <p class="card-text">
-                        Изучайте грамматические правила от опытных преподавателей.
-                        Публикуйте свои материалы для других.
-                    </p>
-                    <a href="rules" class="btn btn-primary">Просмотреть правила</a>
-                </div>
-            </div>
-        </div>
     </div>
+</section>
 
-    <div class="row mt-5">
-        <div class="col-12">
-            <h2 class="mb-4">?? Популярное</h2>
+<!-- Features Section -->
+<section class="features-section">
+    <div class="section-container">
+        <div class="section-header">
+            <span class="section-tag">Возможности</span>
+            <h2 class="section-title">Всё для эффективного обучения</h2>
+            <p class="section-desc">Выбирайте из тысяч материалов или создавайте свои</p>
         </div>
-    </div>
 
-    <div class="row g-4">
-        @if (FeaturedContent != null)
-        {
-            @foreach (var item in FeaturedContent)
-            {
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-body">
-                            <span class="badge bg-secondary mb-2">@item.Type</span>
-                            <h5 class="card-title">@item.Title</h5>
-                            <p class="card-text text-muted small">@item.Author</p>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-warning">? @item.Rating.ToString("F1")</span>
-                                <span class="text-muted small">@item.Downloads скачиваний</span>
-                            </div>
-                        </div>
+        <div class="features-grid">
+            <div class="feature-card-modern">
+                <div class="feature-icon-wrap">
+                    <div class="feature-icon">
+                        <i class="bi bi-book"></i>
                     </div>
                 </div>
-            }
-        }
+                <h3>Словари</h3>
+                <p>Находите и скачивайте словари, созданные другими пользователями. Делитесь своими словарями с сообществом.</p>
+                <a href="dictionaries" class="feature-link">
+                    Просмотреть словари <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="feature-card-modern">
+                <div class="feature-icon-wrap">
+                    <div class="feature-icon feature-icon-accent">
+                        <i class="bi bi-journal-text"></i>
+                    </div>
+                </div>
+                <h3>Грамматика</h3>
+                <p>Изучайте грамматические правила от опытных преподавателей. Публикуйте свои материалы для других.</p>
+                <a href="rules" class="feature-link">
+                    Просмотреть правила <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="feature-card-modern">
+                <div class="feature-icon-wrap">
+                    <div class="feature-icon feature-icon-green">
+                        <i class="bi bi-people"></i>
+                    </div>
+                </div>
+                <h3>Сообщество</h3>
+                <p>Присоединяйтесь к активному сообществу учащихся. Оценивайте и комментируйте контент.</p>
+                <a href="register" class="feature-link">
+                    Присоединиться <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
     </div>
-</div>
+</section>
+
+<!-- Popular Content Section -->
+<section class="popular-section">
+    <div class="section-container">
+        <div class="section-header">
+            <span class="section-tag section-tag-fire">
+                <i class="bi bi-fire me-1"></i> Популярное
+            </span>
+            <h2 class="section-title">Лучшее от сообщества</h2>
+            <p class="section-desc">Материалы с высокими оценками от наших пользователей</p>
+        </div>
+
+        <div class="popular-grid">
+            @if (FeaturedContent != null)
+            {
+                @foreach (var item in FeaturedContent)
+                {
+                    <div class="popular-card">
+                        <div class="popular-card-header">
+                            <span class="popular-type @(item.Type == "Словарь" ? "type-dictionary" : "type-rule")">
+                                <i class="bi @(item.Type == "Словарь" ? "bi-book-half" : "bi-journal-bookmark")"></i>
+                                @item.Type
+                            </span>
+                            <div class="popular-rating">
+                                <i class="bi bi-star-fill"></i>
+                                <span>@item.Rating.ToString("F1")</span>
+                            </div>
+                        </div>
+                        <h4 class="popular-title">@item.Title</h4>
+                        <div class="popular-author">
+                            <div class="author-avatar">
+                                <i class="bi bi-person"></i>
+                            </div>
+                            <span>@item.Author</span>
+                        </div>
+                        <div class="popular-card-footer">
+                            <span class="popular-downloads">
+                                <i class="bi bi-download"></i> @item.Downloads
+                            </span>
+                            <a href="@(item.Type == "Словарь" ? "dictionaries" : "rules")" class="btn btn-sm btn-card">
+                                Подробнее
+                            </a>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="cta-content">
+        <div class="cta-bg-shapes">
+            <div class="cta-shape cta-shape-1"></div>
+            <div class="cta-shape cta-shape-2"></div>
+        </div>
+        <h2>Готовы начать обучение?</h2>
+        <p>Присоединяйтесь к тысячам пользователей и начните учиться уже сегодня</p>
+        <div class="cta-actions">
+            <a href="register" class="btn btn-cta-primary">
+                <i class="bi bi-person-plus me-2"></i>Создать аккаунт
+            </a>
+            <a href="dictionaries" class="btn btn-cta-outline">
+                Смотреть без регистрации
+            </a>
+        </div>
+    </div>
+</section>
 
 @code {
     private List<FeaturedItem>? FeaturedContent;
@@ -74,7 +180,10 @@
         {
             new("Словарь", "Business English", "Teacher123", 4.8, 156),
             new("Правило", "Present Perfect", "GrammarPro", 4.9, 234),
-            new("Словарь", "Travel Vocabulary", "Polyglot", 4.5, 89)
+            new("Словарь", "Travel Vocabulary", "Polyglot", 4.5, 89),
+            new("Правило", "Modal Verbs", "EnglishMaster", 4.7, 178),
+            new("Словарь", "IT Terms", "DevLearner", 4.6, 203),
+            new("Правило", "Conditionals", "LangTeacher", 4.8, 145)
         };
     }
 

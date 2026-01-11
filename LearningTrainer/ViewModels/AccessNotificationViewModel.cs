@@ -1,4 +1,4 @@
-using LearningTrainer.Core;
+п»їusing LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using System.Collections.ObjectModel;
@@ -7,7 +7,7 @@ using System.Windows.Input;
 namespace LearningTrainer.ViewModels
 {
     /// <summary>
-    /// ViewModel для управления уведомлениями о правах доступа
+    /// ViewModel РґР»СЏ СѓРїСЂР°РІР»РµРЅРёСЏ СѓРІРµРґРѕРјР»РµРЅРёСЏРјРё Рѕ РїСЂР°РІР°С… РґРѕСЃС‚СѓРїР°
     /// </summary>
     public class AccessNotificationViewModel : ObservableObject
     {
@@ -78,7 +78,7 @@ namespace LearningTrainer.ViewModels
         }
 
         /// <summary>
-        /// Показать отказ в доступе для действия
+        /// РџРѕРєР°Р·Р°С‚СЊ РѕС‚РєР°Р· РІ РґРѕСЃС‚СѓРїРµ РґР»СЏ РґРµР№СЃС‚РІРёСЏ
         /// </summary>
         public void ShowAccessDenied(string actionName, string actionType)
         {
@@ -91,22 +91,22 @@ namespace LearningTrainer.ViewModels
         }
 
         /// <summary>
-        /// Показать статус прав доступа
+        /// РџРѕРєР°Р·Р°С‚СЊ СЃС‚Р°С‚СѓСЃ РїСЂР°РІ РґРѕСЃС‚СѓРїР°
         /// </summary>
         public void ShowPermissionStatus()
         {
             var status = _permissionService.GetPermissionStatus();
             
-            string message = $"?? Статистика прав доступа:\n\n" +
-                           $"Доступные действия: {status.TotalPermissions}/8\n" +
-                           $"• Создавать словари: {(status.CanCreateDictionary ? "?" : "?")}\n" +
-                           $"• Создавать правила: {(status.CanCreateRules ? "?" : "?")}\n" +
-                           $"• Делиться словарями: {(status.CanShareDictionaries ? "?" : "?")}\n" +
-                           $"• Делиться правилами: {(status.CanShareRules ? "?" : "?")}\n" +
-                           $"• Редактировать словари: {(status.CanEditDictionaries ? "?" : "?")}\n" +
-                           $"• Редактировать правила: {(status.CanEditRules ? "?" : "?")}\n" +
-                           $"• Управлять пользователями: {(status.CanManageUsers ? "?" : "?")}\n" +
-                           $"• Просматривать общие материалы: {(status.CanViewSharedDictionaries ? "?" : "?")}";
+            string message = $"?? РЎС‚Р°С‚РёСЃС‚РёРєР° РїСЂР°РІ РґРѕСЃС‚СѓРїР°:\n\n" +
+                           $"Р”РѕСЃС‚СѓРїРЅС‹Рµ РґРµР№СЃС‚РІРёСЏ: {status.TotalPermissions}/8\n" +
+                           $"вЂў РЎРѕР·РґР°РІР°С‚СЊ СЃР»РѕРІР°СЂРё: {(status.CanCreateDictionary ? "?" : "?")}\n" +
+                           $"вЂў РЎРѕР·РґР°РІР°С‚СЊ РїСЂР°РІРёР»Р°: {(status.CanCreateRules ? "?" : "?")}\n" +
+                           $"вЂў Р”РµР»РёС‚СЊСЃСЏ СЃР»РѕРІР°СЂСЏРјРё: {(status.CanShareDictionaries ? "?" : "?")}\n" +
+                           $"вЂў Р”РµР»РёС‚СЊСЃСЏ РїСЂР°РІРёР»Р°РјРё: {(status.CanShareRules ? "?" : "?")}\n" +
+                           $"вЂў Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ СЃР»РѕРІР°СЂРё: {(status.CanEditDictionaries ? "?" : "?")}\n" +
+                           $"вЂў Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ РїСЂР°РІРёР»Р°: {(status.CanEditRules ? "?" : "?")}\n" +
+                           $"вЂў РЈРїСЂР°РІР»СЏС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏРјРё: {(status.CanManageUsers ? "?" : "?")}\n" +
+                           $"вЂў РџСЂРѕСЃРјР°С‚СЂРёРІР°С‚СЊ РѕР±С‰РёРµ РјР°С‚РµСЂРёР°Р»С‹: {(status.CanViewSharedDictionaries ? "?" : "?")}";
 
             _notificationService.AddRoleInfoNotification(
                 _currentUser.Login,
@@ -116,7 +116,7 @@ namespace LearningTrainer.ViewModels
         }
 
         /// <summary>
-        /// Проверить действие и показать уведомление если нет прав
+        /// РџСЂРѕРІРµСЂРёС‚СЊ РґРµР№СЃС‚РІРёРµ Рё РїРѕРєР°Р·Р°С‚СЊ СѓРІРµРґРѕРјР»РµРЅРёРµ РµСЃР»Рё РЅРµС‚ РїСЂР°РІ
         /// </summary>
         public bool CheckPermissionAndNotify(string actionName, bool hasPermission, string actionType = "")
         {

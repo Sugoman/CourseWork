@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore.Migrations;
+п»їusing Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -10,21 +10,21 @@ namespace LearningTrainerShared.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Добавить RefreshToken колонку если её нет
+            // Р”РѕР±Р°РІРёС‚СЊ RefreshToken РєРѕР»РѕРЅРєСѓ РµСЃР»Рё РµС‘ РЅРµС‚
             migrationBuilder.AddColumn<string>(
                 name: "RefreshToken",
                 table: "Users",
                 type: "nvarchar(max)",
                 nullable: true);
 
-            // Добавить RefreshTokenExpiryTime колонку если её нет
+            // Р”РѕР±Р°РІРёС‚СЊ RefreshTokenExpiryTime РєРѕР»РѕРЅРєСѓ РµСЃР»Рё РµС‘ РЅРµС‚
             migrationBuilder.AddColumn<DateTime>(
                 name: "RefreshTokenExpiryTime",
                 table: "Users",
                 type: "datetime2",
                 nullable: true);
 
-            // Добавить IsRefreshTokenRevoked колонка если её нет
+            // Р”РѕР±Р°РІРёС‚СЊ IsRefreshTokenRevoked РєРѕР»РѕРЅРєР° РµСЃР»Рё РµС‘ РЅРµС‚
             migrationBuilder.AddColumn<bool>(
                 name: "IsRefreshTokenRevoked",
                 table: "Users",

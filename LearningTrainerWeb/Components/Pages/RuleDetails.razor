@@ -1,104 +1,160 @@
 @page "/rule/{Id:int}"
 @inject IContentApiService ContentApi
+@inject IAuthService AuthService
 @rendermode InteractiveServer
 
 <PageTitle>@(Rule?.Title ?? "Правило") - LearningTrainer</PageTitle>
 
-<div class="container">
+<div class="container rule-details-page">
     @if (IsLoading)
     {
         <div class="text-center py-5">
-            <div class="spinner-border" role="status">
+            <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
                 <span class="visually-hidden">Загрузка...</span>
             </div>
+            <p class="text-muted mt-3">Загрузка правила...</p>
         </div>
     }
     else if (Rule == null)
     {
-        <div class="alert alert-danger">Правило не найдено</div>
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--gray-400);"><i class="bi bi-emoji-frown"></i></div>
+            <h2>Правило не найдено</h2>
+            <p class="text-muted mb-4">Возможно, оно было удалено или вы перешли по неверной ссылке</p>
+            <a href="rules" class="btn btn-primary">
+                <i class="bi bi-arrow-left me-2"></i> К списку правил
+            </a>
+        </div>
     }
     else
     {
+        <!-- Breadcrumb -->
         <nav aria-label="breadcrumb" class="mb-4">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="rules">Правила</a></li>
-                <li class="breadcrumb-item active">@Rule.Title</li>
+            <ol class="breadcrumb" style="background: transparent; padding: 0;">
+                <li class="breadcrumb-item">
+                    <a href="rules" style="color: var(--primary-600);">
+                        <i class="bi bi-journal-text me-1"></i> Правила
+                    </a>
+                </li>
+                <li class="breadcrumb-item active" style="color: var(--gray-500);">@Rule.Title</li>
             </ol>
         </nav>
 
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <h1>@Rule.Title</h1>
-                                <div class="d-flex gap-2 mb-2">
-                                    <span class="badge bg-secondary">@Rule.Category</span>
-                                    <span class="badge @GetDifficultyBadgeClass(Rule.DifficultyLevel)">
-                                        @GetDifficultyText(Rule.DifficultyLevel)
-                                    </span>
-                                </div>
-                                <p class="text-muted">@Rule.Description</p>
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <!-- Main Info Card -->
+                <div class="card mb-4" style="border-radius: var(--radius-xl); overflow: hidden;">
+                    <div class="rule-hero-header">
+                        <div class="rule-hero-content">
+                            <div class="rule-badges">
+                                <span class="badge" style="background: rgba(255,255,255,0.2);">@Rule.Category</span>
+                                <span class="badge @GetDifficultyBadgeClass(Rule.DifficultyLevel)" style="opacity: 0.9;">
+                                    @GetDifficultyText(Rule.DifficultyLevel)
+                                </span>
                             </div>
-                            <button class="btn btn-success btn-lg" @onclick="DownloadRule">
-                                ?? Скачать
+                            <h1 class="rule-title">@Rule.Title</h1>
+                            <p class="rule-description">@Rule.Description</p>
+                            <button class="btn btn-light rule-download-btn" @onclick="DownloadRule">
+                                <i class="bi bi-download me-2"></i> Скачать
                             </button>
                         </div>
-                        
-                        <div class="d-flex gap-3 mt-3">
-                            <span class="text-warning fs-5">? @Rule.Rating.ToString("F1") (@Rule.RatingCount оценок)</span>
-                            <span class="text-muted">@Rule.Downloads скачиваний</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="rule-stats">
+                            <div class="rule-stat-item rule-stat-rating">
+                                <i class="bi bi-star-fill"></i>
+                                <span class="rule-stat-value">@Rule.Rating.ToString("F1")</span>
+                                <span class="rule-stat-label">(@Rule.RatingCount оценок)</span>
+                            </div>
+                            <div class="rule-stat-item rule-stat-downloads">
+                                <i class="bi bi-download"></i>
+                                <span class="rule-stat-value">@Rule.Downloads</span>
+                                <span class="rule-stat-label">скачиваний</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Содержимое правила в Markdown -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Содержание</h5>
-                    </div>
-                    <div class="card-body">
+                <!-- Rule Content -->
+                <div class="card mb-4" style="border-radius: var(--radius-lg);">
+                    <div class="card-body p-4">
+                        <h5 class="d-flex align-items-center gap-2 mb-4">
+                            <i class="bi bi-file-text" style="color: var(--primary-500);"></i>
+                            Содержание
+                        </h5>
                         <div class="markdown-content">
-                            @((MarkupString)Rule.HtmlContent)
+                            @((MarkupString)(Rule.HtmlContent ?? ""))
                         </div>
                     </div>
                 </div>
 
-                <!-- Комментарии -->
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Отзывы (@(Comments?.Count ?? 0))</h5>
-                    </div>
+                <!-- Comments -->
+                <div class="card" style="border-radius: var(--radius-lg);">
                     <div class="card-body">
+                        <h5 class="d-flex align-items-center gap-2 mb-4">
+                            <i class="bi bi-chat-dots" style="color: var(--primary-500);"></i>
+                            Отзывы (@(Comments?.Count ?? 0))
+                        </h5>
+                        
                         @if (Comments != null && Comments.Any())
                         {
                             @foreach (var comment in Comments)
                             {
-                                <div class="border-bottom pb-3 mb-3">
-                                    <div class="d-flex justify-content-between">
-                                        <strong>@comment.AuthorName</strong>
+                                <div class="p-3 mb-3" style="background: var(--gray-50); border-radius: var(--radius);">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-400), var(--primary-600)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                                                @(comment.AuthorName?.FirstOrDefault() ?? '?')
+                                            </div>
+                                            <strong>@comment.AuthorName</strong>
+                                        </div>
                                         <span class="text-muted small">@comment.CreatedAt.ToString("dd.MM.yyyy")</span>
                                     </div>
-                                    <div class="text-warning mb-2">
+                                    <div class="mb-2" style="color: var(--accent-yellow);">
                                         @for (int i = 0; i < comment.Rating; i++)
                                         {
-                                            <span>?</span>
+                                            <i class="bi bi-star-fill"></i>
+                                        }
+                                        @for (int i = comment.Rating; i < 5; i++)
+                                        {
+                                            <i class="bi bi-star" style="opacity: 0.3;"></i>
                                         }
                                     </div>
-                                    <p class="mb-0">@comment.Text</p>
+                                    <p class="mb-0" style="color: var(--gray-700);">@comment.Text</p>
                                 </div>
                             }
                         }
                         else
                         {
-                            <p class="text-muted">Пока нет отзывов</p>
+                            <div class="text-center py-4 text-muted">
+                                <i class="bi bi-chat" style="font-size: 2rem; opacity: 0.5;"></i>
+                                <p class="mt-2 mb-0">Пока нет отзывов. Будьте первым!</p>
+                            </div>
                         }
 
-                        <hr />
-                        <h6>Оставить отзыв</h6>
+                        <hr style="border-color: var(--gray-200); margin: 1.5rem 0;" />
+                        
+                        <h6 class="mb-3">
+                            <i class="bi bi-pencil me-1"></i> Оставить отзыв
+                        </h6>
+                        
+                        @if (!string.IsNullOrEmpty(CommentError))
+                        {
+                            <div class="alert alert-danger d-flex align-items-center gap-2">
+                                <i class="bi bi-exclamation-circle"></i> @CommentError
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(CommentSuccess))
+                        {
+                            <div class="alert alert-success d-flex align-items-center gap-2">
+                                <i class="bi bi-check-circle"></i> @CommentSuccess
+                            </div>
+                        }
+                        
                         <div class="mb-3">
-                            <label class="form-label">Оценка</label>
+                            <label class="form-label">
+                                <i class="bi bi-star me-1"></i> Оценка
+                            </label>
                             <select class="form-select" @bind="NewRating">
                                 <option value="5">????? Отлично</option>
                                 <option value="4">???? Хорошо</option>
@@ -108,49 +164,84 @@
                             </select>
                         </div>
                         <div class="mb-3">
-                            <textarea class="form-control" rows="3" placeholder="Ваш комментарий..." @bind="NewComment"></textarea>
+                            <label class="form-label">
+                                <i class="bi bi-chat-text me-1"></i> Комментарий
+                            </label>
+                            <textarea class="form-control" rows="3" placeholder="Поделитесь своим мнением..." @bind="NewComment"></textarea>
                         </div>
-                        <button class="btn btn-primary" @onclick="SubmitComment">Отправить</button>
+                        <button class="btn btn-primary" @onclick="SubmitComment" disabled="@IsSubmitting">
+                            @if (IsSubmitting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            <i class="bi bi-send me-1"></i> Отправить
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0">Об авторе</h5>
-                    </div>
-                    <div class="card-body text-center">
-                        <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
-                             style="width: 80px; height: 80px; font-size: 2rem;">
-                            @Rule.AuthorName[0]
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Author Card -->
+                <div class="card mb-4" style="border-radius: var(--radius-lg);">
+                    <div class="card-body text-center py-4">
+                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, var(--primary-400), var(--primary-700)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 2.5rem; font-weight: 700; box-shadow: var(--shadow-colored);">
+                            @(Rule.AuthorName?.FirstOrDefault() ?? '?')
                         </div>
-                        <h5>@Rule.AuthorName</h5>
-                        <p class="text-muted small">Опубликованных материалов: @Rule.AuthorContentCount</p>
+                        <h4 style="margin-bottom: 0.25rem;">@Rule.AuthorName</h4>
+                        <p class="text-muted small mb-3">Автор правила</p>
+                        <div class="d-inline-flex align-items-center gap-2 px-3 py-2" style="background: var(--gray-100); border-radius: var(--radius-full);">
+                            <i class="bi bi-folder" style="color: var(--primary-500);"></i>
+                            <span style="font-weight: 500;">@Rule.AuthorContentCount материалов</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">Похожие правила</h5>
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        @if (RelatedRules != null)
+                <!-- Related Rules -->
+                <div class="card" style="border-radius: var(--radius-lg);">
+                    <div class="card-body">
+                        <h5 class="d-flex align-items-center gap-2 mb-3">
+                            <i class="bi bi-link-45deg" style="color: var(--primary-500);"></i>
+                            Похожие правила
+                        </h5>
+                        @if (RelatedRules != null && RelatedRules.Any())
                         {
                             @foreach (var related in RelatedRules)
                             {
-                                <li class="list-group-item">
-                                    <a href="rule/@related.Id">@related.Title</a>
-                                    <span class="text-warning float-end">? @related.Rating.ToString("F1")</span>
-                                </li>
+                                <a href="rule/@related.Id" class="d-flex justify-content-between align-items-center p-2 mb-2" 
+                                   style="background: var(--gray-50); border-radius: var(--radius); text-decoration: none; transition: all var(--transition);">
+                                    <span style="color: var(--gray-800); font-weight: 500;">@related.Title</span>
+                                    <span class="d-flex align-items-center gap-1" style="color: var(--accent-yellow);">
+                                        <i class="bi bi-star-fill"></i>
+                                        <span style="font-size: 0.875rem;">@related.Rating.ToString("F1")</span>
+                                    </span>
+                                </a>
                             }
                         }
-                    </ul>
+                        else
+                        {
+                            <div class="text-center py-3 text-muted">
+                                <p class="mb-0 small">Нет похожих правил</p>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
     }
 </div>
+
+@if (!string.IsNullOrEmpty(DownloadMessage))
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
+        <div class="d-flex align-items-center gap-2 px-4 py-3 text-white" 
+             style="background: @(DownloadSuccess ? "var(--accent-green)" : "var(--accent-red)"); border-radius: var(--radius); box-shadow: var(--shadow-lg);">
+            <i class="bi @(DownloadSuccess ? "bi-check-circle" : "bi-exclamation-circle")"></i>
+            @DownloadMessage
+            <button type="button" class="btn-close btn-close-white ms-2" @onclick="() => DownloadMessage = null" style="font-size: 0.75rem;"></button>
+        </div>
+    </div>
+}
 
 @code {
     [Parameter]
@@ -160,12 +251,18 @@
     private List<CommentItem>? Comments;
     private List<RuleListItem>? RelatedRules;
     private bool IsLoading = true;
+    private bool IsSubmitting = false;
 
     private int NewRating = 5;
     private string NewComment = "";
+    private string? CommentError;
+    private string? CommentSuccess;
+    private string? DownloadMessage;
+    private bool DownloadSuccess;
 
     protected override async Task OnInitializedAsync()
     {
+        await AuthService.InitializeAsync();
         await LoadRule();
     }
 
@@ -176,7 +273,7 @@
         {
             Rule = await ContentApi.GetRuleDetailsAsync(Id);
             Comments = await ContentApi.GetRuleCommentsAsync(Id);
-            if (Rule != null)
+            if (Rule != null && !string.IsNullOrEmpty(Rule.Category))
             {
                 RelatedRules = await ContentApi.GetRelatedRulesAsync(Id, Rule.Category);
             }
@@ -193,29 +290,62 @@
 
     private async Task DownloadRule()
     {
+        var session = await AuthService.GetCurrentSessionAsync();
+        if (session == null)
+        {
+            DownloadMessage = "Войдите в аккаунт для скачивания";
+            DownloadSuccess = false;
+            return;
+        }
+        
         try
         {
             await ContentApi.DownloadRuleAsync(Id);
+            DownloadMessage = "Правило успешно скачано!";
+            DownloadSuccess = true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Download error: {ex.Message}");
+            DownloadMessage = $"Ошибка: {ex.Message}";
+            DownloadSuccess = false;
         }
     }
 
     private async Task SubmitComment()
     {
-        if (string.IsNullOrWhiteSpace(NewComment)) return;
+        CommentError = null;
+        CommentSuccess = null;
+        
+        var session = await AuthService.GetCurrentSessionAsync();
+        if (session == null)
+        {
+            CommentError = "Войдите в аккаунт чтобы оставить отзыв";
+            return;
+        }
+        
+        if (string.IsNullOrWhiteSpace(NewComment))
+        {
+            CommentError = "Введите текст комментария";
+            return;
+        }
+        
+        IsSubmitting = true;
         
         try
         {
             await ContentApi.AddRuleCommentAsync(Id, NewRating, NewComment);
+            CommentSuccess = "Отзыв успешно добавлен!";
             NewComment = "";
-            await LoadRule();
+            NewRating = 5;
+            Comments = await ContentApi.GetRuleCommentsAsync(Id);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            CommentError = $"Ошибка: {ex.Message}";
+        }
+        finally
+        {
+            IsSubmitting = false;
         }
     }
 

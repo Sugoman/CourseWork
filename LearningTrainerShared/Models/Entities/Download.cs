@@ -1,10 +1,10 @@
-using System.ComponentModel.DataAnnotations;
+п»їusing System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LearningTrainerShared.Models;
 
 /// <summary>
-/// Запись о скачивании контента пользователем
+/// Р—Р°РїРёСЃСЊ Рѕ СЃРєР°С‡РёРІР°РЅРёРё РєРѕРЅС‚РµРЅС‚Р° РїРѕР»СЊР·РѕРІР°С‚РµР»РµРј
 /// </summary>
 public class Download
 {
@@ -16,7 +16,7 @@ public class Download
 
     [Required]
     [MaxLength(20)]
-    public string ContentType { get; set; } = ""; // "Dictionary" или "Rule"
+    public string ContentType { get; set; } = ""; // "Dictionary" РёР»Рё "Rule"
 
     [Required]
     public int ContentId { get; set; }

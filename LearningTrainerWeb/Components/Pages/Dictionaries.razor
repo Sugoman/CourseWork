@@ -5,55 +5,77 @@
 <PageTitle>Словари - LearningTrainer</PageTitle>
 
 <div class="container">
+    <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>?? Словари</h1>
+        <div class="section-heading" style="margin-bottom: 0;">
+            <i class="bi bi-book"></i>
+            <h1 style="margin-bottom: 0;">Словари</h1>
+        </div>
     </div>
 
-    <!-- Фильтры и поиск -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="input-group">
-                <span class="input-group-text">??</span>
-                <input type="text" class="form-control" placeholder="Поиск словарей..." 
-                       @bind="SearchQuery" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+    <!-- Filters -->
+    <div class="card mb-4" style="border-radius: var(--radius-lg);">
+        <div class="card-body p-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">
+                        <i class="bi bi-search me-1"></i> Поиск
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" placeholder="Название словаря..." 
+                               @bind="SearchQuery" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">
+                        <i class="bi bi-translate me-1"></i> Язык оригинала
+                    </label>
+                    <select class="form-select" @bind="SelectedLanguageFrom">
+                        <option value="">Все языки</option>
+                        <option value="en">???? English</option>
+                        <option value="ru">???? Русский</option>
+                        <option value="de">???? Deutsch</option>
+                        <option value="es">???? Espa?ol</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">
+                        <i class="bi bi-arrow-right-circle me-1"></i> Язык перевода
+                    </label>
+                    <select class="form-select" @bind="SelectedLanguageTo">
+                        <option value="">Все языки</option>
+                        <option value="en">???? English</option>
+                        <option value="ru">???? Русский</option>
+                        <option value="de">???? Deutsch</option>
+                        <option value="es">???? Espa?ol</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" @onclick="ApplyFilters">
+                        <i class="bi bi-funnel me-1"></i> Найти
+                    </button>
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <select class="form-select" @bind="SelectedLanguageFrom">
-                <option value="">Все языки (откуда)</option>
-                <option value="en">English</option>
-                <option value="ru">Русский</option>
-                <option value="de">Deutsch</option>
-                <option value="es">Espa?ol</option>
-            </select>
-        </div>
-        <div class="col-md-3">
-            <select class="form-select" @bind="SelectedLanguageTo">
-                <option value="">Все языки (куда)</option>
-                <option value="en">English</option>
-                <option value="ru">Русский</option>
-                <option value="de">Deutsch</option>
-                <option value="es">Espa?ol</option>
-            </select>
-        </div>
-        <div class="col-md-2">
-            <button class="btn btn-primary w-100" @onclick="ApplyFilters">Применить</button>
-        </div>
     </div>
 
-    <!-- Список словарей -->
+    <!-- Content -->
     @if (IsLoading)
     {
         <div class="text-center py-5">
-            <div class="spinner-border" role="status">
+            <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
                 <span class="visually-hidden">Загрузка...</span>
             </div>
+            <p class="text-muted mt-3">Загрузка словарей...</p>
         </div>
     }
     else if (DictionaryItems == null || !DictionaryItems.Any())
     {
-        <div class="alert alert-info">
-            Словари не найдены. Попробуйте изменить параметры поиска.
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-book"></i></div>
+            <h3>Словари не найдены</h3>
+            <p class="text-muted">Попробуйте изменить параметры поиска</p>
         </div>
     }
     else
@@ -62,54 +84,69 @@
             @foreach (var dict in DictionaryItems)
             {
                 <div class="col-md-4">
-                    <div class="card h-100 shadow-sm">
+                    <div class="card h-100">
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
                                 <h5 class="card-title mb-0">@dict.Name</h5>
                                 <span class="badge bg-info">@dict.WordCount слов</span>
                             </div>
-                            <p class="card-text text-muted small">@dict.Description</p>
+                            <p class="card-text" style="min-height: 48px;">@dict.Description</p>
                             <div class="d-flex gap-2 mb-3">
                                 <span class="badge bg-secondary">@dict.LanguageFrom</span>
-                                <span>?</span>
+                                <span style="color: var(--gray-400);"><i class="bi bi-arrow-right"></i></span>
                                 <span class="badge bg-secondary">@dict.LanguageTo</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-warning">? @dict.Rating.ToString("F1")</span>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="dictionary/@dict.Id" class="btn btn-outline-primary">Подробнее</a>
-                                    <button class="btn btn-success" @onclick="() => DownloadDictionary(dict.Id)">
-                                        ?? Скачать
+                                <span class="d-flex align-items-center gap-1" style="color: var(--accent-yellow);">
+                                    <i class="bi bi-star-fill"></i> 
+                                    <strong>@dict.Rating.ToString("F1")</strong>
+                                </span>
+                                <div class="d-flex gap-2">
+                                    <a href="dictionary/@dict.Id" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-success" @onclick="() => DownloadDictionary(dict.Id)">
+                                        <i class="bi bi-download"></i> Скачать
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-footer text-muted small">
-                            Автор: @dict.AuthorName
+                        <div class="card-footer">
+                            <div class="d-flex align-items-center gap-2 text-muted small">
+                                <i class="bi bi-person-circle"></i>
+                                <span>@dict.AuthorName</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             }
         </div>
 
-        <!-- Пагинация -->
-        <nav class="mt-4">
-            <ul class="pagination justify-content-center">
-                <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
-                    <button class="page-link" @onclick="() => LoadPage(CurrentPage - 1)">Назад</button>
-                </li>
-                @for (int i = 1; i <= TotalPages; i++)
-                {
-                    var pageNum = i;
-                    <li class="page-item @(pageNum == CurrentPage ? "active" : "")">
-                        <button class="page-link" @onclick="() => LoadPage(pageNum)">@pageNum</button>
+        <!-- Pagination -->
+        @if (TotalPages > 1)
+        {
+            <nav class="mt-5">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => LoadPage(CurrentPage - 1)">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
                     </li>
-                }
-                <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
-                    <button class="page-link" @onclick="() => LoadPage(CurrentPage + 1)">Вперёд</button>
-                </li>
-            </ul>
-        </nav>
+                    @for (int i = 1; i <= TotalPages; i++)
+                    {
+                        var pageNum = i;
+                        <li class="page-item @(pageNum == CurrentPage ? "active" : "")">
+                            <button class="page-link" @onclick="() => LoadPage(pageNum)">@pageNum</button>
+                        </li>
+                    }
+                    <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => LoadPage(CurrentPage + 1)">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        }
     }
 </div>
 

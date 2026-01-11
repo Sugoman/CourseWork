@@ -1,10 +1,10 @@
-using System.ComponentModel.DataAnnotations;
+п»їusing System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LearningTrainerShared.Models;
 
 /// <summary>
-/// Комментарий/отзыв к контенту (словарь или правило)
+/// РљРѕРјРјРµРЅС‚Р°СЂРёР№/РѕС‚Р·С‹РІ Рє РєРѕРЅС‚РµРЅС‚Сѓ (СЃР»РѕРІР°СЂСЊ РёР»Рё РїСЂР°РІРёР»Рѕ)
 /// </summary>
 public class Comment
 {
@@ -16,7 +16,7 @@ public class Comment
 
     [Required]
     [MaxLength(20)]
-    public string ContentType { get; set; } = ""; // "Dictionary" или "Rule"
+    public string ContentType { get; set; } = ""; // "Dictionary" РёР»Рё "Rule"
 
     [Required]
     public int ContentId { get; set; }
