@@ -59,6 +59,7 @@ public static class TestDataSeeder
             Title = title,
             Description = "Test rule description",
             MarkdownContent = "# Test Rule\n\nThis is a test.",
+            Category = "Grammar",
             UserId = userId
         };
     }

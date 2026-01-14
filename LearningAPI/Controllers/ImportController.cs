@@ -57,7 +57,7 @@ namespace LearningAPI.Controllers
                     var dictionary = new Dictionary
                     {
                         Name = importData.Name ?? "Imported Dictionary",
-                        Description = importData.Description,
+                        Description = importData.Description ?? "",
                         LanguageFrom = importData.LanguageFrom ?? "English",
                         LanguageTo = importData.LanguageTo ?? "Russian",
                         UserId = userId,
@@ -66,7 +66,7 @@ namespace LearningAPI.Controllers
                             OriginalWord = w.Original,
                             Translation = w.Translation,
                             Transcription = w.PartOfSpeech,
-                            Example = w.Example,
+                            Example = w.Example ?? "",
                             UserId = userId
                         }).ToList() ?? new List<Word>()
                     };
@@ -127,12 +127,18 @@ namespace LearningAPI.Controllers
 
                     while (csv.Read())
                     {
+                        string? transcription = null;
+                        string? example = null;
+                        
+                        try { transcription = csv.GetField("Part of Speech"); } catch { }
+                        try { example = csv.GetField("Example"); } catch { }
+                        
                         var word = new Word
                         {
                             OriginalWord = csv.GetField("Original") ?? "",
                             Translation = csv.GetField("Translation") ?? "",
-                            Transcription = csv.GetField("Part of Speech"),
-                            Example = csv.GetField("Example"),
+                            Transcription = transcription,
+                            Example = example ?? "",
                             UserId = userId
                         };
 
@@ -152,6 +158,7 @@ namespace LearningAPI.Controllers
                 var dictionary = new Dictionary
                 {
                     Name = dictionaryName ?? "Imported Dictionary",
+                    Description = "",
                     LanguageFrom = languageFrom ?? "English",
                     LanguageTo = languageTo ?? "Russian",
                     UserId = userId,
