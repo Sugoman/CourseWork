@@ -14,7 +14,8 @@
 *Интервальное повторение • Маркетплейс контента • Сообщество*
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-22%20passed-success?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-173%20passed-success?style=flat-square)
+![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 </div>
@@ -103,12 +104,25 @@ CourseWork/
 │   ├── Services/               # AuthService, ContentApiService
 │   └── wwwroot/css/            # Современные CSS стили
 ├── 🔧 LearningAPI/             # REST API Backend
-│   ├── Controllers/            # Auth, Marketplace, Progress
+│   ├── Controllers/            # 10+ контроллеров
+│   │   ├── AuthController      # JWT аутентификация
+│   │   ├── DictionaryController # CRUD словарей
+│   │   ├── RulesController     # CRUD правил
+│   │   ├── MarketplaceController # Маркетплейс
+│   │   ├── ProgressController  # Прогресс обучения
+│   │   ├── SharingController   # Шаринг контента
+│   │   ├── ClassroomController # Управление классом
+│   │   └── Import/Export       # JSON/CSV
 │   └── Middleware/             # Exception handling
 ├── 📦 LearningTrainerShared/   # Общая библиотека
 │   ├── Models/                 # Entities, DTOs
-│   └── Context/                # EF DbContext
-├── 🧪 LearningAPI.Tests/       # Unit-тесты (22)
+│   ├── Context/                # EF DbContext
+│   └── Services/               # TokenService
+├── 🧪 LearningAPI.Tests/       # Unit-тесты (173 теста)
+│   ├── Controllers/            # 15 тестовых классов
+│   ├── Services/               # TokenServiceTests
+│   ├── Models/                 # EntityTests
+│   └── Helpers/                # TestDbContextFactory
 ├── 📈 StressTestClient/        # Нагрузочное тестирование
 └── 📄 docs/                    # Документация
 ```
@@ -173,11 +187,11 @@ dotnet run
 | **Desktop** | WPF, MVVM, WebView2, LiveCharts2 |
 | **Web** | Blazor Server, Bootstrap 5, CSS3 (Custom Properties, Gradients, Animations) |
 | **Backend** | ASP.NET Core 8.0, EF Core 9.0, MediatR |
-| **Database** | SQL Server 2022, SQLite (offline) |
-| **Auth** | JWT Bearer Tokens, BCrypt |
+| **Database** | SQL Server 2022, MySQL 8.0, SQLite (offline) |
+| **Auth** | JWT Bearer Tokens, BCrypt, Refresh Tokens |
 | **Container** | Docker, Docker Compose |
 | **Markdown** | Markdig |
-| **Tests** | xUnit, Moq |
+| **Tests** | xUnit, FluentAssertions, Moq |
 
 ---
 
@@ -204,18 +218,58 @@ dotnet run
 |--------|----------|----------|
 | GET/POST | `/api/dictionaries` | Словари пользователя |
 | GET/POST | `/api/rules` | Правила пользователя |
-| GET | `/api/progress/session/{id}` | Сессия обучения |
+| GET | `/api/dictionaries/{id}/review` | Сессия обучения |
 | POST | `/api/progress/update` | Обновить прогресс |
+| GET | `/api/progress/stats` | Статистика пользователя |
+
+### Импорт/Экспорт
+| Method | Endpoint | Описание |
+|--------|----------|----------|
+| POST | `/api/dictionaries/import/json` | Импорт из JSON |
+| POST | `/api/dictionaries/import/csv` | Импорт из CSV |
+| GET | `/api/dictionaries/export/{id}/json` | Экспорт в JSON |
+| GET | `/api/dictionaries/export/{id}/csv` | Экспорт в CSV |
+
+### Класс (Teacher → Students)
+| Method | Endpoint | Описание |
+|--------|----------|----------|
+| GET | `/api/classroom/invite-code` | Получить код приглашения |
+| POST | `/api/classroom/join` | Присоединиться к классу |
+| GET | `/api/classroom/students` | Список учеников |
+| POST | `/api/sharing/dictionary` | Поделиться словарём |
+| POST | `/api/sharing/rule` | Поделиться правилом |
 
 ---
 
 ## 🧪 Тестирование
 
 ```bash
+# Запуск всех тестов
 dotnet test LearningAPI.Tests
+
+# Запуск с подробным выводом
+dotnet test LearningAPI.Tests --logger "console;verbosity=detailed"
 ```
 
-**Результат:** ✅ 22 теста пройдено
+### Покрытие тестами
+
+| Категория | Тестов | Статус |
+|-----------|--------|--------|
+| **Controllers** | 120+ | ✅ |
+| **Services** | 15+ | ✅ |
+| **Models** | 20+ | ✅ |
+| **Helpers** | 10+ | ✅ |
+| **Всего** | **173** | ✅ 100% |
+
+Тестируемые контроллеры:
+- `AuthController` - регистрация, вход, JWT токены
+- `DictionaryController` - CRUD словарей, сессии обучения
+- `RulesController` - CRUD правил, Markdown
+- `MarketplaceController` - публикация, скачивание, комментарии
+- `ProgressController` - прогресс изучения, статистика
+- `SharingController` - шаринг контента ученикам
+- `ClassroomController` - управление классом
+- `ImportController` / `ExportController` - JSON/CSV
 
 ---
 
