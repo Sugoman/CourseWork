@@ -1,0 +1,804 @@
+@page "/training"
+@rendermode InteractiveServer
+@using LearningTrainerWeb.Services
+@using LearningTrainerShared.Models
+@inject ITrainingApiService TrainingService
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Тренировка - LearningTrainer</PageTitle>
+
+<div class="training-container" @onkeydown="HandleKeyDown" tabindex="0" @ref="trainingContainer">
+    @if (!IsAuthenticated)
+    {
+        <!-- Неавторизованный пользователь -->
+        <div class="training-guest">
+            <div class="guest-hero">
+                <div class="guest-icon">
+                    <i class="bi bi-mortarboard"></i>
+                </div>
+                <h1>Начните изучать слова прямо сейчас!</h1>
+                <p>Войдите в систему, чтобы начать тренировку и отслеживать свой прогресс</p>
+                <div class="guest-actions">
+                    <a href="login" class="btn btn-primary btn-lg">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Войти
+                    </a>
+                    <a href="register" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-person-plus me-2"></i>Регистрация
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+    else if (IsLoading)
+    {
+        <!-- Загрузка -->
+        <div class="training-loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p>Подготовка тренировки...</p>
+        </div>
+    }
+    else if (DailyPlan == null || (DailyPlan.Stats.TotalReviewCount == 0 && DailyPlan.Stats.TotalNewCount == 0))
+    {
+        <!-- Пустое состояние - нет слов -->
+        <div class="training-empty">
+            <div class="empty-icon">
+                <i class="bi bi-journal-x"></i>
+            </div>
+            <h2>У вас пока нет слов для изучения</h2>
+            <p>Добавьте словарь или установите стартовый набор, чтобы начать тренировку</p>
+            <div class="empty-actions">
+                <button class="btn btn-primary btn-lg" @onclick="InstallStarterPack" disabled="@IsInstallingStarter">
+                    @if (IsInstallingStarter)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-lightning-charge me-2"></i>
+                    }
+                    Установить стартовый набор
+                </button>
+                <a href="dictionaries" class="btn btn-outline-primary btn-lg">
+                    <i class="bi bi-book me-2"></i>Найти словари
+                </a>
+            </div>
+            @if (!string.IsNullOrEmpty(StarterMessage))
+            {
+                <div class="alert @(StarterSuccess ? "alert-success" : "alert-danger") mt-3">
+                    @StarterMessage
+                </div>
+            }
+        </div>
+    }
+    else if (!IsTrainingActive)
+    {
+        <!-- Обзор плана на сегодня -->
+        <div class="daily-plan">
+            <div class="plan-header">
+                <h1>
+                    <i class="bi bi-calendar-check me-2"></i>
+                    Тренировка на сегодня
+                </h1>
+                @if (DailyPlan.Stats.CurrentStreak > 0)
+                {
+                    <div class="streak-badge">
+                        <i class="bi bi-fire"></i>
+                        <span>@DailyPlan.Stats.CurrentStreak дней подряд!</span>
+                    </div>
+                }
+            </div>
+
+            <div class="plan-stats">
+                <div class="stat-card stat-review">
+                    <div class="stat-icon">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">@DailyPlan.Stats.TotalReviewCount</span>
+                        <span class="stat-label">К повторению</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-new">
+                    <div class="stat-icon">
+                        <i class="bi bi-plus-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">@DailyPlan.Stats.TotalNewCount</span>
+                        <span class="stat-label">Новых слов</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-difficult">
+                    <div class="stat-icon">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">@DailyPlan.Stats.TotalDifficultCount</span>
+                        <span class="stat-label">Сложных</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-completed">
+                    <div class="stat-icon">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value">@DailyPlan.Stats.CompletedToday</span>
+                        <span class="stat-label">Сделано сегодня</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="training-modes">
+                <h3>Выберите режим тренировки</h3>
+                <div class="modes-grid">
+                    <button class="mode-card" @onclick='() => StartTraining("mixed")' 
+                            disabled="@(DailyPlan.Stats.TotalReviewCount == 0 && DailyPlan.Stats.TotalNewCount == 0)">
+                        <div class="mode-icon">
+                            <i class="bi bi-shuffle"></i>
+                        </div>
+                        <h4>Смешанный</h4>
+                        <p>Повторение + новые слова</p>
+                    </button>
+                    <button class="mode-card" @onclick='() => StartTraining("review")'
+                            disabled="@(DailyPlan.Stats.TotalReviewCount == 0)">
+                        <div class="mode-icon">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </div>
+                        <h4>Повторение</h4>
+                        <p>Только слова к повторению</p>
+                    </button>
+                    <button class="mode-card" @onclick='() => StartTraining("new")'
+                            disabled="@(DailyPlan.Stats.TotalNewCount == 0)">
+                        <div class="mode-icon">
+                            <i class="bi bi-plus-circle"></i>
+                        </div>
+                        <h4>Новые слова</h4>
+                        <p>Изучение новых слов</p>
+                    </button>
+                    <button class="mode-card mode-difficult" @onclick='() => StartTraining("difficult")'
+                            disabled="@(DailyPlan.Stats.TotalDifficultCount == 0)">
+                        <div class="mode-icon">
+                            <i class="bi bi-lightning"></i>
+                        </div>
+                        <h4>Сложные</h4>
+                        <p>Слова с ошибками</p>
+                    </button>
+                </div>
+                
+                <h3 class="mt-4">Тип упражнений</h3>
+                <div class="exercise-types">
+                    <button class="exercise-type @(ExerciseType == "flashcard" ? "active" : "")" 
+                            @onclick='() => SetExerciseType("flashcard")'>
+                        <i class="bi bi-card-text"></i>
+                        <span>Карточки</span>
+                    </button>
+                    <button class="exercise-type @(ExerciseType == "mcq" ? "active" : "")" 
+                            @onclick='() => SetExerciseType("mcq")'>
+                        <i class="bi bi-ui-radios"></i>
+                        <span>Выбор ответа</span>
+                    </button>
+                    <button class="exercise-type @(ExerciseType == "typing" ? "active" : "")" 
+                            @onclick='() => SetExerciseType("typing")'>
+                        <i class="bi bi-keyboard"></i>
+                        <span>Ввод</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="quick-start">
+                <button class="btn btn-primary btn-xl" @onclick='() => StartTraining("mixed")'>
+                    <i class="bi bi-play-fill me-2"></i>
+                    Начать тренировку
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Активная тренировка -->
+        <div class="training-session">
+            @if (CurrentWord != null)
+            {
+                <div class="session-progress">
+                    <div class="progress-info">
+                        <span>Слово @(CurrentIndex + 1) из @TrainingWords.Count</span>
+                        <span class="correct-count">
+                            <i class="bi bi-check-circle text-success"></i> @CorrectCount
+                        </span>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar" style="width: @((CurrentIndex + 1) * 100.0 / TrainingWords.Count)%"></div>
+                    </div>
+                </div>
+
+                @if (ExerciseType == "flashcard")
+                {
+                    <!-- Режим карточек -->
+                    <div class="flashcard @(IsAnswerRevealed ? "revealed" : "")">
+                        <div class="card-front">
+                            <div class="word-dictionary">
+                                <i class="bi bi-book"></i> @CurrentWord.DictionaryName
+                            </div>
+                            <div class="word-main">@CurrentWord.OriginalWord</div>
+                            @if (!string.IsNullOrEmpty(CurrentWord.Transcription))
+                            {
+                                <div class="word-transcription">@CurrentWord.Transcription</div>
+                            }
+                            @if (!IsAnswerRevealed)
+                            {
+                                <button class="btn btn-outline-primary btn-lg mt-4" @onclick="RevealAnswer">
+                                    <i class="bi bi-eye me-2"></i>Показать ответ
+                                </button>
+                            }
+                        </div>
+
+                        @if (IsAnswerRevealed)
+                        {
+                            <div class="card-back">
+                                <div class="translation">@CurrentWord.Translation</div>
+                                @if (!string.IsNullOrEmpty(CurrentWord.Example))
+                                {
+                                    <div class="example">
+                                        <i class="bi bi-chat-quote"></i> @CurrentWord.Example
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="answer-buttons">
+                                <button class="btn btn-answer btn-again" @onclick="() => SubmitAnswer(ResponseQuality.Again)" title="Клавиша 1">
+                                    <i class="bi bi-x-lg"></i>
+                                    <span>Не знаю</span>
+                                    <small>1</small>
+                                </button>
+                                <button class="btn btn-answer btn-hard" @onclick="() => SubmitAnswer(ResponseQuality.Hard)" title="Клавиша 2">
+                                    <i class="bi bi-emoji-frown"></i>
+                                    <span>Сложно</span>
+                                    <small>2</small>
+                                </button>
+                                <button class="btn btn-answer btn-good" @onclick="() => SubmitAnswer(ResponseQuality.Good)" title="Клавиша 3">
+                                    <i class="bi bi-emoji-smile"></i>
+                                    <span>Хорошо</span>
+                                    <small>3</small>
+                                </button>
+                                <button class="btn btn-answer btn-easy" @onclick="() => SubmitAnswer(ResponseQuality.Easy)" title="Клавиша 4">
+                                    <i class="bi bi-emoji-laughing"></i>
+                                    <span>Легко</span>
+                                    <small>4</small>
+                                </button>
+                            </div>
+                            <div class="keyboard-hints">
+                                <span><kbd>Space</kbd> показать ответ</span>
+                                <span><kbd>1-4</kbd> выбор оценки</span>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (ExerciseType == "mcq")
+                {
+                    <!-- Режим выбора ответа (MCQ) -->
+                    <div class="mcq-card">
+                        <div class="mcq-question">
+                            <div class="word-dictionary">
+                                <i class="bi bi-book"></i> @CurrentWord.DictionaryName
+                            </div>
+                            <div class="word-main">@CurrentWord.OriginalWord</div>
+                            @if (!string.IsNullOrEmpty(CurrentWord.Transcription))
+                            {
+                                <div class="word-transcription">@CurrentWord.Transcription</div>
+                            }
+                        </div>
+
+                        <div class="mcq-options">
+                            @foreach (var option in McqOptions)
+                            {
+                                var isSelected = SelectedMcqOption == option;
+                                var isCorrect = option == CurrentWord.Translation;
+                                var cssClass = "";
+                                
+                                if (McqAnswered)
+                                {
+                                    if (isCorrect)
+                                        cssClass = "correct";
+                                    else if (isSelected && !isCorrect)
+                                        cssClass = "incorrect";
+                                }
+                                else if (isSelected)
+                                {
+                                    cssClass = "selected";
+                                }
+
+                                <button class="mcq-option @cssClass" 
+                                        @onclick="() => SelectMcqOption(option)"
+                                        disabled="@McqAnswered">
+                                    <span class="option-text">@option</span>
+                                    @if (McqAnswered && isCorrect)
+                                    {
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    }
+                                    else if (McqAnswered && isSelected && !isCorrect)
+                                    {
+                                        <i class="bi bi-x-circle-fill"></i>
+                                    }
+                                </button>
+                            }
+                        </div>
+
+                        @if (McqAnswered)
+                        {
+                            <div class="mcq-feedback @(McqWasCorrect ? "success" : "error")">
+                                @if (McqWasCorrect)
+                                {
+                                    <i class="bi bi-check-circle"></i>
+                                    <span>Правильно!</span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle"></i>
+                                    <span>Неверно. Правильный ответ: @CurrentWord.Translation</span>
+                                }
+                            </div>
+                            <button class="btn btn-primary btn-lg mt-3" @onclick="NextMcqWord">
+                                <i class="bi bi-arrow-right me-2"></i>Далее
+                            </button>
+                        }
+                    </div>
+                }
+                else if (ExerciseType == "typing")
+                {
+                    <!-- Режим ввода ответа -->
+                    <div class="typing-card">
+                        <div class="typing-question">
+                            <div class="word-dictionary">
+                                <i class="bi bi-book"></i> @CurrentWord.DictionaryName
+                            </div>
+                            <div class="word-main">@CurrentWord.OriginalWord</div>
+                            @if (!string.IsNullOrEmpty(CurrentWord.Transcription))
+                            {
+                                <div class="word-transcription">@CurrentWord.Transcription</div>
+                            }
+                        </div>
+
+                        <div class="typing-input">
+                            <input type="text" class="form-control form-control-lg @(TypingAnswered ? (TypingWasCorrect ? "is-valid" : "is-invalid") : "")" 
+                                   placeholder="Введите перевод..."
+                                   @bind="TypedAnswer"
+                                   @bind:event="oninput"
+                                   @onkeypress="HandleTypingKeyPress"
+                                   disabled="@TypingAnswered" />
+                            
+                            @if (!TypingAnswered)
+                            {
+                                <button class="btn btn-primary btn-lg" @onclick="CheckTypingAnswer">
+                                    <i class="bi bi-check-lg me-2"></i>Проверить
+                                </button>
+                            }
+                        </div>
+
+                        @if (TypingAnswered)
+                        {
+                            <div class="typing-feedback @(TypingWasCorrect ? "success" : "error")">
+                                @if (TypingWasCorrect)
+                                {
+                                    <i class="bi bi-check-circle"></i>
+                                    <span>Правильно!</span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle"></i>
+                                    <span>Правильный ответ: <strong>@CurrentWord.Translation</strong></span>
+                                }
+                            </div>
+                            <button class="btn btn-primary btn-lg mt-3" @onclick="NextTypingWord">
+                                <i class="bi bi-arrow-right me-2"></i>Далее
+                            </button>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <!-- Результаты тренировки -->
+                <div class="session-results">
+                    <div class="results-icon">
+                        @if (CorrectCount >= TrainingWords.Count * 0.8)
+                        {
+                            <i class="bi bi-trophy text-warning"></i>
+                        }
+                        else if (CorrectCount >= TrainingWords.Count * 0.5)
+                        {
+                            <i class="bi bi-hand-thumbs-up text-success"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-arrow-repeat text-primary"></i>
+                        }
+                    </div>
+                    <h2>Тренировка завершена!</h2>
+                    <div class="results-stats">
+                        <div class="result-stat">
+                            <span class="result-value">@TrainingWords.Count</span>
+                            <span class="result-label">Всего слов</span>
+                        </div>
+                        <div class="result-stat result-correct">
+                            <span class="result-value">@CorrectCount</span>
+                            <span class="result-label">Правильно</span>
+                        </div>
+                        <div class="result-stat result-wrong">
+                            <span class="result-value">@(TrainingWords.Count - CorrectCount)</span>
+                            <span class="result-label">С ошибками</span>
+                        </div>
+                    </div>
+                    <div class="results-accuracy">
+                        <div class="accuracy-value">@((CorrectCount * 100.0 / Math.Max(1, TrainingWords.Count)).ToString("F0"))%</div>
+                        <div class="accuracy-label">Точность</div>
+                    </div>
+                    <div class="results-actions">
+                        <button class="btn btn-primary btn-lg" @onclick="ContinueTraining">
+                            <i class="bi bi-arrow-repeat me-2"></i>Продолжить
+                        </button>
+                        <button class="btn btn-outline-secondary btn-lg" @onclick="BackToPlan">
+                            <i class="bi bi-house me-2"></i>К плану
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+private bool IsAuthenticated;
+private bool IsLoading = true;
+private bool IsTrainingActive;
+private bool IsAnswerRevealed;
+private bool IsInstallingStarter;
+private string? StarterMessage;
+private bool StarterSuccess;
+
+private DailyPlanDto? DailyPlan;
+private List<TrainingWordDto> TrainingWords = new();
+private TrainingWordDto? CurrentWord;
+private int CurrentIndex;
+private int CorrectCount;
+private string CurrentMode = "mixed";
+private string ExerciseType = "flashcard";
+
+// MCQ state
+private List<string> McqOptions = new();
+private string? SelectedMcqOption;
+private bool McqAnswered;
+private bool McqWasCorrect;
+
+// Typing state
+private string TypedAnswer = "";
+private bool TypingAnswered;
+private bool TypingWasCorrect;
+private Random _random = new();
+
+// Element reference for focus
+private ElementReference trainingContainer;
+
+protected override async Task OnAfterRenderAsync(bool firstRender)
+{
+    if (firstRender && IsTrainingActive)
+    {
+        await FocusContainer();
+    }
+}
+
+private async Task FocusContainer()
+{
+    try
+    {
+        await trainingContainer.FocusAsync();
+    }
+    catch
+    {
+        // Ignore focus errors
+    }
+}
+
+private async Task HandleKeyDown(KeyboardEventArgs e)
+{
+    if (!IsTrainingActive || CurrentWord == null) return;
+
+    if (ExerciseType == "flashcard")
+    {
+        await HandleFlashcardKeyDown(e);
+    }
+    else if (ExerciseType == "mcq")
+    {
+        await HandleMcqKeyDown(e);
+    }
+    // Typing mode handles its own key events
+}
+
+private async Task HandleFlashcardKeyDown(KeyboardEventArgs e)
+{
+    if (!IsAnswerRevealed)
+    {
+        // Space to reveal answer
+        if (e.Key == " " || e.Key == "Enter")
+        {
+            RevealAnswer();
+            StateHasChanged();
+        }
+    }
+    else
+    {
+        // 1-4 to rate answer
+        switch (e.Key)
+        {
+            case "1":
+                await SubmitAnswer(ResponseQuality.Again);
+                break;
+            case "2":
+                await SubmitAnswer(ResponseQuality.Hard);
+                break;
+            case "3":
+                await SubmitAnswer(ResponseQuality.Good);
+                break;
+            case "4":
+                await SubmitAnswer(ResponseQuality.Easy);
+                break;
+        }
+    }
+}
+
+private async Task HandleMcqKeyDown(KeyboardEventArgs e)
+{
+    if (!McqAnswered)
+    {
+        // 1-4 to select option
+        if (int.TryParse(e.Key, out int num) && num >= 1 && num <= McqOptions.Count)
+        {
+            await SelectMcqOption(McqOptions[num - 1]);
+            StateHasChanged();
+        }
+    }
+    else
+    {
+        // Enter or Space to continue
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            NextMcqWord();
+            StateHasChanged();
+        }
+    }
+}
+
+protected override async Task OnInitializedAsync()
+{
+    await AuthService.InitializeAsync();
+    var session = await AuthService.GetCurrentSessionAsync();
+    IsAuthenticated = session != null;
+        
+    if (IsAuthenticated)
+    {
+        var token = AuthService.GetToken();
+        TrainingService.SetAuthToken(token);
+        await LoadDailyPlan();
+    }
+
+    IsLoading = false;
+}
+
+private async Task LoadDailyPlan()
+{
+    DailyPlan = await TrainingService.GetDailyPlanAsync();
+}
+
+private async Task InstallStarterPack()
+{
+    IsInstallingStarter = true;
+    StarterMessage = null;
+    StateHasChanged();
+
+    var result = await TrainingService.InstallStarterPackAsync();
+
+    if (result != null)
+    {
+        StarterSuccess = true;
+        StarterMessage = result.Message;
+            await LoadDailyPlan();
+        }
+        else
+        {
+            StarterSuccess = false;
+            StarterMessage = "Не удалось установить стартовый набор. Возможно, у вас уже есть словари.";
+        }
+
+        IsInstallingStarter = false;
+    }
+
+    private void SetExerciseType(string type)
+    {
+        ExerciseType = type;
+    }
+
+    private async Task StartTraining(string mode)
+    {
+        CurrentMode = mode;
+        IsLoading = true;
+        StateHasChanged();
+
+        TrainingWords = await TrainingService.GetTrainingWordsAsync(mode);
+
+        if (TrainingWords.Count > 0)
+        {
+            CurrentIndex = 0;
+            CorrectCount = 0;
+            CurrentWord = TrainingWords[0];
+            IsAnswerRevealed = false;
+            IsTrainingActive = true;
+            PrepareCurrentWord();
+            await FocusContainer();
+        }
+
+        IsLoading = false;
+    }
+
+    private void PrepareCurrentWord()
+    {
+        // Reset states
+        IsAnswerRevealed = false;
+        McqAnswered = false;
+        McqWasCorrect = false;
+        SelectedMcqOption = null;
+        TypingAnswered = false;
+        TypingWasCorrect = false;
+        TypedAnswer = "";
+
+        // Generate MCQ options if needed
+        if (ExerciseType == "mcq" && CurrentWord != null)
+        {
+            GenerateMcqOptions();
+        }
+    }
+
+    private void GenerateMcqOptions()
+    {
+        McqOptions.Clear();
+        
+        // Add correct answer
+        McqOptions.Add(CurrentWord!.Translation);
+        
+        // Add distractors from other words
+        var otherWords = TrainingWords
+            .Where(w => w.WordId != CurrentWord.WordId && !string.IsNullOrEmpty(w.Translation))
+            .Select(w => w.Translation)
+            .Distinct()
+            .OrderBy(_ => _random.Next())
+            .Take(3)
+            .ToList();
+        
+        McqOptions.AddRange(otherWords);
+        
+        // If we don't have enough options, add some generic ones
+        var genericOptions = new[] { "слово", "ответ", "перевод", "значение" };
+        while (McqOptions.Count < 4)
+        {
+            var option = genericOptions[_random.Next(genericOptions.Length)] + " " + (_random.Next(99) + 1);
+            if (!McqOptions.Contains(option))
+            {
+                McqOptions.Add(option);
+            }
+        }
+        
+        // Shuffle options
+        McqOptions = McqOptions.OrderBy(_ => _random.Next()).ToList();
+    }
+
+    private void RevealAnswer()
+    {
+        IsAnswerRevealed = true;
+    }
+
+    private async Task SubmitAnswer(ResponseQuality quality)
+    {
+        if (CurrentWord == null) return;
+
+        // Отправляем результат на сервер
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality);
+
+        // Считаем правильные ответы
+        if (quality >= ResponseQuality.Good)
+        {
+            CorrectCount++;
+        }
+
+        // Переход к следующему слову
+        MoveToNextWord();
+    }
+
+    private async Task SelectMcqOption(string option)
+    {
+        if (McqAnswered || CurrentWord == null) return;
+        
+        SelectedMcqOption = option;
+        McqAnswered = true;
+        McqWasCorrect = option.Equals(CurrentWord.Translation, StringComparison.OrdinalIgnoreCase);
+        
+        // Update progress
+        var quality = McqWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality);
+        
+        if (McqWasCorrect)
+        {
+            CorrectCount++;
+        }
+    }
+
+    private void NextMcqWord()
+    {
+        MoveToNextWord();
+    }
+
+    private async Task HandleTypingKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !TypingAnswered)
+        {
+            await CheckTypingAnswer();
+        }
+    }
+
+    private async Task CheckTypingAnswer()
+    {
+        if (TypingAnswered || CurrentWord == null) return;
+        
+        TypingAnswered = true;
+        
+        // Normalize answers for comparison
+        var userAnswer = TypedAnswer.Trim().ToLowerInvariant();
+        var correctAnswer = CurrentWord.Translation.Trim().ToLowerInvariant();
+        
+        // Allow for minor variations (e.g., with/without articles for some languages)
+        TypingWasCorrect = userAnswer == correctAnswer || 
+                           correctAnswer.Contains(userAnswer) && userAnswer.Length >= correctAnswer.Length * 0.8;
+        
+        // Update progress
+        var quality = TypingWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality);
+        
+        if (TypingWasCorrect)
+        {
+            CorrectCount++;
+        }
+    }
+
+    private void NextTypingWord()
+    {
+        MoveToNextWord();
+    }
+
+    private void MoveToNextWord()
+    {
+        CurrentIndex++;
+        if (CurrentIndex < TrainingWords.Count)
+        {
+            CurrentWord = TrainingWords[CurrentIndex];
+            PrepareCurrentWord();
+        }
+        else
+        {
+            // Тренировка завершена
+            CurrentWord = null;
+        }
+    }
+
+    private async Task ContinueTraining()
+    {
+        await LoadDailyPlan();
+        await StartTraining(CurrentMode);
+    }
+
+    private async Task BackToPlan()
+    {
+        await LoadDailyPlan();
+        IsTrainingActive = false;
+        CurrentWord = null;
+    }
+}

@@ -20,15 +20,22 @@ public class AuthService : IAuthService
 {
     private readonly HttpClient _httpClient;
     private readonly ProtectedSessionStorage _sessionStorage;
+    private readonly ProtectedLocalStorage _localStorage;
     private readonly IContentApiService _contentApiService;
     private UserSession? _currentSession;
     private bool _isInitialized;
     private const string SessionKey = "auth_session";
+    private const string PersistentSessionKey = "auth_session_persistent";
 
-    public AuthService(HttpClient httpClient, ProtectedSessionStorage sessionStorage, IContentApiService contentApiService)
+    public AuthService(
+        HttpClient httpClient, 
+        ProtectedSessionStorage sessionStorage, 
+        ProtectedLocalStorage localStorage,
+        IContentApiService contentApiService)
     {
         _httpClient = httpClient;
         _sessionStorage = sessionStorage;
+        _localStorage = localStorage;
         _contentApiService = contentApiService;
     }
 
@@ -40,11 +47,24 @@ public class AuthService : IAuthService
         
         try
         {
+            // Сначала проверяем session storage
             var result = await _sessionStorage.GetAsync<UserSession>(SessionKey);
             if (result.Success && result.Value != null)
             {
                 _currentSession = result.Value;
                 SetAuthHeaders(_currentSession.Token);
+            }
+            else
+            {
+                // Если нет в session, проверяем local storage (для "Запомнить меня")
+                var persistentResult = await _localStorage.GetAsync<UserSession>(PersistentSessionKey);
+                if (persistentResult.Success && persistentResult.Value != null)
+                {
+                    _currentSession = persistentResult.Value;
+                    SetAuthHeaders(_currentSession.Token);
+                    // Копируем в session storage для текущей сессии
+                    await _sessionStorage.SetAsync(SessionKey, _currentSession);
+                }
             }
         }
         catch
@@ -83,16 +103,24 @@ public class AuthService : IAuthService
                 _currentSession = new UserSession
                 {
                     UserId = result.UserId,
-                    UserName = result.UserLogin ?? result.UserName ?? username,
+                    UserName = result.Username ?? username,
+                    Email = result.Email ?? "",
                     Token = result.AccessToken,
-                    Role = result.UserRole ?? result.Role ?? ""
+                    Role = result.Role ?? ""
                 };
                 
                 SetAuthHeaders(result.AccessToken);
                 
                 try
                 {
+                    // Всегда сохраняем в session storage
                     await _sessionStorage.SetAsync(SessionKey, _currentSession);
+                    
+                    // Если "Запомнить меня" - сохраняем также в local storage
+                    if (rememberMe)
+                    {
+                        await _localStorage.SetAsync(PersistentSessionKey, _currentSession);
+                    }
                 }
                 catch
                 {
@@ -109,7 +137,8 @@ public class AuthService : IAuthService
     {
         var request = new 
         { 
-            Login = username, 
+            Username = username,
+            Email = email,
             Password = password,
             InviteCode = inviteCode
         };
@@ -125,6 +154,7 @@ public class AuthService : IAuthService
         try
         {
             await _sessionStorage.DeleteAsync(SessionKey);
+            await _localStorage.DeleteAsync(PersistentSessionKey);
         }
         catch
         {
@@ -144,11 +174,10 @@ public class AuthService : IAuthService
     private class LoginResponse
     {
         public int UserId { get; set; }
-        public string? UserName { get; set; }
-        public string? UserLogin { get; set; }
+        public string? Username { get; set; }
+        public string? Email { get; set; }
         public string AccessToken { get; set; } = "";
         public string? Role { get; set; }
-        public string? UserRole { get; set; }
     }
 }
 
@@ -156,6 +185,7 @@ public class UserSession
 {
     public int UserId { get; set; }
     public string UserName { get; set; } = "";
+    public string Email { get; set; } = "";
     public string Token { get; set; } = "";
     public string Role { get; set; } = "";
 }

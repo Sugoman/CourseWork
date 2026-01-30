@@ -67,7 +67,7 @@ public class AuthControllerTests : IDisposable
         response.Should().NotBeNull();
         response!.GetType().GetProperty("AccessToken")?.GetValue(response).Should().NotBeNull();
         response!.GetType().GetProperty("RefreshToken")?.GetValue(response).Should().NotBeNull();
-        response!.GetType().GetProperty("UserLogin")?.GetValue(response).Should().Be("testuser");
+        response!.GetType().GetProperty("Username")?.GetValue(response).Should().Be("testuser");
     }
 
     [Fact]

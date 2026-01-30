@@ -37,10 +37,10 @@ namespace LearningAPI.Controllers
         {
             try
             {
-                // Ищем по Login или Email
+                // Ищем по Username или Email
                 var user = await _context.Users
                                    .Include(u => u.Role)
-                                   .FirstOrDefaultAsync(u => u.Login == request.Username || u.Email == request.Username);
+                                   .FirstOrDefaultAsync(u => u.Username == request.Username || u.Email == request.Username);
 
                 if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
                 {
@@ -65,7 +65,9 @@ namespace LearningAPI.Controllers
                     RefreshToken = refreshToken,
                     TokenType = "Bearer",
                     ExpiresIn = 7200, // 2 hours in seconds
-                    UserLogin = user.Login,
+                    Username = user.Username,
+                    UserLogin = user.Username, // для обратной совместимости
+                    Email = user.Email,
                     UserRole = user.Role.Name,
                     UserId = user.Id,         
                     InviteCode = user.InviteCode
@@ -108,9 +110,16 @@ namespace LearningAPI.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            if (await _context.Users.AnyAsync(u => u.Login == request.Login))
+            // Проверка уникальности Username
+            if (await _context.Users.AnyAsync(u => u.Username == request.Username))
             {
-                return BadRequest(new { message = "Этот логин уже занят" });
+                return BadRequest(new { message = "Это имя пользователя уже занято" });
+            }
+
+            // Проверка уникальности Email
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+            {
+                return BadRequest(new { message = "Этот Email уже зарегистрирован" });
             }
 
             Role roleToAssign;
@@ -147,7 +156,8 @@ namespace LearningAPI.Controllers
 
             var newUser = new User
             {
-                Login = request.Login,
+                Username = request.Username,
+                Email = request.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
                 RoleId = roleToAssign.Id,
                 UserId = teacherId,
@@ -157,7 +167,7 @@ namespace LearningAPI.Controllers
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(Login), new { username = newUser.Login }, new { message = "Аккаунт успешно создан" });
+            return CreatedAtAction(nameof(Login), new { username = newUser.Username }, new { message = "Аккаунт успешно создан" });
         }
 
         [Authorize]

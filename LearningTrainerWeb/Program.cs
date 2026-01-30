@@ -1,5 +1,8 @@
 ﻿using LearningTrainerWeb.Components;
 using LearningTrainerWeb.Services;
+using System.Text;
+
+Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +22,7 @@ builder.Services.AddScoped(sp =>
 // Регистрируем сервисы
 builder.Services.AddScoped<IContentApiService, ContentApiService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITrainingApiService, TrainingApiService>();
 
 var app = builder.Build();
 

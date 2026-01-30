@@ -10,12 +10,13 @@ public static class TestDataSeeder
     public static Role CreateAdminRole() => new Role { Id = 3, Name = "Admin" };
     public static Role CreateUserRole() => new Role { Id = 4, Name = "User" };
 
-    public static User CreateTestUser(string login = "testuser", string password = "password123", Role? role = null)
+    public static User CreateTestUser(string username = "testuser", string password = "password123", Role? role = null, string? email = null)
     {
         return new User
         {
             Id = 0,
-            Login = login,
+            Username = username,
+            Email = email ?? $"{username}@test.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             Role = role ?? CreateTeacherRole(),
             InviteCode = $"TR-TEST01"

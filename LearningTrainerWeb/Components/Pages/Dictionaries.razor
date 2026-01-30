@@ -1,15 +1,18 @@
 @page "/dictionaries"
+@using LearningTrainerWeb.Services
 @inject IContentApiService ContentApi
+@inject ITrainingApiService TrainingService
+@inject IAuthService AuthService
 @rendermode InteractiveServer
 
-<PageTitle>������� - LearningTrainer</PageTitle>
+<PageTitle>Словари - LearningTrainer</PageTitle>
 
 <div class="container">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="section-heading" style="margin-bottom: 0;">
             <i class="bi bi-book"></i>
-            <h1 style="margin-bottom: 0;">�������</h1>
+            <h1 style="margin-bottom: 0;">Словари</h1>
         </div>
     </div>
 
@@ -19,41 +22,41 @@
             <div class="row g-3 align-items-end">
                 <div class="col-md-4">
                     <label class="form-label small text-muted">
-                        <i class="bi bi-search me-1"></i> �����
+                        <i class="bi bi-search me-1"></i> Поиск
                     </label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" placeholder="�������� �������..." 
+                        <input type="text" class="form-control" placeholder="Название словаря..." 
                                @bind="SearchQuery" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
                     </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-muted">
-                        <i class="bi bi-translate me-1"></i> ���� ���������
+                        <i class="bi bi-translate me-1"></i> Язык оригинала
                     </label>
                     <select class="form-select" @bind="SelectedLanguageFrom">
-                        <option value="">��� �����</option>
-                        <option value="en">???? English</option>
-                        <option value="ru">???? �������</option>
-                        <option value="de">???? Deutsch</option>
-                        <option value="es">???? Espa?ol</option>
+                        <option value="">Все языки</option>
+                        <option value="en">🇬🇧 English</option>
+                        <option value="ru">🇷🇺 Русский</option>
+                        <option value="de">🇩🇪 Deutsch</option>
+                        <option value="es">🇪🇸 Español</option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-muted">
-                        <i class="bi bi-arrow-right-circle me-1"></i> ���� ��������
+                        <i class="bi bi-arrow-right-circle me-1"></i> Язык перевода
                     </label>
                     <select class="form-select" @bind="SelectedLanguageTo">
-                        <option value="">��� �����</option>
-                        <option value="en">???? English</option>
-                        <option value="ru">???? �������</option>
-                        <option value="de">???? Deutsch</option>
-                        <option value="es">???? Espa?ol</option>
+                        <option value="">Все языки</option>
+                        <option value="en">🇬🇧 English</option>
+                        <option value="ru">🇷🇺 Русский</option>
+                        <option value="de">🇩🇪 Deutsch</option>
+                        <option value="es">🇪🇸 Español</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2" style="margin-top: 32px;">
                     <button class="btn btn-primary w-100" @onclick="ApplyFilters">
-                        <i class="bi bi-funnel me-1"></i> �����
+                        <i class="bi bi-funnel me-1"></i> Найти
                     </button>
                 </div>
             </div>
@@ -65,17 +68,84 @@
     {
         <div class="text-center py-5">
             <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
-                <span class="visually-hidden">��������...</span>
+                <span class="visually-hidden">Загрузка...</span>
             </div>
-            <p class="text-muted mt-3">�������� ��������...</p>
+            <p class="text-muted mt-3">Загрузка словарей...</p>
         </div>
     }
     else if (DictionaryItems == null || !DictionaryItems.Any())
     {
-        <div class="text-center py-5">
-            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-book"></i></div>
-            <h3>������� �� �������</h3>
-            <p class="text-muted">���������� �������� ��������� ������</p>
+        <!-- Улучшенное пустое состояние -->
+        <div class="empty-state-card">
+            <div class="empty-state-icon">
+                <i class="bi bi-book"></i>
+            </div>
+            <h3>Словари не найдены</h3>
+            <p class="text-muted mb-4">
+                @if (!string.IsNullOrEmpty(SearchQuery) || !string.IsNullOrEmpty(SelectedLanguageFrom) || !string.IsNullOrEmpty(SelectedLanguageTo))
+                {
+                    <span>По вашему запросу ничего не найдено. Попробуйте изменить параметры поиска.</span>
+                }
+                else
+                {
+                    <span>В маркетплейсе пока нет опубликованных словарей.</span>
+                }
+            </p>
+            
+            <div class="empty-state-actions">
+                @if (!string.IsNullOrEmpty(SearchQuery) || !string.IsNullOrEmpty(SelectedLanguageFrom) || !string.IsNullOrEmpty(SelectedLanguageTo))
+                {
+                    <button class="btn btn-outline-primary" @onclick="ClearFilters">
+                        <i class="bi bi-x-circle me-2"></i>Сбросить фильтры
+                    </button>
+                }
+                
+                @if (IsAuthenticated)
+                {
+                    <button class="btn btn-primary" @onclick="InstallStarterPack" disabled="@IsInstallingStarter">
+                        @if (IsInstallingStarter)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-lightning-charge me-2"></i>
+                        }
+                        Установить стартовый набор
+                    </button>
+                }
+                else
+                {
+                    <a href="register" class="btn btn-primary">
+                        <i class="bi bi-person-plus me-2"></i>Зарегистрироваться
+                    </a>
+                }
+            </div>
+            
+            @if (!string.IsNullOrEmpty(StarterMessage))
+            {
+                <div class="alert @(StarterSuccess ? "alert-success" : "alert-danger") mt-3" style="max-width: 500px; margin: 1rem auto 0;">
+                    @StarterMessage
+                </div>
+            }
+            
+            <div class="empty-state-tips mt-4">
+                <h6 class="text-muted">Что можно сделать:</h6>
+                <div class="tips-grid">
+                    <div class="tip-item">
+                        <i class="bi bi-lightning-charge text-warning"></i>
+                        <span>Установить стартовый набор с базовыми словами</span>
+                    </div>
+                    <div class="tip-item">
+                        <i class="bi bi-upload text-primary"></i>
+                        <span>Импортировать свой словарь из CSV файла</span>
+                    </div>
+                    <div class="tip-item">
+                        <i class="bi bi-mortarboard text-success"></i>
+                        <span>Перейти к <a href="training">тренировке</a> имеющихся слов</span>
+                    </div>
+                </div>
+            </div>
         </div>
     }
     else
@@ -88,7 +158,7 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <h5 class="card-title mb-0">@dict.Name</h5>
-                                <span class="badge bg-info">@dict.WordCount ����</span>
+                                <span class="badge bg-info">@dict.WordCount слов</span>
                             </div>
                             <p class="card-text" style="min-height: 48px;">@dict.Description</p>
                             <div class="d-flex gap-2 mb-3">
@@ -106,7 +176,7 @@
                                         <i class="bi bi-eye"></i>
                                     </a>
                                     <button class="btn btn-sm btn-success" @onclick="() => DownloadDictionary(dict.Id)">
-                                        <i class="bi bi-download"></i> �������
+                                        <i class="bi bi-download"></i> Скачать
                                     </button>
                                 </div>
                             </div>
@@ -150,9 +220,69 @@
     }
 </div>
 
+<style>
+    .empty-state-card {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .empty-state-icon {
+        font-size: 4rem;
+        color: var(--bs-primary);
+        margin-bottom: 1.5rem;
+        opacity: 0.7;
+    }
+    
+    .empty-state-card h3 {
+        margin-bottom: 0.5rem;
+        color: var(--bs-dark);
+    }
+    
+    .empty-state-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .empty-state-tips {
+        padding-top: 1.5rem;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .tips-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: center;
+        margin-top: 1rem;
+    }
+    
+    .tip-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .tip-item i {
+        font-size: 1.25rem;
+    }
+</style>
+
 @code {
     private List<DictionaryListItem>? DictionaryItems;
     private bool IsLoading = true;
+    private bool IsAuthenticated;
+    private bool IsInstallingStarter;
+    private string? StarterMessage;
+    private bool StarterSuccess;
     private string SearchQuery = "";
     private string SelectedLanguageFrom = "";
     private string SelectedLanguageTo = "";
@@ -162,6 +292,16 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await AuthService.InitializeAsync();
+        var session = await AuthService.GetCurrentSessionAsync();
+        IsAuthenticated = session != null;
+        
+        if (IsAuthenticated)
+        {
+            var token = AuthService.GetToken();
+            TrainingService.SetAuthToken(token);
+        }
+        
         await LoadDictionaries();
     }
 
@@ -200,6 +340,15 @@
         await LoadDictionaries();
     }
 
+    private async Task ClearFilters()
+    {
+        SearchQuery = "";
+        SelectedLanguageFrom = "";
+        SelectedLanguageTo = "";
+        CurrentPage = 1;
+        await LoadDictionaries();
+    }
+
     private async Task LoadPage(int page)
     {
         if (page < 1 || page > TotalPages) return;
@@ -217,5 +366,27 @@
         {
             Console.WriteLine($"Download error: {ex.Message}");
         }
+    }
+
+    private async Task InstallStarterPack()
+    {
+        IsInstallingStarter = true;
+        StarterMessage = null;
+        StateHasChanged();
+
+        var result = await TrainingService.InstallStarterPackAsync();
+
+        if (result != null)
+        {
+            StarterSuccess = true;
+            StarterMessage = result.Message + " Теперь вы можете начать тренировку!";
+        }
+        else
+        {
+            StarterSuccess = false;
+            StarterMessage = "Не удалось установить стартовый набор. Возможно, у вас уже есть словари.";
+        }
+
+        IsInstallingStarter = false;
     }
 }

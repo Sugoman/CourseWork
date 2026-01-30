@@ -1,28 +1,28 @@
-@page "/dictionary/{Id:int}"
+п»ї@page "/dictionary/{Id:int}"
 @inject IContentApiService ContentApi
 @inject IAuthService AuthService
 @rendermode InteractiveServer
 
-<PageTitle>@(Dictionary?.Name ?? "Словарь") - LearningTrainer</PageTitle>
+<PageTitle>@(Dictionary?.Name ?? "РЎР»РѕРІР°СЂСЊ") - LearningTrainer</PageTitle>
 
 <div class="container">
     @if (IsLoading)
     {
         <div class="text-center py-5">
             <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
-                <span class="visually-hidden">Загрузка...</span>
+                <span class="visually-hidden">Р—Р°РіСЂСѓР·РєР°...</span>
             </div>
-            <p class="text-muted mt-3">Загрузка словаря...</p>
+            <p class="text-muted mt-3">Р—Р°РіСЂСѓР·РєР° СЃР»РѕРІР°СЂСЏ...</p>
         </div>
     }
     else if (Dictionary == null)
     {
         <div class="text-center py-5">
             <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--gray-400);"><i class="bi bi-emoji-frown"></i></div>
-            <h2>Словарь не найден</h2>
-            <p class="text-muted mb-4">Возможно, он был удалён или вы перешли по неверной ссылке</p>
+            <h2>РЎР»РѕРІР°СЂСЊ РЅРµ РЅР°Р№РґРµРЅ</h2>
+            <p class="text-muted mb-4">Р’РѕР·РјРѕР¶РЅРѕ, РѕРЅ Р±С‹Р» СѓРґР°Р»С‘РЅ РёР»Рё РІС‹ РїРµСЂРµС€Р»Рё РїРѕ РЅРµРІРµСЂРЅРѕР№ СЃСЃС‹Р»РєРµ</p>
             <a href="dictionaries" class="btn btn-primary">
-                <i class="bi bi-arrow-left me-2"></i> К списку словарей
+                <i class="bi bi-arrow-left me-2"></i> Рљ СЃРїРёСЃРєСѓ СЃР»РѕРІР°СЂРµР№
             </a>
         </div>
     }
@@ -33,7 +33,7 @@
             <ol class="breadcrumb" style="background: transparent; padding: 0;">
                 <li class="breadcrumb-item">
                     <a href="dictionaries" style="color: var(--primary-600);">
-                        <i class="bi bi-book me-1"></i> Словари
+                        <i class="bi bi-book me-1"></i> РЎР»РѕРІР°СЂРё
                     </a>
                 </li>
                 <li class="breadcrumb-item active" style="color: var(--gray-500);">@Dictionary.Name</li>
@@ -51,7 +51,7 @@
                                 <p style="opacity: 0.9; margin-bottom: 0;">@Dictionary.Description</p>
                             </div>
                             <button class="btn btn-light btn-lg" style="color: var(--primary-700); font-weight: 600;" @onclick="DownloadDictionary">
-                                <i class="bi bi-download me-2"></i> Скачать
+                                <i class="bi bi-download me-2"></i> РЎРєР°С‡Р°С‚СЊ
                             </button>
                         </div>
                     </div>
@@ -59,7 +59,7 @@
                         <div class="d-flex flex-wrap gap-3">
                             <div class="d-flex align-items-center gap-2 px-3 py-2" style="background: var(--accent-blue-light); border-radius: var(--radius-full);">
                                 <i class="bi bi-collection" style="color: var(--accent-blue);"></i>
-                                <span style="font-weight: 600; color: #1e40af;">@Dictionary.WordCount слов</span>
+                                <span style="font-weight: 600; color: #1e40af;">@Dictionary.WordCount СЃР»РѕРІ</span>
                             </div>
                             <div class="d-flex align-items-center gap-2 px-3 py-2" style="background: var(--gray-100); border-radius: var(--radius-full);">
                                 <span style="font-weight: 500;">@Dictionary.LanguageFrom</span>
@@ -69,7 +69,7 @@
                             <div class="d-flex align-items-center gap-2 px-3 py-2" style="background: var(--accent-yellow-light); border-radius: var(--radius-full);">
                                 <i class="bi bi-star-fill" style="color: var(--accent-yellow);"></i>
                                 <span style="font-weight: 600; color: #92400e;">@Dictionary.Rating.ToString("F1")</span>
-                                <span style="color: #92400e;">(@Dictionary.RatingCount оценок)</span>
+                                <span style="color: #92400e;">(@Dictionary.RatingCount РѕС†РµРЅРѕРє)</span>
                             </div>
                         </div>
                     </div>
@@ -80,7 +80,7 @@
                     <div class="card-body">
                         <h5 class="d-flex align-items-center gap-2 mb-4">
                             <i class="bi bi-eye" style="color: var(--primary-500);"></i>
-                            Предпросмотр слов
+                            РџСЂРµРґРїСЂРѕСЃРјРѕС‚СЂ СЃР»РѕРІ
                         </h5>
                         @if (Dictionary.PreviewWords != null && Dictionary.PreviewWords.Any())
                         {
@@ -88,8 +88,8 @@
                                 <table class="table" style="border-collapse: separate; border-spacing: 0 0.5rem;">
                                     <thead>
                                         <tr style="background: transparent;">
-                                            <th style="border: none; color: var(--gray-500); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Слово</th>
-                                            <th style="border: none; color: var(--gray-500); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">Перевод</th>
+                                            <th style="border: none; color: var(--gray-500); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">РЎР»РѕРІРѕ</th>
+                                            <th style="border: none; color: var(--gray-500); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">РџРµСЂРµРІРѕРґ</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -105,14 +105,14 @@
                             </div>
                             <p class="text-muted small mb-0">
                                 <i class="bi bi-info-circle me-1"></i>
-                                Показано первые @Dictionary.PreviewWords.Count слов из @Dictionary.WordCount
+                                РџРѕРєР°Р·Р°РЅРѕ РїРµСЂРІС‹Рµ @Dictionary.PreviewWords.Count СЃР»РѕРІ РёР· @Dictionary.WordCount
                             </p>
                         }
                         else
                         {
                             <div class="text-center py-4 text-muted">
                                 <i class="bi bi-eye-slash" style="font-size: 2rem;"></i>
-                                <p class="mt-2 mb-0">Предпросмотр недоступен</p>
+                                <p class="mt-2 mb-0">РџСЂРµРґРїСЂРѕСЃРјРѕС‚СЂ РЅРµРґРѕСЃС‚СѓРїРµРЅ</p>
                             </div>
                         }
                     </div>
@@ -123,7 +123,7 @@
                     <div class="card-body">
                         <h5 class="d-flex align-items-center gap-2 mb-4">
                             <i class="bi bi-chat-dots" style="color: var(--primary-500);"></i>
-                            Отзывы (@(Comments?.Count ?? 0))
+                            РћС‚Р·С‹РІС‹ (@(Comments?.Count ?? 0))
                         </h5>
                         
                         @if (Comments != null && Comments.Any())
@@ -158,14 +158,14 @@
                         {
                             <div class="text-center py-4 text-muted">
                                 <i class="bi bi-chat" style="font-size: 2rem; opacity: 0.5;"></i>
-                                <p class="mt-2 mb-0">Пока нет отзывов. Будьте первым!</p>
+                                <p class="mt-2 mb-0">РџРѕРєР° РЅРµС‚ РѕС‚Р·С‹РІРѕРІ. Р‘СѓРґСЊС‚Рµ РїРµСЂРІС‹Рј!</p>
                             </div>
                         }
 
                         <hr style="border-color: var(--gray-200); margin: 1.5rem 0;" />
                         
                         <h6 class="mb-3">
-                            <i class="bi bi-pencil me-1"></i> Оставить отзыв
+                            <i class="bi bi-pencil me-1"></i> РћСЃС‚Р°РІРёС‚СЊ РѕС‚Р·С‹РІ
                         </h6>
                         
                         @if (!string.IsNullOrEmpty(CommentError))
@@ -183,28 +183,28 @@
                         
                         <div class="mb-3">
                             <label class="form-label">
-                                <i class="bi bi-star me-1"></i> Оценка
+                                <i class="bi bi-star me-1"></i> РћС†РµРЅРєР°
                             </label>
                             <select class="form-select" @bind="NewRating">
-                                <option value="5">????? Отлично</option>
-                                <option value="4">???? Хорошо</option>
-                                <option value="3">??? Нормально</option>
-                                <option value="2">?? Плохо</option>
-                                <option value="1">? Ужасно</option>
+                                <option value="5">в­ђв­ђв­ђв­ђв­ђ РћС‚Р»РёС‡РЅРѕ</option>
+                                <option value="4">в­ђв­ђв­ђв­ђ РҐРѕСЂРѕС€Рѕ</option>
+                                <option value="3">в­ђв­ђв­ђ РќРѕСЂРјР°Р»СЊРЅРѕ</option>
+                                <option value="2">в­ђв­ђ РџР»РѕС…Рѕ</option>
+                                <option value="1">в­ђ РЈР¶Р°СЃРЅРѕ</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">
-                                <i class="bi bi-chat-text me-1"></i> Комментарий
+                                <i class="bi bi-chat-text me-1"></i> РљРѕРјРјРµРЅС‚Р°СЂРёР№
                             </label>
-                            <textarea class="form-control" rows="3" placeholder="Поделитесь своим мнением..." @bind="NewComment"></textarea>
+                            <textarea class="form-control" rows="3" placeholder="РџРѕРґРµР»РёС‚РµСЃСЊ СЃРІРѕРёРј РјРЅРµРЅРёРµРј..." @bind="NewComment"></textarea>
                         </div>
                         <button class="btn btn-primary" @onclick="SubmitComment" disabled="@IsSubmitting">
                             @if (IsSubmitting)
                             {
                                 <span class="spinner-border spinner-border-sm me-2"></span>
                             }
-                            <i class="bi bi-send me-1"></i> Отправить
+                            <i class="bi bi-send me-1"></i> РћС‚РїСЂР°РІРёС‚СЊ
                         </button>
                     </div>
                 </div>
@@ -218,10 +218,10 @@
                             @(Dictionary.AuthorName?.FirstOrDefault() ?? '?')
                         </div>
                         <h4 style="margin-bottom: 0.25rem;">@Dictionary.AuthorName</h4>
-                        <p class="text-muted small mb-3">Автор словаря</p>
+                        <p class="text-muted small mb-3">РђРІС‚РѕСЂ СЃР»РѕРІР°СЂСЏ</p>
                         <div class="d-inline-flex align-items-center gap-2 px-3 py-2" style="background: var(--gray-100); border-radius: var(--radius-full);">
                             <i class="bi bi-folder" style="color: var(--primary-500);"></i>
-                            <span style="font-weight: 500;">@Dictionary.AuthorContentCount материалов</span>
+                            <span style="font-weight: 500;">@Dictionary.AuthorContentCount РјР°С‚РµСЂРёР°Р»РѕРІ</span>
                         </div>
                     </div>
                 </div>
@@ -287,7 +287,7 @@
         var session = await AuthService.GetCurrentSessionAsync();
         if (session == null)
         {
-            DownloadMessage = "Войдите в аккаунт для скачивания";
+            DownloadMessage = "Р’РѕР№РґРёС‚Рµ РІ Р°РєРєР°СѓРЅС‚ РґР»СЏ СЃРєР°С‡РёРІР°РЅРёСЏ";
             DownloadSuccess = false;
             return;
         }
@@ -295,12 +295,12 @@
         try
         {
             await ContentApi.DownloadDictionaryAsync(Id);
-            DownloadMessage = "Словарь успешно скачан!";
+            DownloadMessage = "РЎР»РѕРІР°СЂСЊ СѓСЃРїРµС€РЅРѕ СЃРєР°С‡Р°РЅ!";
             DownloadSuccess = true;
         }
         catch (Exception ex)
         {
-            DownloadMessage = $"Ошибка: {ex.Message}";
+            DownloadMessage = $"РћС€РёР±РєР°: {ex.Message}";
             DownloadSuccess = false;
         }
     }
@@ -313,13 +313,13 @@
         var session = await AuthService.GetCurrentSessionAsync();
         if (session == null)
         {
-            CommentError = "Войдите в аккаунт чтобы оставить отзыв";
+            CommentError = "Р’РѕР№РґРёС‚Рµ РІ Р°РєРєР°СѓРЅС‚ С‡С‚РѕР±С‹ РѕСЃС‚Р°РІРёС‚СЊ РѕС‚Р·С‹РІ";
             return;
         }
         
         if (string.IsNullOrWhiteSpace(NewComment))
         {
-            CommentError = "Введите текст комментария";
+            CommentError = "Р’РІРµРґРёС‚Рµ С‚РµРєСЃС‚ РєРѕРјРјРµРЅС‚Р°СЂРёСЏ";
             return;
         }
         
@@ -328,14 +328,14 @@
         try
         {
             await ContentApi.AddDictionaryCommentAsync(Id, NewRating, NewComment);
-            CommentSuccess = "Отзыв успешно добавлен!";
+            CommentSuccess = "РћС‚Р·С‹РІ СѓСЃРїРµС€РЅРѕ РґРѕР±Р°РІР»РµРЅ!";
             NewComment = "";
             NewRating = 5;
             Comments = await ContentApi.GetDictionaryCommentsAsync(Id);
         }
         catch (Exception ex)
         {
-            CommentError = $"Ошибка: {ex.Message}";
+            CommentError = $"РћС€РёР±РєР°: {ex.Message}";
         }
         finally
         {

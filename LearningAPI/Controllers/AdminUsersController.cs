@@ -48,7 +48,8 @@ namespace LearningAPI.Controllers
                     .Select(u => new
                     {
                         u.Id,
-                        u.Login,
+                        u.Username,
+                        u.Email,
                         role = u.Role.Name,
                         u.CreatedAt,
                         teacherId = u.UserId

@@ -75,7 +75,7 @@
 
 | Функция | Описание |
 |---------|----------|
-| 🔐 **Аутентификация** | JWT токены, регистрация с кодом учителя |
+| 🔐 **Аутентификация** | JWT токены, регистрация (Username, Email) |
 | 👥 **Роли** | User, Teacher, Student, Admin |
 | 📚 **Словари** | Любые языковые пары, импорт/экспорт JSON |
 | 📝 **Правила** | Markdown-редактор с live-preview |
@@ -186,8 +186,8 @@ dotnet run
 |------|------|
 | **Desktop** | WPF, MVVM, WebView2, LiveCharts2 |
 | **Web** | Blazor Server, Bootstrap 5, CSS3 (Custom Properties, Gradients, Animations) |
-| **Backend** | ASP.NET Core 8.0, EF Core 9.0, MediatR |
-| **Database** | SQL Server 2022, MySQL 8.0, SQLite (offline) |
+| **Backend** | ASP.NET Core 8.0, EF Core 8.0, MediatR |
+| **Database** | SQL Server 2022, SQLite (offline), Redis (кэширование) |
 | **Auth** | JWT Bearer Tokens, BCrypt, Refresh Tokens |
 | **Container** | Docker, Docker Compose |
 | **Markdown** | Markdig |
@@ -200,9 +200,10 @@ dotnet run
 ### Аутентификация
 | Method | Endpoint | Описание |
 |--------|----------|----------|
-| POST | `/api/auth/login` | Вход (Login или Email) |
-| POST | `/api/auth/register` | Регистрация |
+| POST | `/api/auth/login` | Вход (Username или Email) |
+| POST | `/api/auth/register` | Регистрация (Username, Email, Password) |
 | POST | `/api/auth/refresh` | Обновление токена |
+| POST | `/api/auth/change-password` | Смена пароля |
 
 ### Маркетплейс
 | Method | Endpoint | Описание |
@@ -238,6 +239,7 @@ dotnet run
 | GET | `/api/classroom/students` | Список учеников |
 | POST | `/api/sharing/dictionary` | Поделиться словарём |
 | POST | `/api/sharing/rule` | Поделиться правилом |
+| POST | `/api/auth/upgrade-to-teacher` | Стать учителем |
 
 ---
 
@@ -310,7 +312,7 @@ dotnet test LearningAPI.Tests --logger "console;verbosity=detailed"
 
 ## 📝 Лицензия
 
-MIT License © 2025
+MIT License © 2026
 
 ---
 

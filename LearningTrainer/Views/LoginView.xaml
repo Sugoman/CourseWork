@@ -126,8 +126,19 @@
                     </TextBlock.Style>
                 </TextBlock>
 
-                <!-- Поле Email/Login -->
-                <Label Content="{DynamicResource Loc.Login.EmailPlaceholder}" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Medium" Margin="0,10,0,5"/>
+                <!-- Поле Email/Login (для входа: email или username; для регистрации: username) -->
+                <Label Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Medium" Margin="0,10,0,5">
+                    <Label.Style>
+                        <Style TargetType="Label">
+                            <Setter Property="Content" Value="{DynamicResource Loc.Login.EmailPlaceholder}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
+                                    <Setter Property="Content" Value="Имя пользователя"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Label.Style>
+                </Label>
                 <Grid>
                     <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" />
                     <Grid>
@@ -139,7 +150,18 @@
                             <Rectangle.OpacityMask>
                                 <VisualBrush Stretch="Uniform">
                                     <VisualBrush.Visual>
-                                        <svg:SvgViewbox Source="Sources/email.svg"/>
+                                        <svg:SvgViewbox>
+                                            <svg:SvgViewbox.Style>
+                                                <Style TargetType="svg:SvgViewbox">
+                                                    <Setter Property="Source" Value="Sources/email.svg"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
+                                                            <Setter Property="Source" Value="Sources/person.svg"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </svg:SvgViewbox.Style>
+                                        </svg:SvgViewbox>
                                     </VisualBrush.Visual>
                                 </VisualBrush>
                             </Rectangle.OpacityMask>
@@ -156,10 +178,58 @@
                                  FontSize="14"/>
                     </Grid>
                     <!-- Плейсхолдер -->
-                    <TextBlock Text="your@email.com" Foreground="{DynamicResource TertiaryTextBrush}" VerticalAlignment="Center" 
+                    <TextBlock Foreground="{DynamicResource TertiaryTextBrush}" VerticalAlignment="Center" 
                                Margin="50,0,0,0" IsHitTestVisible="False"
-                               Visibility="{Binding Text, ElementName=UsernameTextBox, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                               Visibility="{Binding Text, ElementName=UsernameTextBox, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="your@email.com"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsRegisterMode}" Value="True">
+                                        <Setter Property="Text" Value="username"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </Grid>
+
+                <!-- Поле Email (только для регистрации) -->
+                <StackPanel Visibility="{Binding IsRegisterMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Label Content="Email" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Medium" Margin="0,10,0,5"/>
+                    <Grid>
+                        <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="8" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Rectangle Width="20" Height="20" Margin="10 0 10 0" Fill="{DynamicResource PrimaryTextBrush}">
+                                <Rectangle.OpacityMask>
+                                    <VisualBrush Stretch="Uniform">
+                                        <VisualBrush.Visual>
+                                            <svg:SvgViewbox Source="Sources/email.svg"/>
+                                        </VisualBrush.Visual>
+                                    </VisualBrush>
+                                </Rectangle.OpacityMask>
+                            </Rectangle>
+                            <TextBox x:Name="EmailTextBox" 
+                                     Text="{Binding Email, UpdateSourceTrigger=PropertyChanged}" 
+                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                     Background="Transparent" 
+                                     BorderThickness="0" 
+                                     Padding="8,12" 
+                                     VerticalContentAlignment="Center" 
+                                     Width="320" 
+                                     Grid.Column="1"
+                                     FontSize="14"/>
+                        </Grid>
+                        <!-- Плейсхолдер -->
+                        <TextBlock Text="your@email.com" Foreground="{DynamicResource TertiaryTextBrush}" VerticalAlignment="Center" 
+                                   Margin="50,0,0,0" IsHitTestVisible="False"
+                                   Visibility="{Binding Text, ElementName=EmailTextBox, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                    </Grid>
+                </StackPanel>
 
                 <!-- Поле Password -->
                 <Label Content="{DynamicResource Loc.Login.PasswordPlaceholder}" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Medium" Margin="0,10,0,5"/>

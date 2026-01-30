@@ -1,15 +1,16 @@
 @page "/rules"
+@using LearningTrainerWeb.Services
 @inject IContentApiService ContentApi
 @rendermode InteractiveServer
 
-<PageTitle>Правила - LearningTrainer</PageTitle>
+<PageTitle>РџСЂР°РІРёР»Р° - LearningTrainer</PageTitle>
 
 <div class="container">
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="section-heading" style="margin-bottom: 0;">
             <i class="bi bi-journal-text"></i>
-            <h1 style="margin-bottom: 0;">Правила</h1>
+            <h1 style="margin-bottom: 0;">РџСЂР°РІРёР»Р°</h1>
         </div>
     </div>
 
@@ -19,39 +20,39 @@
             <div class="row g-3 align-items-end">
                 <div class="col-md-5">
                     <label class="form-label small text-muted">
-                        <i class="bi bi-search me-1"></i> Поиск
+                        <i class="bi bi-search me-1"></i> РџРѕРёСЃРє
                     </label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" placeholder="Название правила..." 
+                        <input type="text" class="form-control" placeholder="РќР°Р·РІР°РЅРёРµ РїСЂР°РІРёР»Р°..." 
                                @bind="SearchQuery" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
                     </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-muted">
-                        <i class="bi bi-tag me-1"></i> Категория
+                        <i class="bi bi-tag me-1"></i> РљР°С‚РµРіРѕСЂРёСЏ
                     </label>
                     <select class="form-select" @bind="SelectedCategory">
-                        <option value="">Все категории</option>
-                        <option value="Grammar">?? Грамматика</option>
-                        <option value="Vocabulary">?? Лексика</option>
-                        <option value="Pronunciation">?? Произношение</option>
+                        <option value="">Р’СЃРµ РєР°С‚РµРіРѕСЂРёРё</option>
+                        <option value="Grammar">рџ“љ Р“СЂР°РјРјР°С‚РёРєР°</option>
+                        <option value="Vocabulary">рџ“ќ Р›РµРєСЃРёРєР°</option>
+                        <option value="Pronunciation">рџЋ¤ РџСЂРѕРёР·РЅРѕС€РµРЅРёРµ</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small text-muted">
-                        <i class="bi bi-bar-chart me-1"></i> Уровень
+                        <i class="bi bi-bar-chart me-1"></i> РЈСЂРѕРІРµРЅСЊ
                     </label>
                     <select class="form-select" @bind="SelectedDifficulty">
-                        <option value="0">Любой</option>
-                        <option value="1">?? Начальный</option>
-                        <option value="2">?? Средний</option>
-                        <option value="3">?? Продвинутый</option>
+                        <option value="0">Р›СЋР±РѕР№</option>
+                        <option value="1">рџџў РќР°С‡Р°Р»СЊРЅС‹Р№</option>
+                        <option value="2">рџџЎ РЎСЂРµРґРЅРёР№</option>
+                        <option value="3">рџ”ґ РџСЂРѕРґРІРёРЅСѓС‚С‹Р№</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2" style="margin-top: 32px;">
                     <button class="btn btn-primary w-100" @onclick="ApplyFilters">
-                        <i class="bi bi-funnel me-1"></i> Найти
+                        <i class="bi bi-funnel me-1"></i> РќР°Р№С‚Рё
                     </button>
                 </div>
             </div>
@@ -63,17 +64,42 @@
     {
         <div class="text-center py-5">
             <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
-                <span class="visually-hidden">Загрузка...</span>
+                <span class="visually-hidden">Р—Р°РіСЂСѓР·РєР°...</span>
             </div>
-            <p class="text-muted mt-3">Загрузка правил...</p>
+            <p class="text-muted mt-3">Р—Р°РіСЂСѓР·РєР° РїСЂР°РІРёР»...</p>
         </div>
     }
     else if (RuleItems == null || !RuleItems.Any())
     {
-        <div class="text-center py-5">
-            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-journal-text"></i></div>
-            <h3>Правила не найдены</h3>
-            <p class="text-muted">Попробуйте изменить параметры поиска</p>
+        <!-- РЈР»СѓС‡С€РµРЅРЅРѕРµ РїСѓСЃС‚РѕРµ СЃРѕСЃС‚РѕСЏРЅРёРµ -->
+        <div class="empty-state-card">
+            <div class="empty-state-icon">
+                <i class="bi bi-journal-text"></i>
+            </div>
+            <h3>РџСЂР°РІРёР»Р° РЅРµ РЅР°Р№РґРµРЅС‹</h3>
+            <p class="text-muted mb-4">
+                @if (!string.IsNullOrEmpty(SearchQuery) || !string.IsNullOrEmpty(SelectedCategory) || SelectedDifficulty > 0)
+                {
+                    <span>РџРѕ РІР°С€РµРјСѓ Р·Р°РїСЂРѕСЃСѓ РЅРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РёР·РјРµРЅРёС‚СЊ РїР°СЂР°РјРµС‚СЂС‹ РїРѕРёСЃРєР°.</span>
+                }
+                else
+                {
+                    <span>Р’ РјР°СЂРєРµС‚РїР»РµР№СЃРµ РїРѕРєР° РЅРµС‚ РѕРїСѓР±Р»РёРєРѕРІР°РЅРЅС‹С… РїСЂР°РІРёР» РіСЂР°РјРјР°С‚РёРєРё.</span>
+                }
+            </p>
+            
+            <div class="empty-state-actions">
+                @if (!string.IsNullOrEmpty(SearchQuery) || !string.IsNullOrEmpty(SelectedCategory) || SelectedDifficulty > 0)
+                {
+                    <button class="btn btn-outline-primary" @onclick="ClearFilters">
+                        <i class="bi bi-x-circle me-2"></i>РЎР±СЂРѕСЃРёС‚СЊ С„РёР»СЊС‚СЂС‹
+                    </button>
+                }
+                
+                <a href="dictionaries" class="btn btn-primary">
+                    <i class="bi bi-book me-2"></i>РџРµСЂРµР№С‚Рё Рє СЃР»РѕРІР°СЂСЏРј
+                </a>
+            </div>
         </div>
     }
     else
@@ -101,7 +127,7 @@
                                 </span>
                                 <div class="d-flex gap-2">
                                     <a href="rule/@rule.Id" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-book-half me-1"></i> Читать
+                                        <i class="bi bi-book-half me-1 gap-2"></i> Р§РёС‚Р°С‚СЊ
                                     </a>
                                     <button class="btn btn-sm btn-success" @onclick="() => DownloadRule(rule.Id)">
                                         <i class="bi bi-download"></i>
@@ -154,6 +180,35 @@
     }
 </div>
 
+<style>
+    .empty-state-card {
+        text-align: center;
+        padding: 3rem 1.5rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .empty-state-icon {
+        font-size: 4rem;
+        color: var(--bs-primary);
+        margin-bottom: 1.5rem;
+        opacity: 0.7;
+    }
+    
+    .empty-state-card h3 {
+        margin-bottom: 0.5rem;
+        color: var(--bs-dark);
+    }
+    
+    .empty-state-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+</style>
+
 @code {
     private List<RuleListItem>? RuleItems;
     private bool IsLoading = true;
@@ -204,6 +259,15 @@
         await LoadRules();
     }
 
+    private async Task ClearFilters()
+    {
+        SearchQuery = "";
+        SelectedCategory = "";
+        SelectedDifficulty = 0;
+        CurrentPage = 1;
+        await LoadRules();
+    }
+
     private async Task LoadPage(int page)
     {
         if (page < 1 || page > TotalPages) return;
@@ -233,9 +297,9 @@
 
     private string GetDifficultyText(int level) => level switch
     {
-        1 => "Начальный",
-        2 => "Средний",
-        3 => "Продвинутый",
-        _ => "Неизвестно"
+        1 => "РќР°С‡Р°Р»СЊРЅС‹Р№",
+        2 => "РЎСЂРµРґРЅРёР№",
+        3 => "РџСЂРѕРґРІРёРЅСѓС‚С‹Р№",
+        _ => "РќРµРёР·РІРµСЃС‚РЅРѕ"
     };
 }

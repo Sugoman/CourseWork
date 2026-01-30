@@ -37,6 +37,17 @@ namespace LearningTrainer.ViewModels
             }
         }
 
+        private string _email;
+        public string Email
+        {
+            get => _email;
+            set
+            {
+                SetProperty(ref _email, value);
+                RegisterCommand.RaiseCanExecuteChanged();
+            }
+        }
+
         private string _password;
         public string Password
         {
@@ -160,6 +171,7 @@ namespace LearningTrainer.ViewModels
         {
             return IsRegisterMode &&
                    !string.IsNullOrWhiteSpace(Username) &&
+                   !string.IsNullOrWhiteSpace(Email) &&
                    !string.IsNullOrWhiteSpace(CurrentPassword) &&
                    !string.IsNullOrWhiteSpace(ConfirmPassword);
         }
@@ -180,17 +192,24 @@ namespace LearningTrainer.ViewModels
                 ErrorMessage = "Пароли не совпадают";
                 return;
             }
-            if (!IsValidEmail(Username))
+            if (!IsValidEmail(Email))
             {
                 IsError = true;
                 ErrorMessage = "Введите корректный Email";
+                return;
+            }
+            if (Username.Length < 3)
+            {
+                IsError = true;
+                ErrorMessage = "Имя пользователя должно быть не менее 3 символов";
                 return;
             }
             try
             {
                 var request = new RegisterRequest
                 {
-                    Login = Username,
+                    Username = Username,
+                    Email = Email,
                     Password = CurrentPassword,
                     InviteCode = string.IsNullOrWhiteSpace(InviteCode) ? null : InviteCode
                 };

@@ -84,7 +84,7 @@ public class AuthControllerExtendedTests : IDisposable
         // Assert
         result.Should().BeOfType<OkObjectResult>();
         
-        var updatedUser = await _context.Users.FirstAsync(u => u.Login == "testuser");
+        var updatedUser = await _context.Users.FirstAsync(u => u.Username == "testuser");
         updatedUser.RefreshToken.Should().NotBeNullOrEmpty();
         updatedUser.RefreshTokenExpiryTime.Should().BeAfter(DateTime.UtcNow);
     }
@@ -145,7 +145,8 @@ public class AuthControllerExtendedTests : IDisposable
         var teacher = new User
         {
             Id = 1,
-            Login = "teacher",
+            Username = "teacher",
+            Email = "teacher@test.com",
             PasswordHash = "hash",
             Role = teacherRole,
             InviteCode = "TR-INVITE1"
@@ -155,7 +156,8 @@ public class AuthControllerExtendedTests : IDisposable
 
         var request = new RegisterRequest
         {
-            Login = "newstudent",
+            Username = "newstudent",
+            Email = "newstudent@test.com",
             Password = "password123",
             InviteCode = "TR-INVITE1"
         };
@@ -166,7 +168,7 @@ public class AuthControllerExtendedTests : IDisposable
         // Assert
         result.Should().BeOfType<CreatedAtActionResult>();
         
-        var newUser = await _context.Users.FirstAsync(u => u.Login == "newstudent");
+        var newUser = await _context.Users.FirstAsync(u => u.Username == "newstudent");
         newUser.UserId.Should().Be(1); // Linked to teacher
     }
 
@@ -180,7 +182,8 @@ public class AuthControllerExtendedTests : IDisposable
 
         var request = new RegisterRequest
         {
-            Login = "newuser",
+            Username = "newuser",
+            Email = "newuser@test.com",
             Password = "password123",
             InviteCode = "INVALID-CODE"
         };
@@ -202,7 +205,8 @@ public class AuthControllerExtendedTests : IDisposable
 
         var request = new RegisterRequest
         {
-            Login = "newuser",
+            Username = "newuser",
+            Email = "newuser@test.com",
             Password = "password123"
         };
 
@@ -212,7 +216,7 @@ public class AuthControllerExtendedTests : IDisposable
         // Assert
         result.Should().BeOfType<CreatedAtActionResult>();
         
-        var newUser = await _context.Users.FirstAsync(u => u.Login == "newuser");
+        var newUser = await _context.Users.FirstAsync(u => u.Username == "newuser");
         newUser.PasswordHash.Should().NotBe("password123");
         newUser.PasswordHash.Should().NotBeNullOrEmpty();
     }

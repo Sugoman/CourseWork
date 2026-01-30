@@ -54,7 +54,7 @@ namespace LearningAPI.Controllers
             student.UserId = teacher.Id;
             await _context.SaveChangesAsync();
 
-            return Ok(new { Message = $"Successfully joined {teacher.Login}'s class!" });
+            return Ok(new { Message = $"Successfully joined {teacher.Username}'s class!" });
         }
 
         // GET /api/classroom/students (Для Учителя)
@@ -68,7 +68,8 @@ namespace LearningAPI.Controllers
                 .Select(s => new
                 {
                     s.Id,
-                    s.Login,
+                    s.Username,
+                    s.Email,
                     // Можно добавить статистику: сколько слов выучил и т.д.
                     WordsLearned = _context.LearningProgresses.Count(p => p.UserId == s.Id && p.KnowledgeLevel > 3)
                 })

@@ -33,14 +33,15 @@ namespace LearningTrainer.Services
                         db.SaveChanges();
                     }
 
-                    var localUser = db.Users.FirstOrDefault(u => u.Login == _userLogin);
+                    var localUser = db.Users.FirstOrDefault(u => u.Username != null && u.Username == _userLogin);
                     if (localUser == null)
                     {
                         var safeRandomHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString());
 
                         localUser = new User
                         {
-                            Login = _userLogin,
+                            Username = _userLogin,
+                            Email = "", // Локальный пользователь без email
                             PasswordHash = safeRandomHash,
                             RoleId = studentRole.Id,
                             RefreshToken = null,
@@ -68,13 +69,46 @@ namespace LearningTrainer.Services
                 // Колонки нет, добавляем
                 try
                 {
-                    db.Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN Email TEXT NULL");
+                    db.Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN Email TEXT NOT NULL DEFAULT ''");
                 }
                 catch
                 {
                     // Игнорируем если уже существует
                 }
             }
+
+            // Обновляем NULL значения Email на пустую строку
+            try
+            {
+                db.Database.ExecuteSqlRaw("UPDATE Users SET Email = '' WHERE Email IS NULL");
+            }
+            catch { }
+
+            try
+            {
+                // Проверяем, есть ли колонка Username
+                db.Database.ExecuteSqlRaw("SELECT Username FROM Users LIMIT 1");
+            }
+            catch
+            {
+                // Колонки нет, добавляем
+                try
+                {
+                    db.Database.ExecuteSqlRaw("ALTER TABLE Users ADD COLUMN Username TEXT NOT NULL DEFAULT ''");
+                    db.Database.ExecuteSqlRaw("UPDATE Users SET Username = Login WHERE Login IS NOT NULL");
+                }
+                catch
+                {
+                    // Игнорируем если уже существует
+                }
+            }
+
+            // Обновляем NULL значения Username на пустую строку
+            try
+            {
+                db.Database.ExecuteSqlRaw("UPDATE Users SET Username = '' WHERE Username IS NULL");
+            }
+            catch { }
         }
         
         private LocalDbContext Context => new LocalDbContext(_userLogin);

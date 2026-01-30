@@ -21,6 +21,22 @@ services:
       - ASPNETCORE_URLS=http://+:8080
 
   # -------------------------------
+  # 1b. Web (Blazor)
+  # -------------------------------
+  learningtrainerweb:
+    image: ${DOCKER_REGISTRY-}learningtrainerweb
+    build:
+      context: .
+      dockerfile: LearningTrainerWeb/Dockerfile
+    ports:
+      - "8081:8080"
+    depends_on:
+      - learningapi
+    environment:
+      - ASPNETCORE_URLS=http://+:8080
+      - ApiBaseUrl=http://learningapi:8080
+
+  # -------------------------------
   # 2. Migrations (runs once)
   # -------------------------------
   migrations:

@@ -14,10 +14,11 @@ namespace LearningTrainerShared.Models
 
         [Required]
         [MaxLength(50)]
-        public string Login { get; set; } = "";
+        public string Username { get; set; } = "";
 
+        [Required]
         [MaxLength(100)]
-        public string? Email { get; set; }
+        public string Email { get; set; } = "";
 
         [Required]
         [MaxLength(100)]
@@ -39,5 +40,10 @@ namespace LearningTrainerShared.Models
         [JsonIgnore]
         public virtual ICollection<User> Students { get; set; } = new List<User>();
         public string? InviteCode { get; set; }
+
+        // Для обратной совместимости со старым кодом
+        [NotMapped]
+        [Obsolete("Use Username instead")]
+        public string Login { get => Username; set => Username = value; }
     }
 }
