@@ -104,14 +104,19 @@ CourseWork/
 │   ├── Services/               # AuthService, ContentApiService
 │   └── wwwroot/css/            # Современные CSS стили
 ├── 🔧 LearningAPI/             # REST API Backend
-│   ├── Controllers/            # 10+ контроллеров
+│   ├── Controllers/            # 14 контроллеров
 │   │   ├── AuthController      # JWT аутентификация
 │   │   ├── DictionaryController # CRUD словарей
-│   │   ├── RulesController     # CRUD правил
+│   │   ├── RuleController      # CRUD правил
+│   │   ├── WordController      # CRUD слов
+│   │   ├── TrainingController  # Сессии тренировок
 │   │   ├── MarketplaceController # Маркетплейс
 │   │   ├── ProgressController  # Прогресс обучения
 │   │   ├── SharingController   # Шаринг контента
 │   │   ├── ClassroomController # Управление классом
+│   │   ├── AdminUsersController # Админ-панель
+│   │   ├── TokenController     # Refresh токены
+│   │   ├── HealthController    # Health checks
 │   │   └── Import/Export       # JSON/CSV
 │   └── Middleware/             # Exception handling
 ├── 📦 LearningTrainerShared/   # Общая библиотека
@@ -266,11 +271,15 @@ dotnet test LearningAPI.Tests --logger "console;verbosity=detailed"
 Тестируемые контроллеры:
 - `AuthController` - регистрация, вход, JWT токены
 - `DictionaryController` - CRUD словарей, сессии обучения
-- `RulesController` - CRUD правил, Markdown
+- `RuleController` - CRUD правил, Markdown
+- `TrainingController` - сессии тренировок
 - `MarketplaceController` - публикация, скачивание, комментарии
 - `ProgressController` - прогресс изучения, статистика
 - `SharingController` - шаринг контента ученикам
 - `ClassroomController` - управление классом
+- `AdminUsersController` - управление пользователями
+- `TokenController` - refresh tokens
+- `HealthController` - health checks
 - `ImportController` / `ExportController` - JSON/CSV
 
 ---

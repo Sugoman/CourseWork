@@ -57,7 +57,7 @@
 
                         </StackPanel>
 
-                        <Border BorderBrush="#E5E7EB" BorderThickness="1,0,0,0" Height="24" Margin="15,0"/>
+                        <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="1,0,0,0" Height="24" Margin="15,0"/>
 
                         <Button x:Name="AddButton" 
                                 Content="{DynamicResource Loc.Dashboard.AddButton}" 
@@ -274,8 +274,8 @@
                                 <Setter Property="Margin" Value="8"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                        <Setter Property="Background" Value="#3B82F6"/>
-                                        <Setter Property="BorderBrush" Value="#3B82F6"/>
+                                        <Setter Property="Background" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -290,8 +290,8 @@
                                 <Setter Property="Margin" Value="8"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                        <Setter Property="Background" Value="#3B82F6"/>
-                                        <Setter Property="BorderBrush" Value="#3B82F6"/>
+                                        <Setter Property="Background" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -299,8 +299,8 @@
                             <Style x:Key="PlayButtonStyle" TargetType="Button">
                                 <Setter Property="Width" Value="44"/>
                                 <Setter Property="Height" Value="44"/>
-                                <Setter Property="Background" Value="#FFFFFF"/>
-                                <Setter Property="Foreground" Value="#3B82F6"/>
+                                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryAccentBrush}"/>
                                 <Setter Property="BorderThickness" Value="0"/>
                                 <Setter Property="Cursor" Value="Hand"/>
                                 <Setter Property="Template">
@@ -322,11 +322,11 @@
                                 </Setter>
                                 <Style.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="#F0F9FF"/>
+                                        <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
                                     </Trigger>
                                     <DataTrigger Binding="{Binding IsFeatured}" Value="True">
-                                        <Setter Property="Background" Value="#2563EB"/>
-                                        <Setter Property="Foreground" Value="White"/>
+                                        <Setter Property="Background" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>

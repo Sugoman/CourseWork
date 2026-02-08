@@ -1,4 +1,5 @@
-﻿using LearningTrainerShared.Models;
+﻿using Ganss.Xss;
+using LearningTrainerShared.Models;
 using Markdig;
 using Microsoft.Web.WebView2.Wpf;
 using System.Diagnostics;
@@ -9,6 +10,55 @@ namespace LearningTrainer.Behaviors
 {
     public static class WebBrowserBehavior
     {
+        private static readonly HtmlSanitizer _htmlSanitizer = CreateSanitizer();
+
+        private static HtmlSanitizer CreateSanitizer()
+        {
+            var sanitizer = new HtmlSanitizer();
+
+            // Разрешаем только безопасные теги для Markdown контента
+            sanitizer.AllowedTags.Clear();
+            sanitizer.AllowedTags.Add("h1");
+            sanitizer.AllowedTags.Add("h2");
+            sanitizer.AllowedTags.Add("h3");
+            sanitizer.AllowedTags.Add("h4");
+            sanitizer.AllowedTags.Add("h5");
+            sanitizer.AllowedTags.Add("h6");
+            sanitizer.AllowedTags.Add("p");
+            sanitizer.AllowedTags.Add("br");
+            sanitizer.AllowedTags.Add("hr");
+            sanitizer.AllowedTags.Add("strong");
+            sanitizer.AllowedTags.Add("b");
+            sanitizer.AllowedTags.Add("em");
+            sanitizer.AllowedTags.Add("i");
+            sanitizer.AllowedTags.Add("u");
+            sanitizer.AllowedTags.Add("code");
+            sanitizer.AllowedTags.Add("pre");
+            sanitizer.AllowedTags.Add("ul");
+            sanitizer.AllowedTags.Add("ol");
+            sanitizer.AllowedTags.Add("li");
+            sanitizer.AllowedTags.Add("blockquote");
+            sanitizer.AllowedTags.Add("table");
+            sanitizer.AllowedTags.Add("thead");
+            sanitizer.AllowedTags.Add("tbody");
+            sanitizer.AllowedTags.Add("tr");
+            sanitizer.AllowedTags.Add("th");
+            sanitizer.AllowedTags.Add("td");
+            sanitizer.AllowedTags.Add("a");
+
+            // Разрешаем только безопасные атрибуты
+            sanitizer.AllowedAttributes.Clear();
+            sanitizer.AllowedAttributes.Add("href");
+            sanitizer.AllowedAttributes.Add("class");
+
+            // Разрешаем только безопасные схемы ссылок
+            sanitizer.AllowedSchemes.Clear();
+            sanitizer.AllowedSchemes.Add("http");
+            sanitizer.AllowedSchemes.Add("https");
+
+            return sanitizer;
+        }
+
         public static readonly DependencyProperty MarkdownProperty =
             DependencyProperty.RegisterAttached("Markdown", typeof(string), typeof(WebBrowserBehavior),
             new PropertyMetadata(null, OnMarkdownChanged));
@@ -132,8 +182,11 @@ namespace LearningTrainer.Behaviors
                 markdown = "_Content is empty_";
             }
 
-            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().DisableHtml().Build();
+            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
             var htmlContent = Markdig.Markdown.ToHtml(markdown, pipeline);
+
+            // Санитизация HTML для защиты от XSS-атак
+            htmlContent = _htmlSanitizer.Sanitize(htmlContent);
 
             string tableBorderColor = HexToRgba(config.TextColor, 0.2);
             string quoteBgColor = HexToRgba(config.AccentColor, 0.1);
@@ -143,14 +196,13 @@ namespace LearningTrainer.Behaviors
 <html>
 <head>
     <meta charset='utf-8'>
-    <meta http-equiv='Content-Security-Policy' content=""default-src 'none'; style-src 'unsafe-inline'; img-src data: https:;"">
     <style>
         :root {{
             --bg-color: {config.BackgroundColor};
             --text-color: {config.TextColor};
             --accent-color: {config.AccentColor};
             --font-size: {config.FontSize}px;
-
+            
             /* Динамические цвета */
             --table-border-color: {tableBorderColor};
             --quote-bg-color: {quoteBgColor};
@@ -248,6 +300,9 @@ namespace LearningTrainer.Behaviors
                 htmlBody = "<em>Content is empty</em>";
             }
 
+            // Санитизация HTML для защиты от XSS-атак
+            htmlBody = _htmlSanitizer.Sanitize(htmlBody);
+
             string tableBorderColor = HexToRgba(config.TextColor, 0.2);
             string quoteBgColor = HexToRgba(config.AccentColor, 0.1);
             string scrollThumbColor = HexToRgba(config.TextColor, 0.3);
@@ -256,7 +311,6 @@ namespace LearningTrainer.Behaviors
 <html>
 <head>
     <meta charset='utf-8'>
-    <meta http-equiv='Content-Security-Policy' content=""default-src 'none'; style-src 'unsafe-inline'; img-src data: https:;"">
     <style>
         :root {{
             --bg-color: {config.BackgroundColor};

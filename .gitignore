@@ -143,6 +143,9 @@ _TeamCity*
 # DotCover is a Code Coverage Tool
 *.dotCover
 
+# Markdown Content
+*.md
+
 # AxoCover is a Code Coverage Tool
 .axoCover/*
 !.axoCover/settings.json

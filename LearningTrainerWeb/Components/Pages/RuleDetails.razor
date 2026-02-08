@@ -1,6 +1,8 @@
 ﻿@page "/rule/{Id:int}"
+@using LearningTrainerWeb.Services
 @inject IContentApiService ContentApi
 @inject IAuthService AuthService
+@inject IHtmlSanitizerService HtmlSanitizer
 @rendermode InteractiveServer
 
 <PageTitle>@(Rule?.Title ?? "Правило") - LearningTrainer</PageTitle>
@@ -83,7 +85,7 @@
                             Содержание
                         </h5>
                         <div class="markdown-content">
-                            @((MarkupString)SanitizeHtml(Rule.HtmlContent ?? ""))
+                            @((MarkupString)HtmlSanitizer.Sanitize(Rule.HtmlContent))
                         </div>
                     </div>
                 </div>
@@ -364,101 +366,4 @@
         3 => "Продвинутый",
         _ => "Неизвестно"
     };
-
-    /// <summary>
-    /// Санитизация HTML для защиты от XSS при рендеринге через MarkupString.
-    /// Использует allowlist-подход: пропускает только безопасные теги без атрибутов.
-    /// </summary>
-    private static string SanitizeHtml(string html)
-    {
-        if (string.IsNullOrEmpty(html)) return "";
-
-        var allowedTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "h1", "h2", "h3", "h4", "h5", "h6",
-            "p", "br", "hr",
-            "strong", "b", "em", "i", "u",
-            "code", "pre",
-            "ul", "ol", "li",
-            "blockquote",
-            "table", "thead", "tbody", "tr", "th", "td"
-        };
-
-        var selfClosingTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "br", "hr" };
-
-        var result = new System.Text.StringBuilder(html.Length);
-        int i = 0;
-
-        while (i < html.Length)
-        {
-            if (html[i] == '<')
-            {
-                int tagEnd = FindTagEnd(html, i);
-                if (tagEnd == -1)
-                {
-                    result.Append("&lt;");
-                    i++;
-                    continue;
-                }
-
-                var tagContent = html.AsSpan(i + 1, tagEnd - i - 1).Trim();
-                bool isClosing = tagContent.Length > 0 && tagContent[0] == '/';
-                if (isClosing)
-                    tagContent = tagContent.Slice(1).TrimStart();
-
-                int nameEnd = 0;
-                while (nameEnd < tagContent.Length &&
-                       !char.IsWhiteSpace(tagContent[nameEnd]) &&
-                       tagContent[nameEnd] != '/' &&
-                       tagContent[nameEnd] != '>')
-                    nameEnd++;
-
-                var tagName = tagContent.Slice(0, nameEnd).ToString();
-
-                if (allowedTags.Contains(tagName))
-                {
-                    if (isClosing)
-                        result.Append($"</{tagName}>");
-                    else if (selfClosingTags.Contains(tagName))
-                        result.Append($"<{tagName}/>");
-                    else
-                        result.Append($"<{tagName}>");
-                }
-                // Неразрешённые теги полностью удаляются
-
-                i = tagEnd + 1;
-            }
-            else
-            {
-                result.Append(html[i]);
-                i++;
-            }
-        }
-
-        return result.ToString();
-    }
-
-    /// <summary>
-    /// Находит закрывающую скобку '>' тега, корректно обрабатывая кавычки в атрибутах.
-    /// </summary>
-    private static int FindTagEnd(string html, int openBracket)
-    {
-        bool inDouble = false;
-        bool inSingle = false;
-
-        for (int i = openBracket + 1; i < html.Length; i++)
-        {
-            char c = html[i];
-            if (inDouble) { if (c == '"') inDouble = false; }
-            else if (inSingle) { if (c == '\'') inSingle = false; }
-            else
-            {
-                if (c == '"') inDouble = true;
-                else if (c == '\'') inSingle = true;
-                else if (c == '>') return i;
-            }
-        }
-
-        return -1;
-    }
 }

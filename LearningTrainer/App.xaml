@@ -237,7 +237,7 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="ToggleButton">
                             <Border Background="Transparent" Width="28" HorizontalAlignment="Right">
-                                <Path x:Name="Arrow" Data="M0,0 L4,4 L8,0" Stroke="#6B7280" StrokeThickness="1.5" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <Path x:Name="Arrow" Data="M0,0 L4,4 L8,0" Stroke="{DynamicResource SecondaryTextBrush}" StrokeThickness="1.5" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
@@ -258,8 +258,8 @@
                 </Setter>
             </Style>
             <Style TargetType="{x:Type ContextMenu}">
-                <Setter Property="Background" Value="White"/>
-                <Setter Property="BorderBrush" Value="#D1D5DB"/>
+                <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="Padding" Value="0"/>
                 <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -271,7 +271,7 @@
                     BorderThickness="{TemplateBinding BorderThickness}"
                     CornerRadius="6">
                                 <Border.Effect>
-                                    <DropShadowEffect ShadowDepth="2" BlurRadius="5" Color="LightGray" Opacity="0.5"/>
+                                    <DropShadowEffect ShadowDepth="2" BlurRadius="5" Color="Black" Opacity="0.15"/>
                                 </Border.Effect>
                                 <ItemsPresenter Margin="0,4,0,4"/>
                             </Border>
@@ -471,9 +471,8 @@
             <!-- Стиль для кнопок соц. сетей (круглые) -->
             <Style x:Key="SocialButton" TargetType="Button">
                 <Setter Property="Background" Value="{DynamicResource SeparatorBrush}"/>
-                <Setter Property="Foreground" Value="#4B5563"/>
-                <!-- dark gray -->
-                <Setter Property="BorderBrush" Value="#D1D5DB"/>
+                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
                 <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="Width" Value="44"/>
                 <Setter Property="Height" Value="44"/>
@@ -490,8 +489,7 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter Property="Background" Value="#F9FAFB"/>
-                                    <!-- very light gray -->
+                                    <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -503,7 +501,7 @@
             <Style x:Key="LinkButton" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Foreground" Value="#3B82F6"/>
+                <Setter Property="Foreground" Value="{DynamicResource LinkTextBrush}"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Template">
@@ -616,26 +614,41 @@
 
             <Style x:Key="CloseTabButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Foreground" Value="Gray"/>
+                <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-                <Setter Property="FontSize" Value="12"/>
-                <Setter Property="Content" Value="&#xE8BB;"/>
-                <!-- Иконка крестика -->
-                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="Width" Value="22"/>
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Margin" Value="10,0,0,0"/>
+                <Setter Property="Opacity" Value="0.6"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Border Background="{TemplateBinding Background}" CornerRadius="10">
-                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Border x:Name="border" 
+                                    Background="{TemplateBinding Background}" 
+                                    CornerRadius="6">
+                                <Path x:Name="path" 
+                                      Data="M4,4 L10,10 M10,4 L4,10" 
+                                      Stroke="{DynamicResource SecondaryTextBrush}" 
+                                      StrokeThickness="1.5" 
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      VerticalAlignment="Center" 
+                                      HorizontalAlignment="Center"/>
                             </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="{DynamicResource DangerBrush}"/>
+                                    <Setter TargetName="path" Property="Stroke" Value="White"/>
+                                    <Setter Property="Opacity" Value="1"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
                 <Style.Triggers>
                     <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Background" Value="#FFCDD2"/>
-                        <Setter Property="Foreground" Value="Red"/>
+                        <Setter Property="Opacity" Value="1"/>
                     </Trigger>
                 </Style.Triggers>
             </Style>
@@ -749,7 +762,7 @@
             <Style x:Key="HeaderTextBlockStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="22"/>
                 <Setter Property="FontWeight" Value="Bold"/>
-                <Setter Property="Foreground" Value="#333"/>
+                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
                 <Setter Property="Margin" Value="0,0,0,10"/>
             </Style>
 

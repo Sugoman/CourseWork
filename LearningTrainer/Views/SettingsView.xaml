@@ -52,15 +52,13 @@
             <Style.Triggers>
                 <!-- Наведение -->
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#E5E7EB"/>
-                    <Setter Property="Foreground" Value="#111827"/>
+                    <Setter Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
                 </Trigger>
                 <!-- Выбрано -->
                 <Trigger Property="IsChecked" Value="True">
-                    <Setter Property="Background" Value="#DBEAFE"/>
-                    <!-- Светло-синий -->
-                    <Setter Property="Foreground" Value="#2563EB"/>
-                    <!-- Синий -->
+                    <Setter Property="Background" Value="{DynamicResource SelectedBackgroundBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource PrimaryAccentBrush}"/>
                     <Setter Property="FontWeight" Value="Bold"/>
                 </Trigger>
             </Style.Triggers>
@@ -88,14 +86,14 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <ContentPresenter Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <Border Grid.Column="1" x:Name="SwitchTrack" Width="44" Height="24" CornerRadius="12" Background="#E5E7EB" BorderThickness="1" BorderBrush="#D1D5DB">
+                            <Border Grid.Column="1" x:Name="SwitchTrack" Width="44" Height="24" CornerRadius="12" Background="{DynamicResource InputBackgroundBrush}" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}">
                                 <Ellipse x:Name="SwitchKnob" Width="18" Height="18" Fill="White" HorizontalAlignment="Left" Margin="2,0"/>
                             </Border>
                         </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="SwitchTrack" Property="Background" Value="#3B82F6"/>
-                                <Setter TargetName="SwitchTrack" Property="BorderBrush" Value="#3B82F6"/>
+                                <Setter TargetName="SwitchTrack" Property="Background" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                <Setter TargetName="SwitchTrack" Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
                                 <Setter TargetName="SwitchKnob" Property="HorizontalAlignment" Value="Right"/>
                             </Trigger>
                         </ControlTemplate.Triggers>

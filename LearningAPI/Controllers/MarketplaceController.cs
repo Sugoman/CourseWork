@@ -1,4 +1,5 @@
-﻿using LearningAPI.Extensions;
+﻿using Ganss.Xss;
+using LearningAPI.Extensions;
 using LearningTrainer.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -20,12 +21,61 @@ public class MarketplaceController : BaseApiController
     private readonly ApiDbContext _context;
     private readonly ILogger<MarketplaceController> _logger;
     private readonly IDistributedCache _cache;
+    private readonly HtmlSanitizer _htmlSanitizer;
 
     public MarketplaceController(ApiDbContext context, ILogger<MarketplaceController> logger, IDistributedCache cache)
     {
         _context = context;
         _logger = logger;
         _cache = cache;
+        _htmlSanitizer = CreateSanitizer();
+    }
+
+    private static HtmlSanitizer CreateSanitizer()
+    {
+        var sanitizer = new HtmlSanitizer();
+
+        // Разрешаем только безопасные теги для Markdown контента
+        sanitizer.AllowedTags.Clear();
+        sanitizer.AllowedTags.Add("h1");
+        sanitizer.AllowedTags.Add("h2");
+        sanitizer.AllowedTags.Add("h3");
+        sanitizer.AllowedTags.Add("h4");
+        sanitizer.AllowedTags.Add("h5");
+        sanitizer.AllowedTags.Add("h6");
+        sanitizer.AllowedTags.Add("p");
+        sanitizer.AllowedTags.Add("br");
+        sanitizer.AllowedTags.Add("hr");
+        sanitizer.AllowedTags.Add("strong");
+        sanitizer.AllowedTags.Add("b");
+        sanitizer.AllowedTags.Add("em");
+        sanitizer.AllowedTags.Add("i");
+        sanitizer.AllowedTags.Add("u");
+        sanitizer.AllowedTags.Add("code");
+        sanitizer.AllowedTags.Add("pre");
+        sanitizer.AllowedTags.Add("ul");
+        sanitizer.AllowedTags.Add("ol");
+        sanitizer.AllowedTags.Add("li");
+        sanitizer.AllowedTags.Add("blockquote");
+        sanitizer.AllowedTags.Add("table");
+        sanitizer.AllowedTags.Add("thead");
+        sanitizer.AllowedTags.Add("tbody");
+        sanitizer.AllowedTags.Add("tr");
+        sanitizer.AllowedTags.Add("th");
+        sanitizer.AllowedTags.Add("td");
+        sanitizer.AllowedTags.Add("a");
+
+        // Разрешаем только безопасные атрибуты
+        sanitizer.AllowedAttributes.Clear();
+        sanitizer.AllowedAttributes.Add("href");
+        sanitizer.AllowedAttributes.Add("class");
+
+        // Разрешаем только безопасные схемы ссылок
+        sanitizer.AllowedSchemes.Clear();
+        sanitizer.AllowedSchemes.Add("http");
+        sanitizer.AllowedSchemes.Add("https");
+
+        return sanitizer;
     }
 
     #region Public Dictionaries
@@ -480,15 +530,6 @@ public class MarketplaceController : BaseApiController
     {
         var userId = GetUserId();
 
-        if (string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 2000)
-            return BadRequest(new { Message = "Текст комментария должен быть от 1 до 2000 символов" });
-
-        if (request.Rating < 1 || request.Rating > 5)
-            return BadRequest(new { Message = "Оценка должна быть от 1 до 5" });
-
-        // Экранируем текст комментария для защиты от XSS
-        request.Text = System.Net.WebUtility.HtmlEncode(request.Text);
-
         // Check if user already reviewed this dictionary
         var existingReview = await _context.Comments
             .AnyAsync(c => c.UserId == userId && c.ContentType == "Dictionary" && c.ContentId == id);
@@ -557,15 +598,6 @@ public class MarketplaceController : BaseApiController
     public async Task<IActionResult> AddRuleComment(int id, [FromBody] AddCommentRequest request)
     {
         var userId = GetUserId();
-
-        if (string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 2000)
-            return BadRequest(new { Message = "Текст комментария должен быть от 1 до 2000 символов" });
-
-        if (request.Rating < 1 || request.Rating > 5)
-            return BadRequest(new { Message = "Оценка должна быть от 1 до 5" });
-
-        // Экранируем текст комментария для защиты от XSS
-        request.Text = System.Net.WebUtility.HtmlEncode(request.Text);
 
         // Check if user already reviewed this rule
         var existingReview = await _context.Comments
@@ -857,13 +889,13 @@ public class MarketplaceController : BaseApiController
         }
     }
 
-    private static string ConvertMarkdownToHtml(string markdown)
+    private string ConvertMarkdownToHtml(string markdown)
     {
         if (string.IsNullOrEmpty(markdown))
             return "";
 
-        // Санитизация: экранируем HTML-теги в пользовательском вводе для защиты от XSS
-        var html = System.Net.WebUtility.HtmlEncode(markdown)
+        // Базовая конвертация Markdown в HTML
+        var html = markdown
             .Replace("\r\n", "\n")
             .Replace("\r", "\n");
 
@@ -884,87 +916,8 @@ public class MarketplaceController : BaseApiController
         html = string.Join("", paragraphs.Select(p => 
             p.StartsWith("<h") ? p : $"<p>{p.Replace("\n", "<br/>")}</p>"));
 
-        // Финальная санитизация: оставляем только безопасные теги (allowlist)
-        return SanitizeHtmlAllowlist(html);
-    }
-
-    /// <summary>
-    /// Allowlist-санитизатор: пропускает только безопасные теги без атрибутов.
-    /// Корректно обрабатывает кавычки внутри атрибутов (не ломается на > в onerror и т.д.).
-    /// </summary>
-    private static string SanitizeHtmlAllowlist(string html)
-    {
-        if (string.IsNullOrEmpty(html)) return "";
-
-        var allowedTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "h1", "h2", "h3", "h4", "h5", "h6",
-            "p", "br", "hr",
-            "strong", "b", "em", "i", "u",
-            "code", "pre",
-            "ul", "ol", "li",
-            "blockquote",
-            "table", "thead", "tbody", "tr", "th", "td"
-        };
-
-        var result = new System.Text.StringBuilder(html.Length);
-        int i = 0;
-
-        while (i < html.Length)
-        {
-            if (html[i] == '<')
-            {
-                int tagEnd = FindTagEnd(html, i);
-                if (tagEnd == -1)
-                {
-                    result.Append("&lt;");
-                    i++;
-                    continue;
-                }
-
-                var inner = html.AsSpan(i + 1, tagEnd - i - 1).Trim();
-                bool isClosing = inner.Length > 0 && inner[0] == '/';
-                if (isClosing) inner = inner.Slice(1).TrimStart();
-
-                int nameEnd = 0;
-                while (nameEnd < inner.Length &&
-                       !char.IsWhiteSpace(inner[nameEnd]) &&
-                       inner[nameEnd] != '/' && inner[nameEnd] != '>')
-                    nameEnd++;
-
-                var tagName = inner.Slice(0, nameEnd).ToString();
-
-                if (allowedTags.Contains(tagName))
-                {
-                    bool selfClose = tagName is "br" or "hr";
-                    result.Append(isClosing ? $"</{tagName}>" : selfClose ? $"<{tagName}/>" : $"<{tagName}>");
-                }
-
-                i = tagEnd + 1;
-            }
-            else
-            {
-                result.Append(html[i]);
-                i++;
-            }
-        }
-
-        return result.ToString();
-    }
-
-    private static int FindTagEnd(string html, int openBracket)
-    {
-        bool inDouble = false, inSingle = false;
-        for (int i = openBracket + 1; i < html.Length; i++)
-        {
-            char c = html[i];
-            if (inDouble) { if (c == '"') inDouble = false; }
-            else if (inSingle) { if (c == '\'') inSingle = false; }
-            else if (c == '"') inDouble = true;
-            else if (c == '\'') inSingle = true;
-            else if (c == '>') return i;
-        }
-        return -1;
+        // Санитизация HTML для защиты от XSS-атак
+        return _htmlSanitizer.Sanitize(html);
     }
 
     #endregion
