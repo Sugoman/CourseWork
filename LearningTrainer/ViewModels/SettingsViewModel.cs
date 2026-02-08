@@ -38,7 +38,9 @@ namespace LearningTrainer.ViewModels
             { "Русский", "ru" },
             { "Español", "es" },
             { "Deutsch", "de" },
-            { "中国人", "zh" }
+            { "中国人", "zh" },
+            { "සිංහල", "si" },
+            { "བོད་སྐད།", "bo" }
         };
         public List<string> AvailableLanguages => _languagesMap.Keys.ToList();
 

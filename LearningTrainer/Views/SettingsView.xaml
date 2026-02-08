@@ -452,8 +452,9 @@
 
                         <Button Content="{DynamicResource Loc.Button.SaveButton}" 
                                 Command="{Binding ChangePasswordCommand}" 
-                                Style="{StaticResource SuccessButton}"            
-                                Width="160" Height="40" 
+                                Style="{StaticResource SuccessButton}"   
+                                FontSize="{DynamicResource BaseFontSize}"
+                                Width="160" Height="50" 
                                 HorizontalAlignment="Left"
                                 behaviors:PasswordBoxBehavior.Password="{Binding NewPassword, Mode=TwoWay}"/>
                         <TextBlock Text="{Binding ChangePasswordMessage}" 
@@ -496,9 +497,10 @@
                                 <!-- Кнопка "Стать учителем" - только для User и Admin -->
                                 <Button Grid.Column="0" 
                                         Content="{DynamicResource Loc.SettingsAcc.BecomeTeacherLabel}"
+                                        FontSize="{DynamicResource BaseFontSize}"
                                         Command="{Binding UpgradeToTeacherCommand}"
                                         Style="{StaticResource PrimaryButton}"
-                                        Width="180" Height="40" 
+                                        Width="180" Height="50" 
                                         HorizontalAlignment="Left"
                                         Visibility="{Binding CanBecomeTeacher, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                 

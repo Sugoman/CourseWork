@@ -34,6 +34,16 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Content-Security-Policy: блокирует inline-скрипты для защиты от XSS
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append(
+        "Content-Security-Policy",
+        "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws: wss: http: https:; font-src 'self' https:;");
+    await next();
+});
+
 app.UseStaticFiles();
 app.UseAntiforgery();
 

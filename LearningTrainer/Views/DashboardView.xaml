@@ -82,6 +82,17 @@
                         Command="{Binding ImportDictionaryCommand}"
                         Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
+                        <Button Style="{StaticResource NavButtonStyle}" Command="{Binding OpenMarketplaceCommand}" Margin="10,0,0,0">
+                            <Button.ContentTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🛒" FontSize="16" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Маркетплейс" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </Button.ContentTemplate>
+                        </Button>
+
                         <Button Content="Settings" Style="{StaticResource NavButtonStyle}" Command="{Binding OpenSettingsCommand}" Margin="20,0,0,0">
                             <Button.ContentTemplate>
                                 <DataTemplate>

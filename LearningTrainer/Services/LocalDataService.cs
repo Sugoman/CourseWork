@@ -485,5 +485,204 @@ namespace LearningTrainer.Services
             MessageBox.Show("Управление публикацией недоступно в оффлайн-режиме", "Офлайн режим", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return Task.FromResult(false);
         }
+
+        // Export - в оффлайн-режиме используем локальную сериализацию
+        public Task<byte[]> ExportDictionaryAsJsonAsync(int dictionaryId)
+        {
+            using var db = Context;
+            var dictionary = db.Dictionaries
+                .Include(d => d.Words)
+                .FirstOrDefault(d => d.Id == dictionaryId);
+
+            if (dictionary == null)
+                throw new InvalidOperationException("Словарь не найден");
+
+            var exportData = new
+            {
+                Name = dictionary.Name,
+                Description = dictionary.Description,
+                LanguageFrom = dictionary.LanguageFrom,
+                LanguageTo = dictionary.LanguageTo,
+                ExportDate = DateTime.UtcNow,
+                Words = dictionary.Words.Select(w => new
+                {
+                    Original = w.OriginalWord,
+                    Translation = w.Translation,
+                    PartOfSpeech = w.Transcription,
+                    Example = w.Example
+                }).ToList()
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(exportData, new System.Text.Json.JsonSerializerOptions 
+            { 
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+            return Task.FromResult(System.Text.Encoding.UTF8.GetBytes(json));
+        }
+
+        public Task<byte[]> ExportDictionaryAsCsvAsync(int dictionaryId)
+        {
+            using var db = Context;
+            var dictionary = db.Dictionaries
+                .Include(d => d.Words)
+                .FirstOrDefault(d => d.Id == dictionaryId);
+
+            if (dictionary == null)
+                throw new InvalidOperationException("Словарь не найден");
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Original,Translation,Part of Speech,Example");
+
+            foreach (var word in dictionary.Words)
+            {
+                sb.AppendLine($"\"{word.OriginalWord}\",\"{word.Translation}\",\"{word.Transcription ?? ""}\",\"{word.Example ?? ""}\"");
+            }
+
+            return Task.FromResult(System.Text.Encoding.UTF8.GetBytes(sb.ToString()));
+        }
+
+        public async Task<byte[]> ExportAllDictionariesAsZipAsync()
+        {
+            using var db = Context;
+            var dictionaries = db.Dictionaries
+                .Include(d => d.Words)
+                .Where(d => d.UserId == _currentLocalUserId)
+                .ToList();
+
+            if (!dictionaries.Any())
+                throw new InvalidOperationException("Нет словарей для экспорта");
+
+            using var memoryStream = new System.IO.MemoryStream();
+            using (var archive = new System.IO.Compression.ZipArchive(memoryStream, System.IO.Compression.ZipArchiveMode.Create, true))
+            {
+                foreach (var dictionary in dictionaries)
+                {
+                    var exportData = new
+                    {
+                        Name = dictionary.Name,
+                        Description = dictionary.Description,
+                        LanguageFrom = dictionary.LanguageFrom,
+                        LanguageTo = dictionary.LanguageTo,
+                        ExportDate = DateTime.UtcNow,
+                        Words = dictionary.Words.Select(w => new
+                        {
+                            Original = w.OriginalWord,
+                            Translation = w.Translation,
+                            PartOfSpeech = w.Transcription,
+                            Example = w.Example
+                        }).ToList()
+                    };
+
+                    var json = System.Text.Json.JsonSerializer.Serialize(exportData, new System.Text.Json.JsonSerializerOptions 
+                    { 
+                        WriteIndented = true,
+                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                    });
+
+                    var entry = archive.CreateEntry($"{dictionary.Name}.json");
+                    using var entryStream = entry.Open();
+                    await entryStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(json));
+                }
+            }
+
+            return memoryStream.ToArray();
+        }
+
+        #region Marketplace - недоступно в оффлайн режиме
+
+        public Task<PagedResult<MarketplaceDictionaryItem>> GetPublicDictionariesAsync(string? search, string? languageFrom, string? languageTo, int page, int pageSize)
+        {
+            MessageBox.Show("Маркетплейс недоступен в оффлайн-режиме", "Офлайн режим", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return Task.FromResult(new PagedResult<MarketplaceDictionaryItem>());
+        }
+
+        public Task<PagedResult<MarketplaceRuleItem>> GetPublicRulesAsync(string? search, string? category, int difficulty, int page, int pageSize)
+        {
+            MessageBox.Show("Маркетплейс недоступен в оффлайн-режиме", "Офлайн режим", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return Task.FromResult(new PagedResult<MarketplaceRuleItem>());
+        }
+
+        public Task<MarketplaceDictionaryDetails?> GetMarketplaceDictionaryDetailsAsync(int id)
+        {
+            return Task.FromResult<MarketplaceDictionaryDetails?>(null);
+        }
+
+        public Task<MarketplaceRuleDetails?> GetMarketplaceRuleDetailsAsync(int id)
+        {
+            return Task.FromResult<MarketplaceRuleDetails?>(null);
+        }
+
+        public Task<List<MarketplaceRuleItem>> GetRelatedRulesAsync(int ruleId, string category)
+        {
+            return Task.FromResult(new List<MarketplaceRuleItem>());
+        }
+
+        public Task<List<CommentItem>> GetDictionaryCommentsAsync(int id)
+        {
+            return Task.FromResult(new List<CommentItem>());
+        }
+
+        public Task<List<CommentItem>> GetRuleCommentsAsync(int id)
+        {
+            return Task.FromResult(new List<CommentItem>());
+        }
+
+        public Task<bool> AddDictionaryCommentAsync(int dictionaryId, int rating, string text)
+        {
+            MessageBox.Show("Комментарии недоступны в оффлайн-режиме", "Офлайн режим", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return Task.FromResult(false);
+        }
+
+        public Task<bool> AddRuleCommentAsync(int ruleId, int rating, string text)
+        {
+            MessageBox.Show("Комментарии недоступны в оффлайн-режиме", "Офлайн режим", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return Task.FromResult(false);
+        }
+
+        public Task<bool> HasUserReviewedDictionaryAsync(int dictionaryId)
+        {
+            return Task.FromResult(false);
+        }
+
+        public Task<bool> HasUserReviewedRuleAsync(int ruleId)
+        {
+            return Task.FromResult(false);
+        }
+
+        public Task<(bool Success, string Message, int? NewId)> DownloadDictionaryFromMarketplaceAsync(int dictionaryId)
+        {
+            MessageBox.Show("Скачивание из маркетплейса недоступно в оффлайн-режиме", "Офлайн режим", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return Task.FromResult((false, "Офлайн режим", (int?)null));
+        }
+
+        public Task<(bool Success, string Message, int? NewId)> DownloadRuleFromMarketplaceAsync(int ruleId)
+        {
+            MessageBox.Show("Скачивание из маркетплейса недоступно в оффлайн-режиме", "Офлайн режим", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return Task.FromResult((false, "Офлайн режим", (int?)null));
+        }
+
+        public Task<List<DownloadedItem>> GetDownloadedContentAsync()
+        {
+            return Task.FromResult(new List<DownloadedItem>());
+        }
+
+        public Task<DailyPlanDto?> GetDailyPlanAsync(int newWordsLimit = 10, int reviewLimit = 20)
+        {
+            return Task.FromResult<DailyPlanDto?>(null);
+        }
+
+        public Task<List<TrainingWordDto>> GetTrainingWordsAsync(string mode, int? dictionaryId = null, int limit = 20)
+        {
+            return Task.FromResult(new List<TrainingWordDto>());
+        }
+
+        public Task<StarterPackResult?> InstallStarterPackAsync()
+        {
+            MessageBox.Show("Стартовый набор недоступен в оффлайн-режиме", "Офлайн режим", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return Task.FromResult<StarterPackResult?>(null);
+        }
+
+        #endregion
     }
 }

@@ -93,10 +93,11 @@
 
 ### Аутентификация
 ```http
-POST /api/auth/login              # Вход
-POST /api/auth/register           # Регистрация
+POST /api/auth/login              # Вход (Username или Email)
+POST /api/auth/register           # Регистрация (Username, Email, Password)
 POST /api/auth/refresh            # Обновление токена
 POST /api/auth/upgrade-to-teacher # Стать учителем
+POST /api/auth/change-password    # Смена пароля
 ```
 
 ### Маркетплейс
@@ -173,7 +174,7 @@ CourseWork/
 ├── LearningTrainerShared/    # 📦 Shared Library
 │   ├── Models/               # Entities, DTOs
 │   └── Context/              # EF DbContext
-├── LearningAPI.Tests/        # 🧪 Unit Tests (22)
+├── LearningAPI.Tests/        # 🧪 Unit Tests (173+)
 ├── StressTestClient/         # 📈 Load Testing
 └── docs/                     # 📄 Документация
 ```
@@ -186,7 +187,7 @@ CourseWork/
 # Unit тесты
 dotnet test LearningAPI.Tests
 
-# Результат: ✅ 22 теста пройдено
+# Результат: ✅ 173+ тестов пройдено
 ```
 
 ---

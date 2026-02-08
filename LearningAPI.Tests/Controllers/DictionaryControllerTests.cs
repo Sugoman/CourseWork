@@ -6,6 +6,7 @@ using LearningTrainerShared.Models;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.Security.Claims;
@@ -26,8 +27,9 @@ public class DictionaryControllerTests : IDisposable
         _context = TestDbContextFactory.CreateInMemoryContext();
         _mediatorMock = new Mock<IMediator>();
         _loggerMock = new Mock<ILogger<DictionaryController>>();
-        
-        _controller = new DictionaryController(_context, _mediatorMock.Object, _loggerMock.Object);
+        var cacheMock = new Mock<IDistributedCache>();
+
+        _controller = new DictionaryController(_context, _mediatorMock.Object, _loggerMock.Object, cacheMock.Object);
         SetupUserContext(_testUserId, "Teacher");
     }
 

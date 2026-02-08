@@ -1,4 +1,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0-bookworm-slim AS build
+
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+ENV LC_ALL=ru_RU.UTF-8
+ENV LANG=ru_RU.UTF-8
+ENV ASPNETCORE_URLS=http://+:8080
+
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
@@ -25,10 +31,7 @@ RUN sed -i 's/^# *\(ru_RU.UTF-8\)/\1/' /etc/locale.gen \
 
 COPY --from=build /app/publish .
 
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
-ENV LC_ALL=ru_RU.UTF-8
-ENV LANG=ru_RU.UTF-8
-ENV ASPNETCORE_URLS=http://+:8080
+
 
 EXPOSE 8080
 

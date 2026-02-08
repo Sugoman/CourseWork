@@ -54,11 +54,23 @@ builder.Services.AddDbContext<ApiDbContext>(options =>
 
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetDictionariesHandler).Assembly));
 
-builder.Services.AddStackExchangeRedisCache(options =>
+var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+Console.WriteLine($"[Startup] Redis connection: {redisConnectionString ?? "NOT CONFIGURED"}");
+
+if (!string.IsNullOrEmpty(redisConnectionString))
 {
-    options.Configuration = "redis:6379";
-    options.InstanceName = "LearningTrainerCache_"; 
-});
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = redisConnectionString;
+        options.InstanceName = "LearningTrainerCache_"; 
+    });
+}
+else
+{
+    // Fallback to in-memory cache when Redis is not configured
+    Console.WriteLine("[Startup] Using in-memory distributed cache (Redis not configured)");
+    builder.Services.AddDistributedMemoryCache();
+}
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>

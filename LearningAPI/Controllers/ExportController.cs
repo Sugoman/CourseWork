@@ -1,12 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
+﻿using CsvHelper;
 using LearningTrainer.Context;
-using LearningTrainerShared.Models;
-using System.Text.Json;
-using System.Text;
-using CsvHelper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 
 namespace LearningAPI.Controllers
 {
@@ -61,7 +61,8 @@ namespace LearningAPI.Controllers
 
                 var json = JsonSerializer.Serialize(exportData, new JsonSerializerOptions
                 {
-                    WriteIndented = true
+                    WriteIndented = true,
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
                 });
 
                 _logger.LogInformation("Dictionary {DictionaryId} exported as JSON by user {UserId}", dictionaryId, userId);
@@ -120,8 +121,15 @@ namespace LearningAPI.Controllers
 
                     _logger.LogInformation("Dictionary {DictionaryId} exported as CSV by user {UserId}", dictionaryId, userId);
 
+                    var csvContent = writer.ToString();
+                    var preamble = Encoding.UTF8.GetPreamble();
+                    var csvBytes = Encoding.UTF8.GetBytes(csvContent);
+                    var result = new byte[preamble.Length + csvBytes.Length];
+                    preamble.CopyTo(result, 0);
+                    csvBytes.CopyTo(result, preamble.Length);
+
                     return File(
-                        Encoding.UTF8.GetBytes(writer.ToString()),
+                        result,
                         "text/csv",
                         $"{dictionary.Name}_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
                     );
@@ -154,12 +162,12 @@ namespace LearningAPI.Controllers
                     return NotFound(new { message = "No dictionaries to export" });
                 }
 
-                using (var memoryStream = new MemoryStream())
+                using var memoryStream = new MemoryStream();
+
                 using (var archive = new System.IO.Compression.ZipArchive(memoryStream, System.IO.Compression.ZipArchiveMode.Create, true))
                 {
                     foreach (var dictionary in dictionaries)
                     {
-                        // �������������� ��� JSON
                         var exportData = new DictionaryExportData
                         {
                             Name = dictionary.Name,
@@ -178,7 +186,8 @@ namespace LearningAPI.Controllers
 
                         var json = JsonSerializer.Serialize(exportData, new JsonSerializerOptions
                         {
-                            WriteIndented = true
+                            WriteIndented = true,
+                            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
                         });
 
                         var entry = archive.CreateEntry($"{dictionary.Name}.json");
@@ -187,15 +196,15 @@ namespace LearningAPI.Controllers
                             await entryStream.WriteAsync(Encoding.UTF8.GetBytes(json));
                         }
                     }
+                } // archive.Dispose() writes the ZIP central directory here
 
-                    _logger.LogInformation("All dictionaries exported as ZIP by user {UserId}", userId);
+                _logger.LogInformation("All dictionaries exported as ZIP by user {UserId}", userId);
 
-                    return File(
-                        memoryStream.ToArray(),
-                        "application/zip",
-                        $"dictionaries_export_{DateTime.Now:yyyyMMdd_HHmmss}.zip"
-                    );
-                }
+                return File(
+                    memoryStream.ToArray(),
+                    "application/zip",
+                    $"dictionaries_export_{DateTime.Now:yyyyMMdd_HHmmss}.zip"
+                );
             }
             catch (Exception ex)
             {

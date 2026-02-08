@@ -6,10 +6,15 @@ namespace LearningTrainer.Services.Dialogs
     {
         public bool ShowSaveDialog(string defaultFileName, out string filePath)
         {
+            return ShowSaveDialog(defaultFileName, out filePath, "JSON Files (*.json)|*.json|All Files (*.*)|*.*");
+        }
+
+        public bool ShowSaveDialog(string defaultFileName, out string filePath, string filter)
+        {
             SaveFileDialog dialog = new SaveFileDialog
             {
                 FileName = defaultFileName,
-                Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
+                Filter = filter,
                 Title = "Экспорт словаря"
             };
 

@@ -5,6 +5,7 @@ using LearningTrainer.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Moq;
 using System.Security.Claims;
@@ -23,7 +24,8 @@ public class MarketplaceControllerTests : IDisposable
     {
         _context = TestDbContextFactory.CreateInMemoryContext();
         _loggerMock = new Mock<ILogger<MarketplaceController>>();
-        _controller = new MarketplaceController(_context, _loggerMock.Object);
+        var cacheMock = new Mock<IDistributedCache>();
+        _controller = new MarketplaceController(_context, _loggerMock.Object, cacheMock.Object);
         SetupUserContext(_testUserId, "Teacher");
     }
 

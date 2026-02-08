@@ -1,13 +1,14 @@
-﻿using LearningAPI.Features.Dictionaries.Queries.GetDictionaries;
+﻿using LearningAPI.Extensions;
 using LearningTrainer.Context;
-using LearningTrainerShared.Models;
 using LearningTrainerShared.Constants;
+using LearningTrainerShared.Models;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace LearningAPI.Controllers
 {
@@ -15,16 +16,17 @@ namespace LearningAPI.Controllers
     [Route("api/dictionaries")]
     public class DictionaryController : BaseApiController
     {
-        private readonly ApiDbContext _context; 
+        private readonly ApiDbContext _context;
         private readonly IMediator _mediator;
         private readonly ILogger<DictionaryController> _logger;
+        private readonly IDistributedCache _cache;
 
-        // Конструктор принимает ОБА параметра
-        public DictionaryController(ApiDbContext context, IMediator mediator, ILogger<DictionaryController> logger)
+        public DictionaryController(ApiDbContext context, IMediator mediator, ILogger<DictionaryController> logger, IDistributedCache cache)
         {
             _context = context;
             _mediator = mediator;
             _logger = logger;
+            _cache = cache;
         }
 
         // GET: /api/dictionaries
@@ -88,12 +90,26 @@ namespace LearningAPI.Controllers
         public async Task<IActionResult> GetDictionaryById(int id)
         {
             var userId = GetUserId();
+            var cacheKey = $"dict:{userId}:{id}";
+
+            var cached = await _cache.TryGetStringAsync(cacheKey);
+            if (cached != null)
+            {
+                return Content(cached, "application/json");
+            }
 
             var dictionary = await _context.Dictionaries
                  .Include(d => d.Words)
                  .FirstOrDefaultAsync(d => d.Id == id && d.UserId == userId);
 
             if (dictionary == null) return NotFound();
+
+            var json = JsonSerializer.Serialize(dictionary);
+            await _cache.TrySetStringAsync(cacheKey, json, new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            });
+
             return Ok(dictionary);
         }
 
@@ -145,6 +161,8 @@ namespace LearningAPI.Controllers
                 _context.Dictionaries.Add(newDictionary);
                 await _context.SaveChangesAsync();
 
+                await InvalidateUserDictionaryCacheAsync(userId);
+
                 _logger.LogInformation("Dictionary created successfully with ID {DictionaryId}", newDictionary.Id);
 
                 return CreatedAtAction(nameof(GetDictionaries), new { id = newDictionary.Id }, newDictionary);
@@ -180,6 +198,8 @@ namespace LearningAPI.Controllers
 
             _context.Dictionaries.Remove(dictionary);
             await _context.SaveChangesAsync();
+
+            await _cache.TryRemoveAsync($"dict:{userId}:{id}");
 
             return NoContent();
         }
@@ -233,7 +253,21 @@ namespace LearningAPI.Controllers
                 else throw;
             }
 
+            var userId = GetUserId();
+            await _cache.TryRemoveAsync($"dict:{userId}:{id}");
+
             return NoContent();
+        }
+
+        private async Task InvalidateUserDictionaryCacheAsync(int userId)
+        {
+            var dictionaryIds = await _context.Dictionaries
+                .Where(d => d.UserId == userId)
+                .Select(d => d.Id)
+                .ToListAsync();
+
+            var tasks = dictionaryIds.Select(id => _cache.TryRemoveAsync($"dict:{userId}:{id}"));
+            await Task.WhenAll(tasks);
         }
     }
 }

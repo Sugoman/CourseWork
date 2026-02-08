@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+# Analysis documentation (internal comparison files)
+docs/analysis/
+
 # User-specific files
 *.rsuser
 *.suo

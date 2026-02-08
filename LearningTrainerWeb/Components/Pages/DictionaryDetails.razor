@@ -130,7 +130,7 @@
                         {
                             @foreach (var comment in Comments)
                             {
-                                <div class="p-3 mb-3" style="background: var(--gray-50); border-radius: var(--radius);">
+                                <div class="p-3 mb-3 py-3 px-3" style="background: var(--gray-50); border-radius: var(--radius);">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <div class="d-flex align-items-center gap-2">
                                             <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-400), var(--primary-600)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
@@ -138,9 +138,9 @@
                                             </div>
                                             <strong>@comment.AuthorName</strong>
                                         </div>
-                                        <span class="text-muted small">@comment.CreatedAt.ToString("dd.MM.yyyy")</span>
+                                        <span class="text-muted small me-3 mt-3">@comment.CreatedAt.ToString("dd.MM.yyyy")</span>
                                     </div>
-                                    <div class="mb-2" style="color: var(--accent-yellow);">
+                                    <div class="mb-2 ml-3" style="color: var(--accent-yellow);">
                                         @for (int i = 0; i < comment.Rating; i++)
                                         {
                                             <i class="bi bi-star-fill"></i>
@@ -165,7 +165,7 @@
                         <hr style="border-color: var(--gray-200); margin: 1.5rem 0;" />
                         
                         <h6 class="mb-3">
-                            <i class="bi bi-pencil me-1"></i> Оставить отзыв
+                            <i class="bi bi-pencil me-1 "></i> Оставить отзыв
                         </h6>
                         
                         @if (!string.IsNullOrEmpty(CommentError))
@@ -199,12 +199,12 @@
                             </label>
                             <textarea class="form-control" rows="3" placeholder="Поделитесь своим мнением..." @bind="NewComment"></textarea>
                         </div>
-                        <button class="btn btn-primary" @onclick="SubmitComment" disabled="@IsSubmitting">
+                        <button class="btn btn-primary gap-2" @onclick="SubmitComment" disabled="@IsSubmitting">
                             @if (IsSubmitting)
                             {
                                 <span class="spinner-border spinner-border-sm me-2"></span>
                             }
-                            <i class="bi bi-send me-1"></i> Отправить
+                            <i class="bi bi-send me-1 "></i> Отправить
                         </button>
                     </div>
                 </div>

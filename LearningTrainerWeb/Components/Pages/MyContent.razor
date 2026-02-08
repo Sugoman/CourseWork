@@ -1,20 +1,21 @@
-@page "/my-content"
+п»ї@page "/my-content"
 @inject IContentApiService ContentApi
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 @rendermode InteractiveServer
 
-<PageTitle>Мой контент - LearningTrainer</PageTitle>
+<PageTitle>РњРѕР№ РєРѕРЅС‚РµРЅС‚ - LearningTrainer</PageTitle>
 
 <div class="container">
     @if (!IsAuthenticated)
     {
         <div class="text-center py-5">
             <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-lock"></i></div>
-            <h2>Требуется авторизация</h2>
-            <p class="text-muted mb-4">Войдите, чтобы управлять своим контентом</p>
+            <h2>РўСЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕСЂРёР·Р°С†РёСЏ</h2>
+            <p class="text-muted mb-4">Р’РѕР№РґРёС‚Рµ, С‡С‚РѕР±С‹ СѓРїСЂР°РІР»СЏС‚СЊ СЃРІРѕРёРј РєРѕРЅС‚РµРЅС‚РѕРј</p>
             <a href="login" class="btn btn-primary btn-lg">
-                <i class="bi bi-box-arrow-in-right me-2"></i> Войти
+                <i class="bi bi-box-arrow-in-right me-2"></i> Р’РѕР№С‚Рё
             </a>
         </div>
     }
@@ -24,14 +25,25 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
             <div class="section-heading" style="margin-bottom: 0;">
                 <i class="bi bi-folder2-open"></i>
-                <h1 style="margin-bottom: 0;">Мой контент</h1>
+                <h1 style="margin-bottom: 0;">РњРѕР№ РєРѕРЅС‚РµРЅС‚</h1>
             </div>
             <div class="d-flex gap-2">
-                <button class="btn btn-success" @onclick="ShowPublishDictionaryModal">
-                    <i class="bi bi-plus-circle me-1"></i> Словарь
+                <button class="btn btn-outline-primary gap-2" @onclick="ExportAllDictionaries" disabled="@IsExporting">
+                    @if (IsExporting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-1"></span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-file-earmark-zip me-1"></i>
+                    }
+                    Р­РєСЃРїРѕСЂС‚ РІСЃРµС…
                 </button>
-                <button class="btn btn-success" @onclick="ShowPublishRuleModal">
-                    <i class="bi bi-plus-circle me-1"></i> Правило
+                <button class="btn btn-success gap-2" @onclick="ShowPublishDictionaryModal">
+                    <i class="bi bi-plus-circle me-1"></i> РЎР»РѕРІР°СЂСЊ
+                </button>
+                <button class="btn btn-success gap-2" @onclick="ShowPublishRuleModal">
+                    <i class="bi bi-plus-circle me-1"></i> РџСЂР°РІРёР»Рѕ
                 </button>
             </div>
         </div>
@@ -39,21 +51,21 @@
         <!-- Tabs -->
         <ul class="nav nav-tabs mb-4">
             <li class="nav-item">
-                <button class="nav-link @(ActiveTab == "dictionaries" ? "active" : "")" 
+                <button class="nav-link  @(ActiveTab == "dictionaries" ? "active" : "")" 
                         @onclick="@(() => ActiveTab = "dictionaries")">
-                    <i class="bi bi-book me-1"></i> Мои словари
+                    <i class="bi bi-book me-1"></i> РњРѕРё СЃР»РѕРІР°СЂРё
                 </button>
             </li>
             <li class="nav-item">
                 <button class="nav-link @(ActiveTab == "rules" ? "active" : "")" 
                         @onclick="@(() => ActiveTab = "rules")">
-                    <i class="bi bi-journal-text me-1"></i> Мои правила
+                    <i class="bi bi-journal-text me-1"></i> РњРѕРё РїСЂР°РІРёР»Р°
                 </button>
             </li>
             <li class="nav-item">
                 <button class="nav-link @(ActiveTab == "downloaded" ? "active" : "")" 
                         @onclick="@(() => ActiveTab = "downloaded")">
-                    <i class="bi bi-download me-1"></i> Скачанное
+                    <i class="bi bi-download me-1"></i> РЎРєР°С‡Р°РЅРЅРѕРµ
                 </button>
             </li>
         </ul>
@@ -71,25 +83,34 @@
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="card-title mb-0">@dict.Name</h5>
                                         <span class="badge @(dict.IsPublished ? "bg-success" : "bg-secondary")">
-                                            @(dict.IsPublished ? "? Опубликован" : "Черновик")
+                                            @(dict.IsPublished ? "вњ” РћРїСѓР±Р»РёРєРѕРІР°РЅ" : "Р§РµСЂРЅРѕРІРёРє")
                                         </span>
                                     </div>
                                     <p class="text-muted small mb-3">
-                                        <i class="bi bi-collection me-1"></i> @dict.WordCount слов
+                                        <i class="bi bi-collection me-1"></i> @dict.WordCount СЃР»РѕРІ
                                     </p>
-                                    <div class="d-flex gap-2">
+                                    <div class="d-flex gap-2 flex-wrap">
                                         @if (!dict.IsPublished)
                                         {
-                                            <button class="btn btn-sm btn-primary" @onclick="() => PublishDictionary(dict.Id)">
-                                                <i class="bi bi-cloud-upload me-1"></i> Опубликовать
+                                            <button class="btn btn-sm btn-primary gap-2" @onclick="() => PublishDictionary(dict.Id)">
+                                                <i class="bi bi-cloud-upload me-1"></i> РћРїСѓР±Р»РёРєРѕРІР°С‚СЊ
                                             </button>
                                         }
                                         else
                                         {
-                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => UnpublishDictionary(dict.Id)">
-                                                <i class="bi bi-x-circle me-1"></i> Снять
+                                            <button class="btn btn-sm btn-outline-danger gap-2" @onclick="() => UnpublishDictionary(dict.Id)">
+                                                <i class="bi bi-x-circle me-1"></i> РЎРЅСЏС‚СЊ
                                             </button>
                                         }
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <i class="bi bi-download me-1"></i> Р­РєСЃРїРѕСЂС‚
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><button class="dropdown-item" @onclick="() => ExportDictionaryAsJson(dict.Id, dict.Name)"><i class="bi bi-filetype-json me-2"></i>JSON</button></li>
+                                                <li><button class="dropdown-item" @onclick="() => ExportDictionaryAsCsv(dict.Id, dict.Name)"><i class="bi bi-filetype-csv me-2"></i>CSV</button></li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="card-footer">
@@ -113,9 +134,9 @@
                     <div class="col-12">
                         <div class="text-center py-5">
                             <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-book"></i></div>
-                            <p class="text-muted">У вас пока нет словарей</p>
+                            <p class="text-muted">РЈ РІР°СЃ РїРѕРєР° РЅРµС‚ СЃР»РѕРІР°СЂРµР№</p>
                             <button class="btn btn-primary" @onclick="ShowPublishDictionaryModal">
-                                <i class="bi bi-plus-circle me-1"></i> Создать словарь
+                                <i class="bi bi-plus-circle me-1"></i> РЎРѕР·РґР°С‚СЊ СЃР»РѕРІР°СЂСЊ
                             </button>
                         </div>
                     </div>
@@ -136,7 +157,7 @@
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="card-title mb-0">@rule.Title</h5>
                                         <span class="badge @(rule.IsPublished ? "bg-success" : "bg-secondary")">
-                                            @(rule.IsPublished ? "? Опубликовано" : "Черновик")
+                                            @(rule.IsPublished ? "? РћРїСѓР±Р»РёРєРѕРІР°РЅРѕ" : "Р§РµСЂРЅРѕРІРёРє")
                                         </span>
                                     </div>
                                     <span class="badge bg-info mb-3">@rule.Category</span>
@@ -144,13 +165,13 @@
                                         @if (!rule.IsPublished)
                                         {
                                             <button class="btn btn-sm btn-primary" @onclick="() => PublishRule(rule.Id)">
-                                                <i class="bi bi-cloud-upload me-1"></i> Опубликовать
+                                                <i class="bi bi-cloud-upload me-1"></i> РћРїСѓР±Р»РёРєРѕРІР°С‚СЊ
                                             </button>
                                         }
                                         else
                                         {
                                             <button class="btn btn-sm btn-outline-danger" @onclick="() => UnpublishRule(rule.Id)">
-                                                <i class="bi bi-x-circle me-1"></i> Снять
+                                                <i class="bi bi-x-circle me-1"></i> РЎРЅСЏС‚СЊ
                                             </button>
                                         }
                                     </div>
@@ -176,9 +197,9 @@
                     <div class="col-12">
                         <div class="text-center py-5">
                             <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-journal-text"></i></div>
-                            <p class="text-muted">У вас пока нет правил</p>
+                            <p class="text-muted">РЈ РІР°СЃ РїРѕРєР° РЅРµС‚ РїСЂР°РІРёР»</p>
                             <button class="btn btn-primary" @onclick="ShowPublishRuleModal">
-                                <i class="bi bi-plus-circle me-1"></i> Создать правило
+                                <i class="bi bi-plus-circle me-1"></i> РЎРѕР·РґР°С‚СЊ РїСЂР°РІРёР»Рѕ
                             </button>
                         </div>
                     </div>
@@ -196,7 +217,7 @@
                         <div class="col-md-4">
                             <div class="card h-100">
                                 <div class="card-body">
-                                    <span class="badge @(item.Type == "Словарь" ? "bg-info" : "bg-warning") mb-2">@item.Type</span>
+                                    <span class="badge @(item.Type == "РЎР»РѕРІР°СЂСЊ" ? "bg-info" : "bg-warning") mb-2">@item.Type</span>
                                     <h5 class="card-title">@item.Title</h5>
                                     <p class="text-muted small mb-0">
                                         <i class="bi bi-person-circle me-1"></i> @item.AuthorName
@@ -204,7 +225,7 @@
                                 </div>
                                 <div class="card-footer text-muted small">
                                     <i class="bi bi-calendar3 me-1"></i>
-                                    Скачано: @item.DownloadedAt.ToString("dd.MM.yyyy")
+                                    РЎРєР°С‡Р°РЅРѕ: @item.DownloadedAt.ToString("dd.MM.yyyy")
                                 </div>
                             </div>
                         </div>
@@ -215,9 +236,9 @@
                     <div class="col-12">
                         <div class="text-center py-5">
                             <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-download"></i></div>
-                            <p class="text-muted">Вы ещё ничего не скачивали</p>
+                            <p class="text-muted">Р’С‹ РµС‰С‘ РЅРёС‡РµРіРѕ РЅРµ СЃРєР°С‡РёРІР°Р»Рё</p>
                             <a href="dictionaries" class="btn btn-primary">
-                                <i class="bi bi-search me-1"></i> Найти контент
+                                <i class="bi bi-search me-1"></i> РќР°Р№С‚Рё РєРѕРЅС‚РµРЅС‚
                             </a>
                         </div>
                     </div>
@@ -227,10 +248,25 @@
     }
 </div>
 
+@if (!string.IsNullOrEmpty(ExportMessage))
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
+        <div class="d-flex align-items-center gap-2 px-4 py-3 text-white" 
+             style="background: @(ExportSuccess ? "var(--accent-green)" : "var(--accent-red)"); border-radius: var(--radius); box-shadow: var(--shadow-lg);">
+            <i class="bi @(ExportSuccess ? "bi-check-circle" : "bi-exclamation-circle")"></i>
+            @ExportMessage
+            <button type="button" class="btn-close btn-close-white ms-2" @onclick="() => ExportMessage = null" style="font-size: 0.75rem;"></button>
+        </div>
+    </div>
+}
+
 @code {
     private bool IsAuthenticated = false;
+    private bool IsExporting = false;
     private string ActiveTab = "dictionaries";
-    
+    private string? ExportMessage;
+    private bool ExportSuccess;
+
     private List<MyDictionaryItem>? MyDictionaries;
     private List<MyRuleItem>? MyRules;
     private List<DownloadedItem>? DownloadedContent;
@@ -292,5 +328,79 @@
     {
         await ContentApi.UnpublishRuleAsync(id);
         await LoadMyContent();
+    }
+
+    private async Task ExportDictionaryAsJson(int dictionaryId, string name)
+    {
+        try
+        {
+            var result = await ContentApi.ExportDictionaryAsJsonAsync(dictionaryId);
+            await DownloadFile(result.Data, result.FileName, result.ContentType);
+            ExportMessage = $"РЎР»РѕРІР°СЂСЊ '{name}' СѓСЃРїРµС€РЅРѕ СЌРєСЃРїРѕСЂС‚РёСЂРѕРІР°РЅ!";
+            ExportSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            ExportMessage = $"РћС€РёР±РєР° СЌРєСЃРїРѕСЂС‚Р°: {ex.Message}";
+            ExportSuccess = false;
+        }
+        StateHasChanged();
+        await Task.Delay(3000);
+        ExportMessage = null;
+        StateHasChanged();
+    }
+
+    private async Task ExportDictionaryAsCsv(int dictionaryId, string name)
+    {
+        try
+        {
+            var result = await ContentApi.ExportDictionaryAsCsvAsync(dictionaryId);
+            await DownloadFile(result.Data, result.FileName, result.ContentType);
+            ExportMessage = $"РЎР»РѕРІР°СЂСЊ '{name}' СѓСЃРїРµС€РЅРѕ СЌРєСЃРїРѕСЂС‚РёСЂРѕРІР°РЅ!";
+            ExportSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            ExportMessage = $"РћС€РёР±РєР° СЌРєСЃРїРѕСЂС‚Р°: {ex.Message}";
+            ExportSuccess = false;
+        }
+        StateHasChanged();
+        await Task.Delay(3000);
+        ExportMessage = null;
+        StateHasChanged();
+    }
+
+    private async Task ExportAllDictionaries()
+    {
+        IsExporting = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await ContentApi.ExportAllDictionariesAsZipAsync();
+            await DownloadFile(result.Data, result.FileName, result.ContentType);
+            ExportMessage = "Р’СЃРµ СЃР»РѕРІР°СЂРё СѓСЃРїРµС€РЅРѕ СЌРєСЃРїРѕСЂС‚РёСЂРѕРІР°РЅС‹!";
+            ExportSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            ExportMessage = $"РћС€РёР±РєР° СЌРєСЃРїРѕСЂС‚Р°: {ex.Message}";
+            ExportSuccess = false;
+        }
+        finally
+        {
+            IsExporting = false;
+        }
+
+        StateHasChanged();
+        await Task.Delay(3000);
+        ExportMessage = null;
+        StateHasChanged();
+    }
+
+    private async Task DownloadFile(byte[] data, string fileName, string contentType)
+    {
+        var base64 = Convert.ToBase64String(data);
+        await JS.InvokeVoidAsync("downloadFile", fileName, contentType, base64);
     }
 }

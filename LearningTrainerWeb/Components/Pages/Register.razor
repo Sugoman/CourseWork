@@ -1,17 +1,17 @@
-@page "/register"
+п»ї@page "/register"
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<PageTitle>Регистрация - LearningTrainer</PageTitle>
+<PageTitle>Р РµРіРёСЃС‚СЂР°С†РёСЏ - LearningTrainer</PageTitle>
 
 <div class="container">
     <div class="row justify-content-center mt-5">
         <div class="col-md-6 col-lg-5">
             <div class="text-center mb-4">
                 <div style="font-size: 3rem; margin-bottom: 0.5rem; color: var(--primary-500);"><i class="bi bi-person-plus-fill"></i></div>
-                <h1 class="h2">Создайте аккаунт</h1>
-                <p class="text-muted">Присоединяйтесь к сообществу LearningTrainer</p>
+                <h1 class="h2">РЎРѕР·РґР°Р№С‚Рµ Р°РєРєР°СѓРЅС‚</h1>
+                <p class="text-muted">РџСЂРёСЃРѕРµРґРёРЅСЏР№С‚РµСЃСЊ Рє СЃРѕРѕР±С‰РµСЃС‚РІСѓ LearningTrainer</p>
             </div>
             
             <div class="card" style="border-radius: var(--radius-xl);">
@@ -37,7 +37,7 @@
                         
                         <div class="mb-4">
                             <label class="form-label">
-                                <i class="bi bi-person me-1"></i> Имя пользователя
+                                <i class="bi bi-person me-1"></i> РРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ
                             </label>
                             <InputText @bind-Value="RegisterModel.Username" class="form-control form-control-lg" placeholder="username" />
                             <ValidationMessage For="() => RegisterModel.Username" class="text-danger small mt-1" />
@@ -53,7 +53,7 @@
 
                         <div class="mb-4">
                             <label class="form-label">
-                                <i class="bi bi-lock me-1"></i> Пароль
+                                <i class="bi bi-lock me-1"></i> РџР°СЂРѕР»СЊ
                             </label>
                             <InputText @bind-Value="RegisterModel.Password" type="password" class="form-control form-control-lg" />
                             <ValidationMessage For="() => RegisterModel.Password" class="text-danger small mt-1" />
@@ -61,7 +61,7 @@
 
                         <div class="mb-4">
                             <label class="form-label">
-                                <i class="bi bi-lock-fill me-1"></i> Подтверждение пароля
+                                <i class="bi bi-lock-fill me-1"></i> РџРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РїР°СЂРѕР»СЏ
                             </label>
                             <InputText @bind-Value="RegisterModel.ConfirmPassword" type="password" class="form-control form-control-lg" />
                             <ValidationMessage For="() => RegisterModel.ConfirmPassword" class="text-danger small mt-1" />
@@ -69,11 +69,11 @@
 
                         <div class="mb-4">
                             <label class="form-label">
-                                <i class="bi bi-ticket-perforated me-1"></i> Код приглашения
-                                <span class="text-muted fw-normal">(необязательно)</span>
+                                <i class="bi bi-ticket-perforated me-1"></i> РљРѕРґ РїСЂРёРіР»Р°С€РµРЅРёСЏ
+                                <span class="text-muted fw-normal">(РЅРµРѕР±СЏР·Р°С‚РµР»СЊРЅРѕ)</span>
                             </label>
                             <InputText @bind-Value="RegisterModel.InviteCode" class="form-control" placeholder="XXXXXX" />
-                            <small class="text-muted">Если у вас есть код от учителя</small>
+                            <small class="text-muted">Р•СЃР»Рё Сѓ РІР°СЃ РµСЃС‚СЊ РєРѕРґ РѕС‚ СѓС‡РёС‚РµР»СЏ</small>
                         </div>
 
                         <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@IsLoading">
@@ -81,14 +81,14 @@
                             {
                                 <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                             }
-                            <i class="bi bi-person-plus me-2"></i>Зарегистрироваться
+                            <i class="bi bi-person-plus me-2"></i>Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ
                         </button>
                     </EditForm>
 
                     <div class="text-center mt-4 pt-4" style="border-top: 1px solid var(--gray-200);">
                         <p class="text-muted mb-0">
-                            Уже есть аккаунт? 
-                            <a href="login" class="fw-semibold">Войти</a>
+                            РЈР¶Рµ РµСЃС‚СЊ Р°РєРєР°СѓРЅС‚? 
+                            <a href="login" class="fw-semibold">Р’РѕР№С‚Рё</a>
                         </p>
                     </div>
                 </div>
@@ -109,7 +109,7 @@
     {
         if (RegisterModel.Password != RegisterModel.ConfirmPassword)
         {
-            ErrorMessage = "Пароли не совпадают";
+            ErrorMessage = "РџР°СЂРѕР»Рё РЅРµ СЃРѕРІРїР°РґР°СЋС‚";
             return;
         }
 
@@ -126,12 +126,12 @@
             
             if (success)
             {
-                SuccessMessage = "Регистрация успешна! Теперь вы можете войти.";
+                SuccessMessage = "Р РµРіРёСЃС‚СЂР°С†РёСЏ СѓСЃРїРµС€РЅР°! РўРµРїРµСЂСЊ РІС‹ РјРѕР¶РµС‚Рµ РІРѕР№С‚Рё.";
                 RegisterModel = new();
             }
             else
             {
-                ErrorMessage = "Ошибка регистрации. Попробуйте другое имя пользователя.";
+                ErrorMessage = "РћС€РёР±РєР° СЂРµРіРёСЃС‚СЂР°С†РёРё. РџРѕРїСЂРѕР±СѓР№С‚Рµ РґСЂСѓРіРѕРµ РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ.";
             }
         }
         catch (Exception ex)
@@ -146,19 +146,19 @@
 
     private class RegisterFormModel
     {
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Введите имя пользователя")]
-        [System.ComponentModel.DataAnnotations.MinLength(3, ErrorMessage = "Минимум 3 символа")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Р’РІРµРґРёС‚Рµ РёРјСЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ")]
+        [System.ComponentModel.DataAnnotations.MinLength(3, ErrorMessage = "РњРёРЅРёРјСѓРј 3 СЃРёРјРІРѕР»Р°")]
         public string Username { get; set; } = "";
 
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Введите email")]
-        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "Неверный формат email")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Р’РІРµРґРёС‚Рµ email")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚ email")]
         public string Email { get; set; } = "";
 
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Введите пароль")]
-        [System.ComponentModel.DataAnnotations.MinLength(6, ErrorMessage = "Минимум 6 символов")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Р’РІРµРґРёС‚Рµ РїР°СЂРѕР»СЊ")]
+        [System.ComponentModel.DataAnnotations.MinLength(6, ErrorMessage = "РњРёРЅРёРјСѓРј 6 СЃРёРјРІРѕР»РѕРІ")]
         public string Password { get; set; } = "";
 
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Подтвердите пароль")]
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "РџРѕРґС‚РІРµСЂРґРёС‚Рµ РїР°СЂРѕР»СЊ")]
         public string ConfirmPassword { get; set; } = "";
 
         public string? InviteCode { get; set; }

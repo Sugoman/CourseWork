@@ -1,28 +1,98 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!--                     DRACULA THEME - Modern                      -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- BACKGROUND COLORS -->
     <SolidColorBrush x:Key="MainBackgroundBrush" Color="#1E1925"/>
     <SolidColorBrush x:Key="SecondaryMainBackgroundBrush" Color="#282231"/>
-    <SolidColorBrush x:Key="IsMouseOverBrush" Color="#383141"/>
     <SolidColorBrush x:Key="ShallBackgroundBrush" Color="#383141"/>
     <SolidColorBrush x:Key="CardBackgroundBrush" Color="#282231"/>
     <SolidColorBrush x:Key="InputBackgroundBrush" Color="#383141"/>
-    <SolidColorBrush x:Key="SeparatorBrush" Color="#5C4D70"/>
-    <SolidColorBrush x:Key="BorderBrush" Color="#5C4D70"/>
     <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#282231"/>
 
-    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#FAF0E6"/>
+    <!-- GLASS / ACRYLIC EFFECTS -->
+    <SolidColorBrush x:Key="GlassBackgroundBrush" Color="#B0282231"/>
+    <SolidColorBrush x:Key="GlassLightBrush" Color="#40383141"/>
+
+    <!-- HOVER / INTERACTIVE STATES -->
+    <SolidColorBrush x:Key="IsMouseOverBrush" Color="#443C4F"/>
+    <SolidColorBrush x:Key="HoverBackgroundBrush" Color="#443C4F"/>
+    <SolidColorBrush x:Key="PressedBackgroundBrush" Color="#504560"/>
+    <SolidColorBrush x:Key="SelectedBackgroundBrush" Color="#A5004426"/>
+
+    <!-- BORDERS -->
+    <SolidColorBrush x:Key="BorderBrush" Color="#5C4D70"/>
+    <SolidColorBrush x:Key="SeparatorBrush" Color="#5C4D70"/>
+    <SolidColorBrush x:Key="SubtleBorderBrush" Color="#443C4F"/>
+    <SolidColorBrush x:Key="FocusBorderBrush" Color="#BD93F9"/>
+
+    <!-- ACCENT COLORS -->
+    <Color x:Key="PrimaryAccentColor">#BD93F9</Color>
+    <SolidColorBrush x:Key="PrimaryAccentBrush" Color="#BD93F9"/>
+    <SolidColorBrush x:Key="AccentForegroundBrush" Color="#1E1925"/>
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#CAA9FF"/>
+
+    <!-- Gradient Accent -->
+    <LinearGradientBrush x:Key="AccentGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#BD93F9" Offset="0"/>
+        <GradientStop Color="#FF79C6" Offset="1"/>
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="AccentGradientVerticalBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#BD93F9" Offset="0"/>
+        <GradientStop Color="#A580E0" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- BUTTON COLORS -->
+    <SolidColorBrush x:Key="SuccessBrush" Color="#50FA7B"/>
+    <SolidColorBrush x:Key="MouseOverSuccessBrush" Color="#69FF94"/>
+    <LinearGradientBrush x:Key="SuccessGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#50FA7B" Offset="0"/>
+        <GradientStop Color="#3ED966" Offset="1"/>
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="ActionBrush" Color="#BD93F9"/>
+    <SolidColorBrush x:Key="MouseOverActionBrush" Color="#CAA9FF"/>
+    <LinearGradientBrush x:Key="ActionGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#BD93F9" Offset="0"/>
+        <GradientStop Color="#A580E0" Offset="1"/>
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="DangerBrush" Color="#FF5555"/>
+    <SolidColorBrush x:Key="MouseOverDangerBrush" Color="#FF6E6E"/>
+    <LinearGradientBrush x:Key="DangerGradientBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF5555" Offset="0"/>
+        <GradientStop Color="#E63E3E" Offset="1"/>
+    </LinearGradientBrush>
+
+    <SolidColorBrush x:Key="WarningBrush" Color="#FFB86C"/>
+    <SolidColorBrush x:Key="MouseOverWarningBrush" Color="#FFCB8E"/>
+
+    <!-- TEXT COLORS -->
+    <Color x:Key="PrimaryTextColor">#F8F8F2</Color>
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#F8F8F2"/>
     <SolidColorBrush x:Key="SecondaryTextBrush" Color="#C7B8D6"/>
     <SolidColorBrush x:Key="TertiaryTextBrush" Color="#8B8399"/>
+    <SolidColorBrush x:Key="PlaceholderTextBrush" Color="#6272A4"/>
+    <SolidColorBrush x:Key="LinkTextBrush" Color="#8BE9FD"/>
 
-    <Color x:Key="PrimaryTextColor">#FAF0E6</Color>
-    <SolidColorBrush x:Key="PrimaryAccentBrush" Color="#A50044"/>
-    <SolidColorBrush x:Key="AccentForegroundBrush" Color="#FAF0E6"/>
+    <!-- NOTIFICATION COLORS -->
+    <SolidColorBrush x:Key="NotificationAccessDeniedBrush" Color="#FF5555"/>
+    <SolidColorBrush x:Key="NotificationInfoBrush" Color="#8BE9FD"/>
+    <SolidColorBrush x:Key="NotificationSuccessBrush" Color="#50FA7B"/>
+    <SolidColorBrush x:Key="NotificationErrorBrush" Color="#FF5555"/>
+    <SolidColorBrush x:Key="NotificationRoleInfoBrush" Color="#BD93F9"/>
+    <SolidColorBrush x:Key="NotificationWarningBrush" Color="#FFB86C"/>
 
-    <SolidColorBrush x:Key="SuccessBrush" Color="#00A896"/>
-    <SolidColorBrush x:Key="MouseOverSuccessBrush" Color="#00C1B0"/>
-    <SolidColorBrush x:Key="ActionBrush" Color="#7A306C"/>
-    <SolidColorBrush x:Key="MouseOverActionBrush" Color="#944787"/>
-    <SolidColorBrush x:Key="DangerBrush" Color="#E76255"/>
+    <!-- SHADOW EFFECTS -->
+    <DropShadowEffect x:Key="SubtleShadow" ShadowDepth="0" BlurRadius="20" Color="#000000" Opacity="0.4"/>
+    <DropShadowEffect x:Key="MediumShadow" ShadowDepth="2" BlurRadius="25" Color="#000000" Opacity="0.5"/>
+    <DropShadowEffect x:Key="HoverShadow" ShadowDepth="4" BlurRadius="30" Color="#000000" Opacity="0.6"/>
+    <DropShadowEffect x:Key="AccentGlow" ShadowDepth="0" BlurRadius="20" Color="#BD93F9" Opacity="0.4"/>
+    <DropShadowEffect x:Key="SuccessGlow" ShadowDepth="0" BlurRadius="15" Color="#50FA7B" Opacity="0.4"/>
+    <DropShadowEffect x:Key="DangerGlow" ShadowDepth="0" BlurRadius="15" Color="#FF5555" Opacity="0.4"/>
 
 </ResourceDictionary>

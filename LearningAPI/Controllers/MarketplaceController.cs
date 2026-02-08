@@ -1,9 +1,12 @@
-﻿using LearningTrainer.Context;
+﻿using LearningAPI.Extensions;
+using LearningTrainer.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace LearningAPI.Controllers;
 
@@ -16,11 +19,13 @@ public class MarketplaceController : BaseApiController
 {
     private readonly ApiDbContext _context;
     private readonly ILogger<MarketplaceController> _logger;
+    private readonly IDistributedCache _cache;
 
-    public MarketplaceController(ApiDbContext context, ILogger<MarketplaceController> logger)
+    public MarketplaceController(ApiDbContext context, ILogger<MarketplaceController> logger, IDistributedCache cache)
     {
         _context = context;
         _logger = logger;
+        _cache = cache;
     }
 
     #region Public Dictionaries
@@ -37,6 +42,13 @@ public class MarketplaceController : BaseApiController
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 9)
     {
+        var cacheKey = $"marketplace:dicts:{search}:{languageFrom}:{languageTo}:{page}:{pageSize}";
+        var cached = await _cache.TryGetStringAsync(cacheKey);
+        if (cached != null)
+        {
+            return Content(cached, "application/json");
+        }
+
         var query = _context.Dictionaries
             .Include(d => d.User)
             .Include(d => d.Words)
@@ -84,13 +96,21 @@ public class MarketplaceController : BaseApiController
             })
             .ToListAsync();
 
-        return Ok(new PagedResultDto<DictionaryListItemDto>
+        var result = new PagedResultDto<DictionaryListItemDto>
         {
             Items = items,
             TotalCount = totalCount,
             TotalPages = totalPages,
             CurrentPage = page
+        };
+
+        var resultJson = JsonSerializer.Serialize(result);
+        await _cache.TrySetStringAsync(cacheKey, resultJson, new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(3)
         });
+
+        return Ok(result);
     }
 
     /// <summary>
@@ -100,6 +120,13 @@ public class MarketplaceController : BaseApiController
     [AllowAnonymous]
     public async Task<IActionResult> GetDictionaryDetails(int id)
     {
+        var detailCacheKey = $"marketplace:dict:{id}";
+        var cachedDetail = await _cache.TryGetStringAsync(detailCacheKey);
+        if (cachedDetail != null)
+        {
+            return Content(cachedDetail, "application/json");
+        }
+
         var dictionary = await _context.Dictionaries
             .Include(d => d.User)
             .Include(d => d.Words)
@@ -122,7 +149,7 @@ public class MarketplaceController : BaseApiController
             })
             .ToList();
 
-        return Ok(new DictionaryDetailsDto
+        var detailResult = new DictionaryDetailsDto
         {
             Id = dictionary.Id,
             Name = dictionary.Name,
@@ -136,11 +163,19 @@ public class MarketplaceController : BaseApiController
             Downloads = dictionary.DownloadCount,
             AuthorContentCount = authorContentCount,
             PreviewWords = previewWords
+        };
+
+        var detailJson = JsonSerializer.Serialize(detailResult);
+        await _cache.TrySetStringAsync(detailCacheKey, detailJson, new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
         });
+
+        return Ok(detailResult);
     }
 
     /// <summary>
-    /// Скачать словарь (добавить в свой аккаунт)
+    /// Скачать словарь
     /// </summary>
     [HttpPost("dictionaries/{id}/download")]
     [Authorize]
@@ -198,6 +233,8 @@ public class MarketplaceController : BaseApiController
 
         await _context.SaveChangesAsync();
 
+        await _cache.TryRemoveAsync($"marketplace:dict:{id}");
+
         return Ok(new { Message = "Словарь успешно скачан", NewDictionaryId = newDict.Id });
     }
 
@@ -217,6 +254,13 @@ public class MarketplaceController : BaseApiController
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 8)
     {
+        var cacheKey = $"marketplace:rules:{search}:{category}:{difficulty}:{page}:{pageSize}";
+        var cached = await _cache.TryGetStringAsync(cacheKey);
+        if (cached != null)
+        {
+            return Content(cached, "application/json");
+        }
+
         var query = _context.Rules
             .Include(r => r.User)
             .Where(r => r.IsPublished);
@@ -264,13 +308,21 @@ public class MarketplaceController : BaseApiController
             })
             .ToListAsync();
 
-        return Ok(new PagedResultDto<RuleListItemDto>
+        var rulesResult = new PagedResultDto<RuleListItemDto>
         {
             Items = items,
             TotalCount = totalCount,
             TotalPages = totalPages,
             CurrentPage = page
+        };
+
+        var rulesJson = JsonSerializer.Serialize(rulesResult);
+        await _cache.TrySetStringAsync(cacheKey, rulesJson, new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(3)
         });
+
+        return Ok(rulesResult);
     }
 
     /// <summary>
@@ -280,6 +332,13 @@ public class MarketplaceController : BaseApiController
     [AllowAnonymous]
     public async Task<IActionResult> GetRuleDetails(int id)
     {
+        var ruleCacheKey = $"marketplace:rule:{id}";
+        var cachedRule = await _cache.TryGetStringAsync(ruleCacheKey);
+        if (cachedRule != null)
+        {
+            return Content(cachedRule, "application/json");
+        }
+
         var rule = await _context.Rules
             .Include(r => r.User)
             .Where(r => r.Id == id && r.IsPublished)
@@ -292,10 +351,9 @@ public class MarketplaceController : BaseApiController
             .Where(r => r.UserId == rule.UserId && r.IsPublished)
             .CountAsync();
 
-        // Конвертируем Markdown в HTML (упрощённо)
         var htmlContent = ConvertMarkdownToHtml(rule.MarkdownContent);
 
-        return Ok(new RuleDetailsDto
+        var ruleDetail = new RuleDetailsDto
         {
             Id = rule.Id,
             Title = rule.Title,
@@ -309,7 +367,15 @@ public class MarketplaceController : BaseApiController
             AuthorContentCount = authorContentCount,
             HtmlContent = htmlContent,
             CreatedAt = rule.CreatedAt
+        };
+
+        var ruleJson = JsonSerializer.Serialize(ruleDetail);
+        await _cache.TrySetStringAsync(ruleCacheKey, ruleJson, new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
         });
+
+        return Ok(ruleDetail);
     }
 
     /// <summary>
@@ -354,6 +420,8 @@ public class MarketplaceController : BaseApiController
         });
 
         await _context.SaveChangesAsync();
+
+        await _cache.TryRemoveAsync($"marketplace:rule:{id}");
 
         return Ok(new { Message = "Правило успешно скачано", NewRuleId = newRule.Id });
     }
@@ -412,6 +480,24 @@ public class MarketplaceController : BaseApiController
     {
         var userId = GetUserId();
 
+        if (string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 2000)
+            return BadRequest(new { Message = "Текст комментария должен быть от 1 до 2000 символов" });
+
+        if (request.Rating < 1 || request.Rating > 5)
+            return BadRequest(new { Message = "Оценка должна быть от 1 до 5" });
+
+        // Экранируем текст комментария для защиты от XSS
+        request.Text = System.Net.WebUtility.HtmlEncode(request.Text);
+
+        // Check if user already reviewed this dictionary
+        var existingReview = await _context.Comments
+            .AnyAsync(c => c.UserId == userId && c.ContentType == "Dictionary" && c.ContentId == id);
+
+        if (existingReview)
+        {
+            return BadRequest(new { Message = "Вы уже оставили отзыв на этот словарь" });
+        }
+
         var comment = new Comment
         {
             UserId = userId,
@@ -429,7 +515,20 @@ public class MarketplaceController : BaseApiController
         await UpdateDictionaryRating(id);
         await _context.SaveChangesAsync();
 
+        await _cache.TryRemoveAsync($"marketplace:dict:{id}");
+
         return Ok(new { Message = "Комментарий добавлен" });
+    }
+
+    [HttpGet("dictionaries/{id}/has-reviewed")]
+    [Authorize]
+    public async Task<IActionResult> HasReviewedDictionary(int id)
+    {
+        var userId = GetUserId();
+        var hasReviewed = await _context.Comments
+            .AnyAsync(c => c.UserId == userId && c.ContentType == "Dictionary" && c.ContentId == id);
+
+        return Ok(new { HasReviewed = hasReviewed });
     }
 
     [HttpGet("rules/{id}/comments")]
@@ -459,6 +558,24 @@ public class MarketplaceController : BaseApiController
     {
         var userId = GetUserId();
 
+        if (string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 2000)
+            return BadRequest(new { Message = "Текст комментария должен быть от 1 до 2000 символов" });
+
+        if (request.Rating < 1 || request.Rating > 5)
+            return BadRequest(new { Message = "Оценка должна быть от 1 до 5" });
+
+        // Экранируем текст комментария для защиты от XSS
+        request.Text = System.Net.WebUtility.HtmlEncode(request.Text);
+
+        // Check if user already reviewed this rule
+        var existingReview = await _context.Comments
+            .AnyAsync(c => c.UserId == userId && c.ContentType == "Rule" && c.ContentId == id);
+
+        if (existingReview)
+        {
+            return BadRequest(new { Message = "Вы уже оставили отзыв на это правило" });
+        }
+
         var comment = new Comment
         {
             UserId = userId,
@@ -476,7 +593,20 @@ public class MarketplaceController : BaseApiController
         await UpdateRuleRating(id);
         await _context.SaveChangesAsync();
 
+        await _cache.TryRemoveAsync($"marketplace:rule:{id}");
+
         return Ok(new { Message = "Комментарий добавлен" });
+    }
+
+    [HttpGet("rules/{id}/has-reviewed")]
+    [Authorize]
+    public async Task<IActionResult> HasReviewedRule(int id)
+    {
+        var userId = GetUserId();
+        var hasReviewed = await _context.Comments
+            .AnyAsync(c => c.UserId == userId && c.ContentType == "Rule" && c.ContentId == id);
+
+        return Ok(new { HasReviewed = hasReviewed });
     }
 
     #endregion
@@ -591,6 +721,9 @@ public class MarketplaceController : BaseApiController
         dictionary.IsPublished = true;
         await _context.SaveChangesAsync();
 
+        await _cache.TryRemoveAsync($"marketplace:dict:{id}");
+        await InvalidateDictionaryListCacheAsync();
+
         return Ok(new { Message = "Словарь опубликован" });
     }
 
@@ -607,6 +740,9 @@ public class MarketplaceController : BaseApiController
 
         dictionary.IsPublished = false;
         await _context.SaveChangesAsync();
+
+        await _cache.TryRemoveAsync($"marketplace:dict:{id}");
+        await InvalidateDictionaryListCacheAsync();
 
         return Ok(new { Message = "Словарь снят с публикации" });
     }
@@ -625,6 +761,9 @@ public class MarketplaceController : BaseApiController
         rule.IsPublished = true;
         await _context.SaveChangesAsync();
 
+        await _cache.TryRemoveAsync($"marketplace:rule:{id}");
+        await InvalidateRuleListCacheAsync();
+
         return Ok(new { Message = "Правило опубликовано" });
     }
 
@@ -642,12 +781,47 @@ public class MarketplaceController : BaseApiController
         rule.IsPublished = false;
         await _context.SaveChangesAsync();
 
+        await _cache.TryRemoveAsync($"marketplace:rule:{id}");
+        await InvalidateRuleListCacheAsync();
+
         return Ok(new { Message = "Правило снято с публикации" });
     }
 
     #endregion
 
     #region Private Methods
+
+    /// <summary>
+    /// Инвалидирует кэш списка словарей (первые несколько страниц без фильтров)
+    /// </summary>
+    private async Task InvalidateDictionaryListCacheAsync()
+    {
+        // Инвалидируем первые страницы без фильтров (самые частые запросы)
+        var pageSizes = new[] { 9, 12, 20 };
+        foreach (var pageSize in pageSizes)
+        {
+            for (int page = 1; page <= 3; page++)
+            {
+                await _cache.TryRemoveAsync($"marketplace:dicts::::{page}:{pageSize}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Инвалидирует кэш списка правил (первые несколько страниц без фильтров)
+    /// </summary>
+    private async Task InvalidateRuleListCacheAsync()
+    {
+        // Инвалидируем первые страницы без фильтров (самые частые запросы)
+        var pageSizes = new[] { 8, 12, 20 };
+        foreach (var pageSize in pageSizes)
+        {
+            for (int page = 1; page <= 3; page++)
+            {
+                await _cache.TryRemoveAsync($"marketplace:rules:::0:{page}:{pageSize}");
+            }
+        }
+    }
 
     private async Task UpdateDictionaryRating(int dictionaryId)
     {
@@ -688,8 +862,8 @@ public class MarketplaceController : BaseApiController
         if (string.IsNullOrEmpty(markdown))
             return "";
 
-        // Базовая конвертация Markdown в HTML
-        var html = markdown
+        // Санитизация: экранируем HTML-теги в пользовательском вводе для защиты от XSS
+        var html = System.Net.WebUtility.HtmlEncode(markdown)
             .Replace("\r\n", "\n")
             .Replace("\r", "\n");
 
@@ -710,7 +884,87 @@ public class MarketplaceController : BaseApiController
         html = string.Join("", paragraphs.Select(p => 
             p.StartsWith("<h") ? p : $"<p>{p.Replace("\n", "<br/>")}</p>"));
 
-        return html;
+        // Финальная санитизация: оставляем только безопасные теги (allowlist)
+        return SanitizeHtmlAllowlist(html);
+    }
+
+    /// <summary>
+    /// Allowlist-санитизатор: пропускает только безопасные теги без атрибутов.
+    /// Корректно обрабатывает кавычки внутри атрибутов (не ломается на > в onerror и т.д.).
+    /// </summary>
+    private static string SanitizeHtmlAllowlist(string html)
+    {
+        if (string.IsNullOrEmpty(html)) return "";
+
+        var allowedTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "h1", "h2", "h3", "h4", "h5", "h6",
+            "p", "br", "hr",
+            "strong", "b", "em", "i", "u",
+            "code", "pre",
+            "ul", "ol", "li",
+            "blockquote",
+            "table", "thead", "tbody", "tr", "th", "td"
+        };
+
+        var result = new System.Text.StringBuilder(html.Length);
+        int i = 0;
+
+        while (i < html.Length)
+        {
+            if (html[i] == '<')
+            {
+                int tagEnd = FindTagEnd(html, i);
+                if (tagEnd == -1)
+                {
+                    result.Append("&lt;");
+                    i++;
+                    continue;
+                }
+
+                var inner = html.AsSpan(i + 1, tagEnd - i - 1).Trim();
+                bool isClosing = inner.Length > 0 && inner[0] == '/';
+                if (isClosing) inner = inner.Slice(1).TrimStart();
+
+                int nameEnd = 0;
+                while (nameEnd < inner.Length &&
+                       !char.IsWhiteSpace(inner[nameEnd]) &&
+                       inner[nameEnd] != '/' && inner[nameEnd] != '>')
+                    nameEnd++;
+
+                var tagName = inner.Slice(0, nameEnd).ToString();
+
+                if (allowedTags.Contains(tagName))
+                {
+                    bool selfClose = tagName is "br" or "hr";
+                    result.Append(isClosing ? $"</{tagName}>" : selfClose ? $"<{tagName}/>" : $"<{tagName}>");
+                }
+
+                i = tagEnd + 1;
+            }
+            else
+            {
+                result.Append(html[i]);
+                i++;
+            }
+        }
+
+        return result.ToString();
+    }
+
+    private static int FindTagEnd(string html, int openBracket)
+    {
+        bool inDouble = false, inSingle = false;
+        for (int i = openBracket + 1; i < html.Length; i++)
+        {
+            char c = html[i];
+            if (inDouble) { if (c == '"') inDouble = false; }
+            else if (inSingle) { if (c == '\'') inSingle = false; }
+            else if (c == '"') inDouble = true;
+            else if (c == '\'') inSingle = true;
+            else if (c == '>') return i;
+        }
+        return -1;
     }
 
     #endregion

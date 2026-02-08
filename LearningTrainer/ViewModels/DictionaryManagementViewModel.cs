@@ -4,10 +4,6 @@ using LearningTrainer.Services.Dialogs;
 using LearningTrainerShared.Models;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Unicode;
 using System.Windows;
 using System.Windows.Input;
 using static LearningTrainer.Core.EventAggregator;
@@ -73,6 +69,7 @@ namespace LearningTrainer.ViewModels
         public ICommand DeleteWordCommand { get; }
         public ICommand DeleteDictionaryCommand { get; }
         public ICommand ExportDictionaryCommand { get; }
+        public ICommand ExportDictionaryAsCsvCommand { get; }
         public ICommand SaveChangesCommand { get; }
         public ICommand CloseCommand { get; }
         public ICommand ShareDictionaryCommand { get; }
@@ -121,7 +118,8 @@ namespace LearningTrainer.ViewModels
 
             DeleteDictionaryCommand = new RelayCommand(async (p) => await DeleteDictionary(), (_) => IsEditable);
             ShareDictionaryCommand = new RelayCommand(ShareDictionary);
-            ExportDictionaryCommand = new RelayCommand((param) => ExportDictionary());
+            ExportDictionaryCommand = new RelayCommand(async (p) => await ExportDictionaryAsJson());
+            ExportDictionaryAsCsvCommand = new RelayCommand(async (p) => await ExportDictionaryAsCsv());
             PublishToMarketplaceCommand = new RelayCommand(async (p) => await TogglePublish(), (_) => IsEditable);
 
             CloseCommand = new RelayCommand(CloseTab);
@@ -289,28 +287,45 @@ namespace LearningTrainer.ViewModels
             }
         }
 
-        private void ExportDictionary()
+        private async Task ExportDictionaryAsJson()
         {
-            string defaultName = $"dictionary-{_dictionary.Name.Replace(" ", "-")}.json";
+            string defaultName = $"{_dictionary.Name.Replace(" ", "-")}_export.json";
 
             if (_dialogService.ShowSaveDialog(defaultName, out string filePath))
             {
                 try
                 {
-                    var options = new JsonSerializerOptions
-                    {
-                        ReferenceHandler = ReferenceHandler.Preserve,
-                        WriteIndented = true,
-                        Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
-                    };
-
-                    string json = JsonSerializer.Serialize(_dictionary, options);
-
-                    File.WriteAllText(filePath, json);
+                    var data = await _dataService.ExportDictionaryAsJsonAsync(_dictionary.Id);
+                    await File.WriteAllBytesAsync(filePath, data);
 
                     EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
                         "Экспорт завершен",
-                        $"Словарь '{_dictionary.Name}' успешно экспортирован!"));
+                        $"Словарь '{_dictionary.Name}' успешно экспортирован в JSON!"));
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Ошибка экспорта: {ex.Message}");
+                    EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                        "Ошибка экспорта",
+                        $"Произошла ошибка: {ex.Message}"));
+                }
+            }
+        }
+
+        private async Task ExportDictionaryAsCsv()
+        {
+            string defaultName = $"{_dictionary.Name.Replace(" ", "-")}_export.csv";
+
+            if (_dialogService.ShowSaveDialog(defaultName, out string filePath, "CSV files (*.csv)|*.csv"))
+            {
+                try
+                {
+                    var data = await _dataService.ExportDictionaryAsCsvAsync(_dictionary.Id);
+                    await File.WriteAllBytesAsync(filePath, data);
+
+                    EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
+                        "Экспорт завершен",
+                        $"Словарь '{_dictionary.Name}' успешно экспортирован в CSV!"));
                 }
                 catch (Exception ex)
                 {

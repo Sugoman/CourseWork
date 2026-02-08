@@ -5,8 +5,10 @@ using LearningTrainer.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Security.Claims;
 using Xunit;
+using Moq;
 
 namespace LearningAPI.Tests.Controllers;
 
@@ -19,7 +21,8 @@ public class RulesControllerTests : IDisposable
     public RulesControllerTests()
     {
         _context = TestDbContextFactory.CreateInMemoryContext();
-        _controller = new RulesController(_context);
+        var cacheMock = new Mock<IDistributedCache>();
+        _controller = new RulesController(_context, cacheMock.Object);
         SetupUserContext(_testUserId, "Teacher");
     }
 

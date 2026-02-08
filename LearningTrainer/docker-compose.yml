@@ -16,8 +16,11 @@ services:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
+      redis:
+        condition: service_started
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True
+      - ConnectionStrings__Redis=redis:6379
       - ASPNETCORE_URLS=http://+:8080
 
   # -------------------------------

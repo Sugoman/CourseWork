@@ -13,12 +13,18 @@ namespace LearningTrainer.Behaviors
             DependencyProperty.RegisterAttached("Markdown", typeof(string), typeof(WebBrowserBehavior),
             new PropertyMetadata(null, OnMarkdownChanged));
 
+        public static readonly DependencyProperty HtmlContentProperty =
+            DependencyProperty.RegisterAttached("HtmlContent", typeof(string), typeof(WebBrowserBehavior),
+            new PropertyMetadata(null, OnHtmlContentChanged));
+
         public static readonly DependencyProperty ConfigProperty =
             DependencyProperty.RegisterAttached("Config", typeof(MarkdownConfig), typeof(WebBrowserBehavior),
             new PropertyMetadata(new MarkdownConfig(), OnConfigChanged));
 
         public static string GetMarkdown(DependencyObject obj) => (string)obj.GetValue(MarkdownProperty);
         public static void SetMarkdown(DependencyObject obj, string value) => obj.SetValue(MarkdownProperty, value);
+        public static string GetHtmlContent(DependencyObject obj) => (string)obj.GetValue(HtmlContentProperty);
+        public static void SetHtmlContent(DependencyObject obj, string value) => obj.SetValue(HtmlContentProperty, value);
         public static MarkdownConfig GetConfig(DependencyObject obj) => (MarkdownConfig)obj.GetValue(ConfigProperty);
         public static void SetConfig(DependencyObject obj, MarkdownConfig value) => obj.SetValue(ConfigProperty, value);
 
@@ -27,9 +33,17 @@ namespace LearningTrainer.Behaviors
             await UpdateWebViewContent(d as WebView2);
         }
 
+        private static async void OnHtmlContentChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            await UpdateWebViewFromHtml(d as WebView2);
+        }
+
         private static async void OnConfigChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            await UpdateWebViewContent(d as WebView2);
+            if (GetMarkdown(d) != null)
+                await UpdateWebViewContent(d as WebView2);
+            else if (GetHtmlContent(d) != null)
+                await UpdateWebViewFromHtml(d as WebView2);
         }
 
         private static async Task UpdateWebViewContent(WebView2 webView)
@@ -63,6 +77,36 @@ namespace LearningTrainer.Behaviors
             }
         }
 
+        private static async Task UpdateWebViewFromHtml(WebView2 webView)
+        {
+            if (webView == null) return;
+
+            try
+            {
+                if (webView.CoreWebView2 == null)
+                {
+                    await webView.EnsureCoreWebView2Async();
+                    webView.DefaultBackgroundColor = System.Drawing.Color.Transparent;
+                }
+
+                var htmlBody = GetHtmlContent(webView);
+                var config = GetConfig(webView) ?? new MarkdownConfig
+                {
+                    BackgroundColor = "#FFFFFF",
+                    TextColor = "#333333",
+                    AccentColor = "#0056b3",
+                    FontSize = 16
+                };
+
+                var html = GenerateHtmlFromContent(htmlBody, config);
+                webView.NavigateToString(html);
+            }
+            catch (System.Exception ex)
+            {
+                Debug.WriteLine($"[WebBrowserBehavior] Error updating WebView from HTML: {ex.Message}");
+            }
+        }
+
         private static string HexToRgba(string hexColor, double opacity)
         {
             if (string.IsNullOrEmpty(hexColor)) return $"rgba(128, 128, 128, {opacity})";
@@ -88,7 +132,7 @@ namespace LearningTrainer.Behaviors
                 markdown = "_Content is empty_";
             }
 
-            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+            var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().DisableHtml().Build();
             var htmlContent = Markdig.Markdown.ToHtml(markdown, pipeline);
 
             string tableBorderColor = HexToRgba(config.TextColor, 0.2);
@@ -99,13 +143,14 @@ namespace LearningTrainer.Behaviors
 <html>
 <head>
     <meta charset='utf-8'>
+    <meta http-equiv='Content-Security-Policy' content=""default-src 'none'; style-src 'unsafe-inline'; img-src data: https:;"">
     <style>
         :root {{
             --bg-color: {config.BackgroundColor};
             --text-color: {config.TextColor};
             --accent-color: {config.AccentColor};
             --font-size: {config.FontSize}px;
-            
+
             /* Динамические цвета */
             --table-border-color: {tableBorderColor};
             --quote-bg-color: {quoteBgColor};
@@ -192,6 +237,74 @@ namespace LearningTrainer.Behaviors
 </head>
 <body>
     {htmlContent}
+</body>
+</html>";
+        }
+
+        private static string GenerateHtmlFromContent(string htmlBody, MarkdownConfig config)
+        {
+            if (string.IsNullOrEmpty(htmlBody))
+            {
+                htmlBody = "<em>Content is empty</em>";
+            }
+
+            string tableBorderColor = HexToRgba(config.TextColor, 0.2);
+            string quoteBgColor = HexToRgba(config.AccentColor, 0.1);
+            string scrollThumbColor = HexToRgba(config.TextColor, 0.3);
+
+            return $@"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='Content-Security-Policy' content=""default-src 'none'; style-src 'unsafe-inline'; img-src data: https:;"">
+    <style>
+        :root {{
+            --bg-color: {config.BackgroundColor};
+            --text-color: {config.TextColor};
+            --accent-color: {config.AccentColor};
+            --font-size: {config.FontSize}px;
+            --table-border-color: {tableBorderColor};
+            --quote-bg-color: {quoteBgColor};
+            --scroll-thumb-color: {scrollThumbColor};
+        }}
+        body {{
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-size: var(--font-size);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+        }}
+        a {{ color: var(--accent-color); text-decoration: none; font-weight: 500; }}
+        a:hover {{ text-decoration: underline; }}
+        blockquote {{
+            margin: 1em 0; padding: 10px 20px;
+            border-left: 4px solid var(--accent-color);
+            background-color: var(--quote-bg-color);
+            color: var(--text-color); border-radius: 0 4px 4px 0;
+        }}
+        h1, h2, h3, h4, h5 {{ color: var(--text-color); margin-top: 1.5em; font-weight: 600; }}
+        h1 {{ border-bottom: 1px solid var(--table-border-color); padding-bottom: 0.3em; }}
+        table {{ width: 100%; border-collapse: collapse; margin: 1.5em 0; }}
+        th, td {{ padding: 12px; text-align: left; border: 1px solid var(--table-border-color); }}
+        th {{ background-color: var(--quote-bg-color); color: var(--text-color); font-weight: bold; }}
+        code {{
+            background-color: var(--quote-bg-color); color: var(--accent-color);
+            padding: 2px 5px; border-radius: 4px;
+            font-family: 'Consolas', monospace; font-size: 0.9em;
+        }}
+        pre {{ background-color: #282c34; padding: 15px; border-radius: 6px; overflow-x: auto; }}
+        pre code {{ background-color: transparent; color: #abb2bf; padding: 0; }}
+        ::-webkit-scrollbar {{ width: 10px; height: 10px; }}
+        ::-webkit-scrollbar-track {{ background: transparent; }}
+        ::-webkit-scrollbar-thumb {{ background: var(--scroll-thumb-color); border-radius: 5px; }}
+        ::-webkit-scrollbar-thumb:hover {{ background: var(--accent-color); }}
+    </style>
+</head>
+<body>
+    {htmlBody}
 </body>
 </html>";
         }

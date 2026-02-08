@@ -1,0 +1,306 @@
+<UserControl x:Class="LearningTrainer.Views.MarketplaceRuleDetailsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:LearningTrainer.Converters"
+             xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+             xmlns:behaviors="clr-namespace:LearningTrainer.Behaviors"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="900"
+             Background="{DynamicResource MainBackgroundBrush}"
+             FontSize="{DynamicResource BaseFontSize}">
+
+    <UserControl.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:InvertedBooleanToVisibilityConverter x:Key="InvBoolToVis"/>
+        <converters:RatingToStarsConverter x:Key="RatingToStars"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- Header Bar -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Bar with Close/Refresh -->
+        <Border Grid.Row="0" Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="15,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                
+                <TextBlock Grid.Column="0" Text="📜 Детали правила" FontSize="{DynamicResource HeaderFontSize}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center" Margin="10 0 0 0"/>
+                
+                <Button Grid.Column="1" Command="{Binding RefreshCommand}" ToolTip="Обновить"
+                        Style="{StaticResource BaseButton}" Width="36" Height="36" Margin="0,0,8,0">
+                    <TextBlock Text="🔄" FontSize="{DynamicResource BaseFontSize}" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                </Button>
+                <Button Grid.Column="2" Command="{Binding CloseCommand}" ToolTip="Закрыть"
+                        Style="{StaticResource BaseButton}" Width="36" Height="36" Margin="0 0 10 0">
+                    <TextBlock Text="✕" FontSize="{DynamicResource BaseFontSize}" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Loading -->
+        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="⏳" FontSize="48" HorizontalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            <TextBlock Text="Загрузка..." FontSize="16" Margin="0,10,0,0"
+                       Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding IsLoading, Converter={StaticResource InvBoolToVis}}">
+            <StackPanel Margin="25">
+                
+                <!-- Header Card with gradient -->
+                <Border CornerRadius="16" Margin="0,0,0,20">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#059669" Offset="0"/>
+                            <GradientStop Color="#10B981" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <Grid Margin="25">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Badges -->
+                        <WrapPanel Grid.Row="0" Margin="0,0,0,10">
+                            <Border Background="#33FFFFFF" CornerRadius="10" Padding="8,4" Margin="0,0,8,0">
+                                <TextBlock Text="{Binding Rule.Category}" Foreground="White" FontSize="12"/>
+                            </Border>
+                            <Border Background="#4DFFFFFF" CornerRadius="10" Padding="8,4">
+                                <TextBlock Text="{Binding DifficultyText}" Foreground="White" FontSize="12"/>
+                            </Border>
+                        </WrapPanel>
+
+                        <!-- Title + Download Button -->
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding Rule.Title}" 
+                                       FontSize="24" FontWeight="Bold" Foreground="White" TextWrapping="Wrap"/>
+                            <Button Grid.Column="1" Command="{Binding DownloadCommand}"
+                                    Style="{StaticResource BaseButton}" Background="White" Foreground="#059669"
+                                    FontWeight="SemiBold" Padding="16,8" VerticalAlignment="Top">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⬇" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Скачать"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- Description -->
+                        <TextBlock Grid.Row="2" Text="{Binding Rule.Description}" 
+                                   FontSize="14" Foreground="#D1FAE5" Margin="0,10,0,0" TextWrapping="Wrap"/>
+
+                        <!-- Stats badges -->
+                        <WrapPanel Grid.Row="3" Margin="0,15,0,0">
+                            <Border Background="#33FFFFFF" CornerRadius="12" Padding="10,5" Margin="0,0,10,5">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Rule.Rating, Converter={StaticResource RatingToStars}}" 
+                                               Foreground="#FCD34D" FontSize="{DynamicResource BaseFontSize}"/>
+                                    <TextBlock Text="{Binding Rule.Rating, StringFormat=' {0:F1}'}" Foreground="White" Margin="5,0,0,0"/>
+                                    <TextBlock Text="{Binding Rule.RatingCount, StringFormat=' ({0})'}" Foreground="#A7F3D0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#33FFFFFF" CornerRadius="12" Padding="10,5" Margin="0,0,0,5">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⬇" Foreground="White" Margin="0,0,5,0"/>
+                                    <TextBlock Text="{Binding Rule.Downloads}" Foreground="White"/>
+                                    <TextBlock Text=" скачиваний" Foreground="#A7F3D0"/>
+                                </StackPanel>
+                            </Border>
+                        </WrapPanel>
+
+                        <!-- Author info (compact) -->
+                        <Border Grid.Row="4" Background="#1AFFFFFF" CornerRadius="10" Padding="12,8" Margin="0,10,0,0" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="32" Height="32" CornerRadius="16" Background="#33FFFFFF" Margin="0,0,10,0">
+                                    <TextBlock Text="{Binding Rule.AuthorName[0]}" Foreground="White" 
+                                               FontWeight="Bold" FontSize="14"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Rule.AuthorName}" Foreground="White" FontWeight="SemiBold" FontSize="13"/>
+                                    <TextBlock Foreground="#A7F3D0" FontSize="11">
+                                        <Run Text="📁"/>
+                                        <Run Text="{Binding Rule.AuthorContentCount}"/>
+                                        <Run Text="материалов"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Rule Content -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="📄 Содержание" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,12"/>
+
+                        <wv2:WebView2 MinHeight="200" MaxHeight="350"
+                                      behaviors:WebBrowserBehavior.HtmlContent="{Binding Rule.HtmlContent}"
+                                      behaviors:WebBrowserBehavior.Config="{Binding Config}"
+                                      DefaultBackgroundColor="Transparent"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Related Rules (if any) -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,20"
+                        Visibility="{Binding HasRelatedRules, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <TextBlock Text="📚 Похожие правила" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,12"/>
+                        
+                        <ItemsControl ItemsSource="{Binding RelatedRules}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Command="{Binding DataContext.ViewRelatedRuleCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Style="{StaticResource BaseButton}" 
+                                            Margin="0,0,8,8" Padding="10,6">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Rating, Converter={StaticResource RatingToStars}}" 
+                                                       Foreground="#F59E0B" FontSize="10" Margin="0,0,6,0"/>
+                                            <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" MaxWidth="200"
+                                                       Foreground="{DynamicResource PrimaryTextBrush}" FontSize="12"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+
+                <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20">
+                    <StackPanel>
+                        <!-- Add Comment Form -->
+                        <StackPanel Visibility="{Binding CanAddComment, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="✏ Оставить отзыв" FontSize="14" FontWeight="Medium"
+               Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,10"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <TextBlock Text="Оценка:" VerticalAlignment="Center" Margin="0,0,10,0"
+                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                <ComboBox ItemsSource="{Binding RatingOptions}" 
+                  SelectedValue="{Binding NewRating}"
+                  SelectedValuePath="Key" DisplayMemberPath="Value"
+                  Width="180" Style="{StaticResource SortComboBoxStyle}"/>
+                            </StackPanel>
+
+                            <TextBox Text="{Binding NewCommentText, UpdateSourceTrigger=PropertyChanged}"
+             Height="70" TextWrapping="Wrap" AcceptsReturn="True"
+             Padding="10" Margin="0,0,0,10"
+             Background="{DynamicResource MainBackgroundBrush}"
+             Foreground="{DynamicResource PrimaryTextBrush}"
+             BorderBrush="{DynamicResource BorderBrush}"/>
+
+                            <Button Command="{Binding SubmitCommentCommand}"
+            Style="{StaticResource PrimaryButton}" Padding="16,8"
+            HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📤" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Отправить"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Already reviewed message -->
+                        <Border Visibility="{Binding HasUserReview, Converter={StaticResource BoolToVis}}"
+        Background="{DynamicResource MainBackgroundBrush}" CornerRadius="8" Padding="15" Margin="0,10,0,0">
+                            <TextBlock Text="✅ Вы уже оставили отзыв на это правило" 
+               Foreground="{DynamicResource SecondaryTextBrush}" FontSize="13"/>
+                        </Border>
+                        <Separator Margin="0,12"/>
+                        <!-- Comments Section -->
+                        <StackPanel>
+                            <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"
+                                       Foreground="{DynamicResource PrimaryTextBrush}">
+                                <Run Text="💬 Отзывы ("/>
+                                <Run Text="{Binding Comments.Count, Mode=OneWay}"/>
+                                <Run Text=")"/>
+                            </TextBlock>
+
+                            
+
+                             <!-- Comments List -->
+                            <ItemsControl ItemsSource="{Binding Comments}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource MainBackgroundBrush}" 
+                                                CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                                            <StackPanel>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    
+                                                    <!-- Avatar -->
+                                                    <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16" Margin="0,0,10,0">
+                                                        <Border.Background>
+                                                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                                <GradientStop Color="#059669" Offset="0"/>
+                                                                <GradientStop Color="#10B981" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Border.Background>
+                                                        <TextBlock Text="{Binding AuthorName[0]}" Foreground="White" 
+                                                                   FontWeight="Bold" FontSize="12"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding AuthorName}" FontWeight="SemiBold" FontSize="13"
+                                                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                                        <!-- Star rating display -->
+                                                        <TextBlock Text="{Binding Rating, Converter={StaticResource RatingToStars}}" 
+                                                                   Foreground="#F59E0B" FontSize="12"/>
+                                                    </StackPanel>
+                                                
+                                                    <TextBlock Grid.Column="2" Text="{Binding CreatedAt, StringFormat='{}{0:dd.MM.yyyy}'}"
+                                                               Foreground="{DynamicResource TertiaryTextBrush}" FontSize="11" VerticalAlignment="Top"/>
+                                                </Grid>
+                                                
+                                                <!-- Comment Text -->
+                                                <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Margin="42,6,0,0"
+                                                           Foreground="{DynamicResource SecondaryTextBrush}" FontSize="13"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+
+                            
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

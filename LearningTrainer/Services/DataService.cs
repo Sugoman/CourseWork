@@ -364,5 +364,193 @@ namespace LearningTrainer.Services
         {
             throw new NotImplementedException("Публикация недоступна в локальном режиме");
         }
+
+        // Export methods
+        public async Task<byte[]> ExportDictionaryAsJsonAsync(int dictionaryId)
+        {
+            var dictionary = await _context.Dictionaries
+                .Include(d => d.Words)
+                .FirstOrDefaultAsync(d => d.Id == dictionaryId);
+
+            if (dictionary == null)
+                throw new InvalidOperationException("Словарь не найден");
+
+            var exportData = new
+            {
+                Name = dictionary.Name,
+                Description = dictionary.Description,
+                LanguageFrom = dictionary.LanguageFrom,
+                LanguageTo = dictionary.LanguageTo,
+                ExportDate = DateTime.UtcNow,
+                Words = dictionary.Words.Select(w => new
+                {
+                    Original = w.OriginalWord,
+                    Translation = w.Translation,
+                    PartOfSpeech = w.Transcription,
+                    Example = w.Example
+                }).ToList()
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(exportData, new System.Text.Json.JsonSerializerOptions 
+            { 
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+            });
+            return System.Text.Encoding.UTF8.GetBytes(json);
+        }
+
+        public async Task<byte[]> ExportDictionaryAsCsvAsync(int dictionaryId)
+        {
+            var dictionary = await _context.Dictionaries
+                .Include(d => d.Words)
+                .FirstOrDefaultAsync(d => d.Id == dictionaryId);
+
+            if (dictionary == null)
+                throw new InvalidOperationException("Словарь не найден");
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("Original,Translation,Part of Speech,Example");
+
+            foreach (var word in dictionary.Words)
+            {
+                sb.AppendLine($"\"{word.OriginalWord}\",\"{word.Translation}\",\"{word.Transcription ?? ""}\",\"{word.Example ?? ""}\"");
+            }
+
+            return System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+        }
+
+        public async Task<byte[]> ExportAllDictionariesAsZipAsync()
+        {
+            var dictionaries = await _context.Dictionaries
+                .Include(d => d.Words)
+                .ToListAsync();
+
+            if (!dictionaries.Any())
+                throw new InvalidOperationException("Нет словарей для экспорта");
+
+            using var memoryStream = new System.IO.MemoryStream();
+            using (var archive = new System.IO.Compression.ZipArchive(memoryStream, System.IO.Compression.ZipArchiveMode.Create, true))
+            {
+                foreach (var dictionary in dictionaries)
+                {
+                    var exportData = new
+                    {
+                        Name = dictionary.Name,
+                        Description = dictionary.Description,
+                        LanguageFrom = dictionary.LanguageFrom,
+                        LanguageTo = dictionary.LanguageTo,
+                        ExportDate = DateTime.UtcNow,
+                        Words = dictionary.Words.Select(w => new
+                        {
+                            Original = w.OriginalWord,
+                            Translation = w.Translation,
+                            PartOfSpeech = w.Transcription,
+                            Example = w.Example
+                        }).ToList()
+                    };
+
+                    var json = System.Text.Json.JsonSerializer.Serialize(exportData, new System.Text.Json.JsonSerializerOptions 
+                    { 
+                        WriteIndented = true,
+                        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                    });
+
+                    var entry = archive.CreateEntry($"{dictionary.Name}.json");
+                    using var entryStream = entry.Open();
+                    await entryStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(json));
+                }
+            }
+
+            return memoryStream.ToArray();
+        }
+
+        #region Marketplace - недоступно в локальном режиме
+
+        public Task<PagedResult<MarketplaceDictionaryItem>> GetPublicDictionariesAsync(string? search, string? languageFrom, string? languageTo, int page, int pageSize)
+        {
+            throw new NotImplementedException("Маркетплейс недоступен в локальном режиме");
+        }
+
+        public Task<PagedResult<MarketplaceRuleItem>> GetPublicRulesAsync(string? search, string? category, int difficulty, int page, int pageSize)
+        {
+            throw new NotImplementedException("Маркетплейс недоступен в локальном режиме");
+        }
+
+        public Task<MarketplaceDictionaryDetails?> GetMarketplaceDictionaryDetailsAsync(int id)
+        {
+            throw new NotImplementedException("Маркетплейс недоступен в локальном режиме");
+        }
+
+        public Task<MarketplaceRuleDetails?> GetMarketplaceRuleDetailsAsync(int id)
+        {
+            throw new NotImplementedException("Маркетплейс недоступен в локальном режиме");
+        }
+
+        public Task<List<MarketplaceRuleItem>> GetRelatedRulesAsync(int ruleId, string category)
+        {
+            return Task.FromResult(new List<MarketplaceRuleItem>());
+        }
+
+        public Task<List<CommentItem>> GetDictionaryCommentsAsync(int id)
+        {
+            return Task.FromResult(new List<CommentItem>());
+        }
+
+        public Task<List<CommentItem>> GetRuleCommentsAsync(int id)
+        {
+            return Task.FromResult(new List<CommentItem>());
+        }
+
+        public Task<bool> AddDictionaryCommentAsync(int dictionaryId, int rating, string text)
+        {
+            throw new NotImplementedException("Комментарии недоступны в локальном режиме");
+        }
+
+        public Task<bool> AddRuleCommentAsync(int ruleId, int rating, string text)
+        {
+            throw new NotImplementedException("Комментарии недоступны в локальном режиме");
+        }
+
+        public Task<bool> HasUserReviewedDictionaryAsync(int dictionaryId)
+        {
+            return Task.FromResult(false);
+        }
+
+        public Task<bool> HasUserReviewedRuleAsync(int ruleId)
+        {
+            return Task.FromResult(false);
+        }
+
+        public Task<(bool Success, string Message, int? NewId)> DownloadDictionaryFromMarketplaceAsync(int dictionaryId)
+        {
+            throw new NotImplementedException("Скачивание из маркетплейса недоступно в локальном режиме");
+        }
+
+        public Task<(bool Success, string Message, int? NewId)> DownloadRuleFromMarketplaceAsync(int ruleId)
+        {
+            throw new NotImplementedException("Скачивание из маркетплейса недоступно в локальном режиме");
+        }
+
+        public Task<List<DownloadedItem>> GetDownloadedContentAsync()
+        {
+            return Task.FromResult(new List<DownloadedItem>());
+        }
+
+        public Task<DailyPlanDto?> GetDailyPlanAsync(int newWordsLimit = 10, int reviewLimit = 20)
+        {
+            return Task.FromResult<DailyPlanDto?>(null);
+        }
+
+        public Task<List<TrainingWordDto>> GetTrainingWordsAsync(string mode, int? dictionaryId = null, int limit = 20)
+        {
+            return Task.FromResult(new List<TrainingWordDto>());
+        }
+
+        public Task<StarterPackResult?> InstallStarterPackAsync()
+        {
+            throw new NotImplementedException("Стартовый набор недоступен в локальном режиме");
+        }
+
+        #endregion
     }
 }

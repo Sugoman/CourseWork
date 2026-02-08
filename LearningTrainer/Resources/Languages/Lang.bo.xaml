@@ -1,0 +1,154 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Loc.Button.CancelButton">ཕྱིར་འཐེན།</system:String>
+    <system:String x:Key="Loc.Button.CreateButton">གསར་བཟོ།</system:String>
+    <system:String x:Key="Loc.Button.SaveButton">ཉར་ཚགས།</system:String>
+    <system:String x:Key="Loc.Button.BackButton">ཕྱིར་ལོག</system:String>
+    <system:String x:Key="Loc.Button.ShareButton">བགོ་འགྲེམས།</system:String>
+    <system:String x:Key="Loc.Button.ExportButton">ཕྱིར་འདྲེན། .JSON</system:String>
+    <system:String x:Key="Loc.Button.ImportButton">ནང་འདྲེན། .json</system:String>
+    <system:String x:Key="Loc.Button.DeleteDictButton">ཚིག་མཛོད་བསུབ།</system:String>
+    <system:String x:Key="Loc.Button.AddWordButton">+ ཚིག་གསར་པ་སྣོན།</system:String>
+    <system:String x:Key="Loc.Button.LogoutButton">ཕྱིར་ཐོན།</system:String>
+    <system:String x:Key="Loc.Button.SettingsButton">སྒྲིག་འགོད།</system:String>
+
+    <system:String x:Key="Loc.Grid.WordHeader">ཚིག</system:String>
+    <system:String x:Key="Loc.Grid.TranslationHeader">ཡིག་སྒྱུར།</system:String>
+    <system:String x:Key="Loc.Grid.TranscriptionHeader">སྒྲ་བྲིས།</system:String>
+    <system:String x:Key="Loc.Grid.ExampleHeader">དཔེ་མཚོན།</system:String>
+    <system:String x:Key="Loc.Grid.ActionsHeader">བྱ་གཞག</system:String>
+
+    <system:String x:Key="Loc.Login.Title">བསུ་བ་ཞུ།</system:String>
+    <system:String x:Key="Loc.Login.RegisterTitle">ཐོ་འགོད།</system:String>
+    <system:String x:Key="Loc.Login.EmailPlaceholder">གློག་འཕྲིན།</system:String>
+    <system:String x:Key="Loc.Login.PasswordPlaceholder">གསང་ཨང་།</system:String>
+    <system:String x:Key="Loc.Login.Button">ནང་འཛུལ།</system:String>
+    <system:String x:Key="Loc.Login.ConfirmPassword">གསང་ཨང་གཏན་འཁེལ།</system:String>
+    <system:String x:Key="Loc.Login.RememberMe">ངས་དྲན་པ།</system:String>
+    <system:String x:Key="Loc.Login.CodePlaceholder">དགེ་རྒན་ཨང་གྲངས། (གདམ་ག)</system:String>
+    <system:String x:Key="Loc.Login.UnderCodePlaceholder">འབྲེལ་མཐུད་བྱེད་པར་ཨང་གྲངས་འཇུག</system:String>
+    <system:String x:Key="Loc.Login.OfflineModeButton">དྲ་མེད་རྣམ་པ།</system:String>
+    <system:String x:Key="Loc.Login.SignUpPart2">ཐོ་འགོད།</system:String>
+    <system:String x:Key="Loc.Login.SignUpPart1">རྩིས་ཁྲ་མེད་དམ།</system:String>
+    <system:String x:Key="Loc.Login.LogInPart1">ཐོ་འགོད་ཟིན་ནམ།</system:String>
+    <system:String x:Key="Loc.Login.CreateAccountButton">རྩིས་ཁྲ་གསར་བཟོ།</system:String>
+
+    <system:String x:Key="Loc.Sort.NameAsc">མིང་གི་གོ་རིམ། (ཀ-ཨ)</system:String>
+    <system:String x:Key="Loc.Sort.NameDesc">མིང་གི་གོ་རིམ། (ཨ-ཀ)</system:String>
+    <system:String x:Key="Loc.Sort.CountMin">ཚིག་གྲངས། (ཉུང་ཤོས།)</system:String>
+    <system:String x:Key="Loc.Sort.CountMax">ཚིག་གྲངས། (མང་ཤོས།)</system:String>
+
+    <system:String x:Key="Loc.Dashboard.RuleLabel">སྒྲིག་གཞི།</system:String>
+    <system:String x:Key="Loc.Dashboard.VocabLabel">ཚིག་མཛོད།</system:String>
+    <system:String x:Key="Loc.Dashboard.HomeButton">གཙོ་ངོས།</system:String>
+    <system:String x:Key="Loc.Dashboard.RuleVocab">སྒྲིག་གཞི་དང་ཚིག་མཛོད།</system:String>
+    <system:String x:Key="Loc.Dashboard.AddRule">སྒྲིག་གཞི་སྣོན།</system:String>
+    <system:String x:Key="Loc.Dashboard.AddVocabulary">ཚིག་མཛོད་སྣོན།</system:String>
+    <system:String x:Key="Loc.Dashboard.AddButton">+ སྣོན་པ།</system:String>
+    <system:String x:Key="Loc.Dashboard.SearchPlaceholder">འཚོལ་བ།...</system:String>
+
+    <system:String x:Key="Loc.Dashboard.WordCount">ཚིག་གྲངས།:</system:String>
+    <system:String x:Key="Loc.Dashboard.DictionaryToolTip">ཚིག་མཛོད་འཛིན་སྐྱོང་། (སྣོན་པ། བཅོས་པ།)</system:String>
+    <system:String x:Key="Loc.Dashboard.DeleteRuleToolTip">སྒྲིག་གཞི་བསུབ།</system:String>
+
+    <system:String x:Key="Loc.AddDict.CreateDict">ཚིག་མཛོད་གསར་བཟོ།</system:String>
+    <system:String x:Key="Loc.AddDict.TitleDictLabel">མགོ་བྲིས།</system:String>
+    <system:String x:Key="Loc.AddDict.DescriptionDictLabel">འགྲེལ་བཤད།</system:String>
+    <system:String x:Key="Loc.AddDict.StudiedLangLabel">སློབ་སྦྱོང་སྐད་ཡིག</system:String>
+    <system:String x:Key="Loc.AddDict.NativeLangLabel">ཕ་སྐད།</system:String>
+
+    <system:String x:Key="Loc.AddRule.CreateRule">སྒྲིག་གཞི་གསར་བཟོ།</system:String>
+    <system:String x:Key="Loc.AddRule.TitleRuleLabel">མགོ་བྲིས།</system:String>
+    <system:String x:Key="Loc.AddRule.CategoryLabel">རིགས་དབྱེ།</system:String>
+    <system:String x:Key="Loc.AddRule.DiffLevelLabel">དཀའ་ཚད།</system:String>
+    <system:String x:Key="Loc.AddRule.ContainsLabel">ནང་དོན། (Markdown)</system:String>
+
+    <system:String x:Key="Loc.AddRule.1_ComboBox">༡ - འགོ་བཙུགས།</system:String>
+    <system:String x:Key="Loc.AddRule.2_ComboBox">༢ - གཞི་རྩ།</system:String>
+    <system:String x:Key="Loc.AddRule.3_ComboBox">༣ - བར་མ།</system:String>
+    <system:String x:Key="Loc.AddRule.4_ComboBox">༤ - མཐོ་རིམ།</system:String>
+    <system:String x:Key="Loc.AddRule.5_ComboBox">༥ - མཁས་པ།</system:String>
+
+    <system:String x:Key="Loc.AddRule.GrammarComboBox">བརྡ་སྤྲོད།</system:String>
+    <system:String x:Key="Loc.AddRule.VocabularyComboBox">ཚིག་མཛོད།</system:String>
+    <system:String x:Key="Loc.AddRule.PronunciationComboBox">སྒྲ་གདངས།</system:String>
+
+    <system:String x:Key="Loc.AddWord.CreateDict">ཚིག་གསར་པ་བཟོ།</system:String>
+    <system:String x:Key="Loc.AddWord.TitleDictLabel">ཕྱི་སྐད།</system:String>
+    <system:String x:Key="Loc.AddWord.AutocorrectionLabel">ཁྱེད་ཀྱི་དགོངས་པ།:</system:String>
+    <system:String x:Key="Loc.AddWord.WordTranslateLabel">ཡིག་སྒྱུར།</system:String>
+    <system:String x:Key="Loc.AddWord.WordExampleLabel">སྤྱོད་དཔེ། (གདམ་ག)</system:String>
+
+    <system:String x:Key="Loc.DictManager.TotalWordsLabel">ཚིག་བསྡོམས།:</system:String>
+
+    <system:String x:Key="Loc.Learning.ShowAnswerButton">ལན་སྟོན།</system:String>
+    <system:String x:Key="Loc.Learning.AgainLabel">བསྐྱར་དུ།</system:String>
+    <system:String x:Key="Loc.Learning.HardLabel">དཀའ་མོ།</system:String>
+    <system:String x:Key="Loc.Learning.FineLabel">ལེགས་པོ།</system:String>
+    <system:String x:Key="Loc.Learning.EasyLabel">སླ་མོ།</system:String>
+
+    <system:String x:Key="Loc.EditRule.EditRuleLabel">སྒྲིག་གཞི་བཅོས།</system:String>
+    <system:String x:Key="Loc.EditRule.EditorLabel">རྩོམ་སྒྲིག</system:String>
+    <system:String x:Key="Loc.EditRule.TitleRuleLabel">མགོ་བྲིས།</system:String>
+    <system:String x:Key="Loc.EditRule.DiscriptionLabel">འགྲེལ་བཤད།</system:String>
+    <system:String x:Key="Loc.EditRule.LivePreviewLabel">སྔོན་ལྟ།</system:String>
+    <system:String x:Key="Loc.EditRule.MarkdownRenderedLabel">Markdown (Render)</system:String>
+
+    <system:String x:Key="Loc.Settings.GeneralRadio">སྤྱི་བཏང་།</system:String>
+    <system:String x:Key="Loc.Settings.AccountRadio">རྩིས་ཁྲ།</system:String>
+    <system:String x:Key="Loc.Settings.AppearanceRadio">སྣང་བརྙན།</system:String>
+
+    <system:String x:Key="Loc.SettingsGen.TitleLabel">སྤྱི་བཏང་སྒྲིག་འགོད།</system:String>
+    <system:String x:Key="Loc.SettingsGen.DailyGoalLabel">ཉིན་རེའི་དམིགས་ཡུལ།</system:String>
+    <system:String x:Key="Loc.SettingsGen.NewWordsPerDayLabel">ཉིན་རེའི་ཚིག་གསར་པ།:</system:String>
+    <system:String x:Key="Loc.SettingsGen.LanguageLabel">མཐུན་ཁྲའི་སྐད་ཡིག</system:String>
+
+    <system:String x:Key="Loc.SettingsAcc.TitleLabel">རྩིས་ཁྲ།</system:String>
+    <system:String x:Key="Loc.SettingsAcc.ChangePasswordLabel">གསང་ཨང་བརྗེ།</system:String>
+    <system:String x:Key="Loc.SettingsAcc.OldPasswordLabel">གསང་ཨང་རྙིང་པ།</system:String>
+    <system:String x:Key="Loc.SettingsAcc.NewPasswordLabel">གསང་ཨང་གསར་པ།</system:String>
+    <system:String x:Key="Loc.SettingsAcc.TeacherTitleLabel">དགེ་རྒན་ལག་ཆ།</system:String>
+    <system:String x:Key="Loc.SettingsAcc.GenerateCodeLabel">གདན་ཞུའི་ཨང་བཟོ།</system:String>
+    <system:String x:Key="Loc.SettingsAcc.BecomeTeacherLabel">དགེ་རྒན་བྱེད།</system:String>
+    <system:String x:Key="Loc.SettingsAcc.HelpCodeLabel">ཨང་གྲངས་ཀྱིས་སློབ་མར་འབྲེལ་མཐུད་བྱེད་ཆོག</system:String>
+
+    <system:String x:Key="Loc.SettingsApp.TitleLabel">སྣང་བརྙན།</system:String>
+    <system:String x:Key="Loc.SettingsApp.ChooseThemeLabel">བརྗོད་དོན་འདེམས།</system:String>
+    <system:String x:Key="Loc.SettingsApp.ReadabiltyLabel">ཀློག་བདེ་བའི་ཆེད་ཚོན་མདོག་འདེམས།</system:String>
+
+    <system:String x:Key="Loc.Share.LoadingLabel">སློབ་མ་སྣོན་བཞིན།...</system:String>
+    <system:String x:Key="Loc.Share.AccessLabel">འཛུལ་ཆོག</system:String>
+    <system:String x:Key="Loc.Share.NotFoundLabel">སློབ་མ་མ་རྙེད།</system:String>
+
+                                <!-- TAB TITLES -->
+    <system:String x:Key="Loc.Tab.Home">གཙོ་ངོས།</system:String>
+    <system:String x:Key="Loc.Tab.Settings">སྒྲིག་འགོད།</system:String>
+    <system:String x:Key="Loc.Tab.CreateDictionary">ཚིག་མཛོད་བཟོ།</system:String>
+    <system:String x:Key="Loc.Tab.CreateRule">སྒྲིག་གཞི་བཟོ།</system:String>
+    <system:String x:Key="Loc.Tab.AddWord">ཚིག་སྣོན།</system:String>
+    <system:String x:Key="Loc.Tab.EditDictionary">ཚིག་མཛོད་བཅོས།</system:String>
+    <system:String x:Key="Loc.Tab.EditRule">སྒྲིག་གཞི་བཅོས།</system:String>
+    <system:String x:Key="Loc.Tab.ViewRule">སྒྲིག་གཞི་ལྟ།</system:String>
+    <system:String x:Key="Loc.Tab.Learning">སློབ་སྦྱོང་།</system:String>
+    <system:String x:Key="Loc.Tab.ShareAccess">འཛུལ་ཆོག་འཛིན་སྐྱོང་།</system:String>
+
+                                <!-- SETTINGS - NEW -->
+    <system:String x:Key="Loc.Settings.NotificationsRadio">བརྡ་ཐོ།</system:String>
+    
+    <system:String x:Key="Loc.SettingsApp.FontFamilyLabel">ཡིག་གཟུགས།</system:String>
+    <system:String x:Key="Loc.SettingsApp.EnableAnimationsLabel">འགུལ་བརྙན་སྤྱོད།</system:String>
+    <system:String x:Key="Loc.SettingsApp.FontSizeLabel">ཡིག་ཆེ་ཆུང་།</system:String>
+    
+    <system:String x:Key="Loc.SettingsNotif.TitleLabel">བརྡ་ཐོ།</system:String>
+    <system:String x:Key="Loc.SettingsNotif.EnableLabel">བརྡ་ཐོ་སྤྱོད།</system:String>
+    <system:String x:Key="Loc.SettingsNotif.DurationLabel">སྟོན་དུས། (སྐར་ཆ།)</system:String>
+    
+    <system:String x:Key="Loc.SettingsGen.SoundEffectsLabel">སྒྲ་འགྱུར།</system:String>
+    <system:String x:Key="Loc.SettingsGen.ShowTranscriptionLabel">ཤོག་བུ་ཐོག་སྒྲ་བྲིས་སྟོན།</system:String>
+    
+    <system:String x:Key="Loc.SettingsAcc.KeepLoggedInLabel">ནང་འཛུལ་བཞག</system:String>
+    <system:String x:Key="Loc.SettingsAcc.AutoSyncLabel">རང་འགུལ་མཉམ་སྒྲིག</system:String>
+
+</ResourceDictionary>

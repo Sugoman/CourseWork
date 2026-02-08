@@ -2,6 +2,114 @@
 
 namespace LearningTrainer.Services
 {
+    #region Marketplace DTOs
+
+    public class PagedResult<T>
+    {
+        public List<T> Items { get; set; } = new();
+        public int TotalCount { get; set; }
+        public int TotalPages { get; set; }
+        public int CurrentPage { get; set; }
+    }
+
+    public class MarketplaceDictionaryItem
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string LanguageFrom { get; set; } = "";
+        public string LanguageTo { get; set; } = "";
+        public int WordCount { get; set; }
+        public string AuthorName { get; set; } = "";
+        public double Rating { get; set; }
+        public int Downloads { get; set; }
+    }
+
+    public class MarketplaceDictionaryDetails : MarketplaceDictionaryItem
+    {
+        public int RatingCount { get; set; }
+        public int AuthorContentCount { get; set; }
+        public List<WordPreview> PreviewWords { get; set; } = new();
+    }
+
+    public class WordPreview
+    {
+        public string Term { get; set; } = "";
+        public string Translation { get; set; } = "";
+    }
+
+    public class MarketplaceRuleItem
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string Category { get; set; } = "";
+        public int DifficultyLevel { get; set; }
+        public string AuthorName { get; set; } = "";
+        public double Rating { get; set; }
+        public int Downloads { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class MarketplaceRuleDetails : MarketplaceRuleItem
+    {
+        public string HtmlContent { get; set; } = "";
+        public int RatingCount { get; set; }
+        public int AuthorContentCount { get; set; }
+    }
+
+    public class CommentItem
+    {
+        public int Id { get; set; }
+        public string AuthorName { get; set; } = "";
+        public int Rating { get; set; }
+        public string Text { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class DownloadedItem
+    {
+        public int Id { get; set; }
+        public string Type { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string AuthorName { get; set; } = "";
+        public DateTime DownloadedAt { get; set; }
+    }
+
+    public class DailyPlanDto
+    {
+        public TrainingStatsDto Stats { get; set; } = new();
+    }
+
+    public class TrainingStatsDto
+    {
+        public int TotalReviewCount { get; set; }
+        public int TotalNewCount { get; set; }
+        public int TotalDifficultCount { get; set; }
+        public int CompletedToday { get; set; }
+        public int CurrentStreak { get; set; }
+    }
+
+    public class TrainingWordDto
+    {
+        public int Id { get; set; }
+        public string OriginalWord { get; set; } = "";
+        public string Translation { get; set; } = "";
+        public string? Transcription { get; set; }
+        public string? Example { get; set; }
+        public string DictionaryName { get; set; } = "";
+        public int DictionaryId { get; set; }
+    }
+
+    public class StarterPackResult
+    {
+        public string Message { get; set; } = "";
+        public int DictionaryId { get; set; }
+        public int WordCount { get; set; }
+    }
+
+    #endregion
+
     public interface IDataService : IDisposable
     {
         Task<List<Dictionary>> GetDictionariesAsync();
@@ -40,5 +148,35 @@ namespace LearningTrainer.Services
         Task<bool> UnpublishDictionaryAsync(int dictionaryId);
         Task<bool> PublishRuleAsync(int ruleId);
         Task<bool> UnpublishRuleAsync(int ruleId);
+
+        // Marketplace - Browse public content
+        Task<PagedResult<MarketplaceDictionaryItem>> GetPublicDictionariesAsync(string? search, string? languageFrom, string? languageTo, int page, int pageSize);
+        Task<PagedResult<MarketplaceRuleItem>> GetPublicRulesAsync(string? search, string? category, int difficulty, int page, int pageSize);
+        Task<MarketplaceDictionaryDetails?> GetMarketplaceDictionaryDetailsAsync(int id);
+        Task<MarketplaceRuleDetails?> GetMarketplaceRuleDetailsAsync(int id);
+        Task<List<MarketplaceRuleItem>> GetRelatedRulesAsync(int ruleId, string category);
+
+        // Marketplace - Comments
+        Task<List<CommentItem>> GetDictionaryCommentsAsync(int id);
+        Task<List<CommentItem>> GetRuleCommentsAsync(int id);
+        Task<bool> AddDictionaryCommentAsync(int dictionaryId, int rating, string text);
+        Task<bool> AddRuleCommentAsync(int ruleId, int rating, string text);
+        Task<bool> HasUserReviewedDictionaryAsync(int dictionaryId);
+        Task<bool> HasUserReviewedRuleAsync(int ruleId);
+
+        // Marketplace - Download content
+        Task<(bool Success, string Message, int? NewId)> DownloadDictionaryFromMarketplaceAsync(int dictionaryId);
+        Task<(bool Success, string Message, int? NewId)> DownloadRuleFromMarketplaceAsync(int ruleId);
+        Task<List<DownloadedItem>> GetDownloadedContentAsync();
+
+        // Training - Extended
+        Task<DailyPlanDto?> GetDailyPlanAsync(int newWordsLimit = 10, int reviewLimit = 20);
+        Task<List<TrainingWordDto>> GetTrainingWordsAsync(string mode, int? dictionaryId = null, int limit = 20);
+        Task<StarterPackResult?> InstallStarterPackAsync();
+
+        // Export
+        Task<byte[]> ExportDictionaryAsJsonAsync(int dictionaryId);
+        Task<byte[]> ExportDictionaryAsCsvAsync(int dictionaryId);
+        Task<byte[]> ExportAllDictionariesAsZipAsync();
     }
 }

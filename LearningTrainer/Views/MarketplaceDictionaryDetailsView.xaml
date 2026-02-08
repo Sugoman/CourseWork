@@ -1,0 +1,280 @@
+<UserControl x:Class="LearningTrainer.Views.MarketplaceDictionaryDetailsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:LearningTrainer.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="900"
+             Background="{DynamicResource MainBackgroundBrush}"
+             FontSize="{DynamicResource BaseFontSize}">
+
+    <UserControl.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:InvertedBooleanToVisibilityConverter x:Key="InvBoolToVis"/>
+        <converters:RatingToStarsConverter x:Key="RatingToStars"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- Header Bar -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Top Bar with Close/Refresh -->
+        <Border Grid.Row="0" Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="15,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="📖 Детали словаря" FontSize="{DynamicResource HeaderFontSize}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryTextBrush}" VerticalAlignment="Center"/>
+
+                <Button Grid.Column="1" Command="{Binding RefreshCommand}" ToolTip="Обновить"
+                        Style="{StaticResource BaseButton}" MinWidth="36" MinHeight="36" Margin="0,0,8,0">
+                    <TextBlock Text="🔄" Foreground="{DynamicResource AccentForegroundBrush}"/>
+                </Button>
+                <Button Grid.Column="2" Command="{Binding CloseCommand}" ToolTip="Закрыть"
+                        Style="{StaticResource BaseButton}" MinWidth="36" MinHeight="36">
+                    <TextBlock Text="✕" Foreground="{DynamicResource AccentForegroundBrush}"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Loading -->
+        <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="⏳" FontSize="48" HorizontalAlignment="Center" Foreground="{DynamicResource SecondaryTextBrush}"/>
+            <TextBlock Text="Загрузка..." Margin="0,10,0,0"
+                       Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding IsLoading, Converter={StaticResource InvBoolToVis}}">
+            <StackPanel Margin="25">
+
+                <!-- Header Card with gradient -->
+                <Border CornerRadius="16" Margin="0,0,0,20">
+                    <Border.Background>
+                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                            <GradientStop Color="#4F46E5" Offset="0"/>
+                            <GradientStop Color="#7C3AED" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Border.Background>
+                    <Grid Margin="25">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Title + Download Button -->
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding Dictionary.Name}" 
+                                       FontSize="24" FontWeight="Bold" Foreground="White" TextWrapping="Wrap"/>
+                            <Button Grid.Column="1" Command="{Binding DownloadCommand}"
+                                    Style="{StaticResource BaseButton}" Background="White" Foreground="#4F46E5"
+                                    FontWeight="SemiBold" Padding="16,8" VerticalAlignment="Top">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="⬇" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Скачать"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+
+                        <!-- Description -->
+                        <TextBlock Grid.Row="1" Text="{Binding Dictionary.Description}" 
+                                   FontSize="14" Foreground="#E0E0FF" Margin="0,10,0,0" TextWrapping="Wrap"/>
+
+                        <!-- Stats badges -->
+                        <WrapPanel Grid.Row="2" Margin="0,15,0,0">
+                            <Border Background="#33FFFFFF" CornerRadius="12" Padding="10,5" Margin="0,0,10,5">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📚" Foreground="White" Margin="0,0,5,0"/>
+                                    <TextBlock Text="{Binding Dictionary.WordCount, StringFormat='{}{0} слов'}" Foreground="White"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#33FFFFFF" CornerRadius="12" Padding="10,5" Margin="0,0,10,5">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Dictionary.LanguageFrom}" Foreground="White"/>
+                                    <TextBlock Text=" → " Foreground="White"/>
+                                    <TextBlock Text="{Binding Dictionary.LanguageTo}" Foreground="White"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="#33FFFFFF" CornerRadius="12" Padding="10,5" Margin="0,0,10,5">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding Dictionary.Rating, Converter={StaticResource RatingToStars}}" 
+                                               Foreground="#FCD34D" FontSize="{DynamicResource BaseFontSize}"/>
+                                    <TextBlock Text="{Binding Dictionary.Rating, StringFormat=' {0:F1}'}" Foreground="White" Margin="5,0,0,0"/>
+                                    <TextBlock Text="{Binding Dictionary.RatingCount, StringFormat=' ({0})'}" Foreground="#C4B5FD"/>
+                                </StackPanel>
+                            </Border>
+                        </WrapPanel>
+
+                        <!-- Author info (compact) -->
+                        <Border Grid.Row="3" Background="#1AFFFFFF" CornerRadius="10" Padding="12,8" Margin="0,10,0,0" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="{DynamicResource BiggerHeaderFontSize}" Height="{DynamicResource BiggerHeaderFontSize}" CornerRadius="16" Background="#33FFFFFF" Margin="0,0,10,0">
+                                    <TextBlock Text="{Binding Dictionary.AuthorName[0]}" Foreground="White" 
+                                               FontWeight="Bold" FontSize="{DynamicResource BaseFontSize}"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Dictionary.AuthorName}" Foreground="White" FontWeight="SemiBold" FontSize="{DynamicResource HeaderFontSize}"/>
+                                    <TextBlock Foreground="#C4B5FD" FontSize="{DynamicResource BaseFontSize}">
+                                        <Run Text="📁"/>
+                                        <Run Text="{Binding Dictionary.AuthorContentCount}"/>
+                                        <Run Text="материалов"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <!-- Preview Words -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="👁 Предпросмотр слов" FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,12"/>
+
+                        <ItemsControl ItemsSource="{Binding PreviewWords}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource MainBackgroundBrush}" 
+                                            CornerRadius="6" Padding="12,8" Margin="0,0,0,6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Term}" FontWeight="Medium"
+                                                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Translation}"
+                                                       Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock FontSize="11" Foreground="{DynamicResource TertiaryTextBrush}" Margin="0,8,0,0">
+                            <Run Text="ℹ Показано первые"/>
+                            <Run Text="{Binding PreviewWords.Count, Mode=OneWay}"/>
+                            <Run Text="слов из"/>
+                            <Run Text="{Binding Dictionary.WordCount}"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- Comments Section -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20">
+                    <StackPanel>
+                        <TextBlock FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"
+                                   Foreground="{DynamicResource PrimaryTextBrush}">
+                            <Run Text="💬 Отзывы ("/>
+                            <Run Text="{Binding Comments.Count, Mode=OneWay}"/>
+                            <Run Text=")"/>
+                        </TextBlock>
+                        <!-- Add Comment Form -->
+                        <StackPanel Visibility="{Binding CanAddComment, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="✏ Оставить отзыв" FontSize="14" FontWeight="Medium"
+               Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,10"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <TextBlock Text="Оценка:" VerticalAlignment="Center" Margin="0,0,10,0"
+                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                <ComboBox ItemsSource="{Binding RatingOptions}" 
+                  SelectedValue="{Binding NewRating}"
+                  SelectedValuePath="Key" DisplayMemberPath="Value"
+                  Width="180" Style="{StaticResource SortComboBoxStyle}"/>
+                            </StackPanel>
+
+                            <TextBox Text="{Binding NewCommentText, UpdateSourceTrigger=PropertyChanged}"
+             Height="70" TextWrapping="Wrap" AcceptsReturn="True"
+             Padding="10" Margin="0,0,0,10"
+             Background="{DynamicResource MainBackgroundBrush}"
+             Foreground="{DynamicResource PrimaryTextBrush}"
+             BorderBrush="{DynamicResource BorderBrush}"/>
+
+                            <Button Command="{Binding SubmitCommentCommand}"
+            Style="{StaticResource PrimaryButton}" Padding="16,8"
+            HorizontalAlignment="Left">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📤" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Отправить"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+
+                        <!-- Already reviewed message -->
+                        <Border Visibility="{Binding HasUserReview, Converter={StaticResource BoolToVis}}"
+        Background="{DynamicResource MainBackgroundBrush}" CornerRadius="8" Padding="15" Margin="0,10,0,0">
+                            <TextBlock Text="✅ Вы уже оставили отзыв на этот словарь" 
+               Foreground="{DynamicResource SecondaryTextBrush}" FontSize="13"/>
+                        </Border>
+                        <Separator Margin="0,12"/>
+                        <!-- Comments List -->
+                        <ItemsControl ItemsSource="{Binding Comments}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource MainBackgroundBrush}" 
+                                            CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                                        <StackPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Avatar -->
+                                                <Border Grid.Column="0" Width="32" Height="32" CornerRadius="16" Margin="0,0,10,0">
+                                                    <Border.Background>
+                                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                            <GradientStop Color="#4F46E5" Offset="0"/>
+                                                            <GradientStop Color="#7C3AED" Offset="1"/>
+                                                        </LinearGradientBrush>
+                                                    </Border.Background>
+                                                    <TextBlock Text="{Binding AuthorName[0]}" Foreground="White" 
+                                                               FontWeight="Bold" FontSize="12"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Text="{Binding AuthorName}" FontWeight="SemiBold" FontSize="13"
+                                                               Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                                    <!-- Star rating display -->
+                                                    <TextBlock Text="{Binding Rating, Converter={StaticResource RatingToStars}}" 
+                                                               Foreground="#F59E0B" FontSize="12"/>
+                                                </StackPanel>
+
+                                                <TextBlock Grid.Column="2" Text="{Binding CreatedAt, StringFormat='{}{0:dd.MM.yyyy}'}"
+                                                           Foreground="{DynamicResource TertiaryTextBrush}" FontSize="11" VerticalAlignment="Top"/>
+                                            </Grid>
+
+                                            <!-- Comment Text -->
+                                            <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Margin="42,6,0,0"
+                                                       Foreground="{DynamicResource SecondaryTextBrush}" FontSize="13"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

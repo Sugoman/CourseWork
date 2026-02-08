@@ -25,7 +25,7 @@
                         <i class="bi bi-search me-1"></i> Поиск
                     </label>
                     <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <span class="input-group-text"><i class="bi bi-search gap-1"></i></span>
                         <input type="text" class="form-control" placeholder="Название словаря..." 
                                @bind="SearchQuery" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
                     </div>
@@ -55,7 +55,7 @@
                     </select>
                 </div>
                 <div class="col-md-2" style="margin-top: 32px;">
-                    <button class="btn btn-primary w-100" @onclick="ApplyFilters">
+                    <button class="btn btn-primary w-100 gap-2" @onclick="ApplyFilters">
                         <i class="bi bi-funnel me-1"></i> Найти
                     </button>
                 </div>
@@ -167,24 +167,33 @@
                                 <span class="badge bg-secondary">@dict.LanguageTo</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="d-flex align-items-center gap-1" style="color: var(--accent-yellow);">
-                                    <i class="bi bi-star-fill"></i> 
+                                <span class="d-flex align-items-center gap-2" style="color: var(--accent-yellow);">
+                                    <i class="bi bi-star-fill "></i> 
                                     <strong>@dict.Rating.ToString("F1")</strong>
                                 </span>
                                 <div class="d-flex gap-2">
                                     <a href="dictionary/@dict.Id" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    <button class="btn btn-sm btn-success" @onclick="() => DownloadDictionary(dict.Id)">
+                                    <button class="btn btn-sm btn-success gap-2" @onclick="() => DownloadDictionary(dict.Id)">
                                         <i class="bi bi-download"></i> Скачать
                                     </button>
                                 </div>
                             </div>
                         </div>
                         <div class="card-footer">
-                            <div class="d-flex align-items-center gap-2 text-muted small">
-                                <i class="bi bi-person-circle"></i>
-                                <span>@dict.AuthorName</span>
+                            <div class="d-flex align-items-center justify-content-between text-muted small">
+
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-person-circle" style="font-size: 1.2rem;"></i>
+                                    <span>@dict.AuthorName</span>
+                                </div>
+
+                                <span>
+                                    <i class="bi bi-download me-1"></i>
+                                    @dict.Downloads
+                                </span>
+
                             </div>
                         </div>
                     </div>

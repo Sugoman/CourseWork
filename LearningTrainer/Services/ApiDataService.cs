@@ -431,7 +431,340 @@ namespace LearningTrainer.Services
                 return false;
             }
         }
-        
+
+        // Export methods using ExportController
+        public async Task<byte[]> ExportDictionaryAsJsonAsync(int dictionaryId)
+        {
+            var response = await _httpClient.GetAsync($"/api/dictionaries/export/{dictionaryId}/json");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsByteArrayAsync();
+        }
+
+        public async Task<byte[]> ExportDictionaryAsCsvAsync(int dictionaryId)
+        {
+            var response = await _httpClient.GetAsync($"/api/dictionaries/export/{dictionaryId}/csv");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsByteArrayAsync();
+        }
+
+        public async Task<byte[]> ExportAllDictionariesAsZipAsync()
+        {
+            var response = await _httpClient.GetAsync("/api/dictionaries/export/all/zip");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsByteArrayAsync();
+        }
+
+        #region Marketplace - Public Content
+
+        public async Task<PagedResult<MarketplaceDictionaryItem>> GetPublicDictionariesAsync(
+            string? search, string? languageFrom, string? languageTo, int page, int pageSize)
+        {
+            try
+            {
+                var url = $"/api/marketplace/dictionaries?page={page}&pageSize={pageSize}";
+                if (!string.IsNullOrEmpty(search)) url += $"&search={Uri.EscapeDataString(search)}";
+                if (!string.IsNullOrEmpty(languageFrom)) url += $"&languageFrom={languageFrom}";
+                if (!string.IsNullOrEmpty(languageTo)) url += $"&languageTo={languageTo}";
+
+                var result = await _httpClient.GetFromJsonAsync<PagedResult<MarketplaceDictionaryItem>>(url, _jsonOptions);
+                return result ?? new PagedResult<MarketplaceDictionaryItem>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MARKETPLACE] GetPublicDictionaries error: {ex.Message}");
+                return new PagedResult<MarketplaceDictionaryItem>();
+            }
+        }
+
+        public async Task<PagedResult<MarketplaceRuleItem>> GetPublicRulesAsync(
+            string? search, string? category, int difficulty, int page, int pageSize)
+        {
+            try
+            {
+                var url = $"/api/marketplace/rules?page={page}&pageSize={pageSize}";
+                if (!string.IsNullOrEmpty(search)) url += $"&search={Uri.EscapeDataString(search)}";
+                if (!string.IsNullOrEmpty(category)) url += $"&category={category}";
+                if (difficulty > 0) url += $"&difficulty={difficulty}";
+
+                var result = await _httpClient.GetFromJsonAsync<PagedResult<MarketplaceRuleItem>>(url, _jsonOptions);
+                return result ?? new PagedResult<MarketplaceRuleItem>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MARKETPLACE] GetPublicRules error: {ex.Message}");
+                return new PagedResult<MarketplaceRuleItem>();
+            }
+        }
+
+        public async Task<MarketplaceDictionaryDetails?> GetMarketplaceDictionaryDetailsAsync(int id)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<MarketplaceDictionaryDetails>(
+                    $"/api/marketplace/dictionaries/{id}", _jsonOptions);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MARKETPLACE] GetDictionaryDetails error: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<MarketplaceRuleDetails?> GetMarketplaceRuleDetailsAsync(int id)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<MarketplaceRuleDetails>(
+                    $"/api/marketplace/rules/{id}", _jsonOptions);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MARKETPLACE] GetRuleDetails error: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<List<MarketplaceRuleItem>> GetRelatedRulesAsync(int ruleId, string category)
+        {
+            try
+            {
+                var result = await _httpClient.GetFromJsonAsync<List<MarketplaceRuleItem>>(
+                    $"/api/marketplace/rules/{ruleId}/related?category={Uri.EscapeDataString(category)}", _jsonOptions);
+                return result ?? new List<MarketplaceRuleItem>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[MARKETPLACE] GetRelatedRules error: {ex.Message}");
+                return new List<MarketplaceRuleItem>();
+            }
+        }
+
+        #endregion
+
+        #region Marketplace - Comments
+
+        public async Task<List<CommentItem>> GetDictionaryCommentsAsync(int id)
+        {
+            try
+            {
+                var result = await _httpClient.GetFromJsonAsync<List<CommentItem>>(
+                    $"/api/marketplace/dictionaries/{id}/comments", _jsonOptions);
+                return result ?? new List<CommentItem>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[COMMENTS] GetDictionaryComments error: {ex.Message}");
+                return new List<CommentItem>();
+            }
+        }
+
+        public async Task<List<CommentItem>> GetRuleCommentsAsync(int id)
+        {
+            try
+            {
+                var result = await _httpClient.GetFromJsonAsync<List<CommentItem>>(
+                    $"/api/marketplace/rules/{id}/comments", _jsonOptions);
+                return result ?? new List<CommentItem>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[COMMENTS] GetRuleComments error: {ex.Message}");
+                return new List<CommentItem>();
+            }
+        }
+
+        public async Task<bool> AddDictionaryCommentAsync(int dictionaryId, int rating, string text)
+        {
+            try
+            {
+                var request = new { Rating = rating, Text = text };
+                var response = await _httpClient.PostAsJsonAsync(
+                    $"/api/marketplace/dictionaries/{dictionaryId}/comments", request, _jsonOptions);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[COMMENTS] AddDictionaryComment error: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> AddRuleCommentAsync(int ruleId, int rating, string text)
+        {
+            try
+            {
+                var request = new { Rating = rating, Text = text };
+                var response = await _httpClient.PostAsJsonAsync(
+                    $"/api/marketplace/rules/{ruleId}/comments", request, _jsonOptions);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[COMMENTS] AddRuleComment error: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> HasUserReviewedDictionaryAsync(int dictionaryId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"/api/marketplace/dictionaries/{dictionaryId}/has-reviewed");
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<HasReviewedResponse>(_jsonOptions);
+                    return result?.HasReviewed ?? false;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[COMMENTS] HasUserReviewedDictionary error: {ex.Message}");
+                return false;
+            }
+        }
+
+        public async Task<bool> HasUserReviewedRuleAsync(int ruleId)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"/api/marketplace/rules/{ruleId}/has-reviewed");
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<HasReviewedResponse>(_jsonOptions);
+                    return result?.HasReviewed ?? false;
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[COMMENTS] HasUserReviewedRule error: {ex.Message}");
+                return false;
+            }
+        }
+
+        private class HasReviewedResponse { public bool HasReviewed { get; set; } }
+
+        #endregion
+
+        #region Marketplace - Download Content
+
+        public async Task<(bool Success, string Message, int? NewId)> DownloadDictionaryFromMarketplaceAsync(int dictionaryId)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync($"/api/marketplace/dictionaries/{dictionaryId}/download", null);
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<DownloadResponseDto>(_jsonOptions);
+                    return (true, result?.Message ?? "Успешно", result?.NewDictionaryId);
+                }
+                return (false, "Ошибка скачивания", null);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DOWNLOAD] DownloadDictionary error: {ex.Message}");
+                return (false, ex.Message, null);
+            }
+        }
+
+        public async Task<(bool Success, string Message, int? NewId)> DownloadRuleFromMarketplaceAsync(int ruleId)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync($"/api/marketplace/rules/{ruleId}/download", null);
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<DownloadResponseDto>(_jsonOptions);
+                    return (true, result?.Message ?? "Успешно", result?.NewRuleId);
+                }
+                return (false, "Ошибка скачивания", null);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DOWNLOAD] DownloadRule error: {ex.Message}");
+                return (false, ex.Message, null);
+            }
+        }
+
+        public async Task<List<DownloadedItem>> GetDownloadedContentAsync()
+        {
+            try
+            {
+                var result = await _httpClient.GetFromJsonAsync<List<DownloadedItem>>(
+                    "/api/marketplace/my/downloads", _jsonOptions);
+                return result ?? new List<DownloadedItem>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DOWNLOAD] GetDownloadedContent error: {ex.Message}");
+                return new List<DownloadedItem>();
+            }
+        }
+
+        private class DownloadResponseDto
+        {
+            public string? Message { get; set; }
+            public int? NewDictionaryId { get; set; }
+            public int? NewRuleId { get; set; }
+        }
+
+        #endregion
+
+        #region Training - Extended
+
+        public async Task<DailyPlanDto?> GetDailyPlanAsync(int newWordsLimit = 10, int reviewLimit = 20)
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<DailyPlanDto>(
+                    $"/api/training/daily-plan?newWordsLimit={newWordsLimit}&reviewLimit={reviewLimit}", _jsonOptions);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TRAINING] GetDailyPlan error: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task<List<TrainingWordDto>> GetTrainingWordsAsync(string mode, int? dictionaryId = null, int limit = 20)
+        {
+            try
+            {
+                var url = $"/api/training/words?mode={mode}&limit={limit}";
+                if (dictionaryId.HasValue)
+                    url += $"&dictionaryId={dictionaryId.Value}";
+
+                var result = await _httpClient.GetFromJsonAsync<List<TrainingWordDto>>(url, _jsonOptions);
+                return result ?? new List<TrainingWordDto>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TRAINING] GetTrainingWords error: {ex.Message}");
+                return new List<TrainingWordDto>();
+            }
+        }
+
+        public async Task<StarterPackResult?> InstallStarterPackAsync()
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync("/api/training/starter-pack", null);
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<StarterPackResult>(_jsonOptions);
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[TRAINING] InstallStarterPack error: {ex.Message}");
+                return null;
+            }
+        }
+
+        #endregion
+
         private class ApiResponseDto { public string Message { get; set; } }
     }
 }

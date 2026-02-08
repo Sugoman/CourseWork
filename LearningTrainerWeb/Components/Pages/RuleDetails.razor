@@ -1,28 +1,28 @@
-@page "/rule/{Id:int}"
+п»ї@page "/rule/{Id:int}"
 @inject IContentApiService ContentApi
 @inject IAuthService AuthService
 @rendermode InteractiveServer
 
-<PageTitle>@(Rule?.Title ?? "Правило") - LearningTrainer</PageTitle>
+<PageTitle>@(Rule?.Title ?? "РџСЂР°РІРёР»Рѕ") - LearningTrainer</PageTitle>
 
 <div class="container rule-details-page">
     @if (IsLoading)
     {
         <div class="text-center py-5">
             <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
-                <span class="visually-hidden">Загрузка...</span>
+                <span class="visually-hidden">Р—Р°РіСЂСѓР·РєР°...</span>
             </div>
-            <p class="text-muted mt-3">Загрузка правила...</p>
+            <p class="text-muted mt-3">Р—Р°РіСЂСѓР·РєР° РїСЂР°РІРёР»Р°...</p>
         </div>
     }
     else if (Rule == null)
     {
         <div class="text-center py-5">
             <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--gray-400);"><i class="bi bi-emoji-frown"></i></div>
-            <h2>Правило не найдено</h2>
-            <p class="text-muted mb-4">Возможно, оно было удалено или вы перешли по неверной ссылке</p>
+            <h2>РџСЂР°РІРёР»Рѕ РЅРµ РЅР°Р№РґРµРЅРѕ</h2>
+            <p class="text-muted mb-4">Р’РѕР·РјРѕР¶РЅРѕ, РѕРЅРѕ Р±С‹Р»Рѕ СѓРґР°Р»РµРЅРѕ РёР»Рё РІС‹ РїРµСЂРµС€Р»Рё РїРѕ РЅРµРІРµСЂРЅРѕР№ СЃСЃС‹Р»РєРµ</p>
             <a href="rules" class="btn btn-primary">
-                <i class="bi bi-arrow-left me-2"></i> К списку правил
+                <i class="bi bi-arrow-left me-2"></i> Рљ СЃРїРёСЃРєСѓ РїСЂР°РІРёР»
             </a>
         </div>
     }
@@ -33,7 +33,7 @@
             <ol class="breadcrumb" style="background: transparent; padding: 0;">
                 <li class="breadcrumb-item">
                     <a href="rules" style="color: var(--primary-600);">
-                        <i class="bi bi-journal-text me-1"></i> Правила
+                        <i class="bi bi-journal-text me-1"></i> РџСЂР°РІРёР»Р°
                     </a>
                 </li>
                 <li class="breadcrumb-item active" style="color: var(--gray-500);">@Rule.Title</li>
@@ -55,7 +55,7 @@
                             <h1 class="rule-title">@Rule.Title</h1>
                             <p class="rule-description">@Rule.Description</p>
                             <button class="btn btn-light rule-download-btn" @onclick="DownloadRule">
-                                <i class="bi bi-download me-2"></i> Скачать
+                                <i class="bi bi-download me-2"></i> РЎРєР°С‡Р°С‚СЊ
                             </button>
                         </div>
                     </div>
@@ -64,12 +64,12 @@
                             <div class="rule-stat-item rule-stat-rating">
                                 <i class="bi bi-star-fill"></i>
                                 <span class="rule-stat-value">@Rule.Rating.ToString("F1")</span>
-                                <span class="rule-stat-label">(@Rule.RatingCount оценок)</span>
+                                <span class="rule-stat-label">(@Rule.RatingCount РѕС†РµРЅРѕРє)</span>
                             </div>
                             <div class="rule-stat-item rule-stat-downloads">
                                 <i class="bi bi-download"></i>
                                 <span class="rule-stat-value">@Rule.Downloads</span>
-                                <span class="rule-stat-label">скачиваний</span>
+                                <span class="rule-stat-label">СЃРєР°С‡РёРІР°РЅРёР№</span>
                             </div>
                         </div>
                     </div>
@@ -80,10 +80,10 @@
                     <div class="card-body p-4">
                         <h5 class="d-flex align-items-center gap-2 mb-4">
                             <i class="bi bi-file-text" style="color: var(--primary-500);"></i>
-                            Содержание
+                            РЎРѕРґРµСЂР¶Р°РЅРёРµ
                         </h5>
                         <div class="markdown-content">
-                            @((MarkupString)(Rule.HtmlContent ?? ""))
+                            @((MarkupString)SanitizeHtml(Rule.HtmlContent ?? ""))
                         </div>
                     </div>
                 </div>
@@ -93,7 +93,7 @@
                     <div class="card-body">
                         <h5 class="d-flex align-items-center gap-2 mb-4">
                             <i class="bi bi-chat-dots" style="color: var(--primary-500);"></i>
-                            Отзывы (@(Comments?.Count ?? 0))
+                            РћС‚Р·С‹РІС‹ (@(Comments?.Count ?? 0))
                         </h5>
                         
                         @if (Comments != null && Comments.Any())
@@ -128,14 +128,14 @@
                         {
                             <div class="text-center py-4 text-muted">
                                 <i class="bi bi-chat" style="font-size: 2rem; opacity: 0.5;"></i>
-                                <p class="mt-2 mb-0">Пока нет отзывов. Будьте первым!</p>
+                                <p class="mt-2 mb-0">РџРѕРєР° РЅРµС‚ РѕС‚Р·С‹РІРѕРІ. Р‘СѓРґСЊС‚Рµ РїРµСЂРІС‹Рј!</p>
                             </div>
                         }
 
                         <hr style="border-color: var(--gray-200); margin: 1.5rem 0;" />
                         
                         <h6 class="mb-3">
-                            <i class="bi bi-pencil me-1"></i> Оставить отзыв
+                            <i class="bi bi-pencil me-1"></i> РћСЃС‚Р°РІРёС‚СЊ РѕС‚Р·С‹РІ
                         </h6>
                         
                         @if (!string.IsNullOrEmpty(CommentError))
@@ -153,28 +153,28 @@
                         
                         <div class="mb-3">
                             <label class="form-label">
-                                <i class="bi bi-star me-1"></i> Оценка
+                                <i class="bi bi-star me-1"></i> РћС†РµРЅРєР°
                             </label>
                             <select class="form-select" @bind="NewRating">
-                                <option value="5">????? Отлично</option>
-                                <option value="4">???? Хорошо</option>
-                                <option value="3">??? Нормально</option>
-                                <option value="2">?? Плохо</option>
-                                <option value="1">? Ужасно</option>
+                                <option value="5">в­ђв­ђв­ђв­ђв­ђ РћС‚Р»РёС‡РЅРѕ</option>
+                                <option value="4">в­ђв­ђв­ђв­ђ РҐРѕСЂРѕС€Рѕ</option>
+                                <option value="3">в­ђв­ђв­ђ РќРѕСЂРјР°Р»СЊРЅРѕ</option>
+                                <option value="2">в­ђв­ђ РџР»РѕС…Рѕ</option>
+                                <option value="1">в­ђ РЈР¶Р°СЃРЅРѕ</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">
-                                <i class="bi bi-chat-text me-1"></i> Комментарий
+                                <i class="bi bi-chat-text me-1"></i> РљРѕРјРјРµРЅС‚Р°СЂРёР№
                             </label>
-                            <textarea class="form-control" rows="3" placeholder="Поделитесь своим мнением..." @bind="NewComment"></textarea>
+                            <textarea class="form-control" rows="3" placeholder="РџРѕРґРµР»РёС‚РµСЃСЊ СЃРІРѕРёРј РјРЅРµРЅРёРµРј..." @bind="NewComment"></textarea>
                         </div>
                         <button class="btn btn-primary" @onclick="SubmitComment" disabled="@IsSubmitting">
                             @if (IsSubmitting)
                             {
                                 <span class="spinner-border spinner-border-sm me-2"></span>
                             }
-                            <i class="bi bi-send me-1"></i> Отправить
+                            <i class="bi bi-send me-1"></i> РћС‚РїСЂР°РІРёС‚СЊ
                         </button>
                     </div>
                 </div>
@@ -189,10 +189,10 @@
                             @(Rule.AuthorName?.FirstOrDefault() ?? '?')
                         </div>
                         <h4 style="margin-bottom: 0.25rem;">@Rule.AuthorName</h4>
-                        <p class="text-muted small mb-3">Автор правила</p>
+                        <p class="text-muted small mb-3">РђРІС‚РѕСЂ РїСЂР°РІРёР»Р°</p>
                         <div class="d-inline-flex align-items-center gap-2 px-3 py-2" style="background: var(--gray-100); border-radius: var(--radius-full);">
                             <i class="bi bi-folder" style="color: var(--primary-500);"></i>
-                            <span style="font-weight: 500;">@Rule.AuthorContentCount материалов</span>
+                            <span style="font-weight: 500;">@Rule.AuthorContentCount РјР°С‚РµСЂРёР°Р»РѕРІ</span>
                         </div>
                     </div>
                 </div>
@@ -202,7 +202,7 @@
                     <div class="card-body">
                         <h5 class="d-flex align-items-center gap-2 mb-3">
                             <i class="bi bi-link-45deg" style="color: var(--primary-500);"></i>
-                            Похожие правила
+                            РџРѕС…РѕР¶РёРµ РїСЂР°РІРёР»Р°
                         </h5>
                         @if (RelatedRules != null && RelatedRules.Any())
                         {
@@ -221,7 +221,7 @@
                         else
                         {
                             <div class="text-center py-3 text-muted">
-                                <p class="mb-0 small">Нет похожих правил</p>
+                                <p class="mb-0 small">РќРµС‚ РїРѕС…РѕР¶РёС… РїСЂР°РІРёР»</p>
                             </div>
                         }
                     </div>
@@ -293,7 +293,7 @@
         var session = await AuthService.GetCurrentSessionAsync();
         if (session == null)
         {
-            DownloadMessage = "Войдите в аккаунт для скачивания";
+            DownloadMessage = "Р’РѕР№РґРёС‚Рµ РІ Р°РєРєР°СѓРЅС‚ РґР»СЏ СЃРєР°С‡РёРІР°РЅРёСЏ";
             DownloadSuccess = false;
             return;
         }
@@ -301,12 +301,12 @@
         try
         {
             await ContentApi.DownloadRuleAsync(Id);
-            DownloadMessage = "Правило успешно скачано!";
+            DownloadMessage = "РџСЂР°РІРёР»Рѕ СѓСЃРїРµС€РЅРѕ СЃРєР°С‡Р°РЅРѕ!";
             DownloadSuccess = true;
         }
         catch (Exception ex)
         {
-            DownloadMessage = $"Ошибка: {ex.Message}";
+            DownloadMessage = $"РћС€РёР±РєР°: {ex.Message}";
             DownloadSuccess = false;
         }
     }
@@ -319,13 +319,13 @@
         var session = await AuthService.GetCurrentSessionAsync();
         if (session == null)
         {
-            CommentError = "Войдите в аккаунт чтобы оставить отзыв";
+            CommentError = "Р’РѕР№РґРёС‚Рµ РІ Р°РєРєР°СѓРЅС‚ С‡С‚РѕР±С‹ РѕСЃС‚Р°РІРёС‚СЊ РѕС‚Р·С‹РІ";
             return;
         }
         
         if (string.IsNullOrWhiteSpace(NewComment))
         {
-            CommentError = "Введите текст комментария";
+            CommentError = "Р’РІРµРґРёС‚Рµ С‚РµРєСЃС‚ РєРѕРјРјРµРЅС‚Р°СЂРёСЏ";
             return;
         }
         
@@ -334,14 +334,14 @@
         try
         {
             await ContentApi.AddRuleCommentAsync(Id, NewRating, NewComment);
-            CommentSuccess = "Отзыв успешно добавлен!";
+            CommentSuccess = "РћС‚Р·С‹РІ СѓСЃРїРµС€РЅРѕ РґРѕР±Р°РІР»РµРЅ!";
             NewComment = "";
             NewRating = 5;
             Comments = await ContentApi.GetRuleCommentsAsync(Id);
         }
         catch (Exception ex)
         {
-            CommentError = $"Ошибка: {ex.Message}";
+            CommentError = $"РћС€РёР±РєР°: {ex.Message}";
         }
         finally
         {
@@ -359,9 +359,106 @@
 
     private string GetDifficultyText(int level) => level switch
     {
-        1 => "Начальный",
-        2 => "Средний",
-        3 => "Продвинутый",
-        _ => "Неизвестно"
+        1 => "РќР°С‡Р°Р»СЊРЅС‹Р№",
+        2 => "РЎСЂРµРґРЅРёР№",
+        3 => "РџСЂРѕРґРІРёРЅСѓС‚С‹Р№",
+        _ => "РќРµРёР·РІРµСЃС‚РЅРѕ"
     };
+
+    /// <summary>
+    /// РЎР°РЅРёС‚РёР·Р°С†РёСЏ HTML РґР»СЏ Р·Р°С‰РёС‚С‹ РѕС‚ XSS РїСЂРё СЂРµРЅРґРµСЂРёРЅРіРµ С‡РµСЂРµР· MarkupString.
+    /// РСЃРїРѕР»СЊР·СѓРµС‚ allowlist-РїРѕРґС…РѕРґ: РїСЂРѕРїСѓСЃРєР°РµС‚ С‚РѕР»СЊРєРѕ Р±РµР·РѕРїР°СЃРЅС‹Рµ С‚РµРіРё Р±РµР· Р°С‚СЂРёР±СѓС‚РѕРІ.
+    /// </summary>
+    private static string SanitizeHtml(string html)
+    {
+        if (string.IsNullOrEmpty(html)) return "";
+
+        var allowedTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "h1", "h2", "h3", "h4", "h5", "h6",
+            "p", "br", "hr",
+            "strong", "b", "em", "i", "u",
+            "code", "pre",
+            "ul", "ol", "li",
+            "blockquote",
+            "table", "thead", "tbody", "tr", "th", "td"
+        };
+
+        var selfClosingTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "br", "hr" };
+
+        var result = new System.Text.StringBuilder(html.Length);
+        int i = 0;
+
+        while (i < html.Length)
+        {
+            if (html[i] == '<')
+            {
+                int tagEnd = FindTagEnd(html, i);
+                if (tagEnd == -1)
+                {
+                    result.Append("&lt;");
+                    i++;
+                    continue;
+                }
+
+                var tagContent = html.AsSpan(i + 1, tagEnd - i - 1).Trim();
+                bool isClosing = tagContent.Length > 0 && tagContent[0] == '/';
+                if (isClosing)
+                    tagContent = tagContent.Slice(1).TrimStart();
+
+                int nameEnd = 0;
+                while (nameEnd < tagContent.Length &&
+                       !char.IsWhiteSpace(tagContent[nameEnd]) &&
+                       tagContent[nameEnd] != '/' &&
+                       tagContent[nameEnd] != '>')
+                    nameEnd++;
+
+                var tagName = tagContent.Slice(0, nameEnd).ToString();
+
+                if (allowedTags.Contains(tagName))
+                {
+                    if (isClosing)
+                        result.Append($"</{tagName}>");
+                    else if (selfClosingTags.Contains(tagName))
+                        result.Append($"<{tagName}/>");
+                    else
+                        result.Append($"<{tagName}>");
+                }
+                // РќРµСЂР°Р·СЂРµС€С‘РЅРЅС‹Рµ С‚РµРіРё РїРѕР»РЅРѕСЃС‚СЊСЋ СѓРґР°Р»СЏСЋС‚СЃСЏ
+
+                i = tagEnd + 1;
+            }
+            else
+            {
+                result.Append(html[i]);
+                i++;
+            }
+        }
+
+        return result.ToString();
+    }
+
+    /// <summary>
+    /// РќР°С…РѕРґРёС‚ Р·Р°РєСЂС‹РІР°СЋС‰СѓСЋ СЃРєРѕР±РєСѓ '>' С‚РµРіР°, РєРѕСЂСЂРµРєС‚РЅРѕ РѕР±СЂР°Р±Р°С‚С‹РІР°СЏ РєР°РІС‹С‡РєРё РІ Р°С‚СЂРёР±СѓС‚Р°С….
+    /// </summary>
+    private static int FindTagEnd(string html, int openBracket)
+    {
+        bool inDouble = false;
+        bool inSingle = false;
+
+        for (int i = openBracket + 1; i < html.Length; i++)
+        {
+            char c = html[i];
+            if (inDouble) { if (c == '"') inDouble = false; }
+            else if (inSingle) { if (c == '\'') inSingle = false; }
+            else
+            {
+                if (c == '"') inDouble = true;
+                else if (c == '\'') inSingle = true;
+                else if (c == '>') return i;
+            }
+        }
+
+        return -1;
+    }
 }

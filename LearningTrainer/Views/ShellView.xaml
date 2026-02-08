@@ -40,47 +40,76 @@
         <DataTemplate DataType="{x:Type viewmodels:RuleManagementViewModel}">
             <views:RuleManagementView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:MarketplaceViewModel}">
+            <views:MarketplaceView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:MarketplaceDictionaryDetailsViewModel}">
+            <views:MarketplaceDictionaryDetailsView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:MarketplaceRuleDetailsViewModel}">
+            <views:MarketplaceRuleDetailsView/>
+        </DataTemplate>
 
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!--                    MODERN TAB CLOSE BUTTON                      -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
         <Style x:Key="CloseTabButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Width" Value="20"/>
-            <Setter Property="Height" Value="20"/>
+            <Setter Property="Width" Value="22"/>
+            <Setter Property="Height" Value="22"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Margin" Value="8,0,0,0"/>
+            <Setter Property="Margin" Value="10,0,0,0"/>
+            <Setter Property="Opacity" Value="0.6"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="10">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}" 
+                                CornerRadius="6">
                             <Path x:Name="path" 
-                                  Data="M0,0 L8,8 M8,0 L0,8" 
+                                  Data="M4,4 L10,10 M10,4 L4,10" 
                                   Stroke="{DynamicResource SecondaryTextBrush}" 
                                   StrokeThickness="1.5" 
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
                                   VerticalAlignment="Center" 
                                   HorizontalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#33FF0000"/>
-                                <Setter TargetName="path" Property="Stroke" Value="#FF4444"/>
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource DangerBrush}"/>
+                                <Setter TargetName="path" Property="Stroke" Value="White"/>
+                                <Setter Property="Opacity" Value="1"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Opacity" Value="1"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!--                    MODERN PILL TAB STYLE                        -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
         <Style x:Key="ModernTabItemStyle" TargetType="TabItem">
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
                         <Border x:Name="Border"
                                 Background="Transparent"
-                                BorderThickness="0,0,0,2"
-                                BorderBrush="Transparent"
-                                Margin="0,0,5,0"
-                                Padding="15,10"
+                                BorderThickness="0"
+                                Margin="0,0,8,0"
+                                Padding="16,10"
+                                CornerRadius="10"
                                 Cursor="Hand">
+                            <Border.Effect>
+                                <DropShadowEffect x:Name="TabShadow" ShadowDepth="0" BlurRadius="0" Color="#000000" Opacity="0"/>
+                            </Border.Effect>
                             <ContentPresenter x:Name="ContentSite"
                                               VerticalAlignment="Center"
                                               HorizontalAlignment="Center"
@@ -88,15 +117,23 @@
                                               RecognizesAccessKey="True"/>
                         </Border>
                         <ControlTemplate.Triggers>
+                            <!-- Selected State - Gradient Background -->
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-                                <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
-                                <Setter TargetName="Border" Property="CornerRadius" Value="6,6,0,0"/>
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource AccentGradientBrush}"/>
+                                <Setter TargetName="Border" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect ShadowDepth="0" BlurRadius="15" Color="{DynamicResource PrimaryAccentColor}" Opacity="0.4"/>
+                                    </Setter.Value>
+                                </Setter>
                             </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
-                                <Setter TargetName="Border" Property="CornerRadius" Value="6,6,0,0"/>
-                            </Trigger>
+                            <!-- Hover State -->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                    <Condition Property="IsSelected" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource HoverBackgroundBrush}"/>
+                            </MultiTrigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -120,16 +157,21 @@
                             <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
 
+                        <!-- Modern Glass Tab Header -->
                         <Border Grid.Row="0" 
                                 Background="{DynamicResource SecondaryMainBackgroundBrush}" 
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="0,0,0,1"
-                                Padding="10,5,10,0">
+                                Padding="16,12,16,12">
+                            <Border.Effect>
+                                <DropShadowEffect ShadowDepth="2" BlurRadius="8" Color="#000000" Opacity="0.1" Direction="270"/>
+                            </Border.Effect>
                             <TabPanel IsItemsHost="True" Background="Transparent"/>
                         </Border>
 
+                        <!-- Content Area with subtle background -->
                         <Border Grid.Row="1" Background="{DynamicResource MainBackgroundBrush}">
-                            <ContentPresenter ContentSource="SelectedContent"/>
+                            <ContentPresenter ContentSource="SelectedContent" Margin="0"/>
                         </Border>
                     </Grid>
                 </ControlTemplate>
@@ -139,26 +181,36 @@
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="{Binding Title}" 
-                                   Foreground="{DynamicResource PrimaryTextBrush}" 
                                    FontSize="14"
-                                   FontWeight="Medium"
+                                   FontWeight="SemiBold"
                                    VerticalAlignment="Center"
                                    MaxWidth="150" 
-                                   TextTrimming="CharacterEllipsis"/>
+                                   TextTrimming="CharacterEllipsis">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TabItem}}" Value="True">
+                                            <Setter Property="Foreground" Value="White"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
 
                         <Button Command="{Binding DataContext.CloseTabCommand, RelativeSource={RelativeSource AncestorType={x:Type TabControl}}}"
                                 CommandParameter="{Binding}"
                                 Style="{StaticResource CloseTabButtonStyle}"
-                                ToolTip="Close tab"/>
+                                ToolTip="Закрыть вкладку"/>
                     </StackPanel>
                 </DataTemplate>
             </TabControl.ItemTemplate>
 
         </TabControl>
-        
+
         <!-- Global Notification Panel - Overlay in top-right corner -->
         <views:NotificationPanel HorizontalAlignment="Right" 
                                  VerticalAlignment="Top"
-                                 Margin="0,50,10,0"/>
+                                 Margin="0,70,20,0"/>
     </Grid>
 </UserControl>

@@ -14,7 +14,7 @@ public interface IContentApiService
     Task<List<CommentItem>> GetDictionaryCommentsAsync(int id);
     Task AddDictionaryCommentAsync(int dictionaryId, int rating, string text);
     Task DownloadDictionaryAsync(int dictionaryId);
-    
+
     // Rules
     Task<PagedResult<RuleListItem>> GetPublicRulesAsync(
         string? search, string? category, int difficulty, int page, int pageSize);
@@ -23,7 +23,7 @@ public interface IContentApiService
     Task AddRuleCommentAsync(int ruleId, int rating, string text);
     Task DownloadRuleAsync(int ruleId);
     Task<List<RuleListItem>> GetRelatedRulesAsync(int ruleId, string category);
-    
+
     // My Content
     Task<List<MyDictionaryItem>> GetMyDictionariesAsync();
     Task<List<MyRuleItem>> GetMyRulesAsync();
@@ -32,7 +32,12 @@ public interface IContentApiService
     Task UnpublishDictionaryAsync(int id);
     Task PublishRuleAsync(int id);
     Task UnpublishRuleAsync(int id);
-    
+
+    // Export
+    Task<ExportResult> ExportDictionaryAsJsonAsync(int dictionaryId);
+    Task<ExportResult> ExportDictionaryAsCsvAsync(int dictionaryId);
+    Task<ExportResult> ExportAllDictionariesAsZipAsync();
+
     // Token management
     void SetAuthToken(string? token);
 }
@@ -203,6 +208,52 @@ public class ContentApiService : IContentApiService
     }
 
     #endregion
+
+    #region Export
+
+    public async Task<ExportResult> ExportDictionaryAsJsonAsync(int dictionaryId)
+    {
+        var response = await _httpClient.GetAsync($"api/dictionaries/export/{dictionaryId}/json");
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsByteArrayAsync();
+        var fileName = GetFileNameFromResponse(response) ?? $"dictionary_{dictionaryId}.json";
+
+        return new ExportResult { Data = content, FileName = fileName, ContentType = "application/json" };
+    }
+
+    public async Task<ExportResult> ExportDictionaryAsCsvAsync(int dictionaryId)
+    {
+        var response = await _httpClient.GetAsync($"api/dictionaries/export/{dictionaryId}/csv");
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsByteArrayAsync();
+        var fileName = GetFileNameFromResponse(response) ?? $"dictionary_{dictionaryId}.csv";
+
+        return new ExportResult { Data = content, FileName = fileName, ContentType = "text/csv" };
+    }
+
+    public async Task<ExportResult> ExportAllDictionariesAsZipAsync()
+    {
+        var response = await _httpClient.GetAsync("api/dictionaries/export/all/zip");
+        response.EnsureSuccessStatusCode();
+
+        var content = await response.Content.ReadAsByteArrayAsync();
+        var fileName = GetFileNameFromResponse(response) ?? "dictionaries_export.zip";
+
+        return new ExportResult { Data = content, FileName = fileName, ContentType = "application/zip" };
+    }
+
+    private static string? GetFileNameFromResponse(HttpResponseMessage response)
+    {
+        if (response.Content.Headers.ContentDisposition?.FileName != null)
+        {
+            return response.Content.Headers.ContentDisposition.FileName.Trim('"');
+        }
+        return null;
+    }
+
+    #endregion
 }
 
 #region DTOs
@@ -297,6 +348,13 @@ public class DownloadedItem
     public string Title { get; set; } = "";
     public string AuthorName { get; set; } = "";
     public DateTime DownloadedAt { get; set; }
+}
+
+public class ExportResult
+{
+    public byte[] Data { get; set; } = Array.Empty<byte>();
+    public string FileName { get; set; } = "";
+    public string ContentType { get; set; } = "";
 }
 
 #endregion

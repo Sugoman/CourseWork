@@ -28,7 +28,7 @@ namespace LearningTrainer.Context
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.UseCollation("utf8mb4_unicode_ci");
+            
             // Seed roles including new User role
             modelBuilder.Entity<Role>().HasData(
                 new Role { Id = 1, Name = "Admin" },

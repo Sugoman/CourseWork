@@ -68,6 +68,7 @@
             <Setter Property="Padding" Value="10,8"/>
             <Setter Property="FontSize" Value="{DynamicResource BaseFontSize}"/>
             <Setter Property="ItemContainerStyle" Value="{StaticResource ComboBoxItemContainerStyle}"/>
+            <Setter Property="MinHeight" Value="40"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ComboBox">
@@ -103,7 +104,7 @@
                             <ToggleButton x:Name="toggleButton" 
                                           Style="{StaticResource ComboBoxToggleButtonStyle}" 
                                           IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" 
-                                          ClickMode="Press"
+                                          ClickMode="Press"                            
                                           Padding="10,10"/>
 
                             <ContentPresenter x:Name="contentPresenter"
@@ -252,7 +253,7 @@
                                      BorderThickness="0"
                                      VerticalScrollBarVisibility="Auto"
                                      FontFamily="Consolas"
-                                     FontSize="13"/>
+                                     FontSize="{DynamicResource BaseFontSize}"/>
                         </Border>
                     </StackPanel>
                 </Border>

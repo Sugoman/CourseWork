@@ -1,9 +1,12 @@
-﻿using LearningTrainer.Context;
+﻿using LearningAPI.Extensions;
+using LearningTrainer.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace LearningAPI.Controllers
 {
@@ -14,11 +17,13 @@ namespace LearningAPI.Controllers
     {
         private readonly ApiDbContext _context;
         private readonly ILogger<ProgressController> _logger;
+        private readonly IDistributedCache _cache;
 
-        public ProgressController(ApiDbContext context, ILogger<ProgressController> logger)
+        public ProgressController(ApiDbContext context, ILogger<ProgressController> logger, IDistributedCache cache)
         {
             _context = context;
             _logger = logger;
+            _cache = cache;
         }
 
         // POST /api/progress/update
@@ -111,6 +116,8 @@ namespace LearningAPI.Controllers
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Progress successfully updated for User={UserId}, Word={WordId}", userId, request.WordId);
 
+                await _cache.TryRemoveAsync($"stats:{userId}");
+
                 return Ok(progress);
             }
             catch (Exception ex)
@@ -125,6 +132,13 @@ namespace LearningAPI.Controllers
         public async Task<IActionResult> GetStats()
         {
             var userId = GetUserId();
+
+            var cacheKey = $"stats:{userId}";
+            var cached = await _cache.TryGetStringAsync(cacheKey);
+            if (cached != null)
+            {
+                return Content(cached, "application/json");
+            }
 
             var progresses = _context.LearningProgresses
                 .Where(p => p.UserId == userId);
@@ -177,6 +191,12 @@ namespace LearningAPI.Controllers
                     Count = g.Count()
                 })
                 .ToListAsync();
+
+            var json = JsonSerializer.Serialize(stats);
+            await _cache.TrySetStringAsync(cacheKey, json, new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2)
+            });
 
             return Ok(stats);
         }

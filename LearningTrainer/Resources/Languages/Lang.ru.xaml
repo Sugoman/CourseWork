@@ -63,7 +63,7 @@
                                 <!-- ADD DICTIONARY -->
     <system:String x:Key="Loc.AddDict.CreateDict">Создать новый словарь</system:String>
     <system:String x:Key="Loc.AddDict.TitleDictLabel">Название</system:String>
-    <system:String x:Key="Loc.AddDict.DiscriptionDictLabel">Описание</system:String>
+    <system:String x:Key="Loc.AddDict.DescriptionDictLabel">Описание</system:String>
     <system:String x:Key="Loc.AddDict.StudiedLangLabel">Изучаемый язык</system:String>
     <system:String x:Key="Loc.AddDict.NativeLangLabel">Родной язык</system:String>
 

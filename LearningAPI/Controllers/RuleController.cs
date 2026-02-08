@@ -1,10 +1,13 @@
-﻿using LearningTrainer.Context;
+﻿using LearningAPI.Extensions;
+using LearningTrainer.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace LearningAPI.Controllers
 {
@@ -14,10 +17,12 @@ namespace LearningAPI.Controllers
     public class RulesController : ControllerBase
     {
         private readonly ApiDbContext _context;
+        private readonly IDistributedCache _cache;
 
-        public RulesController(ApiDbContext context)
+        public RulesController(ApiDbContext context, IDistributedCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         [HttpGet("list/available")]
@@ -26,6 +31,13 @@ namespace LearningAPI.Controllers
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdString, out int currentUserId)) return Unauthorized();
+
+            var cacheKey = $"rules:available:{currentUserId}";
+            var cached = await _cache.TryGetStringAsync(cacheKey);
+            if (cached != null)
+            {
+                return Content(cached, "application/json");
+            }
 
             var sharedRuleIds = await _context.RuleSharings
                 .Where(rs => rs.StudentId == currentUserId)
@@ -48,6 +60,12 @@ namespace LearningAPI.Controllers
                 })
                 .ToListAsync();
 
+            var json = JsonSerializer.Serialize(rules);
+            await _cache.TrySetStringAsync(cacheKey, json, new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            });
+
             return Ok(rules);
         }
 
@@ -56,6 +74,13 @@ namespace LearningAPI.Controllers
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
+
+            var cacheKey = $"rules:{userId}";
+            var cached = await _cache.TryGetStringAsync(cacheKey);
+            if (cached != null)
+            {
+                return Content(cached, "application/json");
+            }
 
             var currentUser = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
             var teacherId = currentUser?.UserId;
@@ -75,6 +100,12 @@ namespace LearningAPI.Controllers
                     IsReadOnly = r.UserId != userId
                 })
                 .ToListAsync();
+
+            var json = JsonSerializer.Serialize(rules);
+            await _cache.TrySetStringAsync(cacheKey, json, new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+            });
 
             return Ok(rules);
         }
@@ -113,6 +144,8 @@ namespace LearningAPI.Controllers
             _context.Rules.Add(newRule);
             await _context.SaveChangesAsync();
 
+            await InvalidateUserRulesCacheAsync(userId);
+
             return CreatedAtAction(nameof(GetRules), new { id = newRule.Id }, newRule);
         }
 
@@ -136,6 +169,8 @@ namespace LearningAPI.Controllers
 
             _context.Rules.Remove(rule);
             await _context.SaveChangesAsync();
+
+            await InvalidateUserRulesCacheAsync(userId);
 
             return NoContent();
         }
@@ -169,7 +204,15 @@ namespace LearningAPI.Controllers
                 else throw;
             }
 
+            await InvalidateUserRulesCacheAsync(userId);
+
             return NoContent(); 
+        }
+
+        private async Task InvalidateUserRulesCacheAsync(int userId)
+        {
+            await _cache.TryRemoveAsync($"rules:{userId}");
+            await _cache.TryRemoveAsync($"rules:available:{userId}");
         }
     }
 }
