@@ -2,6 +2,8 @@
 using LearningTrainer.Context;
 using LearningTrainerShared.Services;
 using LearningAPI.Middleware;
+using LearningAPI.Configuration;
+using LearningAPI.Services;
 using MediatR;
 using LearningAPI.Features.Dictionaries.Queries.GetDictionaries;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -82,6 +84,12 @@ builder.Services.AddControllers()
 
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddHttpClient<LearningTrainer.Services.ExternalDictionaryService>();
+
+// Health Check конфигурация и сервис
+builder.Services.Configure<HealthCheckConfiguration>(
+    builder.Configuration.GetSection(HealthCheckConfiguration.SectionName));
+builder.Services.AddSingleton<IHealthCheckService, HealthCheckService>();
+builder.Services.AddHttpClient(); // Для проверки внешних зависимостей
 
 // Добавить CORS конфигурацию
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
