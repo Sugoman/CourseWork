@@ -165,5 +165,20 @@
     
     <system:String x:Key="Loc.SettingsAcc.KeepLoggedInLabel">Оставаться в системе</system:String>
     <system:String x:Key="Loc.SettingsAcc.AutoSyncLabel">Авто-синхронизация данных</system:String>
-    
+
+                                <!-- STATISTICS -->
+    <system:String x:Key="Loc.Tab.Statistics">Статистика</system:String>
+    <system:String x:Key="Loc.Statistics.Title">Статистика</system:String>
+    <system:String x:Key="Loc.Statistics.LearnedWords">Изучено слов</system:String>
+    <system:String x:Key="Loc.Statistics.CurrentStreak">Дней подряд</system:String>
+    <system:String x:Key="Loc.Statistics.Accuracy">Точность</system:String>
+    <system:String x:Key="Loc.Statistics.LearningTime">Время обучения</system:String>
+    <system:String x:Key="Loc.Statistics.Position">Позиция</system:String>
+    <system:String x:Key="Loc.Statistics.StartStreak">Начните серию сегодня!</system:String>
+    <system:String x:Key="Loc.Statistics.DayStreak">день</system:String>
+    <system:String x:Key="Loc.Statistics.DaysStreak">дней</system:String>
+    <system:String x:Key="Loc.Statistics.DifficultWordsTraining">Тренировка сложных слов скоро будет доступна!</system:String>
+    <system:String x:Key="Loc.Refresh">Обновить</system:String>
+    <system:String x:Key="Loc.Loading">Загрузка...</system:String>
+
 </ResourceDictionary>

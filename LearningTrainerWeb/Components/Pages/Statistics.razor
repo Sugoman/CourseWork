@@ -1,0 +1,325 @@
+@page "/statistics"
+@using LearningTrainerShared.Models.Statistics
+@using LearningTrainerWeb.Services
+@inject StatisticsApiService StatsService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Статистика | LearningTrainer</PageTitle>
+
+<div class="statistics-page">
+    @if (IsLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="mt-3 text-muted">Загрузка статистики...</p>
+        </div>
+    }
+    else if (Stats != null)
+    {
+        <!-- Заголовок -->
+        <div class="stats-header">
+            <h1><i class="bi bi-graph-up me-2"></i>Статистика</h1>
+            <div class="period-selector">
+                <select class="form-select" @bind="SelectedPeriod" @bind:after="LoadStats">
+                    <option value="week">Неделя</option>
+                    <option value="month">Месяц</option>
+                    <option value="3months">3 месяца</option>
+                    <option value="year">Год</option>
+                    <option value="all">Всё время</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Основные метрики -->
+        <div class="stats-cards">
+            <div class="stat-card stat-card-success">
+                <div class="stat-icon"><i class="bi bi-book-fill"></i></div>
+                <div class="stat-content">
+                    <div class="stat-value">@Stats.LearnedWords</div>
+                    <div class="stat-label">Изучено слов</div>
+                </div>
+                <div class="stat-trend trend-up">
+                    <i class="bi bi-arrow-up"></i> +@Stats.WordsLearnedThisWeek за неделю
+                </div>
+            </div>
+
+            <div class="stat-card stat-card-warning">
+                <div class="stat-icon"><i class="bi bi-fire"></i></div>
+                <div class="stat-content">
+                    <div class="stat-value">@Stats.CurrentStreak</div>
+                    <div class="stat-label">Дней подряд</div>
+                </div>
+                <div class="stat-badge">
+                    <i class="bi bi-trophy-fill me-1"></i>Лучший: @Stats.BestStreak
+                </div>
+            </div>
+
+            <div class="stat-card stat-card-primary">
+                <div class="stat-icon"><i class="bi bi-bullseye"></i></div>
+                <div class="stat-content">
+                    <div class="stat-value">@(Stats.OverallAccuracy.ToString("P0"))</div>
+                    <div class="stat-label">Точность</div>
+                </div>
+            </div>
+
+            <div class="stat-card stat-card-purple">
+                <div class="stat-icon"><i class="bi bi-clock-fill"></i></div>
+                <div class="stat-content">
+                    <div class="stat-value">@FormatTime(Stats.TotalLearningTime)</div>
+                    <div class="stat-label">Время обучения</div>
+                </div>
+                <div class="stat-badge">
+                    @Stats.TotalSessions сессий
+                </div>
+            </div>
+
+            @if (Stats.LeaderboardPosition != null)
+            {
+                <div class="stat-card stat-card-pink">
+                    <div class="stat-icon"><i class="bi bi-trophy-fill"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value">#@Stats.LeaderboardPosition.GlobalRank</div>
+                        <div class="stat-label">Позиция</div>
+                    </div>
+                    <div class="stat-badge">
+                        Топ @Stats.LeaderboardPosition.Percentile.ToString("F1")%
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Графики -->
+        <div class="charts-grid">
+            <!-- График активности -->
+            <div class="chart-card chart-card-wide">
+                <div class="chart-header">
+                    <h3><i class="bi bi-bar-chart-fill me-2"></i>Активность за период</h3>
+                </div>
+                <div class="chart-body">
+                    <div class="activity-bars">
+                        @foreach (var day in Stats.DailyActivity.TakeLast(14))
+                        {
+                            var maxReviewed = Stats.DailyActivity.Max(d => d.WordsReviewed);
+                            var heightPercent = maxReviewed > 0 ? (day.WordsReviewed * 100.0 / maxReviewed) : 0;
+                            <div class="activity-bar-container">
+                                <div class="activity-bar" style="height: @heightPercent%" 
+                                     title="@day.Date.ToString("dd.MM"): @day.WordsReviewed слов">
+                                    @if (day.WordsReviewed > 0)
+                                    {
+                                        <span class="bar-value">@day.WordsReviewed</span>
+                                    }
+                                </div>
+                                <span class="bar-label">@day.Date.ToString("dd.MM")</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Распределение знаний -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="bi bi-pie-chart-fill me-2"></i>Уровни знаний</h3>
+                </div>
+                <div class="chart-body">
+                    <div class="knowledge-distribution">
+                        @foreach (var level in Stats.KnowledgeDistribution.Where(k => k.Count > 0))
+                        {
+                            <div class="knowledge-level-row">
+                                <div class="level-info">
+                                    <span class="level-badge" style="background: @level.Color">@level.Level</span>
+                                    <span class="level-name">@level.LevelName</span>
+                                </div>
+                                <div class="level-bar-container">
+                                    <div class="level-bar" style="width: @level.Percentage%; background: @level.Color"></div>
+                                </div>
+                                <span class="level-count">@level.Count</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Активность по часам -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="bi bi-clock me-2"></i>Активность по часам</h3>
+                </div>
+                <div class="chart-body">
+                    <div class="hourly-heatmap">
+                        @{
+                            var maxHourly = Stats.HourlyActivity.Max(h => h.WordsReviewed);
+                        }
+                        @foreach (var hour in Stats.HourlyActivity)
+                        {
+                            var intensity = maxHourly > 0 ? (double)hour.WordsReviewed / maxHourly : 0;
+                            <div class="hour-cell" 
+                                 style="background: rgba(59, 130, 246, @intensity.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))"
+                                 title="@hour.Hour:00 - @hour.WordsReviewed слов">
+                                @hour.Hour
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Прогресс по словарям -->
+        @if (Stats.DictionaryStatistics.Any())
+        {
+            <div class="section-card">
+                <div class="section-header">
+                    <h3><i class="bi bi-collection me-2"></i>Прогресс по словарям</h3>
+                </div>
+                <div class="dictionaries-progress">
+                    @foreach (var dict in Stats.DictionaryStatistics.Take(10))
+                    {
+                        <div class="dictionary-row">
+                            <div class="dictionary-info">
+                                <span class="dictionary-name">@dict.DictionaryName</span>
+                                <span class="dictionary-stats">
+                                    @dict.LearnedWords / @dict.TotalWords слов
+                                </span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress">
+                                    <div class="progress-bar bg-success" 
+                                         style="width: @dict.CompletionPercent%">
+                                    </div>
+                                </div>
+                                <span class="progress-percent">@dict.CompletionPercent.ToString("F0")%</span>
+                            </div>
+                            <div class="dictionary-accuracy">
+                                <i class="bi bi-bullseye"></i>
+                                @dict.Accuracy.ToString("P0")
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Сложные слова -->
+        @if (Stats.DifficultWords.Any())
+        {
+            <div class="section-card">
+                <div class="section-header">
+                    <h3><i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i>Сложные слова</h3>
+                    <button class="btn btn-primary btn-sm" @onclick="PracticeDifficultWords">
+                        <i class="bi bi-play-circle me-1"></i>Тренировать
+                    </button>
+                </div>
+                <div class="difficult-words-list">
+                    @foreach (var word in Stats.DifficultWords.Take(10))
+                    {
+                        <div class="difficult-word-row">
+                            <div class="word-main">
+                                <span class="word-original">@word.OriginalWord</span>
+                                <span class="word-translation">@word.Translation</span>
+                            </div>
+                            <div class="word-stats">
+                                <span class="word-dictionary">@word.DictionaryName</span>
+                                <span class="word-error-rate text-danger">
+                                    <i class="bi bi-x-circle me-1"></i>@word.ErrorRate.ToString("P0") ошибок
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Достижения -->
+        <div class="section-card">
+            <div class="section-header">
+                <h3><i class="bi bi-award-fill me-2"></i>Достижения</h3>
+                <span class="achievements-count">
+                    <i class="bi bi-check-circle-fill text-success me-1"></i>
+                    @Stats.Achievements.Count(a => a.IsUnlocked) / @Stats.Achievements.Count
+                </span>
+            </div>
+            <div class="achievements-grid">
+                @foreach (var achievement in Stats.Achievements.OrderByDescending(a => a.IsUnlocked).ThenBy(a => a.Rarity))
+                {
+                    <div class="achievement-card @(achievement.IsUnlocked ? "unlocked" : "locked") rarity-@achievement.Rarity.ToString().ToLower()">
+                        <div class="achievement-icon">@achievement.Icon</div>
+                        <div class="achievement-content">
+                            <div class="achievement-title">@achievement.Title</div>
+                            <div class="achievement-desc">@achievement.Description</div>
+                            @if (!achievement.IsUnlocked && achievement.TargetValue.HasValue)
+                            {
+                                <div class="achievement-progress">
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar" style="width: @achievement.Progress%"></div>
+                                    </div>
+                                    <span class="progress-text">@achievement.CurrentValue / @achievement.TargetValue</span>
+                                </div>
+                            }
+                            @if (achievement.IsUnlocked && achievement.UnlockedAt.HasValue)
+                            {
+                                <div class="achievement-date">
+                                    <i class="bi bi-calendar-check me-1"></i>
+                                    @achievement.UnlockedAt.Value.ToString("dd.MM.yyyy")
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="bi bi-bar-chart-line display-1 text-muted"></i>
+            <h3 class="mt-3">Нет данных</h3>
+            <p class="text-muted">Начните изучать слова, чтобы увидеть статистику</p>
+            <a href="/training" class="btn btn-primary">
+                <i class="bi bi-play-circle me-2"></i>Начать тренировку
+            </a>
+        </div>
+    }
+</div>
+
+@code {
+    private UserStatistics? Stats;
+    private bool IsLoading = true;
+    private string SelectedPeriod = "week";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStats();
+    }
+
+    private async Task LoadStats()
+    {
+        IsLoading = true;
+        StateHasChanged();
+        
+        try
+        {
+            Stats = await StatsService.GetStatisticsAsync(SelectedPeriod);
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void PracticeDifficultWords()
+    {
+        NavigationManager.NavigateTo("/training?mode=difficult");
+    }
+
+    private static string FormatTime(TimeSpan time)
+    {
+        if (time.TotalHours >= 1)
+            return $"{time.TotalHours:F1}ч";
+        if (time.TotalMinutes >= 1)
+            return $"{time.TotalMinutes:F0}м";
+        return "< 1м";
+    }
+}

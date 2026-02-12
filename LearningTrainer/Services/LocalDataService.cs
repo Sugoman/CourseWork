@@ -683,6 +683,25 @@ namespace LearningTrainer.Services
             return Task.FromResult<StarterPackResult?>(null);
         }
 
+        public Task<LearningTrainerShared.Models.Statistics.UserStatistics?> GetStatisticsAsync(string period = "week")
+        {
+            // В оффлайн-режиме возвращаем базовую статистику из локальных данных
+            var stats = new LearningTrainerShared.Models.Statistics.UserStatistics
+            {
+                TotalWords = 0,
+                LearnedWords = 0,
+                CurrentStreak = 0,
+                BestStreak = 0
+            };
+            return Task.FromResult<LearningTrainerShared.Models.Statistics.UserStatistics?>(stats);
+        }
+
+        public Task SaveTrainingSessionAsync(DateTime startedAt, DateTime completedAt, int wordsReviewed, int correctAnswers, int wrongAnswers, string mode, int? dictionaryId)
+        {
+            // В оффлайн-режиме не сохраняем сессии на сервер
+            return Task.CompletedTask;
+        }
+
         #endregion
     }
 }

@@ -23,6 +23,7 @@ builder.Services.AddScoped(sp =>
 builder.Services.AddScoped<IContentApiService, ContentApiService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITrainingApiService, TrainingApiService>();
+builder.Services.AddScoped<StatisticsApiService>();
 builder.Services.AddSingleton<IHtmlSanitizerService, HtmlSanitizerService>();
 
 var app = builder.Build();

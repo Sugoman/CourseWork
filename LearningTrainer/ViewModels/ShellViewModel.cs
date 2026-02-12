@@ -55,6 +55,9 @@ namespace LearningTrainer.ViewModels
             EventAggregator.Instance.Subscribe<MarketplaceDictionaryDetailsViewModel>(OpenTab);
             EventAggregator.Instance.Subscribe<MarketplaceRuleDetailsViewModel>(OpenTab);
 
+            // Statistics subscription
+            EventAggregator.Instance.Subscribe<StatisticsViewModel>(OpenTab);
+
             // Subscribe to global notifications
             EventAggregator.Instance.Subscribe<ShowNotificationMessage>(OnShowNotification);
 

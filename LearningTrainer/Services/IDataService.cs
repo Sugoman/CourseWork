@@ -178,5 +178,9 @@ namespace LearningTrainer.Services
         Task<byte[]> ExportDictionaryAsJsonAsync(int dictionaryId);
         Task<byte[]> ExportDictionaryAsCsvAsync(int dictionaryId);
         Task<byte[]> ExportAllDictionariesAsZipAsync();
+
+        // Statistics
+        Task<LearningTrainerShared.Models.Statistics.UserStatistics?> GetStatisticsAsync(string period = "week");
+        Task SaveTrainingSessionAsync(DateTime startedAt, DateTime completedAt, int wordsReviewed, int correctAnswers, int wrongAnswers, string mode, int? dictionaryId);
     }
 }

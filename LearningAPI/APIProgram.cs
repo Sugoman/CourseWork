@@ -91,6 +91,9 @@ builder.Services.Configure<HealthCheckConfiguration>(
 builder.Services.AddSingleton<IHealthCheckService, HealthCheckService>();
 builder.Services.AddHttpClient(); // Для проверки внешних зависимостей
 
+// Statistics service
+builder.Services.AddScoped<IStatisticsService, StatisticsService>();
+
 // Добавить CORS конфигурацию
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? new[] { 

@@ -37,6 +37,7 @@ namespace LearningTrainer.ViewModels
 
         public ICommand OpenSettingsCommand { get; }
         public ICommand OpenMarketplaceCommand { get; }
+        public ICommand OpenStatisticsCommand { get; }
         public ICommand CreateDictionaryCommand { get; }
         public ICommand ImportDictionaryCommand { get; }
         public ICommand CreateRuleCommand { get; }
@@ -226,6 +227,12 @@ namespace LearningTrainer.ViewModels
         {
             var marketplaceVm = new MarketplaceViewModel(_dataService);
             EventAggregator.Instance.Publish(marketplaceVm);
+        }
+
+        private void OpenStatistics()
+        {
+            var statisticsVm = new StatisticsViewModel(_dataService);
+            EventAggregator.Instance.Publish(statisticsVm);
         }
 
         private void OnDictionaryDeleted(DictionaryDeletedMessage message)
@@ -680,6 +687,7 @@ namespace LearningTrainer.ViewModels
             DisplayDictionaries = new ObservableCollection<DictionaryViewModel>();
             OpenSettingsCommand = new RelayCommand(OpenSettings);
             OpenMarketplaceCommand = new RelayCommand(_ => OpenMarketplace());
+            OpenStatisticsCommand = new RelayCommand(_ => OpenStatistics());
             DisplaySortOptions = new ObservableCollection<SortingDisplayItem>()
             {
                 new SortingDisplayItem { Key = SortKey.NameAsc, DisplayName = GetLocalized("Loc.Sort.NameAsc") },

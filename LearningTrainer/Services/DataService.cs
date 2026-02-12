@@ -551,6 +551,18 @@ namespace LearningTrainer.Services
             throw new NotImplementedException("Стартовый набор недоступен в локальном режиме");
         }
 
+        public Task<LearningTrainerShared.Models.Statistics.UserStatistics?> GetStatisticsAsync(string period = "week")
+        {
+            // В локальном режиме возвращаем null - статистика недоступна
+            return Task.FromResult<LearningTrainerShared.Models.Statistics.UserStatistics?>(null);
+        }
+
+        public Task SaveTrainingSessionAsync(DateTime startedAt, DateTime completedAt, int wordsReviewed, int correctAnswers, int wrongAnswers, string mode, int? dictionaryId)
+        {
+            // В локальном режиме не сохраняем сессии
+            return Task.CompletedTask;
+        }
+
         #endregion
     }
 }

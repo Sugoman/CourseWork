@@ -49,6 +49,9 @@
         <DataTemplate DataType="{x:Type viewmodels:MarketplaceRuleDetailsViewModel}">
             <views:MarketplaceRuleDetailsView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:StatisticsViewModel}">
+            <views:StatisticsView/>
+        </DataTemplate>
 
         <!-- ═══════════════════════════════════════════════════════════════ -->
         <!--                    MODERN PILL TAB STYLE                        -->

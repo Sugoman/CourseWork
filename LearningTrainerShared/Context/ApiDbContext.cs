@@ -24,6 +24,11 @@ namespace LearningTrainer.Context
         public DbSet<Comment> Comments { get; set; } = null!;
         public DbSet<Download> Downloads { get; set; } = null!;
 
+        // Statistics entities
+        public DbSet<TrainingSession> TrainingSessions { get; set; } = null!;
+        public DbSet<UserAchievement> UserAchievements { get; set; } = null!;
+        public DbSet<UserStats> UserStats { get; set; } = null!;
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -91,6 +96,45 @@ namespace LearningTrainer.Context
                 .WithMany()
                 .HasForeignKey(rs => rs.RuleId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // === STATISTICS ENTITIES ===
+
+            // TrainingSession
+            modelBuilder.Entity<TrainingSession>()
+                .HasOne(ts => ts.User)
+                .WithMany()
+                .HasForeignKey(ts => ts.UserId)
+                .OnDelete(DeleteBehavior.Restrict); // Restrict to avoid multiple cascade paths
+
+            modelBuilder.Entity<TrainingSession>()
+                .HasOne(ts => ts.Dictionary)
+                .WithMany()
+                .HasForeignKey(ts => ts.DictionaryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<TrainingSession>()
+                .HasIndex(ts => new { ts.UserId, ts.StartedAt });
+
+            // UserAchievement
+            modelBuilder.Entity<UserAchievement>()
+                .HasOne(ua => ua.User)
+                .WithMany()
+                .HasForeignKey(ua => ua.UserId)
+                .OnDelete(DeleteBehavior.Restrict); // Restrict to avoid multiple cascade paths
+
+            modelBuilder.Entity<UserAchievement>()
+                .HasIndex(ua => ua.UserId);
+
+            modelBuilder.Entity<UserAchievement>()
+                .HasIndex(ua => new { ua.UserId, ua.AchievementId })
+                .IsUnique();
+
+            // UserStats
+            modelBuilder.Entity<UserStats>()
+                .HasOne(us => us.User)
+                .WithMany()
+                .HasForeignKey(us => us.UserId)
+                .OnDelete(DeleteBehavior.Restrict); // Restrict to avoid multiple cascade paths
         }
     }
 }

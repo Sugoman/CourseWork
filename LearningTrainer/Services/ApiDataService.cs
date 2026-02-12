@@ -765,6 +765,47 @@ namespace LearningTrainer.Services
 
         #endregion
 
+        #region Statistics
+
+        public async Task<LearningTrainerShared.Models.Statistics.UserStatistics?> GetStatisticsAsync(string period = "week")
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<LearningTrainerShared.Models.Statistics.UserStatistics>(
+                    $"/api/statistics?period={period}", _jsonOptions);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[STATISTICS] GetStatistics error: {ex.Message}");
+                return null;
+            }
+        }
+
+        public async Task SaveTrainingSessionAsync(DateTime startedAt, DateTime completedAt, int wordsReviewed, int correctAnswers, int wrongAnswers, string mode, int? dictionaryId)
+        {
+            try
+            {
+                var request = new
+                {
+                    StartedAt = startedAt,
+                    CompletedAt = completedAt,
+                    WordsReviewed = wordsReviewed,
+                    CorrectAnswers = correctAnswers,
+                    WrongAnswers = wrongAnswers,
+                    Mode = mode,
+                    DictionaryId = dictionaryId
+                };
+
+                await _httpClient.PostAsJsonAsync("/api/statistics/session", request, _jsonOptions);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[STATISTICS] SaveSession error: {ex.Message}");
+            }
+        }
+
+        #endregion
+
         private class ApiResponseDto { public string Message { get; set; } }
     }
 }

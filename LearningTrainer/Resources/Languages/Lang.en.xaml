@@ -163,5 +163,20 @@
     
     <system:String x:Key="Loc.SettingsAcc.KeepLoggedInLabel">Keep me logged in</system:String>
     <system:String x:Key="Loc.SettingsAcc.AutoSyncLabel">Auto-sync data</system:String>
-    
+
+                                <!-- STATISTICS -->
+    <system:String x:Key="Loc.Tab.Statistics">Statistics</system:String>
+    <system:String x:Key="Loc.Statistics.Title">Statistics</system:String>
+    <system:String x:Key="Loc.Statistics.LearnedWords">Learned Words</system:String>
+    <system:String x:Key="Loc.Statistics.CurrentStreak">Days Streak</system:String>
+    <system:String x:Key="Loc.Statistics.Accuracy">Accuracy</system:String>
+    <system:String x:Key="Loc.Statistics.LearningTime">Learning Time</system:String>
+    <system:String x:Key="Loc.Statistics.Position">Position</system:String>
+    <system:String x:Key="Loc.Statistics.StartStreak">Start your streak today!</system:String>
+    <system:String x:Key="Loc.Statistics.DayStreak">day</system:String>
+    <system:String x:Key="Loc.Statistics.DaysStreak">days</system:String>
+    <system:String x:Key="Loc.Statistics.DifficultWordsTraining">Training difficult words feature coming soon!</system:String>
+    <system:String x:Key="Loc.Refresh">Refresh</system:String>
+    <system:String x:Key="Loc.Loading">Loading...</system:String>
+
 </ResourceDictionary>
