@@ -105,10 +105,15 @@ public class StatisticsService : IStatisticsService
                 sessions.Sum(s => (s.CompletedAt - s.StartedAt).TotalSeconds)),
         };
 
-        // Точность
-        var totalAttempts = progresses.Sum(p => p.TotalAttempts);
-        var totalCorrect = progresses.Sum(p => p.CorrectAnswers);
-        stats.OverallAccuracy = totalAttempts > 0 ? (double)totalCorrect / totalAttempts : 0;
+        // Ответы за период
+        stats.TotalCorrectAnswers = sessions.Sum(s => s.CorrectAnswers);
+        stats.TotalWrongAnswers = sessions.Sum(s => s.WrongAnswers);
+
+        // Точность за период (на основе сессий, а не общего LearningProgress)
+        var totalSessionAnswers = stats.TotalCorrectAnswers + stats.TotalWrongAnswers;
+        stats.OverallAccuracy = totalSessionAnswers > 0 
+            ? (double)stats.TotalCorrectAnswers / totalSessionAnswers 
+            : 0;
 
         // Среднее время на слово
         var totalWordsInSessions = sessions.Sum(s => s.WordsReviewed);
@@ -288,13 +293,30 @@ public class StatisticsService : IStatisticsService
                 (d.ContentType == "Dictionary" && userDictionaryIds.Contains(d.ContentId)) ||
                 (d.ContentType == "Rule" && userRuleIds.Contains(d.ContentId)), ct);
 
-        return AchievementDefinitions.All.Select(def =>
+        // Авто-разблокировка достижений, которые выполнены, но ещё не записаны в БД
+        var newlyUnlocked = new List<UserAchievement>();
+
+        var result = AchievementDefinitions.All.Select(def =>
         {
             var isUnlocked = unlockedIds.ContainsKey(def.Id);
             var currentValue = GetAchievementCurrentValue(def, learnedWords, currentStreak, dictCount, downloads);
             var progress = def.TargetValue > 0 
                 ? Math.Min(100, currentValue * 100.0 / def.TargetValue) 
                 : 0;
+
+            // Если условие выполнено, но в БД нет записи — разблокируем
+            if (!isUnlocked && def.TargetValue > 0 && currentValue >= def.TargetValue)
+            {
+                isUnlocked = true;
+                var ua = new UserAchievement
+                {
+                    UserId = userId,
+                    AchievementId = def.Id,
+                    UnlockedAt = DateTime.UtcNow
+                };
+                newlyUnlocked.Add(ua);
+                unlockedIds[def.Id] = ua;
+            }
 
             return new Achievement
             {
@@ -311,6 +333,16 @@ public class StatisticsService : IStatisticsService
                 TargetValue = def.TargetValue
             };
         }).ToList();
+
+        if (newlyUnlocked.Count > 0)
+        {
+            _context.UserAchievements.AddRange(newlyUnlocked);
+            await _context.SaveChangesAsync(ct);
+            _logger.LogInformation("Auto-unlocked {Count} achievements for User {UserId}", 
+                newlyUnlocked.Count, userId);
+        }
+
+        return result;
     }
 
     public async Task SaveSessionAsync(int userId, SaveSessionRequest request, CancellationToken ct = default)
@@ -342,9 +374,16 @@ public class StatisticsService : IStatisticsService
         var today = DateTime.UtcNow.Date;
         var userStats = await _context.UserStats.FindAsync(new object[] { userId }, ct);
 
-        var sessions = await _context.TrainingSessions
+        // Агрегация на стороне БД вместо загрузки всех сессий в память
+        var sessionAgg = await _context.TrainingSessions
             .Where(s => s.UserId == userId)
-            .ToListAsync(ct);
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Count = g.Count(),
+                TotalSeconds = g.Sum(s => EF.Functions.DateDiffSecond(s.StartedAt, s.CompletedAt))
+            })
+            .FirstOrDefaultAsync(ct);
 
         var currentStreak = await CalculateStreakAsync(userId, today, ct);
 
@@ -356,8 +395,8 @@ public class StatisticsService : IStatisticsService
                 CurrentStreak = currentStreak,
                 BestStreak = currentStreak,
                 LastPracticeDate = today,
-                TotalLearningTimeSeconds = (long)sessions.Sum(s => (s.CompletedAt - s.StartedAt).TotalSeconds),
-                TotalSessions = sessions.Count,
+                TotalLearningTimeSeconds = sessionAgg?.TotalSeconds ?? 0,
+                TotalSessions = sessionAgg?.Count ?? 0,
                 LastUpdated = DateTime.UtcNow
             };
             _context.UserStats.Add(userStats);
@@ -367,8 +406,8 @@ public class StatisticsService : IStatisticsService
             userStats.CurrentStreak = currentStreak;
             userStats.BestStreak = Math.Max(userStats.BestStreak, currentStreak);
             userStats.LastPracticeDate = today;
-            userStats.TotalLearningTimeSeconds = (long)sessions.Sum(s => (s.CompletedAt - s.StartedAt).TotalSeconds);
-            userStats.TotalSessions = sessions.Count;
+            userStats.TotalLearningTimeSeconds = sessionAgg?.TotalSeconds ?? 0;
+            userStats.TotalSessions = sessionAgg?.Count ?? 0;
             userStats.LastUpdated = DateTime.UtcNow;
         }
 
@@ -414,22 +453,33 @@ public class StatisticsService : IStatisticsService
 
         var existingAchievements = existingAchievementsList.ToHashSet();
 
+        // Early exit — все ачивки уже разблокированы
+        if (existingAchievements.Count >= AchievementDefinitions.All.Count)
+            return;
+
         var newAchievements = new List<UserAchievement>();
 
-        // Проверка достижений по словам
-        var learnedWords = await _context.LearningProgresses
-            .CountAsync(p => p.UserId == userId && p.KnowledgeLevel >= 4, ct);
-
-        CheckWordAchievements(learnedWords, existingAchievements, newAchievements, userId);
-
-        // Проверка достижений по streak
-        var userStats = await _context.UserStats.FindAsync(new object[] { userId }, ct);
-        if (userStats != null)
+        // --- Слова (проверяем только если есть незаблокированные word-ачивки) ---
+        var wordIds = new[] { "first_word", "words_10", "words_50", "words_100", "words_500", "words_1000", "words_5000" };
+        if (wordIds.Any(id => !existingAchievements.Contains(id)))
         {
-            CheckStreakAchievements(userStats.CurrentStreak, existingAchievements, newAchievements, userId);
+            var learnedWords = await _context.LearningProgresses
+                .CountAsync(p => p.UserId == userId && p.KnowledgeLevel >= 4, ct);
+            CheckWordAchievements(learnedWords, existingAchievements, newAchievements, userId);
         }
 
-        // Проверка идеальной сессии
+        // --- Streak (читаем из уже обновлённого UserStats) ---
+        var streakIds = new[] { "streak_3", "streak_7", "streak_30", "streak_100", "streak_365" };
+        if (streakIds.Any(id => !existingAchievements.Contains(id)))
+        {
+            var userStats = await _context.UserStats.FindAsync(new object[] { userId }, ct);
+            if (userStats != null)
+            {
+                CheckStreakAchievements(userStats.CurrentStreak, existingAchievements, newAchievements, userId);
+            }
+        }
+
+        // --- Идеальная сессия ---
         if (session.WrongAnswers == 0 && session.WordsReviewed >= 10 && 
             !existingAchievements.Contains("perfect_session"))
         {
@@ -439,15 +489,108 @@ public class StatisticsService : IStatisticsService
                 AchievementId = "perfect_session",
                 UnlockedAt = DateTime.UtcNow
             });
+            existingAchievements.Add("perfect_session");
+        }
+
+        // --- Словари ---
+        if (!existingAchievements.Contains("first_dict") || !existingAchievements.Contains("dict_5"))
+        {
+            var dictCount = await _context.Dictionaries.CountAsync(d => d.UserId == userId, ct);
+            CheckMilestoneAchievement("first_dict", 1, dictCount, existingAchievements, newAchievements, userId);
+            CheckMilestoneAchievement("dict_5", 5, dictCount, existingAchievements, newAchievements, userId);
+        }
+
+        // --- Точность (агрегация на стороне БД) ---
+        if (!existingAchievements.Contains("accuracy_90") || !existingAchievements.Contains("accuracy_95"))
+        {
+            var accuracyAgg = await _context.LearningProgresses
+                .Where(p => p.UserId == userId && p.TotalAttempts > 0)
+                .GroupBy(_ => 1)
+                .Select(g => new
+                {
+                    TotalAttempts = g.Sum(p => p.TotalAttempts),
+                    TotalCorrect = g.Sum(p => p.CorrectAnswers)
+                })
+                .FirstOrDefaultAsync(ct);
+
+            if (accuracyAgg is { TotalAttempts: > 0 })
+            {
+                var accuracyPercent = (int)(accuracyAgg.TotalCorrect * 100.0 / accuracyAgg.TotalAttempts);
+                CheckMilestoneAchievement("accuracy_90", 90, accuracyPercent, existingAchievements, newAchievements, userId);
+                CheckMilestoneAchievement("accuracy_95", 95, accuracyPercent, existingAchievements, newAchievements, userId);
+            }
+        }
+
+        // --- Speed / Marathon (по текущей сессии, без доп. запросов) ---
+        if (!existingAchievements.Contains("speed_demon"))
+        {
+            var sessionMinutes = (session.CompletedAt - session.StartedAt).TotalMinutes;
+            if (session.WordsReviewed >= 50 && sessionMinutes <= 10)
+            {
+                newAchievements.Add(new UserAchievement
+                {
+                    UserId = userId,
+                    AchievementId = "speed_demon",
+                    UnlockedAt = DateTime.UtcNow
+                });
+                existingAchievements.Add("speed_demon");
+            }
+        }
+
+        CheckMilestoneAchievement("marathon", 100, session.WordsReviewed, existingAchievements, newAchievements, userId);
+
+        // --- Социальные ---
+        if (!existingAchievements.Contains("share_first") || !existingAchievements.Contains("popular"))
+        {
+            var hasPublished = await _context.Dictionaries.AnyAsync(d => d.UserId == userId && d.IsPublished, ct)
+                            || await _context.Rules.AnyAsync(r => r.UserId == userId && r.IsPublished, ct);
+            if (hasPublished)
+            {
+                CheckMilestoneAchievement("share_first", 1, 1, existingAchievements, newAchievements, userId);
+            }
+
+            if (!existingAchievements.Contains("popular"))
+            {
+                var userDictIds = await _context.Dictionaries
+                    .Where(d => d.UserId == userId && d.IsPublished)
+                    .Select(d => d.Id).ToListAsync(ct);
+                var userRuleIds = await _context.Rules
+                    .Where(r => r.UserId == userId && r.IsPublished)
+                    .Select(r => r.Id).ToListAsync(ct);
+
+                if (userDictIds.Count > 0 || userRuleIds.Count > 0)
+                {
+                    var downloads = await _context.Downloads
+                        .CountAsync(d =>
+                            (d.ContentType == "Dictionary" && userDictIds.Contains(d.ContentId)) ||
+                            (d.ContentType == "Rule" && userRuleIds.Contains(d.ContentId)), ct);
+                    CheckMilestoneAchievement("popular", 100, downloads, existingAchievements, newAchievements, userId);
+                }
+            }
         }
 
         if (newAchievements.Count > 0)
         {
             _context.UserAchievements.AddRange(newAchievements);
             await _context.SaveChangesAsync(ct);
-            
+
             _logger.LogInformation("User {UserId} unlocked {Count} new achievements", 
                 userId, newAchievements.Count);
+        }
+    }
+
+    private static void CheckMilestoneAchievement(string achievementId, int target, int currentValue,
+        HashSet<string> existing, List<UserAchievement> newAchievements, int userId)
+    {
+        if (currentValue >= target && !existing.Contains(achievementId))
+        {
+            newAchievements.Add(new UserAchievement
+            {
+                UserId = userId,
+                AchievementId = achievementId,
+                UnlockedAt = DateTime.UtcNow
+            });
+            existing.Add(achievementId);
         }
     }
 

@@ -199,4 +199,7 @@ public class StatisticsSummary
     public double OverallAccuracy { get; set; }
     public int WordsLearnedToday { get; set; }
     public int WordsLearnedThisWeek { get; set; }
+    public int TotalCorrectAnswers { get; set; }
+    public int TotalWrongAnswers { get; set; }
+    public long TimeSpentSeconds { get; set; }
 }

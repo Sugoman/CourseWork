@@ -23,6 +23,10 @@ public class UserStatistics
     public double AverageSecondsPerWord { get; set; }
     public int TotalSessions { get; set; }
 
+    // === ОТВЕТЫ ===
+    public int TotalCorrectAnswers { get; set; }
+    public int TotalWrongAnswers { get; set; }
+
     // === ПРОГРЕСС ===
     public int WordsLearnedToday { get; set; }
     public int WordsLearnedThisWeek { get; set; }

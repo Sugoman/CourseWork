@@ -63,6 +63,10 @@
                     <div class="stat-value">@(Stats.OverallAccuracy.ToString("P0"))</div>
                     <div class="stat-label">Точность</div>
                 </div>
+                <div class="stat-badge">
+                    <i class="bi bi-check-circle text-success me-1"></i>@Stats.TotalCorrectAnswers
+                    <i class="bi bi-x-circle text-danger ms-2 me-1"></i>@Stats.TotalWrongAnswers
+                </div>
             </div>
 
             <div class="stat-card stat-card-purple">
@@ -156,8 +160,9 @@
                         @foreach (var hour in Stats.HourlyActivity)
                         {
                             var intensity = maxHourly > 0 ? (double)hour.WordsReviewed / maxHourly : 0;
+                            var textColor = intensity > 0.5 ? "#1e293b" : intensity > 0 ? "#475569" : "#9ca3af";
                             <div class="hour-cell" 
-                                 style="background: rgba(59, 130, 246, @intensity.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))"
+                                 style="background: rgba(59, 130, 246, @intensity.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)); color: @textColor"
                                  title="@hour.Hour:00 - @hour.WordsReviewed слов">
                                 @hour.Hour
                             </div>
@@ -245,7 +250,13 @@
                 @foreach (var achievement in Stats.Achievements.OrderByDescending(a => a.IsUnlocked).ThenBy(a => a.Rarity))
                 {
                     <div class="achievement-card @(achievement.IsUnlocked ? "unlocked" : "locked") rarity-@achievement.Rarity.ToString().ToLower()">
-                        <div class="achievement-icon">@achievement.Icon</div>
+                        <div class="achievement-icon">
+                            @achievement.Icon
+                            @if (achievement.IsUnlocked)
+                            {
+                                <span class="achievement-check"><i class="bi bi-check-circle-fill"></i></span>
+                            }
+                        </div>
                         <div class="achievement-content">
                             <div class="achievement-title">@achievement.Title</div>
                             <div class="achievement-desc">@achievement.Description</div>

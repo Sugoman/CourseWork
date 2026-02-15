@@ -2,6 +2,7 @@
 @using LearningTrainerWeb.Services
 @using LearningTrainerShared.Models
 @inject ITrainingApiService TrainingService
+@inject IStatisticsApiService StatsService
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
@@ -466,6 +467,11 @@ private int CorrectCount;
 private string CurrentMode = "mixed";
 private string ExerciseType = "flashcard";
 
+// Session tracking
+private DateTime SessionStartedAt;
+private int SessionCorrectCount;
+private int SessionWrongCount;
+
 // MCQ state
 private List<string> McqOptions = new();
 private string? SelectedMcqOption;
@@ -564,7 +570,7 @@ private async Task HandleMcqKeyDown(KeyboardEventArgs e)
         // Enter or Space to continue
         if (e.Key == "Enter" || e.Key == " ")
         {
-            NextMcqWord();
+            await NextMcqWord();
             StateHasChanged();
         }
     }
@@ -629,6 +635,9 @@ private async Task InstallStarterPack()
         {
             CurrentIndex = 0;
             CorrectCount = 0;
+            SessionCorrectCount = 0;
+            SessionWrongCount = 0;
+            SessionStartedAt = DateTime.UtcNow;
             CurrentWord = TrainingWords[0];
             IsAnswerRevealed = false;
             IsTrainingActive = true;
@@ -706,10 +715,15 @@ private async Task InstallStarterPack()
         if (quality >= ResponseQuality.Good)
         {
             CorrectCount++;
+            SessionCorrectCount++;
+        }
+        else
+        {
+            SessionWrongCount++;
         }
 
         // Переход к следующему слову
-        MoveToNextWord();
+        await MoveToNextWord();
     }
 
     private async Task SelectMcqOption(string option)
@@ -723,16 +737,21 @@ private async Task InstallStarterPack()
         // Update progress
         var quality = McqWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality);
-        
+
         if (McqWasCorrect)
         {
             CorrectCount++;
+            SessionCorrectCount++;
+        }
+        else
+        {
+            SessionWrongCount++;
         }
     }
 
-    private void NextMcqWord()
+    private async Task NextMcqWord()
     {
-        MoveToNextWord();
+        await MoveToNextWord();
     }
 
     private async Task HandleTypingKeyPress(KeyboardEventArgs e)
@@ -759,19 +778,24 @@ private async Task InstallStarterPack()
         // Update progress
         var quality = TypingWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality);
-        
+
         if (TypingWasCorrect)
         {
             CorrectCount++;
+            SessionCorrectCount++;
+        }
+        else
+        {
+            SessionWrongCount++;
         }
     }
 
-    private void NextTypingWord()
+    private async Task NextTypingWord()
     {
-        MoveToNextWord();
+        await MoveToNextWord();
     }
 
-    private void MoveToNextWord()
+    private async Task MoveToNextWord()
     {
         CurrentIndex++;
         if (CurrentIndex < TrainingWords.Count)
@@ -781,8 +805,39 @@ private async Task InstallStarterPack()
         }
         else
         {
-            // Тренировка завершена
+            // Тренировка завершена — сохраняем сессию
             CurrentWord = null;
+            await SaveTrainingSessionAsync();
+        }
+    }
+
+    private async Task SaveTrainingSessionAsync()
+    {
+        try
+        {
+            var request = new LearningTrainerWeb.Services.SaveSessionRequest
+            {
+                StartedAt = SessionStartedAt,
+                CompletedAt = DateTime.UtcNow,
+                WordsReviewed = TrainingWords.Count,
+                CorrectAnswers = SessionCorrectCount,
+                WrongAnswers = SessionWrongCount,
+                Mode = ExerciseType switch
+                {
+                    "flashcard" => "Flashcards",
+                    "mcq" => "MultipleChoice",
+                    "typing" => "Typing",
+                    _ => "Mixed"
+                },
+                DictionaryId = TrainingWords.FirstOrDefault()?.DictionaryId
+            };
+
+            await StatsService.SaveSessionAsync(request);
+        }
+        catch (Exception ex)
+        {
+            // Не блокируем UI при ошибке сохранения сессии
+            Console.WriteLine($"Failed to save training session: {ex.Message}");
         }
     }
 

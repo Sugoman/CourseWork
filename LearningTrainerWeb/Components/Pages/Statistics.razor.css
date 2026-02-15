@@ -264,7 +264,7 @@
     border-radius: 8px;
     font-size: 0.75rem;
     font-weight: 500;
-    color: white;
+    border: 1px solid var(--bs-border-color);
     transition: transform 0.2s;
     cursor: default;
     min-height: 32px;
@@ -438,26 +438,75 @@
 }
 
 .achievement-card.unlocked {
-    background: var(--bs-body-bg);
+    background: white;
+    border-width: 2px;
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
+    opacity: 1;
+    filter: none;
 }
 
-.achievement-card.rarity-common { border-color: #9CA3AF; }
-.achievement-card.rarity-uncommon { border-color: #10B981; }
-.achievement-card.rarity-rare { border-color: #3B82F6; }
-.achievement-card.rarity-epic { border-color: #8B5CF6; }
-.achievement-card.rarity-legendary { 
-    border-color: #F59E0B;
-    border-width: 2px;
-    box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+.achievement-card.unlocked.rarity-common {
+    border-color: #6B7280;
+    background: linear-gradient(135deg, rgba(107, 114, 128, 0.06), white);
+}
+
+.achievement-card.unlocked.rarity-uncommon {
+    border-color: #10B981;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), white);
+    box-shadow: 0 4px 14px -2px rgba(16, 185, 129, 0.15);
+}
+
+.achievement-card.unlocked.rarity-rare {
+    border-color: #3B82F6;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), white);
+    box-shadow: 0 4px 14px -2px rgba(59, 130, 246, 0.15);
+}
+
+.achievement-card.unlocked.rarity-epic {
+    border-color: #8B5CF6;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), white);
+    box-shadow: 0 4px 14px -2px rgba(139, 92, 246, 0.2);
 }
 
 .achievement-card.unlocked.rarity-legendary {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), transparent);
+    border-color: #F59E0B;
+    border-width: 2px;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(253, 230, 138, 0.15), white);
+    box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.3);
+    animation: legendaryGlow 3s ease-in-out infinite alternate;
 }
+
+@keyframes legendaryGlow {
+    0% { box-shadow: 0 4px 20px -2px rgba(245, 158, 11, 0.2); }
+    100% { box-shadow: 0 4px 25px -2px rgba(245, 158, 11, 0.4); }
+}
+
+.achievement-card.locked.rarity-common { border-color: #9CA3AF; }
+.achievement-card.locked.rarity-uncommon { border-color: #9CA3AF; }
+.achievement-card.locked.rarity-rare { border-color: #9CA3AF; }
+.achievement-card.locked.rarity-epic { border-color: #9CA3AF; }
+.achievement-card.locked.rarity-legendary { border-color: #9CA3AF; }
 
 .achievement-icon {
     font-size: 2rem;
     flex-shrink: 0;
+    position: relative;
+}
+
+.achievement-check {
+    position: absolute;
+    bottom: -4px;
+    right: -6px;
+    font-size: 0.875rem;
+    color: #10B981;
+    background: white;
+    border-radius: 50%;
+    line-height: 1;
+}
+
+.achievement-card.unlocked .achievement-title {
+    color: var(--bs-body-color);
+    font-weight: 700;
 }
 
 .achievement-content {

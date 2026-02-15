@@ -86,7 +86,10 @@ public class StatisticsController : BaseApiController
             stats.BestStreak,
             stats.OverallAccuracy,
             stats.WordsLearnedToday,
-            stats.WordsLearnedThisWeek
+            stats.WordsLearnedThisWeek,
+            stats.TotalCorrectAnswers,
+            stats.TotalWrongAnswers,
+            TimeSpentSeconds = (long)stats.TotalLearningTime.TotalSeconds
         };
 
         return Ok(summary);
