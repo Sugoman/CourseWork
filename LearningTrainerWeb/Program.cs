@@ -12,18 +12,17 @@ builder.Services.AddRazorComponents()
 
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5077";
 
-// Регистрируем общий HttpClient
-builder.Services.AddScoped(sp => 
-{
-    var client = new HttpClient { BaseAddress = new Uri(apiBaseUrl) };
-    return client;
-});
+// Централизованное управление токеном (scoped = один на Blazor circuit)
+builder.Services.AddScoped<AuthTokenProvider>();
 
-// Регистрируем сервисы
-builder.Services.AddScoped<IContentApiService, ContentApiService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ITrainingApiService, TrainingApiService>();
-builder.Services.AddScoped<StatisticsApiService>();
+// Регистрируем typed HttpClient через IHttpClientFactory
+// Примечание: DelegatingHandler НЕ используется, т.к. IHttpClientFactory создаёт хэндлеры
+// вне DI-скоупа Blazor circuit, и scoped AuthTokenProvider будет другим экземпляром.
+// Вместо этого сервисы сами устанавливают заголовок из AuthTokenProvider перед каждым запросом.
+builder.Services.AddHttpClient<IContentApiService, ContentApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<IAuthService, AuthService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<ITrainingApiService, TrainingApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<IStatisticsApiService, StatisticsApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
 builder.Services.AddSingleton<IHtmlSanitizerService, HtmlSanitizerService>();
 
 var app = builder.Build();

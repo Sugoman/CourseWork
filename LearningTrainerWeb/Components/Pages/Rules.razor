@@ -1,7 +1,7 @@
 @page "/rules"
 @using LearningTrainerWeb.Services
 @inject IContentApiService ContentApi
-@rendermode InteractiveServer
+@inject ILogger<LearningTrainerWeb.Components.Pages.Rules> Logger
 
 <PageTitle>Правила - LearningTrainer</PageTitle>
 
@@ -32,22 +32,22 @@
                     <label class="form-label small text-muted">
                         <i class="bi bi-tag me-1"></i> Категория
                     </label>
-                    <select class="form-select" @bind="SelectedCategory">
+                    <select class="form-select" @bind="SelectedCategory" @bind:after="ApplyFilters">
                         <option value="">Все категории</option>
-                        <option value="Grammar">📚 Грамматика</option>
-                        <option value="Vocabulary">📝 Лексика</option>
-                        <option value="Pronunciation">🎤 Произношение</option>
+                        <option value="Grammar">Грамматика</option>
+                        <option value="Vocabulary">Лексика</option>
+                        <option value="Pronunciation">Произношение</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small text-muted">
                         <i class="bi bi-bar-chart me-1"></i> Уровень
                     </label>
-                    <select class="form-select" @bind="SelectedDifficulty">
+                    <select class="form-select" @bind="SelectedDifficulty" @bind:after="ApplyFilters">
                         <option value="0">Любой</option>
-                        <option value="1">🟢 Начальный</option>
-                        <option value="2">🟡 Средний</option>
-                        <option value="3">🔴 Продвинутый</option>
+                        <option value="1">Начальный</option>
+                        <option value="2">Средний</option>
+                        <option value="3">Продвинутый</option>
                     </select>
                 </div>
                 <div class="col-md-2" style="margin-top: 32px;">
@@ -189,35 +189,6 @@
     }
 </div>
 
-<style>
-    .empty-state-card {
-        text-align: center;
-        padding: 3rem 1.5rem;
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    
-    .empty-state-icon {
-        font-size: 4rem;
-        color: var(--bs-primary);
-        margin-bottom: 1.5rem;
-        opacity: 0.7;
-    }
-    
-    .empty-state-card h3 {
-        margin-bottom: 0.5rem;
-        color: var(--bs-dark);
-    }
-    
-    .empty-state-actions {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-</style>
-
 @code {
     private List<RuleListItem>? RuleItems;
     private bool IsLoading = true;
@@ -245,7 +216,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading rules: {ex.Message}");
+            Logger.LogError(ex, "Error loading rules");
             RuleItems = new List<RuleListItem>();
         }
         finally
@@ -292,7 +263,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Download error: {ex.Message}");
+            Logger.LogError(ex, "Error downloading rule {RuleId}", ruleId);
         }
     }
 

@@ -50,7 +50,7 @@ public class HealthCheckService : IHealthCheckService
         try
         {
             using var scope = _serviceProvider.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<LearningTrainer.Context.ApiDbContext>();
+            var context = scope.ServiceProvider.GetRequiredService<LearningTrainerShared.Context.ApiDbContext>();
             
             var canConnect = await context.Database.CanConnectAsync(cancellationToken);
             sw.Stop();

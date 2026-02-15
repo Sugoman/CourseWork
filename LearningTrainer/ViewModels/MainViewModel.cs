@@ -1,4 +1,4 @@
-﻿using LearningTrainer.Core;
+using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using System.Net.Http;
@@ -25,6 +25,8 @@ namespace LearningTrainer.ViewModels
             get { return _currentView; }
             set
             {
+                if (_currentView is IDisposable disposable)
+                    disposable.Dispose();
                 _currentView = value;
                 OnPropertyChanged();
             }
@@ -51,27 +53,32 @@ namespace LearningTrainer.ViewModels
             _settingsService = new SettingsService();
             _sessionService = new SessionService();
             _apiDataService = new ApiDataService(_configuration);
-            _localDataService = new LocalDataService(CurrentUser.Login);
+            _localDataService = new LocalDataService(CurrentUser.Username);
 
 
-            _apiDataService.SetToken(savedSession.AccessToken);
+                        _apiDataService.SetToken(savedSession.AccessToken);
 
             EventAggregator.Instance.Subscribe<LogoutRequestedMessage>(HandleLogout);
-            SyncLocalCacheAsync();
-            InitializeSessionAsync();
+            _ = InitializeSessionAsync();
         }
-        private async void InitializeSessionAsync()
+        private async Task InitializeSessionAsync()
         {
-            bool syncSuccess = await SyncLocalCacheAsync();
+            try
+            {
+                bool syncSuccess = await SyncLocalCacheAsync();
 
-            if (syncSuccess)
-            {
-                var dashboard = new DashboardViewModel(CurrentUser, _apiDataService, _settingsService);
-                CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, _settingsService);
+                if (syncSuccess)
+                {
+                    var dashboard = new DashboardViewModel(CurrentUser, _apiDataService, _settingsService);
+                    CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, _settingsService);
+                }
+                else
+                {
+                    HandleLogout(new LogoutRequestedMessage());
+                }
             }
-            else
+            catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine(">>> ОШИБКА ИНИЦИАЛИЗАЦИИ. Принудительный выход...");
                 HandleLogout(new LogoutRequestedMessage());
             }
         }
@@ -93,7 +100,6 @@ namespace LearningTrainer.ViewModels
 
         private void OnLoginSuccessful(UserSessionDto sessionDto)
         {
-            System.Diagnostics.Debug.WriteLine($"Login Success! UserID: {sessionDto.UserId}");
             CurrentUser = new User
             {
                 Id = sessionDto.UserId,
@@ -103,14 +109,14 @@ namespace LearningTrainer.ViewModels
             };
 
             _apiDataService = new ApiDataService(_configuration);
-            _localDataService = new LocalDataService(CurrentUser.Login);
+            _localDataService = new LocalDataService(CurrentUser.Username);
 
             _apiDataService.SetToken(sessionDto.AccessToken);
 
 
             var dashboard = new DashboardViewModel(CurrentUser, _apiDataService, _settingsService);
             CurrentView = new ShellViewModel(CurrentUser, _apiDataService, dashboard, _settingsService);
-            SyncLocalCacheAsync();
+            _ = SyncLocalCacheAsync();
         }
 
         private void OnOfflineLoginRequested()
@@ -155,7 +161,6 @@ namespace LearningTrainer.ViewModels
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine(">>> НАЧАЛО СИНХРОНИЗАЦИИ ЛОКАЛЬНОГО КЭША...");
 
                 var dictionaries = await _apiDataService.GetDictionariesAsync();
                 var rules = await _apiDataService.GetRulesAsync();
@@ -163,27 +168,22 @@ namespace LearningTrainer.ViewModels
                 await _localDataService.WipeAndStoreDictionariesAsync(dictionaries);
                 await _localDataService.WipeAndStoreRulesAsync(rules);
 
-                System.Diagnostics.Debug.WriteLine(">>> СИНХРОНИЗАЦИЯ УСПЕШНО ЗАВЕРШЕНА.");
                 return true; 
             }
             catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 if (httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА 401: Токен истек! (HTTP)");
                     return false; 
                 }
 
-                System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА HTTP: {httpEx.Message}");
                 return false;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА СИНХРОНИЗАЦИИ: {ex.Message}");
 
                 if (ex.Message.Contains("401"))
                 {
-                    System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА 401: Токен истек! (Exception)");
                     return false;
                 }
                 return false;

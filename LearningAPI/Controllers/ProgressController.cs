@@ -1,11 +1,11 @@
-﻿using LearningAPI.Extensions;
-using LearningTrainer.Context;
+using LearningAPI.Extensions;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
-using System.Security.Claims;
 using System.Text.Json;
 
 namespace LearningAPI.Controllers
@@ -18,12 +18,14 @@ namespace LearningAPI.Controllers
         private readonly ApiDbContext _context;
         private readonly ILogger<ProgressController> _logger;
         private readonly IDistributedCache _cache;
+        private readonly ISpacedRepetitionService _spacedRepetition;
 
-        public ProgressController(ApiDbContext context, ILogger<ProgressController> logger, IDistributedCache cache)
+        public ProgressController(ApiDbContext context, ILogger<ProgressController> logger, IDistributedCache cache, ISpacedRepetitionService spacedRepetition)
         {
             _context = context;
             _logger = logger;
             _cache = cache;
+            _spacedRepetition = spacedRepetition;
         }
 
         // POST /api/progress/update
@@ -63,55 +65,10 @@ namespace LearningAPI.Controllers
                     _logger.LogInformation("Progress found for update: {@Progress}", progress);
                 }
 
-                progress.LastPracticed = DateTime.UtcNow;
-                progress.TotalAttempts++;
+                _spacedRepetition.ApplyAnswer(progress, request.Quality);
 
-                switch (request.Quality)
-                {
-                    case ResponseQuality.Again: // 0
-                        progress.KnowledgeLevel = 0; // Сброс уровня
-                        progress.NextReview = DateTime.UtcNow.AddMinutes(5);
-                        _logger.LogInformation("Progress updated to 'Again' for User={UserId}, Word={WordId}", userId, request.WordId);
-                        break;
-
-                    case ResponseQuality.Hard: // 1
-                        progress.CorrectAnswers++;
-                        progress.NextReview = DateTime.UtcNow.AddDays(1);
-                        _logger.LogInformation("Progress updated to 'Hard' for User={UserId}, Word={WordId}", userId, request.WordId);
-                        break;
-
-                    case ResponseQuality.Good: // 2
-                        progress.CorrectAnswers++;
-                        if (progress.KnowledgeLevel < 5)
-                            progress.KnowledgeLevel++; // +1 уровень
-
-                        progress.NextReview = progress.KnowledgeLevel switch
-                        {
-                            1 => DateTime.UtcNow.AddDays(1),
-                            2 => DateTime.UtcNow.AddDays(3),
-                            3 => DateTime.UtcNow.AddDays(7),
-                            4 => DateTime.UtcNow.AddDays(14),
-                            _ => DateTime.UtcNow.AddDays(30)
-                        };
-                        _logger.LogInformation("Progress updated to 'Good' for User={UserId}, Word={WordId}", userId, request.WordId);
-                        break;
-
-                    case ResponseQuality.Easy: // 3
-                        progress.CorrectAnswers++; // +2 уровня 
-                        progress.KnowledgeLevel = Math.Min(5, progress.KnowledgeLevel + 2);
-
-                        var baseIntervalDays = progress.KnowledgeLevel switch
-                        {
-                            1 => 1,
-                            2 => 3,
-                            3 => 7,
-                            4 => 14,
-                            _ => 30
-                        };
-                        progress.NextReview = DateTime.UtcNow.AddDays(baseIntervalDays * 1.5);
-                        _logger.LogInformation("Progress updated to 'Easy' for User={UserId}, Word={WordId}", userId, request.WordId);
-                        break;
-                }
+                _logger.LogInformation("Progress updated to '{Quality}' for User={UserId}, Word={WordId}",
+                    request.Quality, userId, request.WordId);
 
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Progress successfully updated for User={UserId}, Word={WordId}", userId, request.WordId);

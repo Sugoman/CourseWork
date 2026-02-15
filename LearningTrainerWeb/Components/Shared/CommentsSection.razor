@@ -1,0 +1,176 @@
+@inject IAuthService AuthService
+@inject IContentApiService ContentApi
+
+<div class="card" style="border-radius: var(--radius-lg);">
+    <div class="card-body">
+        <h5 class="d-flex align-items-center gap-2 mb-4">
+            <i class="bi bi-chat-dots" style="color: var(--primary-500);"></i>
+            Отзывы (@(Comments?.Count ?? 0))
+        </h5>
+
+        @if (Comments != null && Comments.Any())
+        {
+            @foreach (var comment in Comments)
+            {
+                <div class="p-3 mb-3" style="background: var(--gray-50); border-radius: var(--radius);">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-400), var(--primary-600)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                                @(comment.AuthorName?.FirstOrDefault() ?? '?')
+                            </div>
+                            <strong>@comment.AuthorName</strong>
+                        </div>
+                        <span class="text-muted small">@comment.CreatedAt.ToString("dd.MM.yyyy")</span>
+                    </div>
+                    <div class="mb-2" style="color: var(--accent-yellow);">
+                        @for (int i = 0; i < comment.Rating; i++)
+                        {
+                            <i class="bi bi-star-fill"></i>
+                        }
+                        @for (int i = comment.Rating; i < 5; i++)
+                        {
+                            <i class="bi bi-star" style="opacity: 0.3;"></i>
+                        }
+                    </div>
+                    <p class="mb-0" style="color: var(--gray-700);">@comment.Text</p>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-chat" style="font-size: 2rem; opacity: 0.5;"></i>
+                <p class="mt-2 mb-0">Пока нет отзывов. Будьте первым!</p>
+            </div>
+        }
+
+        <hr style="border-color: var(--gray-200); margin: 1.5rem 0;" />
+
+        @if (IsAuthenticated)
+        {
+            <h6 class="mb-3">
+                <i class="bi bi-pencil me-1"></i> Оставить отзыв
+            </h6>
+
+            @if (!string.IsNullOrEmpty(CommentError))
+            {
+                <div class="alert alert-danger d-flex align-items-center gap-2">
+                    <i class="bi bi-exclamation-circle"></i> @CommentError
+                </div>
+            }
+            @if (!string.IsNullOrEmpty(CommentSuccess))
+            {
+                <div class="alert alert-success d-flex align-items-center gap-2">
+                    <i class="bi bi-check-circle"></i> @CommentSuccess
+                </div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">
+                    <i class="bi bi-star me-1"></i> Оценка
+                </label>
+                <select class="form-select" @bind="NewRating">
+                    <option value="5">5 — Отлично</option>
+                    <option value="4">4 — Хорошо</option>
+                    <option value="3">3 — Нормально</option>
+                    <option value="2">2 — Плохо</option>
+                    <option value="1">1 — Ужасно</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">
+                    <i class="bi bi-chat-text me-1"></i> Комментарий
+                </label>
+                <textarea class="form-control" rows="3" placeholder="Поделитесь своим мнением..." @bind="NewComment"></textarea>
+            </div>
+            <button class="btn btn-primary" @onclick="SubmitComment" disabled="@IsSubmitting">
+                @if (IsSubmitting)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                }
+                <i class="bi bi-send me-1"></i> Отправить
+            </button>
+        }
+        else
+        {
+            <div class="text-center py-3">
+                <p class="text-muted mb-2">Войдите, чтобы оставить отзыв</p>
+                <a href="login" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Войти
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string EntityType { get; set; } = "";
+
+    [Parameter, EditorRequired]
+    public int EntityId { get; set; }
+
+    [Parameter]
+    public bool IsAuthenticated { get; set; }
+
+    private List<CommentItem>? Comments;
+    private bool IsSubmitting;
+    private int NewRating = 5;
+    private string NewComment = "";
+    private string? CommentError;
+    private string? CommentSuccess;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadComments();
+    }
+
+    private async Task LoadComments()
+    {
+        try
+        {
+            Comments = EntityType == "dictionary"
+                ? await ContentApi.GetDictionaryCommentsAsync(EntityId)
+                : await ContentApi.GetRuleCommentsAsync(EntityId);
+        }
+        catch
+        {
+            Comments = new List<CommentItem>();
+        }
+    }
+
+    private async Task SubmitComment()
+    {
+        CommentError = null;
+        CommentSuccess = null;
+
+        if (string.IsNullOrWhiteSpace(NewComment))
+        {
+            CommentError = "Введите текст комментария";
+            return;
+        }
+
+        IsSubmitting = true;
+
+        try
+        {
+            if (EntityType == "dictionary")
+                await ContentApi.AddDictionaryCommentAsync(EntityId, NewRating, NewComment);
+            else
+                await ContentApi.AddRuleCommentAsync(EntityId, NewRating, NewComment);
+
+            CommentSuccess = "Отзыв успешно добавлен!";
+            NewComment = "";
+            NewRating = 5;
+            await LoadComments();
+        }
+        catch (Exception ex)
+        {
+            CommentError = $"Ошибка: {ex.Message}";
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+}

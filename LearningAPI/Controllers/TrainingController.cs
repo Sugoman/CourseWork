@@ -1,4 +1,4 @@
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -43,42 +43,45 @@ public class TrainingController : BaseApiController
 
         try
         {
-            // Получаем все слова пользователя с прогрессом
+            // Получаем ID слов пользователя
             var userWordIds = await _context.Words
                 .Where(w => w.UserId == userId)
                 .Select(w => w.Id)
                 .ToListAsync();
 
-            var progresses = await _context.LearningProgresses
+            // ID слов с прогрессом (серверная фильтрация)
+            var progressWordIds = await _context.LearningProgresses
                 .Where(p => p.UserId == userId)
-                .Include(p => p.Word)
-                    .ThenInclude(w => w.Dictionary)
+                .Select(p => p.WordId)
                 .ToListAsync();
 
-            var progressWordIds = progresses.Select(p => p.WordId).ToHashSet();
+            var progressWordIdSet = progressWordIds.ToHashSet();
 
-            // Слова к повторению (NextReview <= сегодня)
-            var reviewWords = progresses
-                .Where(p => p.NextReview <= now && p.Word != null)
+            // Слова к повторению (серверная фильтрация + проекция)
+            var reviewWords = await _context.LearningProgresses
+                .Include(p => p.Word)
+                    .ThenInclude(w => w.Dictionary)
+                .Where(p => p.UserId == userId && p.NextReview <= now && p.Word != null)
                 .OrderBy(p => p.NextReview)
                 .Take(reviewLimit)
-                .Select(p => MapToTrainingWord(p))
-                .ToList();
+                .Select(p => MapToTrainingWordProjection(p))
+                .ToListAsync();
 
-            // Сложные слова (много ошибок или низкий уровень)
-            var difficultWords = progresses
-                .Where(p => p.Word != null && 
-                           (p.KnowledgeLevel == 0 || 
-                            (p.TotalAttempts > 2 && p.SuccessRate < 0.5)))
-                .OrderBy(p => p.SuccessRate)
-                .ThenBy(p => p.KnowledgeLevel)
+            // Сложные слова (серверная фильтрация + проекция)
+            var difficultWords = await _context.LearningProgresses
+                .Include(p => p.Word)
+                    .ThenInclude(w => w.Dictionary)
+                .Where(p => p.UserId == userId && p.Word != null &&
+                           (p.KnowledgeLevel == 0 ||
+                            (p.TotalAttempts > 2 && p.CorrectAnswers < p.TotalAttempts / 2)))
+                .OrderBy(p => p.KnowledgeLevel)
                 .Take(10)
-                .Select(p => MapToTrainingWord(p))
-                .ToList();
+                .Select(p => MapToTrainingWordProjection(p))
+                .ToListAsync();
 
             // Новые слова (без прогресса)
             var newWords = await _context.Words
-                .Where(w => w.UserId == userId && !progressWordIds.Contains(w.Id))
+                .Where(w => w.UserId == userId && !progressWordIdSet.Contains(w.Id))
                 .Include(w => w.Dictionary)
                 .OrderBy(w => w.AddedAt)
                 .Take(newWordsLimit)
@@ -98,15 +101,18 @@ public class TrainingController : BaseApiController
                 })
                 .ToListAsync();
 
-            // Статистика
-            var completedToday = progresses
-                .Count(p => p.LastPracticed.Date == today);
+            // Статистика (серверная агрегация)
+            var totalReviewCount = await _context.LearningProgresses
+                .CountAsync(p => p.UserId == userId && p.NextReview <= now);
 
-            var lastPractice = progresses
-                .Where(p => p.LastPracticed != default)
+            var completedToday = await _context.LearningProgresses
+                .CountAsync(p => p.UserId == userId && p.LastPracticed >= today);
+
+            var lastPractice = await _context.LearningProgresses
+                .Where(p => p.UserId == userId && p.LastPracticed != default)
                 .OrderByDescending(p => p.LastPracticed)
-                .Select(p => p.LastPracticed)
-                .FirstOrDefault();
+                .Select(p => (DateTime?)p.LastPracticed)
+                .FirstOrDefaultAsync();
 
             // Подсчёт streak (серии дней подряд)
             var streak = await CalculateStreakAsync(userId, today);
@@ -118,12 +124,12 @@ public class TrainingController : BaseApiController
                 DifficultWords = difficultWords,
                 Stats = new DailyPlanStats
                 {
-                    TotalReviewCount = progresses.Count(p => p.NextReview <= now),
-                    TotalNewCount = userWordIds.Count - progressWordIds.Count,
+                    TotalReviewCount = totalReviewCount,
+                    TotalNewCount = userWordIds.Count - progressWordIdSet.Count,
                     TotalDifficultCount = difficultWords.Count,
                     CompletedToday = completedToday,
                     CurrentStreak = streak,
-                    LastPracticeDate = lastPractice == default ? null : lastPractice
+                    LastPracticeDate = lastPractice
                 }
             };
 
@@ -431,12 +437,12 @@ public class TrainingController : BaseApiController
         return new TrainingWordDto
         {
             WordId = p.WordId,
-            OriginalWord = p.Word.OriginalWord,
-            Translation = p.Word.Translation,
-            Transcription = p.Word.Transcription,
-            Example = p.Word.Example,
-            DictionaryName = p.Word.Dictionary != null ? p.Word.Dictionary.Name : "",
-            DictionaryId = p.Word.DictionaryId,
+            OriginalWord = p.Word?.OriginalWord ?? "",
+            Translation = p.Word?.Translation ?? "",
+            Transcription = p.Word?.Transcription,
+            Example = p.Word?.Example,
+            DictionaryName = p.Word?.Dictionary?.Name ?? "",
+            DictionaryId = p.Word?.DictionaryId ?? 0,
             KnowledgeLevel = p.KnowledgeLevel,
             NextReview = p.NextReview,
             TotalAttempts = p.TotalAttempts,

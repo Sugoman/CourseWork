@@ -1,4 +1,4 @@
-﻿using LearningTrainerShared.Models;
+using LearningTrainerShared.Models;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -32,7 +32,7 @@ namespace LearningTrainer.Services
             {
                 ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve,
                 PropertyNameCaseInsensitive = true,
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All)
             };
         }
 
@@ -135,7 +135,16 @@ namespace LearningTrainer.Services
         {
             try
             {
-                var response = await _httpClient.PutAsJsonAsync($"api/dictionaries/{dictionary.Id}", dictionary);
+                var requestDto = new UpdateDictionaryRequest
+                {
+                    Id = dictionary.Id,
+                    Name = dictionary.Name,
+                    Description = dictionary.Description,
+                    LanguageFrom = dictionary.LanguageFrom,
+                    LanguageTo = dictionary.LanguageTo
+                };
+
+                var response = await _httpClient.PutAsJsonAsync($"api/dictionaries/{dictionary.Id}", requestDto, _jsonOptions);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -144,13 +153,11 @@ namespace LearningTrainer.Services
                 else
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"API ERROR [{response.StatusCode}]: {errorContent}");
                     return false;
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"CLIENT EXCEPTION: {ex.Message}");
                 return false;
             }
         }
@@ -356,7 +363,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[EXCEPTION] Rule update error: {ex.Message}");
                 return false;
             }
         }
@@ -370,7 +376,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[STATS] Failed to load stats: {ex.Message}");
                 return new DashboardStats();
             }
         }
@@ -385,7 +390,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[PUBLISH] Dictionary publish error: {ex.Message}");
                 return false;
             }
         }
@@ -399,7 +403,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[UNPUBLISH] Dictionary unpublish error: {ex.Message}");
                 return false;
             }
         }
@@ -413,7 +416,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[PUBLISH] Rule publish error: {ex.Message}");
                 return false;
             }
         }
@@ -427,7 +429,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[UNPUBLISH] Rule unpublish error: {ex.Message}");
                 return false;
             }
         }
@@ -471,7 +472,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[MARKETPLACE] GetPublicDictionaries error: {ex.Message}");
                 return new PagedResult<MarketplaceDictionaryItem>();
             }
         }
@@ -491,7 +491,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[MARKETPLACE] GetPublicRules error: {ex.Message}");
                 return new PagedResult<MarketplaceRuleItem>();
             }
         }
@@ -505,7 +504,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[MARKETPLACE] GetDictionaryDetails error: {ex.Message}");
                 return null;
             }
         }
@@ -519,7 +517,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[MARKETPLACE] GetRuleDetails error: {ex.Message}");
                 return null;
             }
         }
@@ -534,7 +531,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[MARKETPLACE] GetRelatedRules error: {ex.Message}");
                 return new List<MarketplaceRuleItem>();
             }
         }
@@ -553,7 +549,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[COMMENTS] GetDictionaryComments error: {ex.Message}");
                 return new List<CommentItem>();
             }
         }
@@ -568,7 +563,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[COMMENTS] GetRuleComments error: {ex.Message}");
                 return new List<CommentItem>();
             }
         }
@@ -584,7 +578,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[COMMENTS] AddDictionaryComment error: {ex.Message}");
                 return false;
             }
         }
@@ -600,7 +593,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[COMMENTS] AddRuleComment error: {ex.Message}");
                 return false;
             }
         }
@@ -619,7 +611,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[COMMENTS] HasUserReviewedDictionary error: {ex.Message}");
                 return false;
             }
         }
@@ -638,7 +629,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[COMMENTS] HasUserReviewedRule error: {ex.Message}");
                 return false;
             }
         }
@@ -663,7 +653,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[DOWNLOAD] DownloadDictionary error: {ex.Message}");
                 return (false, ex.Message, null);
             }
         }
@@ -682,7 +671,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[DOWNLOAD] DownloadRule error: {ex.Message}");
                 return (false, ex.Message, null);
             }
         }
@@ -697,7 +685,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[DOWNLOAD] GetDownloadedContent error: {ex.Message}");
                 return new List<DownloadedItem>();
             }
         }
@@ -722,7 +709,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[TRAINING] GetDailyPlan error: {ex.Message}");
                 return null;
             }
         }
@@ -740,7 +726,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[TRAINING] GetTrainingWords error: {ex.Message}");
                 return new List<TrainingWordDto>();
             }
         }
@@ -758,7 +743,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[TRAINING] InstallStarterPack error: {ex.Message}");
                 return null;
             }
         }
@@ -776,7 +760,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[STATISTICS] GetStatistics error: {ex.Message}");
                 return null;
             }
         }
@@ -800,7 +783,6 @@ namespace LearningTrainer.Services
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[STATISTICS] SaveSession error: {ex.Message}");
             }
         }
 

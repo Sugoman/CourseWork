@@ -1,4 +1,4 @@
-﻿using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using LearningTrainerShared.Constants;
 using Microsoft.AspNetCore.Authorization;
@@ -90,9 +90,10 @@ namespace LearningAPI.Controllers
                             request.ContentId, request.StudentId);
                         return Ok(new { Message = "Доступ предоставлен", Status = "Shared" });
                     }
-                    catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("PRIMARY KEY") ?? false)
+                    catch (DbUpdateException)
                     {
-                        _logger.LogWarning("Race condition caught: Dictionary already shared", request.ContentId, request.StudentId);
+                        _logger.LogWarning("Race condition caught: Dictionary already shared DictionaryId={DictionaryId}, StudentId={StudentId}",
+                            request.ContentId, request.StudentId);
                         return Conflict(new { Message = "Словарь уже распределён этому студенту" });
                     }
                 }
@@ -183,9 +184,10 @@ namespace LearningAPI.Controllers
                             request.ContentId, request.StudentId);
                         return Ok(new { Message = "Доступ к правилу предоставлен", Status = "Shared" });
                     }
-                    catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("PRIMARY KEY") ?? false)
+                    catch (DbUpdateException)
                     {
-                        _logger.LogWarning("Race condition caught: Rule already shared", request.ContentId, request.StudentId);
+                        _logger.LogWarning("Race condition caught: Rule already shared RuleId={RuleId}, StudentId={StudentId}",
+                            request.ContentId, request.StudentId);
                         return Conflict(new { Message = "Правило уже распределено этому студенту" });
                     }
                 }

@@ -1,7 +1,8 @@
 @page "/statistics"
 @using LearningTrainerShared.Models.Statistics
 @using LearningTrainerWeb.Services
-@inject StatisticsApiService StatsService
+@inject IStatisticsApiService StatsService
+@inject IAuthService AuthService
 @inject NavigationManager NavigationManager
 
 <PageTitle>Статистика | LearningTrainer</PageTitle>
@@ -270,7 +271,18 @@
             </div>
         </div>
     }
-    else
+    else if (!IsAuthenticated)
+    {
+        <div class="empty-state">
+            <i class="bi bi-person-lock display-1 text-muted"></i>
+            <h3 class="mt-3">Требуется авторизация</h3>
+            <p class="text-muted">Войдите в аккаунт, чтобы увидеть статистику обучения</p>
+            <a href="/login" class="btn btn-primary">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Войти
+            </a>
+        </div>
+    }
+    else if (Stats == null)
     {
         <div class="empty-state">
             <i class="bi bi-bar-chart-line display-1 text-muted"></i>
@@ -286,18 +298,30 @@
 @code {
     private UserStatistics? Stats;
     private bool IsLoading = true;
+    private bool IsAuthenticated;
     private string SelectedPeriod = "week";
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadStats();
+        await AuthService.InitializeAsync();
+        var session = await AuthService.GetCurrentSessionAsync();
+        IsAuthenticated = session != null;
+
+        if (IsAuthenticated)
+        {
+            await LoadStats();
+        }
+        else
+        {
+            IsLoading = false;
+        }
     }
 
     private async Task LoadStats()
     {
         IsLoading = true;
         StateHasChanged();
-        
+
         try
         {
             Stats = await StatsService.GetStatisticsAsync(SelectedPeriod);

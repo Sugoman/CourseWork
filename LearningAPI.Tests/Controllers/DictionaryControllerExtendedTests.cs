@@ -1,9 +1,9 @@
 using FluentAssertions;
 using LearningAPI.Controllers;
+using LearningAPI.Services;
 using LearningAPI.Tests.Helpers;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
-using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
@@ -17,7 +17,6 @@ namespace LearningAPI.Tests.Controllers;
 public class DictionaryControllerExtendedTests : IDisposable
 {
     private readonly ApiDbContext _context;
-    private readonly Mock<IMediator> _mediatorMock;
     private readonly Mock<ILogger<DictionaryController>> _loggerMock;
     private readonly DictionaryController _controller;
     private readonly int _testUserId = 1;
@@ -25,11 +24,11 @@ public class DictionaryControllerExtendedTests : IDisposable
     public DictionaryControllerExtendedTests()
     {
         _context = TestDbContextFactory.CreateInMemoryContext();
-        _mediatorMock = new Mock<IMediator>();
         _loggerMock = new Mock<ILogger<DictionaryController>>();
         var cacheMock = new Mock<IDistributedCache>();
 
-        _controller = new DictionaryController(_context, _mediatorMock.Object, _loggerMock.Object, cacheMock.Object);
+        var dictionaryService = new DictionaryService(_context, cacheMock.Object);
+        _controller = new DictionaryController(dictionaryService, _loggerMock.Object);
         SetupUserContext(_testUserId, "Teacher");
     }
 
@@ -74,14 +73,13 @@ public class DictionaryControllerExtendedTests : IDisposable
         await _context.SaveChangesAsync();
         _context.Entry(dictionary).State = EntityState.Detached;
 
-        var updateRequest = new Dictionary
+        var updateRequest = new UpdateDictionaryRequest
         {
             Id = 1,
             Name = "Updated Name",
             Description = "Updated Description",
             LanguageFrom = "German",
-            LanguageTo = "English",
-            UserId = _testUserId
+            LanguageTo = "English"
         };
 
         // Act
@@ -99,7 +97,7 @@ public class DictionaryControllerExtendedTests : IDisposable
     public async Task UpdateDictionary_WithMismatchedId_ReturnsBadRequest()
     {
         // Arrange
-        var dictionary = new Dictionary { Id = 2, Name = "Test" };
+        var dictionary = new UpdateDictionaryRequest { Id = 2, Name = "Test" };
 
         // Act
         var result = await _controller.UpdateDictionary(1, dictionary);
@@ -112,7 +110,7 @@ public class DictionaryControllerExtendedTests : IDisposable
     public async Task UpdateDictionary_WithNonExistentId_ReturnsNotFound()
     {
         // Arrange
-        var dictionary = new Dictionary { Id = 999, Name = "Test", UserId = _testUserId };
+        var dictionary = new UpdateDictionaryRequest { Id = 999, Name = "Test" };
 
         // Act
         var result = await _controller.UpdateDictionary(999, dictionary);
@@ -171,7 +169,7 @@ public class DictionaryControllerExtendedTests : IDisposable
         var result = await _controller.GetAvailableDictionaries();
 
         // Assert
-        var okResult = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.Value.Should().NotBeNull();
     }
 
@@ -197,7 +195,7 @@ public class DictionaryControllerExtendedTests : IDisposable
         await _context.SaveChangesAsync();
         
         // Add word separately
-        _context.Words.Add(new Word { OriginalWord = "Hello", Translation = "Привет", Example = "", UserId = _testUserId, DictionaryId = dictionary.Id });
+        _context.Words.Add(new Word { OriginalWord = "Hello", Translation = "пїЅпїЅпїЅпїЅпїЅпїЅ", Example = "", UserId = _testUserId, DictionaryId = dictionary.Id });
         await _context.SaveChangesAsync();
 
         // Act
@@ -243,8 +241,8 @@ public class DictionaryControllerExtendedTests : IDisposable
         // Act
         var result = await _controller.DeleteDictionary(1);
 
-        // Assert
-        result.Should().BeOfType<ForbidResult>();
+        // Assert вЂ” service returns NotFound for both missing and unauthorized (security: don't reveal existence)
+        result.Should().BeOfType<NotFoundResult>();
     }
 
     #endregion
@@ -293,8 +291,8 @@ public class DictionaryControllerExtendedTests : IDisposable
         await _context.SaveChangesAsync();
         
         // Add words separately
-        _context.Words.Add(new Word { OriginalWord = "Hello", Translation = "Привет", Example = "", UserId = _testUserId, DictionaryId = dictionary.Id });
-        _context.Words.Add(new Word { OriginalWord = "World", Translation = "Мир", Example = "", UserId = _testUserId, DictionaryId = dictionary.Id });
+        _context.Words.Add(new Word { OriginalWord = "Hello", Translation = "пїЅпїЅпїЅпїЅпїЅпїЅ", Example = "", UserId = _testUserId, DictionaryId = dictionary.Id });
+        _context.Words.Add(new Word { OriginalWord = "World", Translation = "пїЅпїЅпїЅ", Example = "", UserId = _testUserId, DictionaryId = dictionary.Id });
         await _context.SaveChangesAsync();
 
         // Act

@@ -1,4 +1,4 @@
-﻿using LearningTrainer.Core;
+using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using System.Diagnostics;
@@ -139,7 +139,6 @@ namespace LearningTrainer.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Failed to open URL: {ex.Message}");
                 IsError = true;
                 ErrorMessage = "Не удалось открыть ссылку.";
             }
@@ -262,7 +261,6 @@ namespace LearningTrainer.ViewModels
                     // API не запущен / нет интернета
                     IsError = true; 
                     ErrorMessage = "Не удалось подключиться к серверу. Попробуйте автономный режим.";
-                    System.Diagnostics.Debug.WriteLine($"API Error: {ex.Message}");
                 }
             }
             catch (Exception ex)

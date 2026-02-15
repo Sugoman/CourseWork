@@ -76,31 +76,6 @@ namespace LearningTrainer.Services
         public DateTime DownloadedAt { get; set; }
     }
 
-    public class DailyPlanDto
-    {
-        public TrainingStatsDto Stats { get; set; } = new();
-    }
-
-    public class TrainingStatsDto
-    {
-        public int TotalReviewCount { get; set; }
-        public int TotalNewCount { get; set; }
-        public int TotalDifficultCount { get; set; }
-        public int CompletedToday { get; set; }
-        public int CurrentStreak { get; set; }
-    }
-
-    public class TrainingWordDto
-    {
-        public int Id { get; set; }
-        public string OriginalWord { get; set; } = "";
-        public string Translation { get; set; } = "";
-        public string? Transcription { get; set; }
-        public string? Example { get; set; }
-        public string DictionaryName { get; set; } = "";
-        public int DictionaryId { get; set; }
-    }
-
     public class StarterPackResult
     {
         public string Message { get; set; } = "";

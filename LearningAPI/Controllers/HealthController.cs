@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningAPI.Configuration;
 using LearningAPI.Services;
 using System.Diagnostics;

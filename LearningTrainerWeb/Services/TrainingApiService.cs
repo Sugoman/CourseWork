@@ -31,40 +31,41 @@ public interface ITrainingApiService
     /// <summary>
     /// Установить токен авторизации
     /// </summary>
+    [Obsolete("Token is now managed automatically via AuthTokenDelegatingHandler")]
     void SetAuthToken(string? token);
 }
 
 public class TrainingApiService : ITrainingApiService
 {
     private readonly HttpClient _httpClient;
+    private readonly AuthTokenProvider _tokenProvider;
+    private readonly ILogger<TrainingApiService> _logger;
 
-    public TrainingApiService(HttpClient httpClient)
+    public TrainingApiService(HttpClient httpClient, AuthTokenProvider tokenProvider, ILogger<TrainingApiService> logger)
     {
         _httpClient = httpClient;
+        _tokenProvider = tokenProvider;
+        _logger = logger;
     }
+
+    private void ApplyAuth() => _tokenProvider.ApplyTo(_httpClient);
 
     public void SetAuthToken(string? token)
     {
-        if (string.IsNullOrEmpty(token))
-        {
-            _httpClient.DefaultRequestHeaders.Authorization = null;
-        }
-        else
-        {
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        }
+        // Token is now managed via AuthTokenProvider.ApplyTo().
     }
 
     public async Task<DailyPlanDto?> GetDailyPlanAsync(int newWordsLimit = 10, int reviewLimit = 20)
     {
         try
         {
+            ApplyAuth();
             var url = $"api/training/daily-plan?newWordsLimit={newWordsLimit}&reviewLimit={reviewLimit}";
             return await _httpClient.GetFromJsonAsync<DailyPlanDto>(url);
         }
-        catch (HttpRequestException)
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error fetching daily plan");
             return null;
         }
     }
@@ -73,17 +74,19 @@ public class TrainingApiService : ITrainingApiService
     {
         try
         {
+            ApplyAuth();
             var url = $"api/training/words?mode={mode}&limit={limit}";
             if (dictionaryId.HasValue)
             {
                 url += $"&dictionaryId={dictionaryId.Value}";
             }
-            
+
             var result = await _httpClient.GetFromJsonAsync<List<TrainingWordDto>>(url);
             return result ?? new List<TrainingWordDto>();
         }
-        catch (HttpRequestException)
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error fetching training words");
             return new List<TrainingWordDto>();
         }
     }
@@ -92,12 +95,14 @@ public class TrainingApiService : ITrainingApiService
     {
         try
         {
+            ApplyAuth();
             var request = new UpdateProgressRequest { WordId = wordId, Quality = quality };
             var response = await _httpClient.PostAsJsonAsync("api/progress/update", request);
             return response.IsSuccessStatusCode;
         }
-        catch (HttpRequestException)
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error updating progress for word {WordId}", wordId);
             return false;
         }
     }
@@ -106,6 +111,7 @@ public class TrainingApiService : ITrainingApiService
     {
         try
         {
+            ApplyAuth();
             var response = await _httpClient.PostAsync("api/training/starter-pack", null);
             if (response.IsSuccessStatusCode)
             {
@@ -113,8 +119,9 @@ public class TrainingApiService : ITrainingApiService
             }
             return null;
         }
-        catch (HttpRequestException)
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error installing starter pack");
             return null;
         }
     }

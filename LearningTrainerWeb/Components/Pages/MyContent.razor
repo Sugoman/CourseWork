@@ -3,7 +3,6 @@
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
-@rendermode InteractiveServer
 
 <PageTitle>Мой контент - LearningTrainer</PageTitle>
 
@@ -38,12 +37,6 @@
                         <i class="bi bi-file-earmark-zip me-1"></i>
                     }
                     Экспорт всех
-                </button>
-                <button class="btn btn-success gap-2" @onclick="ShowPublishDictionaryModal">
-                    <i class="bi bi-plus-circle me-1"></i> Словарь
-                </button>
-                <button class="btn btn-success gap-2" @onclick="ShowPublishRuleModal">
-                    <i class="bi bi-plus-circle me-1"></i> Правило
                 </button>
             </div>
         </div>
@@ -102,14 +95,17 @@
                                                 <i class="bi bi-x-circle me-1"></i> Снять
                                             </button>
                                         }
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <div class="position-relative">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" @onclick="() => ToggleExportDropdown(dict.Id)">
                                                 <i class="bi bi-download me-1"></i> Экспорт
                                             </button>
-                                            <ul class="dropdown-menu">
-                                                <li><button class="dropdown-item" @onclick="() => ExportDictionaryAsJson(dict.Id, dict.Name)"><i class="bi bi-filetype-json me-2"></i>JSON</button></li>
-                                                <li><button class="dropdown-item" @onclick="() => ExportDictionaryAsCsv(dict.Id, dict.Name)"><i class="bi bi-filetype-csv me-2"></i>CSV</button></li>
-                                            </ul>
+                                            @if (OpenExportDropdownId == dict.Id)
+                                            {
+                                                <ul class="dropdown-menu show" style="position: absolute; top: 100%; right: 0;">
+                                                    <li><button class="dropdown-item" @onclick="() => { ExportDictionaryAsJson(dict.Id, dict.Name); OpenExportDropdownId = null; }"><i class="bi bi-filetype-json me-2"></i>JSON</button></li>
+                                                    <li><button class="dropdown-item" @onclick="() => { ExportDictionaryAsCsv(dict.Id, dict.Name); OpenExportDropdownId = null; }"><i class="bi bi-filetype-csv me-2"></i>CSV</button></li>
+                                                </ul>
+                                            }
                                         </div>
                                     </div>
                                 </div>
@@ -135,9 +131,9 @@
                         <div class="text-center py-5">
                             <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-book"></i></div>
                             <p class="text-muted">У вас пока нет словарей</p>
-                            <button class="btn btn-primary" @onclick="ShowPublishDictionaryModal">
-                                <i class="bi bi-plus-circle me-1"></i> Создать словарь
-                            </button>
+                            <a href="dictionaries" class="btn btn-primary">
+                                <i class="bi bi-search me-1"></i> Найти словари
+                            </a>
                         </div>
                     </div>
                 }
@@ -198,9 +194,9 @@
                         <div class="text-center py-5">
                             <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-journal-text"></i></div>
                             <p class="text-muted">У вас пока нет правил</p>
-                            <button class="btn btn-primary" @onclick="ShowPublishRuleModal">
-                                <i class="bi bi-plus-circle me-1"></i> Создать правило
-                            </button>
+                            <a href="rules" class="btn btn-primary">
+                                <i class="bi bi-search me-1"></i> Найти правила
+                            </a>
                         </div>
                     </div>
                 }
@@ -266,10 +262,16 @@
     private string ActiveTab = "dictionaries";
     private string? ExportMessage;
     private bool ExportSuccess;
+    private int? OpenExportDropdownId;
 
     private List<MyDictionaryItem>? MyDictionaries;
     private List<MyRuleItem>? MyRules;
     private List<DownloadedItem>? DownloadedContent;
+
+    private void ToggleExportDropdown(int dictId)
+    {
+        OpenExportDropdownId = OpenExportDropdownId == dictId ? null : dictId;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -296,38 +298,72 @@
         }
     }
 
-    private void ShowPublishDictionaryModal()
-    {
-        // TODO: Implement modal
-    }
-
-    private void ShowPublishRuleModal()
-    {
-        // TODO: Implement modal
-    }
-
     private async Task PublishDictionary(int id)
     {
-        await ContentApi.PublishDictionaryAsync(id);
-        await LoadMyContent();
+        try
+        {
+            await ContentApi.PublishDictionaryAsync(id);
+            await LoadMyContent();
+        }
+        catch (Exception ex)
+        {
+            ExportMessage = $"Ошибка публикации: {ex.Message}";
+            ExportSuccess = false;
+            StateHasChanged();
+            await Task.Delay(3000);
+            ExportMessage = null;
+        }
     }
 
     private async Task UnpublishDictionary(int id)
     {
-        await ContentApi.UnpublishDictionaryAsync(id);
-        await LoadMyContent();
+        try
+        {
+            await ContentApi.UnpublishDictionaryAsync(id);
+            await LoadMyContent();
+        }
+        catch (Exception ex)
+        {
+            ExportMessage = $"Ошибка: {ex.Message}";
+            ExportSuccess = false;
+            StateHasChanged();
+            await Task.Delay(3000);
+            ExportMessage = null;
+        }
     }
 
     private async Task PublishRule(int id)
     {
-        await ContentApi.PublishRuleAsync(id);
-        await LoadMyContent();
+        try
+        {
+            await ContentApi.PublishRuleAsync(id);
+            await LoadMyContent();
+        }
+        catch (Exception ex)
+        {
+            ExportMessage = $"Ошибка публикации: {ex.Message}";
+            ExportSuccess = false;
+            StateHasChanged();
+            await Task.Delay(3000);
+            ExportMessage = null;
+        }
     }
 
     private async Task UnpublishRule(int id)
     {
-        await ContentApi.UnpublishRuleAsync(id);
-        await LoadMyContent();
+        try
+        {
+            await ContentApi.UnpublishRuleAsync(id);
+            await LoadMyContent();
+        }
+        catch (Exception ex)
+        {
+            ExportMessage = $"Ошибка: {ex.Message}";
+            ExportSuccess = false;
+            StateHasChanged();
+            await Task.Delay(3000);
+            ExportMessage = null;
+        }
     }
 
     private async Task ExportDictionaryAsJson(int dictionaryId, string name)

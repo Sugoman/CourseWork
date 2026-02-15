@@ -1,4 +1,5 @@
 ﻿@inject IAuthService AuthService
+@inject NavigationManager Navigation
 @rendermode InteractiveServer
 
 @if (IsAuthenticated)
@@ -139,5 +140,6 @@ else
         await AuthService.LogoutAsync();
         IsAuthenticated = false;
         UserName = "";
+        Navigation.NavigateTo("/", forceLoad: true);
     }
 }

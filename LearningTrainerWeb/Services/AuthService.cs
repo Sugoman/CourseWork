@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using System.Net.Http.Json;
+using Microsoft.Extensions.Logging;
 
 namespace LearningTrainerWeb.Services;
 
@@ -21,7 +22,8 @@ public class AuthService : IAuthService
     private readonly HttpClient _httpClient;
     private readonly ProtectedSessionStorage _sessionStorage;
     private readonly ProtectedLocalStorage _localStorage;
-    private readonly IContentApiService _contentApiService;
+    private readonly AuthTokenProvider _tokenProvider;
+    private readonly ILogger<AuthService> _logger;
     private UserSession? _currentSession;
     private bool _isInitialized;
     private const string SessionKey = "auth_session";
@@ -31,12 +33,14 @@ public class AuthService : IAuthService
         HttpClient httpClient, 
         ProtectedSessionStorage sessionStorage, 
         ProtectedLocalStorage localStorage,
-        IContentApiService contentApiService)
+        AuthTokenProvider tokenProvider,
+        ILogger<AuthService> logger)
     {
         _httpClient = httpClient;
         _sessionStorage = sessionStorage;
         _localStorage = localStorage;
-        _contentApiService = contentApiService;
+        _tokenProvider = tokenProvider;
+        _logger = logger;
     }
 
     public string? GetToken() => _currentSession?.Token;
@@ -44,7 +48,7 @@ public class AuthService : IAuthService
     public async Task InitializeAsync()
     {
         if (_isInitialized) return;
-        
+
         try
         {
             // Сначала проверяем session storage
@@ -66,28 +70,24 @@ public class AuthService : IAuthService
                     await _sessionStorage.SetAsync(SessionKey, _currentSession);
                 }
             }
+
+            _isInitialized = true;
         }
-        catch
+        catch (InvalidOperationException)
         {
-            // Ignore errors during prerendering
+            // Expected during Blazor prerendering — JS interop not available.
+            // Do NOT set _isInitialized = true so InitializeAsync retries on interactive render.
         }
-        
-        _isInitialized = true;
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error restoring auth session during initialization");
+            _isInitialized = true;
+        }
     }
 
     private void SetAuthHeaders(string? token)
     {
-        if (string.IsNullOrEmpty(token))
-        {
-            _httpClient.DefaultRequestHeaders.Authorization = null;
-            _contentApiService.SetAuthToken(null);
-        }
-        else
-        {
-            _httpClient.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            _contentApiService.SetAuthToken(token);
-        }
+        _tokenProvider.Token = token;
     }
 
     public async Task<bool> LoginAsync(string username, string password, bool rememberMe)

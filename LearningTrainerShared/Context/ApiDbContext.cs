@@ -1,7 +1,7 @@
 ﻿using LearningTrainerShared.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace LearningTrainer.Context
+namespace LearningTrainerShared.Context
 {
     public class ApiDbContext : DbContext
     {
@@ -135,6 +135,10 @@ namespace LearningTrainer.Context
                 .WithMany()
                 .HasForeignKey(us => us.UserId)
                 .OnDelete(DeleteBehavior.Restrict); // Restrict to avoid multiple cascade paths
+
+            // Index on RefreshToken for fast lookup during token refresh
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.RefreshToken);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using LearningTrainer.Core;
+using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using System.Windows;
@@ -58,11 +58,9 @@ namespace LearningTrainer.ViewModels
         }
         private async Task SaveWordAsync()
         {
-            System.Diagnostics.Debug.WriteLine("=== SAVE WORD STARTED ===");
 
             if (string.IsNullOrWhiteSpace(OriginalWord) || string.IsNullOrWhiteSpace(Translation))
             {
-                System.Diagnostics.Debug.WriteLine("Ошибка: не заполнены обязательные поля");
                 return;
             }
 
@@ -77,27 +75,22 @@ namespace LearningTrainer.ViewModels
                     AddedAt = DateTime.Now
                 };
 
-                System.Diagnostics.Debug.WriteLine($"Добавляем слово: {newWord.OriginalWord}");
 
                 var savedWord = await _dataService.AddWordAsync(newWord);
 
-                System.Diagnostics.Debug.WriteLine($"Слово '{OriginalWord}' успешно добавлено в БД!");
 
                 EventAggregator.Instance.Publish(new WordAddedMessage(savedWord, savedWord.DictionaryId));
 
                 EventAggregator.Instance.Publish(new EventAggregator.CloseTabMessage(this));
 
-                System.Diagnostics.Debug.WriteLine("=== SAVE WORD COMPLETED ===");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Ошибка при сохранении: {ex.Message}");
             }
         }
 
         private void Cancel()
         {
-            System.Diagnostics.Debug.WriteLine("Добавление слова отменено");
             EventAggregator.Instance.Publish(this);
         }
 

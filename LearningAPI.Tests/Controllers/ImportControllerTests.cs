@@ -1,7 +1,7 @@
 using FluentAssertions;
 using LearningAPI.Controllers;
 using LearningAPI.Tests.Helpers;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -87,8 +87,8 @@ public class ImportControllerTests : IDisposable
             LanguageTo = "Russian",
             Words = new[]
             {
-                new { Original = "Hello", Translation = "Привет", PartOfSpeech = "[h??lo?]", Example = "Hello world" },
-                new { Original = "World", Translation = "Мир", PartOfSpeech = "[w??rld]", Example = "Hello world" }
+                new { Original = "Hello", Translation = "пїЅпїЅпїЅпїЅпїЅпїЅ", PartOfSpeech = "[h??lo?]", Example = "Hello world" },
+                new { Original = "World", Translation = "пїЅпїЅпїЅ", PartOfSpeech = "[w??rld]", Example = "Hello world" }
             }
         };
         var file = CreateJsonFile(importData);
@@ -167,7 +167,7 @@ public class ImportControllerTests : IDisposable
         {
             Words = new[]
             {
-                new { Original = "Test", Translation = "Тест" }
+                new { Original = "Test", Translation = "пїЅпїЅпїЅпїЅ" }
             }
         };
         var file = CreateJsonFile(importData);
@@ -214,7 +214,7 @@ public class ImportControllerTests : IDisposable
             Name = "Test",
             Words = new[]
             {
-                new { Original = "Test", Translation = "Тест" }
+                new { Original = "Test", Translation = "пїЅпїЅпїЅпїЅ" }
             }
         };
         var file = CreateJsonFile(importData);
@@ -236,7 +236,7 @@ public class ImportControllerTests : IDisposable
     public async Task ImportFromCsv_WithValidFile_CreatesDictionary()
     {
         // Arrange
-        var csvContent = "Original,Translation,Example\nHello,Привет,Hello world\nWorld,Мир,Hello world";
+        var csvContent = "Original,Translation,Example\nHello,пїЅпїЅпїЅпїЅпїЅпїЅ,Hello world\nWorld,пїЅпїЅпїЅ,Hello world";
         var file = CreateCsvFile(csvContent);
 
         // Act

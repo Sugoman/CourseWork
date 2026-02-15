@@ -1,7 +1,7 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using LearningAPI.Controllers;
 using LearningAPI.Tests.Helpers;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using LearningTrainerShared.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -131,8 +131,8 @@ public class AuthControllerTests : IDisposable
 
         // Assert
         result.Should().BeOfType<CreatedAtActionResult>();
-        
-        var createdUser = await _context.Users.FirstOrDefaultAsync(u => u.Login == "newuser");
+
+        var createdUser = await _context.Users.FirstOrDefaultAsync(u => u.Username == "newuser");
         createdUser.Should().NotBeNull();
     }
 

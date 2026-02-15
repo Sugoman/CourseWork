@@ -132,7 +132,6 @@ namespace LearningTrainer.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error loading statistics: {ex.Message}");
             }
             finally
             {

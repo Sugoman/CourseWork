@@ -1,7 +1,8 @@
-﻿using Ganss.Xss;
+using Ganss.Xss;
 using LearningAPI.Extensions;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -28,54 +29,7 @@ public class MarketplaceController : BaseApiController
         _context = context;
         _logger = logger;
         _cache = cache;
-        _htmlSanitizer = CreateSanitizer();
-    }
-
-    private static HtmlSanitizer CreateSanitizer()
-    {
-        var sanitizer = new HtmlSanitizer();
-
-        // Разрешаем только безопасные теги для Markdown контента
-        sanitizer.AllowedTags.Clear();
-        sanitizer.AllowedTags.Add("h1");
-        sanitizer.AllowedTags.Add("h2");
-        sanitizer.AllowedTags.Add("h3");
-        sanitizer.AllowedTags.Add("h4");
-        sanitizer.AllowedTags.Add("h5");
-        sanitizer.AllowedTags.Add("h6");
-        sanitizer.AllowedTags.Add("p");
-        sanitizer.AllowedTags.Add("br");
-        sanitizer.AllowedTags.Add("hr");
-        sanitizer.AllowedTags.Add("strong");
-        sanitizer.AllowedTags.Add("b");
-        sanitizer.AllowedTags.Add("em");
-        sanitizer.AllowedTags.Add("i");
-        sanitizer.AllowedTags.Add("u");
-        sanitizer.AllowedTags.Add("code");
-        sanitizer.AllowedTags.Add("pre");
-        sanitizer.AllowedTags.Add("ul");
-        sanitizer.AllowedTags.Add("ol");
-        sanitizer.AllowedTags.Add("li");
-        sanitizer.AllowedTags.Add("blockquote");
-        sanitizer.AllowedTags.Add("table");
-        sanitizer.AllowedTags.Add("thead");
-        sanitizer.AllowedTags.Add("tbody");
-        sanitizer.AllowedTags.Add("tr");
-        sanitizer.AllowedTags.Add("th");
-        sanitizer.AllowedTags.Add("td");
-        sanitizer.AllowedTags.Add("a");
-
-        // Разрешаем только безопасные атрибуты
-        sanitizer.AllowedAttributes.Clear();
-        sanitizer.AllowedAttributes.Add("href");
-        sanitizer.AllowedAttributes.Add("class");
-
-        // Разрешаем только безопасные схемы ссылок
-        sanitizer.AllowedSchemes.Clear();
-        sanitizer.AllowedSchemes.Add("http");
-        sanitizer.AllowedSchemes.Add("https");
-
-        return sanitizer;
+        _htmlSanitizer = SharedSanitizerFactory.Create();
     }
 
     #region Public Dictionaries
@@ -140,7 +94,7 @@ public class MarketplaceController : BaseApiController
                 LanguageFrom = d.LanguageFrom ?? "",
                 LanguageTo = d.LanguageTo ?? "",
                 WordCount = d.Words.Count,
-                AuthorName = d.User != null ? d.User.Login : "Unknown",
+                AuthorName = d.User != null ? d.User.Username : "Unknown",
                 Rating = d.Rating,
                 Downloads = d.DownloadCount
             })
@@ -207,7 +161,7 @@ public class MarketplaceController : BaseApiController
             LanguageFrom = dictionary.LanguageFrom ?? "",
             LanguageTo = dictionary.LanguageTo ?? "",
             WordCount = dictionary.Words.Count,
-            AuthorName = dictionary.User?.Login ?? "Unknown",
+            AuthorName = dictionary.User?.Username ?? "Unknown",
             Rating = dictionary.Rating,
             RatingCount = dictionary.RatingCount,
             Downloads = dictionary.DownloadCount,
@@ -232,7 +186,14 @@ public class MarketplaceController : BaseApiController
     public async Task<IActionResult> DownloadDictionary(int id)
     {
         var userId = GetUserId();
-        
+
+        // Проверка: словарь уже скачан этим пользователем
+        var alreadyDownloaded = await _context.Dictionaries
+            .AnyAsync(d => d.UserId == userId && d.SourceDictionaryId == id);
+
+        if (alreadyDownloaded)
+            return BadRequest(new { Message = "Вы уже скачали этот словарь" });
+
         var originalDict = await _context.Dictionaries
             .Include(d => d.Words)
             .FirstOrDefaultAsync(d => d.Id == id && d.IsPublished);
@@ -351,7 +312,7 @@ public class MarketplaceController : BaseApiController
                 Description = r.Description ?? "",
                 Category = r.Category ?? "",
                 DifficultyLevel = r.DifficultyLevel,
-                AuthorName = r.User != null ? r.User.Login : "Unknown",
+                AuthorName = r.User != null ? r.User.Username : "Unknown",
                 Rating = r.Rating,
                 Downloads = r.DownloadCount,
                 CreatedAt = r.CreatedAt
@@ -410,7 +371,7 @@ public class MarketplaceController : BaseApiController
             Description = rule.Description ?? "",
             Category = rule.Category ?? "",
             DifficultyLevel = rule.DifficultyLevel,
-            AuthorName = rule.User?.Login ?? "Unknown",
+            AuthorName = rule.User?.Username ?? "Unknown",
             Rating = rule.Rating,
             RatingCount = rule.RatingCount,
             Downloads = rule.DownloadCount,
@@ -436,7 +397,14 @@ public class MarketplaceController : BaseApiController
     public async Task<IActionResult> DownloadRule(int id)
     {
         var userId = GetUserId();
-        
+
+        // Проверка: правило уже скачано этим пользователем
+        var alreadyDownloaded = await _context.Rules
+            .AnyAsync(r => r.UserId == userId && r.SourceRuleId == id);
+
+        if (alreadyDownloaded)
+            return BadRequest(new { Message = "Вы уже скачали это правило" });
+
         var originalRule = await _context.Rules
             .FirstOrDefaultAsync(r => r.Id == id && r.IsPublished);
 
@@ -514,7 +482,7 @@ public class MarketplaceController : BaseApiController
             .Select(c => new CommentItemDto
             {
                 Id = c.Id,
-                AuthorName = c.User != null ? c.User.Login : "Anonymous",
+                AuthorName = c.User != null ? c.User.Username : "Anonymous",
                 Rating = c.Rating,
                 Text = c.Text,
                 CreatedAt = c.CreatedAt
@@ -583,7 +551,7 @@ public class MarketplaceController : BaseApiController
             .Select(c => new CommentItemDto
             {
                 Id = c.Id,
-                AuthorName = c.User != null ? c.User.Login : "Anonymous",
+                AuthorName = c.User != null ? c.User.Username : "Anonymous",
                 Rating = c.Rating,
                 Text = c.Text,
                 CreatedAt = c.CreatedAt
@@ -715,7 +683,7 @@ public class MarketplaceController : BaseApiController
                     .Include(d => d.User)
                     .FirstOrDefaultAsync(d => d.Id == download.ContentId);
                 title = dict?.Name ?? "Удалено";
-                authorName = dict?.User?.Login ?? "Unknown";
+                authorName = dict?.User?.Username ?? "Unknown";
             }
             else if (download.ContentType == "Rule")
             {
@@ -723,7 +691,7 @@ public class MarketplaceController : BaseApiController
                     .Include(r => r.User)
                     .FirstOrDefaultAsync(r => r.Id == download.ContentId);
                 title = rule?.Title ?? "Удалено";
-                authorName = rule?.User?.Login ?? "Unknown";
+                authorName = rule?.User?.Username ?? "Unknown";
             }
 
             result.Add(new DownloadedItemDto

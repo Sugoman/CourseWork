@@ -16,8 +16,12 @@ services:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
+      redis:
+        condition: service_started
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True
+      - ConnectionStrings__Redis=redis:6379
+      - Jwt__Key=4d9b4ec83f469d8b02e1cdb17745350b15cb532c5441be4ea1ca5d4f54881678
       - ASPNETCORE_URLS=http://+:8080
 
   # -------------------------------
@@ -36,7 +40,26 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - ApiBaseUrl=http://learningapi:8080
 
- 
+  # -------------------------------
+  # 2. Migrations (runs once)
+  # -------------------------------
+  migrations:
+    image: mcr.microsoft.com/dotnet/sdk:8.0
+    working_dir: /src
+    volumes:
+      - .:/src
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True
+    command: >
+      bash -c "
+        dotnet tool install --global dotnet-ef --version 8.0.0 || true &&
+        export PATH=\"$$PATH:/root/.dotnet/tools\" &&
+        dotnet ef database update --project LearningTrainerShared --startup-project LearningAPI
+      "
+
   # -------------------------------
   # 3. Data Base
   # -------------------------------
@@ -66,26 +89,6 @@ services:
     container_name: learning_redis
     ports:
       - "6379:6379"
-
-   # -------------------------------
-  # 2. Migrations (runs once)
-  # -------------------------------
-  migrations:
-    image: mcr.microsoft.com/dotnet/sdk:8.0
-    working_dir: /src
-    volumes:
-      - .:/src
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True
-    command: >
-      bash -c "
-        dotnet tool install --global dotnet-ef --version 8.0.0 || true &&
-        export PATH=\"$$PATH:/root/.dotnet/tools\" &&
-        dotnet ef database update --project LearningTrainerShared --startup-project LearningAPI
-      "
 
 volumes:
   sql_data:

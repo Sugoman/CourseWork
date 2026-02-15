@@ -6,6 +6,9 @@
 # Analysis documentation (internal comparison files)
 docs/analysis/
 
+# Development secrets — never commit real credentials
+**/appsettings.Development.json
+
 # User-specific files
 *.rsuser
 *.suo

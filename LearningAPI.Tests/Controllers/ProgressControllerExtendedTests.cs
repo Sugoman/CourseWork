@@ -1,8 +1,9 @@
 using FluentAssertions;
 using LearningAPI.Controllers;
 using LearningAPI.Tests.Helpers;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
@@ -25,7 +26,12 @@ public class ProgressControllerExtendedTests : IDisposable
         _context = TestDbContextFactory.CreateInMemoryContext();
         _loggerMock = new Mock<ILogger<ProgressController>>();
         var cacheMock = new Mock<IDistributedCache>();
-        _controller = new ProgressController(_context, _loggerMock.Object, cacheMock.Object);
+        
+        // Ensure cache always returns null (MISS)
+        cacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((byte[]?)null);
+            
+        _controller = new ProgressController(_context, _loggerMock.Object, cacheMock.Object, new SpacedRepetitionService());
         SetupUserContext(_testUserId);
     }
 
@@ -67,7 +73,7 @@ public class ProgressControllerExtendedTests : IDisposable
         var word = new Word
         {
             OriginalWord = "Hello",
-            Translation = "Привет",
+            Translation = "пїЅпїЅпїЅпїЅпїЅпїЅ",
             Example = "",
             DictionaryId = dictionary.Id,
             UserId = _testUserId
@@ -230,7 +236,7 @@ public class ProgressControllerExtendedTests : IDisposable
         
         // Add more words
         var dictionary = await _context.Dictionaries.FirstAsync();
-        var word2 = new Word { OriginalWord = "World", Translation = "Мир", Example = "", DictionaryId = dictionary.Id, UserId = _testUserId };
+        var word2 = new Word { OriginalWord = "World", Translation = "пїЅпїЅпїЅ", Example = "", DictionaryId = dictionary.Id, UserId = _testUserId };
         _context.Words.Add(word2);
         await _context.SaveChangesAsync();
 

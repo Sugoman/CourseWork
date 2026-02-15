@@ -24,6 +24,7 @@ namespace LearningTrainerShared.Services
 
             var claims = new List<Claim>
             {
+                new Claim(JwtRegisteredClaimNames.Iss, _configuration["Jwt:Issuer"] ?? ""),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Email, user.Email ?? ""),
@@ -31,9 +32,9 @@ namespace LearningTrainerShared.Services
             };
 
             var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
+                // issuer: _configuration["Jwt:Issuer"], // handled in claims
                 audience: _configuration["Jwt:Audience"],
-                claims: claims,
+                claims: claims, 
                 expires: DateTime.UtcNow.AddHours(
                     int.Parse(_configuration["Jwt:ExpiresHours"] ?? "2")),
                 signingCredentials: creds);

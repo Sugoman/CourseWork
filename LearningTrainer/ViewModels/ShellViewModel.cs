@@ -1,4 +1,4 @@
-﻿using LearningTrainer.Core;
+using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using System.Collections.ObjectModel;
@@ -7,7 +7,7 @@ using static LearningTrainer.Core.EventAggregator;
 
 namespace LearningTrainer.ViewModels
 {
-    public class ShellViewModel : ObservableObject
+    public class ShellViewModel : ObservableObject, IDisposable
     {
         private TabViewModelBase _selectedTab;
         public TabViewModelBase SelectedTab
@@ -93,44 +93,31 @@ namespace LearningTrainer.ViewModels
             var existingTab = Tabs.FirstOrDefault(t => t.Title == tab.Title);
             if (existingTab == null)
 
-                System.Diagnostics.Debug.WriteLine($"=== OPEN TAB METHOD CALLED ===");
-            System.Diagnostics.Debug.WriteLine($"Tab: {tab?.GetType().Name}");
-            System.Diagnostics.Debug.WriteLine($"Tab Title: {tab?.Title}");
-            System.Diagnostics.Debug.WriteLine($"Tabs collection: {Tabs?.Count} items");
-            System.Diagnostics.Debug.WriteLine($"SelectedTab before: {SelectedTab?.GetType().Name}");
 
             if (tab == null)
             {
-                System.Diagnostics.Debug.WriteLine("ERROR: Tab is null!");
                 return;
             }
 
             if (Tabs == null)
             {
-                System.Diagnostics.Debug.WriteLine("ERROR: Tabs collection is null!");
                 return;
             }
 
             existingTab = Tabs.FirstOrDefault(t => t.GetType() == tab.GetType() && t.Title == tab.Title);
             if (existingTab != null)
             {
-                System.Diagnostics.Debug.WriteLine($"Tab already exists, switching to it: {existingTab.Title}");
                 SelectedTab = existingTab;
                 return;
             }
 
-            System.Diagnostics.Debug.WriteLine("Adding new tab to collection...");
             Tabs.Add(tab);
-            System.Diagnostics.Debug.WriteLine($"Tabs count after add: {Tabs.Count}");
 
             SelectedTab = tab;
-            System.Diagnostics.Debug.WriteLine($"SelectedTab after: {SelectedTab?.GetType().Name}");
-            System.Diagnostics.Debug.WriteLine($"SelectedTab title: {SelectedTab?.Title}");
 
             OnPropertyChanged(nameof(Tabs));
             OnPropertyChanged(nameof(SelectedTab));
 
-            System.Diagnostics.Debug.WriteLine("Property changed events fired");
         }
 
         private void HandleCloseTabMessage(CloseTabMessage message)
@@ -157,6 +144,25 @@ namespace LearningTrainer.ViewModels
         private bool CanCloseTab(object tabToClose)
         {
             return tabToClose is TabViewModelBase tab && !(tab is DashboardViewModel);
+        }
+
+        public void Dispose()
+        {
+            EventAggregator.Instance.Unsubscribe<LearningViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<RuleViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<AddDictionaryViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<AddRuleViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<AddWordViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<CloseTabMessage>(HandleCloseTabMessage);
+            EventAggregator.Instance.Unsubscribe<DictionaryManagementViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<SettingsViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<ShareContentViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<RuleManagementViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<MarketplaceViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<MarketplaceDictionaryDetailsViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<MarketplaceRuleDetailsViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<StatisticsViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<ShowNotificationMessage>(OnShowNotification);
         }
     }
 }

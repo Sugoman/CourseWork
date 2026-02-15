@@ -1,6 +1,6 @@
 using FluentAssertions;
 using LearningAPI.Tests.Helpers;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using Xunit;
 

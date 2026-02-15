@@ -1,4 +1,4 @@
-﻿using LearningTrainer.Core;
+using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainer.Services.Dialogs;
 using LearningTrainerShared.Models;
@@ -101,7 +101,6 @@ namespace LearningTrainer.ViewModels
             IsReadOnly = dictionary.UserId != currentUserId;
             IsPublished = dictionary.IsPublished;
 
-            System.Diagnostics.Debug.WriteLine($"UserId: {dictionary.UserId}, Current: {currentUserId}, IsReadOnly: {IsReadOnly}, IsEditable: {IsEditable}");
            
             SetLocalizedTitle("Loc.Tab.EditDictionary", $": {dictionary.Name}");
 
@@ -112,7 +111,6 @@ namespace LearningTrainer.ViewModels
             DeleteWordCommand = new RelayCommand(async (p) => await DeleteWord(p), (_) => IsEditable);
             SaveChangesCommand = new RelayCommand(async (p) =>
             {
-                System.Diagnostics.Debug.WriteLine(">>> SAVE COMMAND EXECUTED <<<"); 
                 await SaveChanges();
             }, (_) => IsEditable);
 
@@ -224,7 +222,6 @@ namespace LearningTrainer.ViewModels
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine("UpdateDictionaryAsync returned FALSE.");
                     EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
                         "Ошибка сервера",
                         "Не удалось сохранить изменения"));
@@ -304,7 +301,6 @@ namespace LearningTrainer.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Ошибка экспорта: {ex.Message}");
                     EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
                         "Ошибка экспорта",
                         $"Произошла ошибка: {ex.Message}"));
@@ -329,7 +325,6 @@ namespace LearningTrainer.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Ошибка экспорта: {ex.Message}");
                     EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
                         "Ошибка экспорта",
                         $"Произошла ошибка: {ex.Message}"));

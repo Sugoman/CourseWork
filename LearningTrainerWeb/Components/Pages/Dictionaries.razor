@@ -3,7 +3,7 @@
 @inject IContentApiService ContentApi
 @inject ITrainingApiService TrainingService
 @inject IAuthService AuthService
-@rendermode InteractiveServer
+@inject ILogger<LearningTrainerWeb.Components.Pages.Dictionaries> Logger
 
 <PageTitle>Словари - LearningTrainer</PageTitle>
 
@@ -34,24 +34,24 @@
                     <label class="form-label small text-muted">
                         <i class="bi bi-translate me-1"></i> Язык оригинала
                     </label>
-                    <select class="form-select" @bind="SelectedLanguageFrom">
+                    <select class="form-select" @bind="SelectedLanguageFrom" @bind:after="ApplyFilters">
                         <option value="">Все языки</option>
-                        <option value="en">🇬🇧 English</option>
-                        <option value="ru">🇷🇺 Русский</option>
-                        <option value="de">🇩🇪 Deutsch</option>
-                        <option value="es">🇪🇸 Español</option>
+                        <option value="en">English</option>
+                        <option value="ru">Русский</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
                     </select>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small text-muted">
                         <i class="bi bi-arrow-right-circle me-1"></i> Язык перевода
                     </label>
-                    <select class="form-select" @bind="SelectedLanguageTo">
+                    <select class="form-select" @bind="SelectedLanguageTo" @bind:after="ApplyFilters">
                         <option value="">Все языки</option>
-                        <option value="en">🇬🇧 English</option>
-                        <option value="ru">🇷🇺 Русский</option>
-                        <option value="de">🇩🇪 Deutsch</option>
-                        <option value="es">🇪🇸 Español</option>
+                        <option value="en">English</option>
+                        <option value="ru">Русский</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
                     </select>
                 </div>
                 <div class="col-md-2" style="margin-top: 32px;">
@@ -173,10 +173,10 @@
                                 </span>
                                 <div class="d-flex gap-2">
                                     <a href="dictionary/@dict.Id" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye"></i>
+                                        <i class="bi bi-eye me-1"></i> Детали
                                     </a>
-                                    <button class="btn btn-sm btn-success gap-2" @onclick="() => DownloadDictionary(dict.Id)">
-                                        <i class="bi bi-download"></i> Скачать
+                                    <button class="btn btn-sm btn-success gap-2" @onclick="() => DownloadDictionary(dict.Id)" disabled="@IsDownloading">
+                                        <i class="bi bi-download"></i> @(IsDownloading ? "..." : "Скачать")
                                     </button>
                                 </div>
                             </div>
@@ -229,61 +229,17 @@
     }
 </div>
 
-<style>
-    .empty-state-card {
-        text-align: center;
-        padding: 3rem 1.5rem;
-        background: white;
-        border-radius: 16px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    
-    .empty-state-icon {
-        font-size: 4rem;
-        color: var(--bs-primary);
-        margin-bottom: 1.5rem;
-        opacity: 0.7;
-    }
-    
-    .empty-state-card h3 {
-        margin-bottom: 0.5rem;
-        color: var(--bs-dark);
-    }
-    
-    .empty-state-actions {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-    
-    .empty-state-tips {
-        padding-top: 1.5rem;
-        border-top: 1px solid #e9ecef;
-    }
-    
-    .tips-grid {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        align-items: center;
-        margin-top: 1rem;
-    }
-    
-    .tip-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.5rem 1rem;
-        background: #f8f9fa;
-        border-radius: 8px;
-        font-size: 0.9rem;
-    }
-    
-    .tip-item i {
-        font-size: 1.25rem;
-    }
-</style>
+@if (!string.IsNullOrEmpty(DownloadMessage))
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
+        <div class="d-flex align-items-center gap-2 px-4 py-3 text-white" 
+             style="background: @(DownloadSuccess ? "var(--accent-green, #198754)" : "var(--accent-red, #dc3545)"); border-radius: var(--radius, 8px); box-shadow: var(--shadow-lg, 0 4px 16px rgba(0,0,0,0.15));">
+            <i class="bi @(DownloadSuccess ? "bi-check-circle" : "bi-exclamation-circle")"></i>
+            @DownloadMessage
+            <button type="button" class="btn-close btn-close-white ms-2" @onclick="() => DownloadMessage = null" style="font-size: 0.75rem;"></button>
+        </div>
+    </div>
+}
 
 @code {
     private List<DictionaryListItem>? DictionaryItems;
@@ -304,13 +260,7 @@
         await AuthService.InitializeAsync();
         var session = await AuthService.GetCurrentSessionAsync();
         IsAuthenticated = session != null;
-        
-        if (IsAuthenticated)
-        {
-            var token = AuthService.GetToken();
-            TrainingService.SetAuthToken(token);
-        }
-        
+
         await LoadDictionaries();
     }
 
@@ -326,7 +276,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading dictionaries: {ex.Message}");
+            Logger.LogError(ex, "Error loading dictionaries");
             DictionaryItems = new List<DictionaryListItem>();
         }
         finally
@@ -365,16 +315,44 @@
         await LoadDictionaries();
     }
 
+    private string? DownloadMessage;
+    private bool DownloadSuccess;
+    private bool IsDownloading;
+
     private async Task DownloadDictionary(int dictionaryId)
     {
+        if (IsDownloading) return;
+
+        if (!IsAuthenticated)
+        {
+            DownloadMessage = "Войдите в аккаунт для скачивания";
+            DownloadSuccess = false;
+            StateHasChanged();
+            await Task.Delay(3000);
+            DownloadMessage = null;
+            return;
+        }
+
+        IsDownloading = true;
+        StateHasChanged();
         try
         {
             await ContentApi.DownloadDictionaryAsync(dictionaryId);
+            DownloadMessage = "Словарь успешно скачан!";
+            DownloadSuccess = true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Download error: {ex.Message}");
+            DownloadMessage = $"Ошибка: {ex.Message}";
+            DownloadSuccess = false;
         }
+        finally
+        {
+            IsDownloading = false;
+        }
+        StateHasChanged();
+        await Task.Delay(3000);
+        DownloadMessage = null;
     }
 
     private async Task InstallStarterPack()

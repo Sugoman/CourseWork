@@ -1,9 +1,9 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using LearningAPI.Configuration;
 using LearningAPI.Controllers;
 using LearningAPI.Services;
 using LearningAPI.Tests.Helpers;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
@@ -87,7 +87,7 @@ public class HealthControllerTests : IDisposable
 
         // Assert
         var objectResult = result.Should().BeAssignableTo<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().BeOneOf(200, 503);
+        objectResult.StatusCode.Should().Be(200);
 
         var response = objectResult.Value as HealthCheckResponse;
         response.Should().NotBeNull();

@@ -39,29 +39,26 @@ public interface IContentApiService
     Task<ExportResult> ExportAllDictionariesAsZipAsync();
 
     // Token management
+    [Obsolete("Token is now managed automatically via AuthTokenDelegatingHandler")]
     void SetAuthToken(string? token);
 }
 
 public class ContentApiService : IContentApiService
 {
     private readonly HttpClient _httpClient;
+    private readonly AuthTokenProvider _tokenProvider;
 
-    public ContentApiService(HttpClient httpClient)
+    public ContentApiService(HttpClient httpClient, AuthTokenProvider tokenProvider)
     {
         _httpClient = httpClient;
+        _tokenProvider = tokenProvider;
     }
-    
+
+    private void ApplyAuth() => _tokenProvider.ApplyTo(_httpClient);
+
     public void SetAuthToken(string? token)
     {
-        if (string.IsNullOrEmpty(token))
-        {
-            _httpClient.DefaultRequestHeaders.Authorization = null;
-        }
-        else
-        {
-            _httpClient.DefaultRequestHeaders.Authorization = 
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        }
+        // Token is now managed via AuthTokenProvider.ApplyTo().
     }
 
     #region Dictionaries
@@ -74,23 +71,27 @@ public class ContentApiService : IContentApiService
         if (!string.IsNullOrEmpty(languageFrom)) url += $"&languageFrom={languageFrom}";
         if (!string.IsNullOrEmpty(languageTo)) url += $"&languageTo={languageTo}";
 
+        ApplyAuth();
         var response = await _httpClient.GetFromJsonAsync<PagedResult<DictionaryListItem>>(url);
         return response ?? new PagedResult<DictionaryListItem>();
     }
 
     public async Task<DictionaryDetailDto?> GetDictionaryDetailsAsync(int id)
     {
+        ApplyAuth();
         return await _httpClient.GetFromJsonAsync<DictionaryDetailDto>($"api/marketplace/dictionaries/{id}");
     }
 
     public async Task<List<CommentItem>> GetDictionaryCommentsAsync(int id)
     {
+        ApplyAuth();
         var result = await _httpClient.GetFromJsonAsync<List<CommentItem>>($"api/marketplace/dictionaries/{id}/comments");
         return result ?? new List<CommentItem>();
     }
 
     public async Task AddDictionaryCommentAsync(int dictionaryId, int rating, string text)
     {
+        ApplyAuth();
         var request = new { Rating = rating, Text = text };
         var response = await _httpClient.PostAsJsonAsync($"api/marketplace/dictionaries/{dictionaryId}/comments", request);
         if (!response.IsSuccessStatusCode)
@@ -102,11 +103,13 @@ public class ContentApiService : IContentApiService
 
     public async Task DownloadDictionaryAsync(int dictionaryId)
     {
+        ApplyAuth();
         var response = await _httpClient.PostAsync($"api/marketplace/dictionaries/{dictionaryId}/download", null);
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
-            throw new InvalidOperationException($"Не удалось скачать словарь: {response.StatusCode}");
+            var message = TryExtractMessage(error) ?? $"Не удалось скачать словарь: {response.StatusCode}";
+            throw new InvalidOperationException(message);
         }
     }
 
@@ -122,23 +125,27 @@ public class ContentApiService : IContentApiService
         if (!string.IsNullOrEmpty(category)) url += $"&category={category}";
         if (difficulty > 0) url += $"&difficulty={difficulty}";
 
+        ApplyAuth();
         var response = await _httpClient.GetFromJsonAsync<PagedResult<RuleListItem>>(url);
         return response ?? new PagedResult<RuleListItem>();
     }
 
     public async Task<RuleDetailDto?> GetRuleDetailsAsync(int id)
     {
+        ApplyAuth();
         return await _httpClient.GetFromJsonAsync<RuleDetailDto>($"api/marketplace/rules/{id}");
     }
 
     public async Task<List<CommentItem>> GetRuleCommentsAsync(int id)
     {
+        ApplyAuth();
         var result = await _httpClient.GetFromJsonAsync<List<CommentItem>>($"api/marketplace/rules/{id}/comments");
         return result ?? new List<CommentItem>();
     }
 
     public async Task AddRuleCommentAsync(int ruleId, int rating, string text)
     {
+        ApplyAuth();
         var request = new { Rating = rating, Text = text };
         var response = await _httpClient.PostAsJsonAsync($"api/marketplace/rules/{ruleId}/comments", request);
         if (!response.IsSuccessStatusCode)
@@ -150,16 +157,19 @@ public class ContentApiService : IContentApiService
 
     public async Task DownloadRuleAsync(int ruleId)
     {
+        ApplyAuth();
         var response = await _httpClient.PostAsync($"api/marketplace/rules/{ruleId}/download", null);
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
-            throw new InvalidOperationException($"Не удалось скачать правило: {response.StatusCode}");
+            var message = TryExtractMessage(error) ?? $"Не удалось скачать правило: {response.StatusCode}";
+            throw new InvalidOperationException(message);
         }
     }
 
     public async Task<List<RuleListItem>> GetRelatedRulesAsync(int ruleId, string category)
     {
+        ApplyAuth();
         var result = await _httpClient.GetFromJsonAsync<List<RuleListItem>>(
             $"api/marketplace/rules/{ruleId}/related?category={category}");
         return result ?? new List<RuleListItem>();
@@ -171,39 +181,46 @@ public class ContentApiService : IContentApiService
 
     public async Task<List<MyDictionaryItem>> GetMyDictionariesAsync()
     {
+        ApplyAuth();
         var result = await _httpClient.GetFromJsonAsync<List<MyDictionaryItem>>("api/marketplace/my/dictionaries");
         return result ?? new List<MyDictionaryItem>();
     }
 
     public async Task<List<MyRuleItem>> GetMyRulesAsync()
     {
+        ApplyAuth();
         var result = await _httpClient.GetFromJsonAsync<List<MyRuleItem>>("api/marketplace/my/rules");
         return result ?? new List<MyRuleItem>();
     }
 
     public async Task<List<DownloadedItem>> GetDownloadedContentAsync()
     {
+        ApplyAuth();
         var result = await _httpClient.GetFromJsonAsync<List<DownloadedItem>>("api/marketplace/my/downloads");
         return result ?? new List<DownloadedItem>();
     }
 
     public async Task PublishDictionaryAsync(int id)
     {
+        ApplyAuth();
         await _httpClient.PostAsync($"api/marketplace/dictionaries/{id}/publish", null);
     }
 
     public async Task UnpublishDictionaryAsync(int id)
     {
+        ApplyAuth();
         await _httpClient.PostAsync($"api/marketplace/dictionaries/{id}/unpublish", null);
     }
 
     public async Task PublishRuleAsync(int id)
     {
+        ApplyAuth();
         await _httpClient.PostAsync($"api/marketplace/rules/{id}/publish", null);
     }
 
     public async Task UnpublishRuleAsync(int id)
     {
+        ApplyAuth();
         await _httpClient.PostAsync($"api/marketplace/rules/{id}/unpublish", null);
     }
 
@@ -213,6 +230,7 @@ public class ContentApiService : IContentApiService
 
     public async Task<ExportResult> ExportDictionaryAsJsonAsync(int dictionaryId)
     {
+        ApplyAuth();
         var response = await _httpClient.GetAsync($"api/dictionaries/export/{dictionaryId}/json");
         response.EnsureSuccessStatusCode();
 
@@ -224,6 +242,7 @@ public class ContentApiService : IContentApiService
 
     public async Task<ExportResult> ExportDictionaryAsCsvAsync(int dictionaryId)
     {
+        ApplyAuth();
         var response = await _httpClient.GetAsync($"api/dictionaries/export/{dictionaryId}/csv");
         response.EnsureSuccessStatusCode();
 
@@ -235,6 +254,7 @@ public class ContentApiService : IContentApiService
 
     public async Task<ExportResult> ExportAllDictionariesAsZipAsync()
     {
+        ApplyAuth();
         var response = await _httpClient.GetAsync("api/dictionaries/export/all/zip");
         response.EnsureSuccessStatusCode();
 
@@ -250,6 +270,25 @@ public class ContentApiService : IContentApiService
         {
             return response.Content.Headers.ContentDisposition.FileName.Trim('"');
         }
+        return null;
+    }
+
+    /// <summary>
+    /// Извлекает Message из JSON-ответа API ({"Message":"..."}) или возвращает null.
+    /// </summary>
+    private static string? TryExtractMessage(string? responseBody)
+    {
+        if (string.IsNullOrWhiteSpace(responseBody)) return null;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(responseBody);
+            if (doc.RootElement.TryGetProperty("Message", out var msg) ||
+                doc.RootElement.TryGetProperty("message", out msg))
+            {
+                return msg.GetString();
+            }
+        }
+        catch { }
         return null;
     }
 

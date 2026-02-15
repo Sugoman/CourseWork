@@ -1,8 +1,9 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using LearningAPI.Controllers;
 using LearningAPI.Tests.Helpers;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
@@ -25,8 +26,12 @@ public class ProgressControllerTests : IDisposable
         _context = TestDbContextFactory.CreateInMemoryContext();
         _loggerMock = new Mock<ILogger<ProgressController>>();
         var cacheMock = new Mock<IDistributedCache>();
-
-        _controller = new ProgressController(_context, _loggerMock.Object, cacheMock.Object);
+        
+        // Ensure cache always returns null (MISS)
+        cacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((byte[]?)null);
+            
+        _controller = new ProgressController(_context, _loggerMock.Object, cacheMock.Object, new SpacedRepetitionService());
         SetupUserContext(_testUserId);
     }
 

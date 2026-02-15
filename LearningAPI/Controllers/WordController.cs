@@ -1,4 +1,4 @@
-﻿using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Mvc;

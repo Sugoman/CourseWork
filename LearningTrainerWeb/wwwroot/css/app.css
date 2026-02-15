@@ -1712,3 +1712,58 @@ a:hover {
 .animate-pulse {
     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* ===== EMPTY STATE ===== */
+.empty-state-card {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    color: var(--bs-primary);
+    margin-bottom: 1.5rem;
+    opacity: 0.7;
+}
+
+.empty-state-card h3 {
+    margin-bottom: 0.5rem;
+    color: var(--bs-dark);
+}
+
+.empty-state-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.empty-state-tips {
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.tips-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.tip-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.tip-item i {
+    font-size: 1.25rem;
+}

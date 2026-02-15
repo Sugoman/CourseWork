@@ -1,7 +1,7 @@
 ﻿using LearningTrainerShared.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace LearningTrainer.Context
+namespace LearningTrainerShared.Context
 {
     public class LocalDbContext : DbContext
     {

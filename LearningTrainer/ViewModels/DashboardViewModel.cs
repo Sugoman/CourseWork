@@ -1,4 +1,4 @@
-﻿using LearningTrainer.Core;
+using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainer.Services.Dialogs;
 using LearningTrainerShared.Models;
@@ -246,35 +246,30 @@ namespace LearningTrainer.ViewModels
                 _notificationService.AddInfoNotification(
                     "Словарь удалён",
                     $"Словарь '{name}' был удалён");
-                System.Diagnostics.Debug.WriteLine($"Словарь ID {message.DictionaryId} удален из коллекции Dashboard.");
             }
         }
 
         private void OnRuleAdded(RuleAddedMessage message)
         {
-            System.Diagnostics.Debug.WriteLine($"=== RULE ADDED: {message.Rule.Title} ===");
 
-            Rules.Add(message.Rule);
-
-            var sortedRules = Rules.OrderBy(r => r.Title).ToList();
-            Rules.Clear();
-            foreach (var rule in sortedRules)
+            // Вставка с сохранением сортировки (без полной перерисовки для оптимизации UI)
+            var index = 0;
+            while (index < Rules.Count && string.Compare(Rules[index].Title, message.Rule.Title, StringComparison.CurrentCulture) < 0)
             {
-                Rules.Add(rule);
+                index++;
             }
+            Rules.Insert(index, message.Rule);
 
             _notificationService.AddSuccessNotification(
                 "Правило создано",
                 $"Правило '{message.Rule.Title}' успешно добавлено");
 
-            System.Diagnostics.Debug.WriteLine($"Rules collection updated: {Rules.Count} rules");
         }
 
         private void EditRule(object parameter)
         {
             if (parameter is Rule rule)
             {
-                System.Diagnostics.Debug.WriteLine($"Opening EDITOR for: {rule.Title}");
                 var managementVm = new RuleManagementViewModel(_dataService, _settingsService, rule, _currentUser.Id);
                 EventAggregator.Instance.Publish(managementVm);
             }
@@ -316,7 +311,6 @@ namespace LearningTrainer.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Ошибка импорта: {ex.Message}");
                     _notificationService.AddErrorNotification(
                         "Ошибка импорта",
                         $"Не удалось импортировать словарь: {ex.Message}");
@@ -339,27 +333,19 @@ namespace LearningTrainer.ViewModels
 
         private void OnDictionaryAdded(DictionaryAddedMessage message)
         {
-            System.Diagnostics.Debug.WriteLine($"=== DICTIONARY ADDED: {message.Dictionary.Name} ===");
 
             Dictionaries.Add(new DictionaryViewModel(message.Dictionary));
 
-            var sortedDicts = Dictionaries.OrderBy(d => d.Name).ToList();
-            Dictionaries.Clear();
-            foreach (var dict in sortedDicts)
-            {
-                Dictionaries.Add(dict);
-            }
-
+            // Обновляем отображение с учетом сортировки
             ApplySorting();
 
             _notificationService.AddSuccessNotification(
                 "Словарь создан",
                 $"Словарь '{message.Dictionary.Name}' успешно добавлен");
 
-            System.Diagnostics.Debug.WriteLine($"Dictionaries collection updated: {Dictionaries.Count} dictionaries");
         }
 
-        private async void LoadDataAsync()
+        private async Task LoadDataAsync()
         {
 
             try
@@ -379,7 +365,6 @@ namespace LearningTrainer.ViewModels
                     rules = await _dataService.GetRulesAsync();
                 }
 
-                System.Diagnostics.Debug.WriteLine("Clearing collections...");
                 Dictionaries.Clear();
                 Rules.Clear();
 
@@ -402,7 +387,6 @@ namespace LearningTrainer.ViewModels
             {
                 if (httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
-                    System.Diagnostics.Debug.WriteLine("!!! 401 (Unauthorized) ПОЙМАН в Dashboard. Запуск принудительного выхода");
                     _notificationService.AddErrorNotification(
                         "Сессия истекла",
                         "Требуется повторный вход в систему");
@@ -410,7 +394,6 @@ namespace LearningTrainer.ViewModels
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"!!! ОШИБКА HTTP в Dashboard: {httpEx.Message}");
                     _notificationService.AddErrorNotification(
                         "Ошибка соединения",
                         "Не удалось загрузить данные с сервера");
@@ -418,7 +401,6 @@ namespace LearningTrainer.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"!!! КРИТИЧЕСКАЯ ОШИБКА в Dashboard.LoadData: {ex.Message}");
                 _notificationService.AddErrorNotification(
                     "Ошибка загрузки",
                     "Произошла ошибка при загрузке данных");
@@ -450,7 +432,6 @@ namespace LearningTrainer.ViewModels
         {
             if (parameter is Rule rule)
             {
-                System.Diagnostics.Debug.WriteLine($"Opening VIEWER for: {rule.Title}");
 
                 var viewerVm = new RuleViewModel(rule, _settingsService);
                 EventAggregator.Instance.Publish(viewerVm);
@@ -460,8 +441,7 @@ namespace LearningTrainer.ViewModels
         private void OnRefreshData(RefreshDataMessage message)
         {
 
-            System.Diagnostics.Debug.WriteLine(">>> REFRESH. Перезагрузка данных...");
-            LoadDataAsync();
+            _ = LoadDataAsync();
         }
 
         public async Task StartLearning(object parameter)
@@ -698,8 +678,7 @@ namespace LearningTrainer.ViewModels
 
             RefreshCommand = new RelayCommand((_) =>
             {
-                System.Diagnostics.Debug.WriteLine(">>> Manual Refresh Triggered");
-                LoadDataAsync();
+                _ = LoadDataAsync();
             });
             EventAggregator.Instance.Subscribe<DictionaryDeletedMessage>(OnDictionaryDeleted);
             EventAggregator.Instance.Subscribe<RefreshDataMessage>(OnRefreshData);
@@ -710,7 +689,7 @@ namespace LearningTrainer.ViewModels
 
             UpdateLegendTextPaint();
             _settingsService.MarkdownConfigChanged += OnThemeChanged;
-            LoadDataAsync();
+            _ = LoadDataAsync();
         }
 
         private void OnThemeChanged(MarkdownConfig config)

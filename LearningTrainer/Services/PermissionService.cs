@@ -80,7 +80,7 @@ namespace LearningTrainer.Services
             return new PermissionStatus
             {
                 UserId = _currentUser.Id,
-                Username = _currentUser.Login,
+                Username = _currentUser.Username,
                 RoleName = roleName,
                 RoleDescription = GetUserRoleDescription(roleName),
                 CanCreateDictionary = CanCreateDictionary,

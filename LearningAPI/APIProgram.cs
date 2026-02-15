@@ -1,5 +1,5 @@
-﻿using LearningTrainer;
-using LearningTrainer.Context;
+using LearningTrainer;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Services;
 using LearningAPI.Middleware;
 using LearningAPI.Configuration;
@@ -57,7 +57,6 @@ builder.Services.AddDbContext<ApiDbContext>(options =>
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetDictionariesHandler).Assembly));
 
 var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
-Console.WriteLine($"[Startup] Redis connection: {redisConnectionString ?? "NOT CONFIGURED"}");
 
 if (!string.IsNullOrEmpty(redisConnectionString))
 {
@@ -70,7 +69,6 @@ if (!string.IsNullOrEmpty(redisConnectionString))
 else
 {
     // Fallback to in-memory cache when Redis is not configured
-    Console.WriteLine("[Startup] Using in-memory distributed cache (Redis not configured)");
     builder.Services.AddDistributedMemoryCache();
 }
 
@@ -79,10 +77,12 @@ builder.Services.AddControllers()
     {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
-        options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+        options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
     });
 
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddSingleton<ISpacedRepetitionService, SpacedRepetitionService>();
+builder.Services.AddScoped<IDictionaryService, DictionaryService>();
 builder.Services.AddHttpClient<LearningTrainer.Services.ExternalDictionaryService>();
 
 // Health Check конфигурация и сервис
@@ -125,6 +125,21 @@ builder.Services.AddCors(options =>
     });
 });
 
+var jwtKey = builder.Configuration["Jwt:Key"];
+
+if (string.IsNullOrEmpty(jwtKey) || jwtKey == "SET_VIA_USER_SECRETS_OR_ENV")
+    throw new InvalidOperationException(
+        "Jwt:Key is not configured. Set it via: " +
+        "1) Environment variable Jwt__Key (in docker-compose.yml), " +
+        "2) dotnet user-secrets, or " +
+        "3) appsettings.Development.json. " +
+        "Generate a key with: openssl rand -hex 32");
+
+if (Encoding.UTF8.GetByteCount(jwtKey) < 32)
+    throw new InvalidOperationException(
+        $"Jwt:Key must be at least 256 bits (32 bytes) for HS256. Current key is {Encoding.UTF8.GetByteCount(jwtKey) * 8} bits. " +
+        "Generate a new key: openssl rand -hex 32");
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -136,7 +151,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
 

@@ -1,5 +1,5 @@
 ﻿using BCrypt.Net;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Windows.Forms;
@@ -10,50 +10,49 @@ namespace LearningTrainer.Services
     {
         private readonly string _userLogin;
         private int _currentLocalUserId = 0;
+        private LocalDbContext _cachedContext;
 
         public LocalDataService(string userLogin)
         {
             this._userLogin = userLogin;
 
-            using (var db = Context)
+            var db = Context;
+            // Обеспечиваем актуальную схему без удаления пользовательских данных при каждом запуске
+            db.Database.EnsureCreated();
+
+            // Проверяем и добавляем колонку Email если её нет
+            EnsureEmailColumnExists(db);
+
+            if (!string.IsNullOrEmpty(_userLogin))
             {
-                // Обеспечиваем актуальную схему без удаления пользовательских данных при каждом запуске
-                db.Database.EnsureCreated();
-                
-                // Проверяем и добавляем колонку Email если её нет
-                EnsureEmailColumnExists(db);
-
-                if (!string.IsNullOrEmpty(_userLogin))
+                var studentRole = db.Roles.FirstOrDefault(r => r.Id == 3);
+                if (studentRole == null)
                 {
-                    var studentRole = db.Roles.FirstOrDefault(r => r.Id == 3);
-                    if (studentRole == null)
-                    {
-                        studentRole = new Role { Id = 3, Name = "Student" };
-                        db.Roles.Add(studentRole);
-                        db.SaveChanges();
-                    }
-
-                    var localUser = db.Users.FirstOrDefault(u => u.Username != null && u.Username == _userLogin);
-                    if (localUser == null)
-                    {
-                        var safeRandomHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString());
-
-                        localUser = new User
-                        {
-                            Username = _userLogin,
-                            Email = "", // Локальный пользователь без email
-                            PasswordHash = safeRandomHash,
-                            RoleId = studentRole.Id,
-                            RefreshToken = null,
-                            RefreshTokenExpiryTime = null,
-                            IsRefreshTokenRevoked = false
-                        };
-                        db.Users.Add(localUser);
-                        db.SaveChanges();
-                    }
-
-                    _currentLocalUserId = localUser.Id;
+                    studentRole = new Role { Id = 3, Name = "Student" };
+                    db.Roles.Add(studentRole);
+                    db.SaveChanges();
                 }
+
+                var localUser = db.Users.FirstOrDefault(u => u.Username != null && u.Username == _userLogin);
+                if (localUser == null)
+                {
+                    var safeRandomHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString());
+
+                    localUser = new User
+                    {
+                        Username = _userLogin,
+                        Email = "", // Локальный пользователь без email
+                        PasswordHash = safeRandomHash,
+                        RoleId = studentRole.Id,
+                        RefreshToken = null,
+                        RefreshTokenExpiryTime = null,
+                        IsRefreshTokenRevoked = false
+                    };
+                    db.Users.Add(localUser);
+                    db.SaveChanges();
+                }
+
+                _currentLocalUserId = localUser.Id;
             }
         }
         
@@ -111,171 +110,156 @@ namespace LearningTrainer.Services
             catch { }
         }
         
-        private LocalDbContext Context => new LocalDbContext(_userLogin);
+        private LocalDbContext Context
+        {
+            get
+            {
+                _cachedContext ??= new LocalDbContext(_userLogin);
+                return _cachedContext;
+            }
+        }
         public async Task<List<Dictionary>> GetDictionariesAsync()
         {
-            using (var db = Context)
-            {
-                return await db.Dictionaries
-                    .Where(d => d.UserId == _currentLocalUserId)
-                    .Include(d => d.Words)
-                    .ToListAsync();
-            }
+            var db = Context;
+            return await db.Dictionaries
+                .Where(d => d.UserId == _currentLocalUserId)
+                .Include(d => d.Words)
+                .ToListAsync();
         }
 
         public async Task<List<Rule>> GetRulesAsync()
         {
-            using (var db = Context)
-            {
-                return await db.Rules
-                    .Where(r => r.UserId == _currentLocalUserId) 
-                    .ToListAsync();
-            }
+            var db = Context;
+            return await db.Rules
+                .Where(r => r.UserId == _currentLocalUserId) 
+                .ToListAsync();
         }
 
         public async Task<Dictionary> GetDictionaryByIdAsync(int id)
         {
-            using (var db = Context)
-            {
-                return await db.Dictionaries.Include(d => d.Words)
-                                 .FirstOrDefaultAsync(d => d.Id == id);
-            }
+            var db = Context;
+            return await db.Dictionaries.Include(d => d.Words)
+                             .FirstOrDefaultAsync(d => d.Id == id);
         }
 
         public async Task<Dictionary> AddDictionaryAsync(Dictionary dictionary)
         {
-            using (var db = Context)
-            {
-                dictionary.UserId = _currentLocalUserId;
+            var db = Context;
+            dictionary.UserId = _currentLocalUserId;
 
-                db.Dictionaries.Add(dictionary);
-                await db.SaveChangesAsync();
-                return dictionary;
-            }
+            db.Dictionaries.Add(dictionary);
+            await db.SaveChangesAsync();
+            return dictionary;
         }
 
         public async Task<Rule> AddRuleAsync(Rule rule)
         {
-            using (var db = Context)
-            {
-                rule.UserId = _currentLocalUserId;
+            var db = Context;
+            rule.UserId = _currentLocalUserId;
 
-                db.Rules.Add(rule);
-                await db.SaveChangesAsync();
-                return rule;
-            }
+            db.Rules.Add(rule);
+            await db.SaveChangesAsync();
+            return rule;
         }
 
         public async Task<Word> AddWordAsync(Word word)
         {
-            using (var db = Context)
-            {
-                word.UserId = _currentLocalUserId;
+            var db = Context;
+            word.UserId = _currentLocalUserId;
 
-                db.Words.Add(word);
-                await db.SaveChangesAsync();
-                return word;
-            }
+            db.Words.Add(word);
+            await db.SaveChangesAsync();
+            return word;
         }
 
         public async Task<bool> DeleteDictionaryAsync(int dictionaryId)
         {
-            using (var db = Context)
-            {
-                var dict = await db.Dictionaries.FindAsync(dictionaryId);
-                if (dict == null) return false;
-                db.Dictionaries.Remove(dict);
-                await db.SaveChangesAsync();
-                return true;
-            }
+            var db = Context;
+            var dict = await db.Dictionaries.FindAsync(dictionaryId);
+            if (dict == null) return false;
+            db.Dictionaries.Remove(dict);
+            await db.SaveChangesAsync();
+            return true;
         }
 
         public async Task<bool> DeleteRuleAsync(int ruleId)
         {
-            using (var db = Context)
-            {
-                var rule = await db.Rules.FindAsync(ruleId);
-                if (rule == null) return false;
-                db.Rules.Remove(rule);
-                await db.SaveChangesAsync();
-                return true;
-            }
+            var db = Context;
+            var rule = await db.Rules.FindAsync(ruleId);
+            if (rule == null) return false;
+            db.Rules.Remove(rule);
+            await db.SaveChangesAsync();
+            return true;
         }
 
         public async Task<bool> DeleteWordAsync(int wordId)
         {
-            using (var db = Context)
-            {
-                var word = await db.Words.FindAsync(wordId);
-                if (word == null) return false;
-                db.Words.Remove(word);
-                await db.SaveChangesAsync();
-                return true;
-            }
+            var db = Context;
+            var word = await db.Words.FindAsync(wordId);
+            if (word == null) return false;
+            db.Words.Remove(word);
+            await db.SaveChangesAsync();
+            return true;
         }
 
         public async Task WipeAndStoreDictionariesAsync(List<Dictionary> dictionariesFromServer)
         {
             if (dictionariesFromServer == null) return;
 
-            using (var db = Context)
+            var db = Context;
+            await db.Database.ExecuteSqlRawAsync("DELETE FROM LearningProgresses");
+            await db.Database.ExecuteSqlRawAsync("DELETE FROM Words");
+            await db.Database.ExecuteSqlRawAsync("DELETE FROM Dictionaries");
+
+            if (_currentLocalUserId == 0) return;
+
+            foreach (var dict in dictionariesFromServer)
             {
-                await db.Database.ExecuteSqlRawAsync("DELETE FROM LearningProgresses");
-                await db.Database.ExecuteSqlRawAsync("DELETE FROM Words");
-                await db.Database.ExecuteSqlRawAsync("DELETE FROM Dictionaries");
+                db.Entry(dict).State = EntityState.Detached;
+                dict.User = null;
 
-                if (_currentLocalUserId == 0) return;
+                dict.Id = 0;
+                dict.UserId = _currentLocalUserId;
 
-                foreach (var dict in dictionariesFromServer)
+                if (dict.Words != null)
                 {
-                    db.Entry(dict).State = EntityState.Detached;
-                    dict.User = null;
-
-                    dict.Id = 0;
-                    dict.UserId = _currentLocalUserId;
-
-                    if (dict.Words != null)
+                    foreach (var word in dict.Words)
                     {
-                        foreach (var word in dict.Words)
-                        {
-                            db.Entry(word).State = EntityState.Detached;
-                            word.User = null;
-                            word.Dictionary = null;
+                        db.Entry(word).State = EntityState.Detached;
+                        word.User = null;
+                        word.Dictionary = null;
 
-                            word.Id = 0;
-                            word.DictionaryId = 0;
-                            word.UserId = _currentLocalUserId;
-                        }
+                        word.Id = 0;
+                        word.DictionaryId = 0;
+                        word.UserId = _currentLocalUserId;
                     }
                 }
-
-                await db.Dictionaries.AddRangeAsync(dictionariesFromServer);
-                await db.SaveChangesAsync();
             }
+
+            await db.Dictionaries.AddRangeAsync(dictionariesFromServer);
+            await db.SaveChangesAsync();
         }
 
         public async Task WipeAndStoreRulesAsync(List<Rule> rulesFromServer)
         {
             if (rulesFromServer == null) return;
 
-            using (var db = Context)
+            var db = Context;
+            await db.Database.ExecuteSqlRawAsync("DELETE FROM Rules");
+
+            if (_currentLocalUserId == 0) return;
+
+            foreach (var rule in rulesFromServer)
             {
-                await db.Database.ExecuteSqlRawAsync("DELETE FROM Rules");
+                db.Entry(rule).State = EntityState.Detached;
+                rule.User = null;
 
-                if (_currentLocalUserId == 0) return;
-
-                foreach (var rule in rulesFromServer)
-                {
-                    db.Entry(rule).State = EntityState.Detached;
-                    rule.User = null;
-
-                    rule.Id = 0;
-                    rule.UserId = _currentLocalUserId;
-                }
-
-                await db.Rules.AddRangeAsync(rulesFromServer);
-                await db.SaveChangesAsync();
+                rule.Id = 0;
+                rule.UserId = _currentLocalUserId;
             }
+
+            await db.Rules.AddRangeAsync(rulesFromServer);
+            await db.SaveChangesAsync();
         }
 
         public Task<bool> UpdateDictionaryAsync(Dictionary dictionary)
@@ -299,100 +283,98 @@ namespace LearningTrainer.Services
 
         public void Dispose()
         {
+            _cachedContext?.Dispose();
+            _cachedContext = null;
         }
 
         public async Task<List<Word>> GetReviewSessionAsync(int dictionaryId)
         {
-            using (var db = Context)
-            {
-                var now = DateTime.UtcNow;
+            var db = Context;
+            var now = DateTime.UtcNow;
 
-                var allWordsAndDates = await db.Words
-                    .Where(w => w.DictionaryId == dictionaryId && w.UserId == _currentLocalUserId)
-                    .Select(w => new
-                    {
-                        TheWord = w,
-                        ReviewDate = w.Progress
-                            .Where(p => p.UserId == _currentLocalUserId)
-                            .Select(p => (DateTime?)p.NextReview)
-                            .FirstOrDefault()
-                    })
-                    .ToListAsync();
+            var allWordsAndDates = await db.Words
+                .Where(w => w.DictionaryId == dictionaryId && w.UserId == _currentLocalUserId)
+                .Select(w => new
+                {
+                    TheWord = w,
+                    ReviewDate = w.Progress
+                        .Where(p => p.UserId == _currentLocalUserId)
+                        .Select(p => (DateTime?)p.NextReview)
+                        .FirstOrDefault()
+                })
+                .ToListAsync();
 
-                var studySession = allWordsAndDates
-                    .Where(x => !x.ReviewDate.HasValue || x.ReviewDate.Value <= now)
-                    .Select(x => x.TheWord)
-                    .ToList();
+            var studySession = allWordsAndDates
+                .Where(x => !x.ReviewDate.HasValue || x.ReviewDate.Value <= now)
+                .Select(x => x.TheWord)
+                .ToList();
 
-                var random = new Random();
-                return studySession.OrderBy(w => random.Next()).ToList();
-            }
+            var random = new Random();
+            return studySession.OrderBy(w => random.Next()).ToList();
         }
 
         public async Task UpdateProgressAsync(UpdateProgressRequest progress)
         {
-            using (var db = Context)
+            var db = Context;
+            var existingProgress = await db.LearningProgresses
+                .FirstOrDefaultAsync(p => p.UserId == _currentLocalUserId && p.WordId == progress.WordId);
+
+            if (existingProgress == null)
             {
-                var existingProgress = await db.LearningProgresses
-                    .FirstOrDefaultAsync(p => p.UserId == _currentLocalUserId && p.WordId == progress.WordId);
-
-                if (existingProgress == null)
+                existingProgress = new LearningProgress
                 {
-                    existingProgress = new LearningProgress
-                    {
-                        UserId = _currentLocalUserId,
-                        WordId = progress.WordId,
-                        KnowledgeLevel = 0,
-                        NextReview = DateTime.UtcNow
-                    };
-                    db.LearningProgresses.Add(existingProgress);
-                }
-
-                existingProgress.LastPracticed = DateTime.UtcNow;
-                existingProgress.TotalAttempts++;
-
-                switch (progress.Quality)
-                {
-                    case ResponseQuality.Again:
-                        existingProgress.KnowledgeLevel = 0;
-                        existingProgress.NextReview = DateTime.UtcNow.AddMinutes(5);
-                        break;
-                    case ResponseQuality.Hard:
-                        existingProgress.CorrectAnswers++;
-                        existingProgress.NextReview = DateTime.UtcNow.AddDays(1);
-                        break;
-                    case ResponseQuality.Good:
-                        existingProgress.CorrectAnswers++;
-                        if (existingProgress.KnowledgeLevel < 5)
-                            existingProgress.KnowledgeLevel++;
-
-                        existingProgress.NextReview = existingProgress.KnowledgeLevel switch
-                        {
-                            1 => DateTime.UtcNow.AddDays(1),
-                            2 => DateTime.UtcNow.AddDays(3),
-                            3 => DateTime.UtcNow.AddDays(7),
-                            4 => DateTime.UtcNow.AddDays(14),
-                            _ => DateTime.UtcNow.AddDays(30)
-                        };
-                        break;
-                    case ResponseQuality.Easy:
-                        existingProgress.CorrectAnswers++;
-                        existingProgress.KnowledgeLevel = Math.Min(5, existingProgress.KnowledgeLevel + 2);
-
-                        var baseIntervalDays = existingProgress.KnowledgeLevel switch
-                        {
-                            1 => 1,
-                            2 => 3,
-                            3 => 7,
-                            4 => 14,
-                            _ => 30
-                        };
-                        existingProgress.NextReview = DateTime.UtcNow.AddDays(baseIntervalDays * 1.5);
-                        break;
-                }
-
-                await db.SaveChangesAsync();
+                    UserId = _currentLocalUserId,
+                    WordId = progress.WordId,
+                    KnowledgeLevel = 0,
+                    NextReview = DateTime.UtcNow
+                };
+                db.LearningProgresses.Add(existingProgress);
             }
+
+            existingProgress.LastPracticed = DateTime.UtcNow;
+            existingProgress.TotalAttempts++;
+
+            switch (progress.Quality)
+            {
+                case ResponseQuality.Again:
+                    existingProgress.KnowledgeLevel = 0;
+                    existingProgress.NextReview = DateTime.UtcNow.AddMinutes(5);
+                    break;
+                case ResponseQuality.Hard:
+                    existingProgress.CorrectAnswers++;
+                    existingProgress.NextReview = DateTime.UtcNow.AddDays(1);
+                    break;
+                case ResponseQuality.Good:
+                    existingProgress.CorrectAnswers++;
+                    if (existingProgress.KnowledgeLevel < 5)
+                        existingProgress.KnowledgeLevel++;
+
+                    existingProgress.NextReview = existingProgress.KnowledgeLevel switch
+                    {
+                        1 => DateTime.UtcNow.AddDays(1),
+                        2 => DateTime.UtcNow.AddDays(3),
+                        3 => DateTime.UtcNow.AddDays(7),
+                        4 => DateTime.UtcNow.AddDays(14),
+                        _ => DateTime.UtcNow.AddDays(30)
+                    };
+                    break;
+                case ResponseQuality.Easy:
+                    existingProgress.CorrectAnswers++;
+                    existingProgress.KnowledgeLevel = Math.Min(5, existingProgress.KnowledgeLevel + 2);
+
+                    var baseIntervalDays = existingProgress.KnowledgeLevel switch
+                    {
+                        1 => 1,
+                        2 => 3,
+                        3 => 7,
+                        4 => 14,
+                        _ => 30
+                    };
+                    existingProgress.NextReview = DateTime.UtcNow.AddDays(baseIntervalDays * 1.5);
+                    break;
+            }
+
+            await db.SaveChangesAsync();
         }
 
         public Task<string> ChangePasswordAsync(ChangePasswordRequest request)
@@ -489,7 +471,7 @@ namespace LearningTrainer.Services
         // Export - в оффлайн-режиме используем локальную сериализацию
         public Task<byte[]> ExportDictionaryAsJsonAsync(int dictionaryId)
         {
-            using var db = Context;
+            var db = Context;
             var dictionary = db.Dictionaries
                 .Include(d => d.Words)
                 .FirstOrDefault(d => d.Id == dictionaryId);
@@ -523,7 +505,7 @@ namespace LearningTrainer.Services
 
         public Task<byte[]> ExportDictionaryAsCsvAsync(int dictionaryId)
         {
-            using var db = Context;
+            var db = Context;
             var dictionary = db.Dictionaries
                 .Include(d => d.Words)
                 .FirstOrDefault(d => d.Id == dictionaryId);
@@ -544,7 +526,7 @@ namespace LearningTrainer.Services
 
         public async Task<byte[]> ExportAllDictionariesAsZipAsync()
         {
-            using var db = Context;
+            var db = Context;
             var dictionaries = db.Dictionaries
                 .Include(d => d.Words)
                 .Where(d => d.UserId == _currentLocalUserId)

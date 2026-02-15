@@ -47,7 +47,7 @@ namespace LearningAPI.Middleware
                     break;
                 case InvalidOperationException:
                     context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                    response.Message = exception.Message;
+                    response.Message = "Некорректный запрос";
                     break;
                 default:
                     context.Response.StatusCode = StatusCodes.Status500InternalServerError;
@@ -58,7 +58,7 @@ namespace LearningAPI.Middleware
             var options = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All)
             };
             var json = JsonSerializer.Serialize(response, options);
             return context.Response.WriteAsync(json, Encoding.UTF8);

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -29,12 +29,10 @@ namespace LearningTrainer.Views
             {
                 if (this.DataContext == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("CRITICAL: DataContext is NULL in DictionaryManagementView!");
                     // Если ты здесь, значит, в ShellView неверно привязан DataContext.
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"DataContext type: {this.DataContext.GetType().Name}");
                     // Должно быть: DictionaryManagementViewModel
                 }
             };

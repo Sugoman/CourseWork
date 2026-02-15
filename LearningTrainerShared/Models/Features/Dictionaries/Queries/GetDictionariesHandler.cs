@@ -1,9 +1,9 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using LearningTrainer.Context; 
+using LearningTrainerShared.Context; 
 using LearningTrainerShared.Models;
 
 namespace LearningAPI.Features.Dictionaries.Queries.GetDictionaries

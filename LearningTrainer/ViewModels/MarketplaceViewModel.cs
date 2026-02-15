@@ -227,7 +227,6 @@ namespace LearningTrainer.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[MARKETPLACE] LoadDictionaries error: {ex.Message}");
                 EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
                     "Ошибка", $"Не удалось загрузить словари: {ex.Message}"));
             }
@@ -260,7 +259,6 @@ namespace LearningTrainer.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[MARKETPLACE] LoadRules error: {ex.Message}");
                 EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
                     "Ошибка", $"Не удалось загрузить правила: {ex.Message}"));
             }

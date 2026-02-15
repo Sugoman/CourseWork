@@ -1,7 +1,7 @@
 using FluentAssertions;
 using LearningAPI.Controllers;
 using LearningAPI.Tests.Helpers;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +25,11 @@ public class MarketplaceControllerTests : IDisposable
         _context = TestDbContextFactory.CreateInMemoryContext();
         _loggerMock = new Mock<ILogger<MarketplaceController>>();
         var cacheMock = new Mock<IDistributedCache>();
+        
+        // Ensure cache always returns null (MISS)
+        cacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((byte[]?)null);
+            
         _controller = new MarketplaceController(_context, _loggerMock.Object, cacheMock.Object);
         SetupUserContext(_testUserId, "Teacher");
     }

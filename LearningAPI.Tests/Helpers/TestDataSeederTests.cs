@@ -81,7 +81,7 @@ public class TestDataSeederTests
 
         // Assert
         user.Should().NotBeNull();
-        user.Login.Should().Be("testuser");
+        user.Username.Should().Be("testuser");
         user.PasswordHash.Should().NotBeNullOrEmpty();
         user.Role.Should().NotBeNull();
         user.InviteCode.Should().Be("TR-TEST01");
@@ -97,7 +97,7 @@ public class TestDataSeederTests
         var user = TestDataSeeder.CreateTestUser("customlogin", "custompassword", customRole);
 
         // Assert
-        user.Login.Should().Be("customlogin");
+        user.Username.Should().Be("customlogin");
         user.Role.Name.Should().Be("CustomRole");
     }
 

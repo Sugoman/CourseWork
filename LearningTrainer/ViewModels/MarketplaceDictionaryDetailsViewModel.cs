@@ -147,7 +147,6 @@ namespace LearningTrainer.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[DETAILS] Load error: {ex.Message}");
                 EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
                     "Ошибка", $"Не удалось загрузить данные: {ex.Message}"));
             }

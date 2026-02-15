@@ -1,4 +1,4 @@
-﻿using LearningTrainer.Core;
+using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using System.Windows.Input;
@@ -30,7 +30,6 @@ namespace LearningTrainer.ViewModels
         {
             if (string.IsNullOrWhiteSpace(DictionaryName))
             {
-                System.Diagnostics.Debug.WriteLine("Ошибка: не заполнено название словаря");
                 return;
             }
 
@@ -45,7 +44,6 @@ namespace LearningTrainer.ViewModels
                 };
 
                 var savedDictionary = await _dataService.AddDictionaryAsync(newDictionary);
-                System.Diagnostics.Debug.WriteLine($"Словарь '{DictionaryName}' успешно создан! ID: {savedDictionary.Id}");
 
                 EventAggregator.Instance.Publish(new DictionaryAddedMessage(savedDictionary));
 
@@ -53,13 +51,11 @@ namespace LearningTrainer.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Ошибка при создании словаря: {ex.Message}");
             }
         }
 
         private void Cancel()
         {
-            System.Diagnostics.Debug.WriteLine("Создание словаря отменено");
             EventAggregator.Instance.Publish(this);
         }
     }

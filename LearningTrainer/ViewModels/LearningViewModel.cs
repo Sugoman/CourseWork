@@ -68,10 +68,10 @@ namespace LearningTrainer.ViewModels
            );
             CloseTabCommand = new RelayCommand(CloseTab);
 
-            LoadSessionAsync();
+            _ = LoadSessionAsync();
         }
 
-        private async void LoadSessionAsync()
+        private async Task LoadSessionAsync()
         {
             try
             {

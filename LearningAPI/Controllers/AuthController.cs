@@ -1,17 +1,16 @@
-﻿using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Services;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 using BCrypt.Net;
 using NanoidDotNet;
 
 namespace LearningAPI.Controllers
 {
     [Route("api/[controller]")] // /api/auth
-    public class AuthController : ControllerBase
+    public class AuthController : BaseApiController
     {
         private readonly ApiDbContext _context;
         private readonly TokenService _tokenService;
@@ -29,9 +28,9 @@ namespace LearningAPI.Controllers
             public string Username { get; set; }
             public string Password { get; set; }
         }
-        private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
         private string GenerateInviteCode() => $"TR-{Nanoid.Generate(size: 6)}";
         
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
@@ -68,7 +67,7 @@ namespace LearningAPI.Controllers
                     Username = user.Username,
                     UserLogin = user.Username, // для обратной совместимости
                     Email = user.Email,
-                    UserRole = user.Role.Name,
+                    UserRole = user.Role?.Name ?? "User",
                     UserId = user.Id,         
                     InviteCode = user.InviteCode
                 });
@@ -84,11 +83,7 @@ namespace LearningAPI.Controllers
         [HttpPost("change-password")]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
+            var userId = GetUserId();
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
@@ -107,6 +102,7 @@ namespace LearningAPI.Controllers
             return Ok(new { message = "Пароль успешно обновлен" });
         }
 
+        [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
@@ -180,7 +176,7 @@ namespace LearningAPI.Controllers
             if (user == null) return NotFound("User not found.");
 
             // User, Admin и IndependentUser могут стать учителем
-            if (user.Role.Name != "Admin" && user.Role.Name != "User" && user.Role.Name != "IndependentUser")
+            if (user.Role?.Name != "Admin" && user.Role?.Name != "User" && user.Role?.Name != "IndependentUser")
             {
                 return StatusCode(403, new { message = "Только пользователь или администратор может стать учителем." });
             }

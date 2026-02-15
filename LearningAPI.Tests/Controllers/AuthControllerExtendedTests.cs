@@ -1,7 +1,7 @@
 using FluentAssertions;
 using LearningAPI.Controllers;
 using LearningAPI.Tests.Helpers;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using LearningTrainerShared.Services;
 using Microsoft.AspNetCore.Http;

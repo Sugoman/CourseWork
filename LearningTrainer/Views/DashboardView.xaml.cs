@@ -1,4 +1,4 @@
-﻿using LearningTrainer.ViewModels;
+using LearningTrainer.ViewModels;
 using LearningTrainerShared.Models;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,11 +18,9 @@ namespace LearningTrainer.Views
             {
                 if (this.DataContext == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("DataContext is null!");
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"DataContext type: {this.DataContext.GetType().Name}");
                 }
             };
         }
@@ -31,7 +29,6 @@ namespace LearningTrainer.Views
             var button = sender as Button;
             var dictionary = button?.DataContext as Dictionary;
 
-            System.Diagnostics.Debug.WriteLine($"Button clicked! Dictionary: {dictionary?.Name}");
 
             if (dictionary != null)
             {

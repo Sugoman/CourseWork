@@ -1,7 +1,7 @@
 ﻿@page "/dictionary/{Id:int}"
 @inject IContentApiService ContentApi
 @inject IAuthService AuthService
-@rendermode InteractiveServer
+@inject ILogger<LearningTrainerWeb.Components.Pages.DictionaryDetails> Logger
 
 <PageTitle>@(Dictionary?.Name ?? "Словарь") - LearningTrainer</PageTitle>
 
@@ -50,8 +50,8 @@
                                 <h1 style="color: white; margin-bottom: 0.5rem;">@Dictionary.Name</h1>
                                 <p style="opacity: 0.9; margin-bottom: 0;">@Dictionary.Description</p>
                             </div>
-                            <button class="btn btn-light btn-lg" style="color: var(--primary-700); font-weight: 600;" @onclick="DownloadDictionary">
-                                <i class="bi bi-download me-2"></i> Скачать
+                            <button class="btn btn-light btn-lg" style="color: var(--primary-700); font-weight: 600;" @onclick="DownloadDictionary" disabled="@IsDownloading">
+                                <i class="bi bi-download me-2"></i> @(IsDownloading ? "Скачивание..." : "Скачать")
                             </button>
                         </div>
                     </div>
@@ -119,95 +119,10 @@
                 </div>
 
                 <!-- Comments -->
-                <div class="card" style="border-radius: var(--radius-lg);">
-                    <div class="card-body">
-                        <h5 class="d-flex align-items-center gap-2 mb-4">
-                            <i class="bi bi-chat-dots" style="color: var(--primary-500);"></i>
-                            Отзывы (@(Comments?.Count ?? 0))
-                        </h5>
-                        
-                        @if (Comments != null && Comments.Any())
-                        {
-                            @foreach (var comment in Comments)
-                            {
-                                <div class="p-3 mb-3 py-3 px-3" style="background: var(--gray-50); border-radius: var(--radius);">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-400), var(--primary-600)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
-                                                @(comment.AuthorName?.FirstOrDefault() ?? '?')
-                                            </div>
-                                            <strong>@comment.AuthorName</strong>
-                                        </div>
-                                        <span class="text-muted small me-3 mt-3">@comment.CreatedAt.ToString("dd.MM.yyyy")</span>
-                                    </div>
-                                    <div class="mb-2 ml-3" style="color: var(--accent-yellow);">
-                                        @for (int i = 0; i < comment.Rating; i++)
-                                        {
-                                            <i class="bi bi-star-fill"></i>
-                                        }
-                                        @for (int i = comment.Rating; i < 5; i++)
-                                        {
-                                            <i class="bi bi-star" style="opacity: 0.3;"></i>
-                                        }
-                                    </div>
-                                    <p class="mb-0" style="color: var(--gray-700);">@comment.Text</p>
-                                </div>
-                            }
-                        }
-                        else
-                        {
-                            <div class="text-center py-4 text-muted">
-                                <i class="bi bi-chat" style="font-size: 2rem; opacity: 0.5;"></i>
-                                <p class="mt-2 mb-0">Пока нет отзывов. Будьте первым!</p>
-                            </div>
-                        }
-
-                        <hr style="border-color: var(--gray-200); margin: 1.5rem 0;" />
-                        
-                        <h6 class="mb-3">
-                            <i class="bi bi-pencil me-1 "></i> Оставить отзыв
-                        </h6>
-                        
-                        @if (!string.IsNullOrEmpty(CommentError))
-                        {
-                            <div class="alert alert-danger d-flex align-items-center gap-2">
-                                <i class="bi bi-exclamation-circle"></i> @CommentError
-                            </div>
-                        }
-                        @if (!string.IsNullOrEmpty(CommentSuccess))
-                        {
-                            <div class="alert alert-success d-flex align-items-center gap-2">
-                                <i class="bi bi-check-circle"></i> @CommentSuccess
-                            </div>
-                        }
-                        
-                        <div class="mb-3">
-                            <label class="form-label">
-                                <i class="bi bi-star me-1"></i> Оценка
-                            </label>
-                            <select class="form-select" @bind="NewRating">
-                                <option value="5">⭐⭐⭐⭐⭐ Отлично</option>
-                                <option value="4">⭐⭐⭐⭐ Хорошо</option>
-                                <option value="3">⭐⭐⭐ Нормально</option>
-                                <option value="2">⭐⭐ Плохо</option>
-                                <option value="1">⭐ Ужасно</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">
-                                <i class="bi bi-chat-text me-1"></i> Комментарий
-                            </label>
-                            <textarea class="form-control" rows="3" placeholder="Поделитесь своим мнением..." @bind="NewComment"></textarea>
-                        </div>
-                        <button class="btn btn-primary gap-2" @onclick="SubmitComment" disabled="@IsSubmitting">
-                            @if (IsSubmitting)
-                            {
-                                <span class="spinner-border spinner-border-sm me-2"></span>
-                            }
-                            <i class="bi bi-send me-1 "></i> Отправить
-                        </button>
-                    </div>
-                </div>
+                <LearningTrainerWeb.Components.Shared.CommentsSection 
+                    EntityType="dictionary" 
+                    EntityId="Id" 
+                    IsAuthenticated="IsAuthenticated" />
             </div>
 
             <!-- Sidebar -->
@@ -247,20 +162,17 @@
     public int Id { get; set; }
 
     private DictionaryDetailDto? Dictionary;
-    private List<CommentItem>? Comments;
     private bool IsLoading = true;
-    private bool IsSubmitting = false;
-
-    private int NewRating = 5;
-    private string NewComment = "";
-    private string? CommentError;
-    private string? CommentSuccess;
+    private bool IsAuthenticated;
+    private bool IsDownloading;
     private string? DownloadMessage;
     private bool DownloadSuccess;
 
     protected override async Task OnInitializedAsync()
     {
         await AuthService.InitializeAsync();
+        var session = await AuthService.GetCurrentSessionAsync();
+        IsAuthenticated = session != null;
         await LoadDictionary();
     }
 
@@ -270,11 +182,10 @@
         try
         {
             Dictionary = await ContentApi.GetDictionaryDetailsAsync(Id);
-            Comments = await ContentApi.GetDictionaryCommentsAsync(Id);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            Logger.LogError(ex, "Error loading dictionary {Id}", Id);
         }
         finally
         {
@@ -284,6 +195,8 @@
 
     private async Task DownloadDictionary()
     {
+        if (IsDownloading) return;
+
         var session = await AuthService.GetCurrentSessionAsync();
         if (session == null)
         {
@@ -291,7 +204,8 @@
             DownloadSuccess = false;
             return;
         }
-        
+
+        IsDownloading = true;
         try
         {
             await ContentApi.DownloadDictionaryAsync(Id);
@@ -303,43 +217,9 @@
             DownloadMessage = $"Ошибка: {ex.Message}";
             DownloadSuccess = false;
         }
-    }
-
-    private async Task SubmitComment()
-    {
-        CommentError = null;
-        CommentSuccess = null;
-        
-        var session = await AuthService.GetCurrentSessionAsync();
-        if (session == null)
-        {
-            CommentError = "Войдите в аккаунт чтобы оставить отзыв";
-            return;
-        }
-        
-        if (string.IsNullOrWhiteSpace(NewComment))
-        {
-            CommentError = "Введите текст комментария";
-            return;
-        }
-        
-        IsSubmitting = true;
-        
-        try
-        {
-            await ContentApi.AddDictionaryCommentAsync(Id, NewRating, NewComment);
-            CommentSuccess = "Отзыв успешно добавлен!";
-            NewComment = "";
-            NewRating = 5;
-            Comments = await ContentApi.GetDictionaryCommentsAsync(Id);
-        }
-        catch (Exception ex)
-        {
-            CommentError = $"Ошибка: {ex.Message}";
-        }
         finally
         {
-            IsSubmitting = false;
+            IsDownloading = false;
         }
     }
 }

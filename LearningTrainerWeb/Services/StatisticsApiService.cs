@@ -1,40 +1,42 @@
 using LearningTrainerShared.Models.Statistics;
 using System.Net.Http.Json;
-using System.Net.Http.Headers;
 
 namespace LearningTrainerWeb.Services;
 
-public class StatisticsApiService
+public interface IStatisticsApiService
+{
+    Task<UserStatistics?> GetStatisticsAsync(string period = "week");
+    Task<StatisticsSummary?> GetSummaryAsync();
+    Task<List<DailyActivityStats>> GetDailyActivityAsync(int days = 30);
+    Task<List<DictionaryStats>> GetDictionaryStatsAsync();
+    Task<List<DifficultWord>> GetDifficultWordsAsync(int limit = 20);
+    Task<List<Achievement>> GetAchievementsAsync();
+    Task<bool> SaveSessionAsync(SaveSessionRequest request);
+}
+
+public class StatisticsApiService : IStatisticsApiService
 {
     private readonly HttpClient _httpClient;
-    private readonly IAuthService _authService;
+    private readonly AuthTokenProvider _tokenProvider;
     private readonly ILogger<StatisticsApiService> _logger;
 
     public StatisticsApiService(
         HttpClient httpClient,
-        IAuthService authService,
+        AuthTokenProvider tokenProvider,
         ILogger<StatisticsApiService> logger)
     {
         _httpClient = httpClient;
-        _authService = authService;
+        _tokenProvider = tokenProvider;
         _logger = logger;
     }
 
-    private void AddAuthHeader()
-    {
-        var token = _authService.GetToken();
-        if (!string.IsNullOrEmpty(token))
-        {
-            _httpClient.DefaultRequestHeaders.Authorization = 
-                new AuthenticationHeaderValue("Bearer", token);
-        }
-    }
+    private void ApplyAuth() => _tokenProvider.ApplyTo(_httpClient);
 
     public async Task<UserStatistics?> GetStatisticsAsync(string period = "week")
     {
         try
         {
-            AddAuthHeader();
+            ApplyAuth();
             var response = await _httpClient.GetAsync($"api/statistics?period={period}");
             
             if (response.IsSuccessStatusCode)
@@ -56,7 +58,7 @@ public class StatisticsApiService
     {
         try
         {
-            AddAuthHeader();
+            ApplyAuth();
             var response = await _httpClient.GetAsync("api/statistics/summary");
 
             if (response.IsSuccessStatusCode)
@@ -77,7 +79,7 @@ public class StatisticsApiService
     {
         try
         {
-            AddAuthHeader();
+            ApplyAuth();
             var response = await _httpClient.GetAsync($"api/statistics/daily?days={days}");
 
             if (response.IsSuccessStatusCode)
@@ -99,7 +101,7 @@ public class StatisticsApiService
     {
         try
         {
-            AddAuthHeader();
+            ApplyAuth();
             var response = await _httpClient.GetAsync("api/statistics/dictionaries");
 
             if (response.IsSuccessStatusCode)
@@ -121,7 +123,7 @@ public class StatisticsApiService
     {
         try
         {
-            AddAuthHeader();
+            ApplyAuth();
             var response = await _httpClient.GetAsync($"api/statistics/difficult-words?limit={limit}");
 
             if (response.IsSuccessStatusCode)
@@ -143,7 +145,7 @@ public class StatisticsApiService
     {
         try
         {
-            AddAuthHeader();
+            ApplyAuth();
             var response = await _httpClient.GetAsync("api/statistics/achievements");
 
             if (response.IsSuccessStatusCode)
@@ -165,7 +167,7 @@ public class StatisticsApiService
     {
         try
         {
-            AddAuthHeader();
+            ApplyAuth();
             var response = await _httpClient.PostAsJsonAsync("api/statistics/session", request);
             return response.IsSuccessStatusCode;
         }

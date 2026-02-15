@@ -1,4 +1,4 @@
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using LearningTrainerShared.Models.Statistics;
 using Microsoft.EntityFrameworkCore;

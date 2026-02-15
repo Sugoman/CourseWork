@@ -109,7 +109,7 @@ namespace LearningTrainer.ViewModels
                            $"• Просматривать общие материалы: {(status.CanViewSharedDictionaries ? "?" : "?")}";
 
             _notificationService.AddRoleInfoNotification(
-                _currentUser.Login,
+                _currentUser.Username,
                 status.RoleName,
                 message
             );

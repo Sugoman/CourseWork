@@ -1,12 +1,11 @@
-﻿using LearningAPI.Extensions;
-using LearningTrainer.Context;
+using LearningAPI.Extensions;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using System.Collections.Generic;
-using System.Security.Claims;
 using System.Text.Json;
 
 namespace LearningAPI.Controllers
@@ -14,7 +13,7 @@ namespace LearningAPI.Controllers
     [Authorize]
     [ApiController]
     [Route("api/rules")] // /api/Rules
-    public class RulesController : ControllerBase
+    public class RulesController : BaseApiController
     {
         private readonly ApiDbContext _context;
         private readonly IDistributedCache _cache;
@@ -29,8 +28,7 @@ namespace LearningAPI.Controllers
         [Authorize]
         public async Task<IActionResult> GetAvailableRules()
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out int currentUserId)) return Unauthorized();
+            var currentUserId = GetUserId();
 
             var cacheKey = $"rules:available:{currentUserId}";
             var cached = await _cache.TryGetStringAsync(cacheKey);
@@ -72,8 +70,7 @@ namespace LearningAPI.Controllers
         [HttpGet]
         public async Task<IActionResult> GetRules()
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
+            var userId = GetUserId();
 
             var cacheKey = $"rules:{userId}";
             var cached = await _cache.TryGetStringAsync(cacheKey);
@@ -114,11 +111,7 @@ namespace LearningAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> AddRule([FromBody] RuleCreateDto ruleDto)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
+            var userId = GetUserId();
 
             if (ruleDto == null)
             {
@@ -153,11 +146,7 @@ namespace LearningAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRule(int id)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
+            var userId = GetUserId();
 
             var rule = await _context.Rules.FindAsync(id);
             if (rule == null) return NotFound();
@@ -181,8 +170,7 @@ namespace LearningAPI.Controllers
         {
             if (id != rule.Id) return BadRequest("ID mismatch");
 
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId)) return Unauthorized();
+            var userId = GetUserId();
 
             var existingRule = await _context.Rules.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
             if (existingRule == null) return NotFound();

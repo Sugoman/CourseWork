@@ -1,7 +1,7 @@
 using FluentAssertions;
 using LearningAPI.Controllers;
 using LearningAPI.Tests.Helpers;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +22,11 @@ public class RulesControllerTests : IDisposable
     {
         _context = TestDbContextFactory.CreateInMemoryContext();
         var cacheMock = new Mock<IDistributedCache>();
+        
+        // Ensure cache always returns null (MISS)
+        cacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((byte[]?)null);
+            
         _controller = new RulesController(_context, cacheMock.Object);
         SetupUserContext(_testUserId, "Teacher");
     }
@@ -98,11 +103,8 @@ public class RulesControllerTests : IDisposable
             HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal() }
         };
 
-        // Act
-        var result = await _controller.GetRules();
-
-        // Assert
-        result.Should().BeOfType<UnauthorizedResult>();
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetRules());
     }
 
     #endregion

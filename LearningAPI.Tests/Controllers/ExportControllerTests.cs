@@ -1,7 +1,7 @@
 using FluentAssertions;
 using LearningAPI.Controllers;
 using LearningAPI.Tests.Helpers;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -65,8 +65,8 @@ public class ExportControllerTests : IDisposable
         await _context.SaveChangesAsync();
         
         // Add words after dictionary is saved
-        _context.Words.Add(new Word { OriginalWord = "Hello", Translation = "Привет", Transcription = "[h??lo?]", Example = "Hello world", UserId = _testUserId, DictionaryId = dictionary.Id });
-        _context.Words.Add(new Word { OriginalWord = "World", Translation = "Мир", Transcription = "[w??rld]", Example = "Hello world", UserId = _testUserId, DictionaryId = dictionary.Id });
+        _context.Words.Add(new Word { OriginalWord = "Hello", Translation = "пїЅпїЅпїЅпїЅпїЅпїЅ", Transcription = "[h??lo?]", Example = "Hello world", UserId = _testUserId, DictionaryId = dictionary.Id });
+        _context.Words.Add(new Word { OriginalWord = "World", Translation = "пїЅпїЅпїЅ", Transcription = "[w??rld]", Example = "Hello world", UserId = _testUserId, DictionaryId = dictionary.Id });
         await _context.SaveChangesAsync();
         
         return dictionary;
@@ -206,9 +206,9 @@ public class ExportControllerTests : IDisposable
         var csv = Encoding.UTF8.GetString(fileResult.FileContents);
         
         csv.Should().Contain("Hello");
-        csv.Should().Contain("Привет");
+        csv.Should().Contain("пїЅпїЅпїЅпїЅпїЅпїЅ");
         csv.Should().Contain("World");
-        csv.Should().Contain("Мир");
+        csv.Should().Contain("пїЅпїЅпїЅ");
     }
 
     [Fact]

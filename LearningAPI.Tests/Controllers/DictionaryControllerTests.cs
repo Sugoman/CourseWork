@@ -1,9 +1,9 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using LearningAPI.Controllers;
+using LearningAPI.Services;
 using LearningAPI.Tests.Helpers;
-using LearningTrainer.Context;
+using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
-using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
@@ -17,7 +17,6 @@ namespace LearningAPI.Tests.Controllers;
 public class DictionaryControllerTests : IDisposable
 {
     private readonly ApiDbContext _context;
-    private readonly Mock<IMediator> _mediatorMock;
     private readonly Mock<ILogger<DictionaryController>> _loggerMock;
     private readonly DictionaryController _controller;
     private readonly int _testUserId = 1;
@@ -25,11 +24,15 @@ public class DictionaryControllerTests : IDisposable
     public DictionaryControllerTests()
     {
         _context = TestDbContextFactory.CreateInMemoryContext();
-        _mediatorMock = new Mock<IMediator>();
         _loggerMock = new Mock<ILogger<DictionaryController>>();
         var cacheMock = new Mock<IDistributedCache>();
 
-        _controller = new DictionaryController(_context, _mediatorMock.Object, _loggerMock.Object, cacheMock.Object);
+        // Ensure cache always returns null (MISS)
+        cacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((byte[]?)null);
+
+        var dictionaryService = new DictionaryService(_context, cacheMock.Object);
+        _controller = new DictionaryController(dictionaryService, _loggerMock.Object);
         SetupUserContext(_testUserId, "Teacher");
     }
 
@@ -230,7 +233,7 @@ public class DictionaryControllerTests : IDisposable
         // Act
         var result = await _controller.DeleteDictionary(1);
 
-        // Assert
-        result.Should().BeOfType<ForbidResult>();
+        // Assert — service returns NotFound for both missing and unauthorized (security: don't reveal existence)
+        result.Should().BeOfType<NotFoundResult>();
     }
 }
