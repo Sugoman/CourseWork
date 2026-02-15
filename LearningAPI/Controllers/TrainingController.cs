@@ -43,34 +43,16 @@ public class TrainingController : BaseApiController
 
         try
         {
-            // Получаем ID слов пользователя
-            var userWordIds = await _context.Words
-                .Where(w => w.UserId == userId)
-                .Select(w => w.Id)
-                .ToListAsync();
-
-            // ID слов с прогрессом (серверная фильтрация)
-            var progressWordIds = await _context.LearningProgresses
-                .Where(p => p.UserId == userId)
-                .Select(p => p.WordId)
-                .ToListAsync();
-
-            var progressWordIdSet = progressWordIds.ToHashSet();
-
-            // Слова к повторению (серверная фильтрация + проекция)
+            // --- 1. Слова к повторению (проекция, без Include) ---
             var reviewWords = await _context.LearningProgresses
-                .Include(p => p.Word)
-                    .ThenInclude(w => w.Dictionary)
                 .Where(p => p.UserId == userId && p.NextReview <= now && p.Word != null)
                 .OrderBy(p => p.NextReview)
                 .Take(reviewLimit)
                 .Select(p => MapToTrainingWordProjection(p))
                 .ToListAsync();
 
-            // Сложные слова (серверная фильтрация + проекция)
+            // --- 2. Сложные слова (проекция, без Include) ---
             var difficultWords = await _context.LearningProgresses
-                .Include(p => p.Word)
-                    .ThenInclude(w => w.Dictionary)
                 .Where(p => p.UserId == userId && p.Word != null &&
                            (p.KnowledgeLevel == 0 ||
                             (p.TotalAttempts > 2 && p.CorrectAnswers < p.TotalAttempts / 2)))
@@ -79,10 +61,30 @@ public class TrainingController : BaseApiController
                 .Select(p => MapToTrainingWordProjection(p))
                 .ToListAsync();
 
-            // Новые слова (без прогресса)
+            // --- 3. Агрегированная статистика — один SQL-запрос вместо четырёх ---
+            var stats = await _context.LearningProgresses
+                .Where(p => p.UserId == userId)
+                .GroupBy(_ => 1)
+                .Select(g => new
+                {
+                    TotalProgress = g.Count(),
+                    TotalReviewCount = g.Count(p => p.NextReview <= now),
+                    CompletedToday = g.Count(p => p.LastPracticed >= today),
+                    LastPractice = g.Where(p => p.LastPracticed != default)
+                                    .Max(p => (DateTime?)p.LastPracticed)
+                })
+                .FirstOrDefaultAsync();
+
+            var totalWordCount = await _context.Words
+                .CountAsync(w => w.UserId == userId);
+
+            // --- 4. Новые слова (подзапрос вместо загрузки всех ID) ---
             var newWords = await _context.Words
-                .Where(w => w.UserId == userId && !progressWordIdSet.Contains(w.Id))
-                .Include(w => w.Dictionary)
+                .Where(w => w.UserId == userId &&
+                       !_context.LearningProgresses
+                            .Where(p => p.UserId == userId)
+                            .Select(p => p.WordId)
+                            .Contains(w.Id))
                 .OrderBy(w => w.AddedAt)
                 .Take(newWordsLimit)
                 .Select(w => new TrainingWordDto
@@ -101,20 +103,7 @@ public class TrainingController : BaseApiController
                 })
                 .ToListAsync();
 
-            // Статистика (серверная агрегация)
-            var totalReviewCount = await _context.LearningProgresses
-                .CountAsync(p => p.UserId == userId && p.NextReview <= now);
-
-            var completedToday = await _context.LearningProgresses
-                .CountAsync(p => p.UserId == userId && p.LastPracticed >= today);
-
-            var lastPractice = await _context.LearningProgresses
-                .Where(p => p.UserId == userId && p.LastPracticed != default)
-                .OrderByDescending(p => p.LastPracticed)
-                .Select(p => (DateTime?)p.LastPracticed)
-                .FirstOrDefaultAsync();
-
-            // Подсчёт streak (серии дней подряд)
+            // --- 5. Streak ---
             var streak = await CalculateStreakAsync(userId, today);
 
             var plan = new DailyPlanDto
@@ -124,12 +113,12 @@ public class TrainingController : BaseApiController
                 DifficultWords = difficultWords,
                 Stats = new DailyPlanStats
                 {
-                    TotalReviewCount = totalReviewCount,
-                    TotalNewCount = userWordIds.Count - progressWordIdSet.Count,
+                    TotalReviewCount = stats?.TotalReviewCount ?? 0,
+                    TotalNewCount = totalWordCount - (stats?.TotalProgress ?? 0),
                     TotalDifficultCount = difficultWords.Count,
-                    CompletedToday = completedToday,
+                    CompletedToday = stats?.CompletedToday ?? 0,
                     CurrentStreak = streak,
-                    LastPracticeDate = lastPractice
+                    LastPracticeDate = stats?.LastPractice
                 }
             };
 
@@ -378,37 +367,35 @@ public class TrainingController : BaseApiController
 
     private async Task<int> CalculateStreakAsync(int userId, DateTime today)
     {
+        // Получаем уникальные даты практики (серверная проекция по дню)
         var practiceDates = await _context.LearningProgresses
-            .Where(p => p.UserId == userId && p.LastPracticed != default)
-            .Select(p => p.LastPracticed.Date)
-            .Distinct()
-            .OrderByDescending(d => d)
-            .Take(30) // Последние 30 дней достаточно для streak
+            .Where(p => p.UserId == userId && p.LastPracticed != default
+                        && p.LastPracticed >= today.AddDays(-30))
+            .Select(p => p.LastPracticed)
             .ToListAsync();
 
         if (practiceDates.Count == 0)
             return 0;
 
+        // Проекция .Date на клиенте (после загрузки минимального набора)
+        var uniqueDates = practiceDates
+            .Select(d => d.Date)
+            .Distinct()
+            .ToHashSet();
+
         int streak = 0;
         var checkDate = today;
 
         // Если сегодня ещё не занимались, начинаем со вчера
-        if (!practiceDates.Contains(today))
+        if (!uniqueDates.Contains(today))
         {
             checkDate = today.AddDays(-1);
         }
 
-        foreach (var _ in practiceDates)
+        while (uniqueDates.Contains(checkDate))
         {
-            if (practiceDates.Contains(checkDate))
-            {
-                streak++;
-                checkDate = checkDate.AddDays(-1);
-            }
-            else
-            {
-                break;
-            }
+            streak++;
+            checkDate = checkDate.AddDays(-1);
         }
 
         return streak;

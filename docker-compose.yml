@@ -52,7 +52,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True
+      - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True;Max Pool Size=2000;Min Pool Size=100;
     command: >
       bash -c "
         dotnet tool install --global dotnet-ef --version 8.0.0 || true &&

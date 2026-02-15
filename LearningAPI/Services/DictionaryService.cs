@@ -21,14 +21,13 @@ namespace LearningAPI.Services
         public async Task<(List<Dictionary> Data, int Total)> GetDictionariesPagedAsync(
             int userId, int page, int pageSize, string orderBy, bool descending)
         {
-            var sharedIds = await _context.DictionarySharings
-                .Where(ds => ds.StudentId == userId)
-                .Select(ds => ds.DictionaryId)
-                .ToListAsync();
-
+            // sharedIds как подзапрос вместо отдельного roundtrip
             var query = _context.Dictionaries
-                .Where(d => d.UserId == userId || sharedIds.Contains(d.Id))
-                .Include(d => d.Words)
+                .Where(d => d.UserId == userId ||
+                       _context.DictionarySharings
+                           .Where(ds => ds.StudentId == userId)
+                           .Select(ds => ds.DictionaryId)
+                           .Contains(d.Id))
                 .AsNoTracking();
 
             query = orderBy switch
@@ -39,10 +38,34 @@ namespace LearningAPI.Services
             };
 
             var total = await query.CountAsync();
-            var data = await query
+
+            // Данные + WordCount в одном SQL: d.Words.Count → (SELECT COUNT(*) FROM Words WHERE DictionaryId = d.Id)
+            var projected = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(d => new
+                {
+                    d.Id, d.UserId, d.Name, d.Description,
+                    d.LanguageFrom, d.LanguageTo, d.IsPublished,
+                    d.Rating, d.RatingCount, d.DownloadCount, d.SourceDictionaryId,
+                    WordCount = d.Words.Count
+                })
                 .ToListAsync();
+
+            // Маппинг обратно в Dictionary (контроллер проецирует в анонимный тип, Words не сериализуются)
+            var data = projected.Select(r =>
+            {
+                var dict = new Dictionary
+                {
+                    Id = r.Id, UserId = r.UserId, Name = r.Name, Description = r.Description,
+                    LanguageFrom = r.LanguageFrom, LanguageTo = r.LanguageTo,
+                    IsPublished = r.IsPublished, Rating = r.Rating, RatingCount = r.RatingCount,
+                    DownloadCount = r.DownloadCount, SourceDictionaryId = r.SourceDictionaryId
+                };
+                for (var i = 0; i < r.WordCount; i++)
+                    dict.Words.Add(new Word());
+                return dict;
+            }).ToList();
 
             return (data, total);
         }

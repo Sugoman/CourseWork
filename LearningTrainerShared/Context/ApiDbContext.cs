@@ -29,6 +29,9 @@ namespace LearningTrainerShared.Context
         public DbSet<UserAchievement> UserAchievements { get; set; } = null!;
         public DbSet<UserStats> UserStats { get; set; } = null!;
 
+        // Transcription cache
+        public DbSet<TranscriptionCache> TranscriptionCache { get; set; } = null!;
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -139,6 +142,33 @@ namespace LearningTrainerShared.Context
             // Index on RefreshToken for fast lookup during token refresh
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.RefreshToken);
+
+            // TranscriptionCache — уникальный индекс по слову
+            modelBuilder.Entity<TranscriptionCache>()
+                .HasIndex(tc => tc.WordLower)
+                .IsUnique();
+
+            // === PERFORMANCE INDEXES ===
+
+            // Comments: ускоряет AnyAsync / подсчёт рейтинга по (ContentType, ContentId)
+            modelBuilder.Entity<Comment>()
+                .HasIndex(c => new { c.ContentType, c.ContentId });
+
+            // Comments: ускоряет проверку «один отзыв на пользователя»
+            modelBuilder.Entity<Comment>()
+                .HasIndex(c => new { c.UserId, c.ContentType, c.ContentId });
+
+            // Words: ускоряет все выборки слов по пользователю
+            modelBuilder.Entity<Word>()
+                .HasIndex(w => w.UserId);
+
+            // LearningProgress: покрывающий индекс для daily-plan запросов
+            modelBuilder.Entity<LearningProgress>()
+                .HasIndex(p => new { p.UserId, p.NextReview });
+
+            // LearningProgress: ускоряет streak-вычисление
+            modelBuilder.Entity<LearningProgress>()
+                .HasIndex(p => new { p.UserId, p.LastPracticed });
         }
     }
 }

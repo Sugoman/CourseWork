@@ -1,6 +1,7 @@
 using LearningTrainerShared.Context;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using LearningAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Security.Claims;
@@ -12,12 +13,12 @@ namespace LearningAPI.Controllers
     public class WordsController : ControllerBase
     {
         private readonly ApiDbContext _context;
-        private readonly ExternalDictionaryService _dictionaryService;
+        private readonly TranscriptionChannel _transcriptionChannel;
 
-        public WordsController(ApiDbContext context, ExternalDictionaryService dictionaryService)
+        public WordsController(ApiDbContext context, TranscriptionChannel transcriptionChannel)
         {
             _context = context;
-            _dictionaryService = dictionaryService;
+            _transcriptionChannel = transcriptionChannel;
         }
         [HttpPost]
         public async Task<IActionResult> AddWord([FromBody] CreateWordRequest requestDto)
@@ -43,11 +44,13 @@ namespace LearningAPI.Controllers
                 UserId = userId
             };
 
-            var transcription = await _dictionaryService.GetTranscriptionAsync(newWord.OriginalWord);
-            newWord.Transcription = transcription;
-
+            // Сохраняем слово мгновенно БЕЗ транскрипции
             _context.Words.Add(newWord);
             await _context.SaveChangesAsync();
+
+            // Отправляем задачу на получение транскрипции в фоновый воркер
+            await _transcriptionChannel.Writer.WriteAsync(
+                new TranscriptionRequest(newWord.Id, newWord.OriginalWord));
 
             return Ok(newWord);
         }

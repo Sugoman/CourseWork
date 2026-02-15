@@ -77,6 +77,33 @@ namespace LearningAPI.Controllers
 
                 return Ok(progress);
             }
+            catch (DbUpdateException)
+            {
+                // Race condition: два параллельных запроса создали LearningProgress для одного WordId.
+                // Повторяем запрос — теперь FindAsync найдёт существующую запись.
+                _logger.LogWarning("Concurrency conflict for User={UserId}, Word={WordId}, retrying...", GetUserId(), request.WordId);
+
+                try
+                {
+                    var userId = GetUserId();
+                    var progress = await _context.LearningProgresses
+                        .FirstOrDefaultAsync(p => p.UserId == userId && p.WordId == request.WordId);
+
+                    if (progress != null)
+                    {
+                        _spacedRepetition.ApplyAnswer(progress, request.Quality);
+                        await _context.SaveChangesAsync();
+                        await _cache.TryRemoveAsync($"stats:{userId}");
+                        return Ok(progress);
+                    }
+                }
+                catch (Exception retryEx)
+                {
+                    _logger.LogError(retryEx, "Retry also failed for User={UserId}, Word={WordId}", GetUserId(), request.WordId);
+                }
+
+                return StatusCode(500, "Произошла ошибка при обновлении прогресса.");
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating progress for User={UserId}, Word={WordId}", GetUserId(), request.WordId);

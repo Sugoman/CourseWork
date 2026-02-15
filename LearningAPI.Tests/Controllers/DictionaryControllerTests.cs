@@ -91,8 +91,9 @@ public class DictionaryControllerTests : IDisposable
         
         response.Should().NotBeNull();
         var dataProperty = response!.GetType().GetProperty("data");
-        var dictionaries = dataProperty?.GetValue(response) as IEnumerable<Dictionary>;
-        dictionaries.Should().HaveCount(1);
+        var data = dataProperty?.GetValue(response) as System.Collections.IEnumerable;
+        data.Should().NotBeNull();
+        data!.Cast<object>().Should().HaveCount(1);
     }
 
     [Fact]

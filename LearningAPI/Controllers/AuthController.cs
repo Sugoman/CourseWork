@@ -41,7 +41,7 @@ namespace LearningAPI.Controllers
                                    .Include(u => u.Role)
                                    .FirstOrDefaultAsync(u => u.Username == request.Username || u.Email == request.Username);
 
-                if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+                if (user == null || !await Task.Run(() => BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash)))
                 {
                     _logger.LogWarning("Failed login attempt for user {Username}", request.Username);
                     return Unauthorized(new { message = "Неверный логин или пароль" });
@@ -91,12 +91,12 @@ namespace LearningAPI.Controllers
                 return NotFound("User not found.");
             }
 
-            if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
+            if (!await Task.Run(() => BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash)))
             {
                 return BadRequest(new { message = "Неверный старый пароль" });
             }
 
-            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            user.PasswordHash = await Task.Run(() => BCrypt.Net.BCrypt.HashPassword(request.NewPassword));
             await _context.SaveChangesAsync();            
 
             return Ok(new { message = "Пароль успешно обновлен" });
@@ -150,18 +150,30 @@ namespace LearningAPI.Controllers
                 return StatusCode(500, new { message = "Ошибка: Роль не найдена в БД." });
             }
 
+            // BCrypt — CPU-intensive, выносим из async-контекста чтобы не блокировать thread pool
+            var passwordHash = await Task.Run(() => BCrypt.Net.BCrypt.HashPassword(request.Password));
+
             var newUser = new User
             {
                 Username = request.Username,
                 Email = request.Email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                PasswordHash = passwordHash,
                 RoleId = roleToAssign.Id,
                 UserId = teacherId,
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // Race condition: параллельный запрос уже зарегистрировал пользователя с таким Username/Email
+                return Conflict(new { message = "Пользователь с таким именем или Email уже существует" });
+            }
 
             return CreatedAtAction(nameof(Login), new { username = newUser.Username }, new { message = "Аккаунт успешно создан" });
         }

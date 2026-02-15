@@ -13,10 +13,16 @@ namespace LearningTrainer.Services
     {
         private readonly HttpClient _httpClient;
 
+        /// <summary>
+        /// Жёсткий таймаут на один запрос к внешнему API.
+        /// </summary>
+        private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
+
         public ExternalDictionaryService(HttpClient httpClient)
         {
             _httpClient = httpClient;
             _httpClient.BaseAddress = new Uri("https://api.dictionaryapi.dev/api/v2/entries/en/");
+            _httpClient.Timeout = RequestTimeout;
         }
 
         public async Task<string?> GetTranscriptionAsync(string word)
@@ -26,8 +32,10 @@ namespace LearningTrainer.Services
 
             try
             {
+                using var cts = new CancellationTokenSource(RequestTimeout);
+
                 // https://api.dictionaryapi.dev/api/v2/entries/en/hello
-                var response = await _httpClient.GetFromJsonAsync<List<DictionaryApiEntryDto>>(word);
+                var response = await _httpClient.GetFromJsonAsync<List<DictionaryApiEntryDto>>(word, cts.Token);
 
                 if (response != null && response.Count > 0)
                 {
@@ -57,6 +65,14 @@ namespace LearningTrainer.Services
                     return null;
                 }
                 System.Diagnostics.Debug.WriteLine($"API dictionaryapi.dev error: {ex.Message}");
+            }
+            catch (TaskCanceledException)
+            {
+                System.Diagnostics.Debug.WriteLine($"Timeout getting transcription for '{word}'");
+            }
+            catch (OperationCanceledException)
+            {
+                System.Diagnostics.Debug.WriteLine($"Timeout getting transcription for '{word}'");
             }
 
             return null;

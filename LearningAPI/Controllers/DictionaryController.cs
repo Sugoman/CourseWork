@@ -38,7 +38,21 @@ namespace LearningAPI.Controllers
 
             return Ok(new
             {
-                data,
+                data = data.Select(d => new
+                {
+                    d.Id,
+                    d.UserId,
+                    d.Name,
+                    d.Description,
+                    d.LanguageFrom,
+                    d.LanguageTo,
+                    d.IsPublished,
+                    d.Rating,
+                    d.RatingCount,
+                    d.DownloadCount,
+                    d.SourceDictionaryId,
+                    d.WordCount
+                }),
                 pagination = new
                 {
                     page,

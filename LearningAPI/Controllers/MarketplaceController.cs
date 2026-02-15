@@ -195,6 +195,7 @@ public class MarketplaceController : BaseApiController
             return BadRequest(new { Message = "Вы уже скачали этот словарь" });
 
         var originalDict = await _context.Dictionaries
+            .AsNoTracking()
             .Include(d => d.Words)
             .FirstOrDefaultAsync(d => d.Id == id && d.IsPublished);
 
@@ -215,23 +216,17 @@ public class MarketplaceController : BaseApiController
         _context.Dictionaries.Add(newDict);
         await _context.SaveChangesAsync();
 
-        // Копируем слова
-        foreach (var word in originalDict.Words)
+        // Копируем слова пакетно
+        var newWords = originalDict.Words.Select(word => new Word
         {
-            var newWord = new Word
-            {
-                DictionaryId = newDict.Id,
-                UserId = userId,
-                OriginalWord = word.OriginalWord,
-                Translation = word.Translation,
-                Transcription = word.Transcription,
-                Example = word.Example
-            };
-            _context.Words.Add(newWord);
-        }
-
-        // Увеличиваем счётчик скачиваний
-        originalDict.DownloadCount++;
+            DictionaryId = newDict.Id,
+            UserId = userId,
+            OriginalWord = word.OriginalWord,
+            Translation = word.Translation,
+            Transcription = word.Transcription,
+            Example = word.Example
+        }).ToList();
+        _context.Words.AddRange(newWords);
 
         // Записываем историю скачивания
         _context.Downloads.Add(new Download
@@ -243,6 +238,9 @@ public class MarketplaceController : BaseApiController
         });
 
         await _context.SaveChangesAsync();
+
+        // Атомарный инкремент счётчика скачиваний (без race condition)
+        await IncrementDictionaryDownloadCountAsync(id);
 
         await _cache.TryRemoveAsync($"marketplace:dict:{id}");
 
@@ -425,9 +423,6 @@ public class MarketplaceController : BaseApiController
 
         _context.Rules.Add(newRule);
 
-        // Увеличиваем счётчик скачиваний
-        originalRule.DownloadCount++;
-
         // Записываем историю скачивания
         _context.Downloads.Add(new Download
         {
@@ -438,6 +433,9 @@ public class MarketplaceController : BaseApiController
         });
 
         await _context.SaveChangesAsync();
+
+        // Атомарный инкремент счётчика скачиваний (без race condition)
+        await IncrementRuleDownloadCountAsync(id);
 
         await _cache.TryRemoveAsync($"marketplace:rule:{id}");
 
@@ -520,9 +518,8 @@ public class MarketplaceController : BaseApiController
         _context.Comments.Add(comment);
         await _context.SaveChangesAsync();
 
-        // Обновляем средний рейтинг словаря после сохранения комментария
-        await UpdateDictionaryRating(id);
-        await _context.SaveChangesAsync();
+        // Атомарно пересчитываем рейтинг из фактических данных Comments
+        await UpdateDictionaryRatingAtomicAsync(id);
 
         await _cache.TryRemoveAsync($"marketplace:dict:{id}");
 
@@ -589,9 +586,8 @@ public class MarketplaceController : BaseApiController
         _context.Comments.Add(comment);
         await _context.SaveChangesAsync();
 
-        // Обновляем средний рейтинг правила после сохранения комментария
-        await UpdateRuleRating(id);
-        await _context.SaveChangesAsync();
+        // Атомарно пересчитываем рейтинг из фактических данных Comments
+        await UpdateRuleRatingAtomicAsync(id);
 
         await _cache.TryRemoveAsync($"marketplace:rule:{id}");
 
@@ -823,36 +819,105 @@ public class MarketplaceController : BaseApiController
         }
     }
 
-    private async Task UpdateDictionaryRating(int dictionaryId)
+    /// <summary>
+    /// Пересчитывает рейтинг словаря из таблицы Comments.
+    /// Вызывать ПОСЛЕ SaveChangesAsync (комментарий уже в БД).
+    /// SQL Server: один UPDATE с подзапросом (1 round-trip вместо 2).
+    /// InMemory (tests): entity-based fallback.
+    /// </summary>
+    private async Task UpdateDictionaryRatingAtomicAsync(int dictionaryId)
     {
-        var ratings = await _context.Comments
-            .Where(c => c.ContentType == "Dictionary" && c.ContentId == dictionaryId)
-            .ToListAsync();
-
-        if (ratings.Any())
+        if (_context.Database.IsRelational())
         {
+            // Один SQL UPDATE с подзапросом — 1 round-trip вместо 2 (GroupBy + ExecuteUpdate)
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $@"UPDATE Dictionaries 
+                   SET Rating = ISNULL((SELECT AVG(CAST(c.Rating AS FLOAT)) FROM Comments c WHERE c.ContentType = 'Dictionary' AND c.ContentId = {dictionaryId}), 0),
+                       RatingCount = (SELECT COUNT(*) FROM Comments c WHERE c.ContentType = 'Dictionary' AND c.ContentId = {dictionaryId})
+                   WHERE Id = {dictionaryId}");
+        }
+        else
+        {
+            // InMemory fallback для тестов
+            var stats = await _context.Comments
+                .Where(c => c.ContentType == "Dictionary" && c.ContentId == dictionaryId)
+                .GroupBy(_ => 1)
+                .Select(g => new { Avg = g.Average(c => (double)c.Rating), Count = g.Count() })
+                .FirstOrDefaultAsync();
+
             var dict = await _context.Dictionaries.FindAsync(dictionaryId);
-            if (dict != null)
+            if (dict != null && stats != null)
             {
-                dict.Rating = ratings.Average(c => c.Rating);
-                dict.RatingCount = ratings.Count;
+                dict.Rating = stats.Avg;
+                dict.RatingCount = stats.Count;
+                await _context.SaveChangesAsync();
             }
         }
     }
 
-    private async Task UpdateRuleRating(int ruleId)
+    /// <summary>
+    /// Пересчитывает рейтинг правила из таблицы Comments.
+    /// </summary>
+    private async Task UpdateRuleRatingAtomicAsync(int ruleId)
     {
-        var ratings = await _context.Comments
-            .Where(c => c.ContentType == "Rule" && c.ContentId == ruleId)
-            .ToListAsync();
+        if (_context.Database.IsRelational())
+        {
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $@"UPDATE Rules 
+                   SET Rating = ISNULL((SELECT AVG(CAST(c.Rating AS FLOAT)) FROM Comments c WHERE c.ContentType = 'Rule' AND c.ContentId = {ruleId}), 0),
+                       RatingCount = (SELECT COUNT(*) FROM Comments c WHERE c.ContentType = 'Rule' AND c.ContentId = {ruleId})
+                   WHERE Id = {ruleId}");
+        }
+        else
+        {
+            var stats = await _context.Comments
+                .Where(c => c.ContentType == "Rule" && c.ContentId == ruleId)
+                .GroupBy(_ => 1)
+                .Select(g => new { Avg = g.Average(c => (double)c.Rating), Count = g.Count() })
+                .FirstOrDefaultAsync();
 
-        if (ratings.Any())
+            var rule = await _context.Rules.FindAsync(ruleId);
+            if (rule != null && stats != null)
+            {
+                rule.Rating = stats.Avg;
+                rule.RatingCount = stats.Count;
+                await _context.SaveChangesAsync();
+            }
+        }
+    }
+
+    private async Task IncrementDictionaryDownloadCountAsync(int dictionaryId)
+    {
+        if (_context.Database.IsRelational())
+        {
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE Dictionaries SET DownloadCount = DownloadCount + 1 WHERE Id = {dictionaryId}");
+        }
+        else
+        {
+            var dict = await _context.Dictionaries.FindAsync(dictionaryId);
+            if (dict != null)
+            {
+                dict.DownloadCount++;
+                await _context.SaveChangesAsync();
+            }
+        }
+    }
+
+    private async Task IncrementRuleDownloadCountAsync(int ruleId)
+    {
+        if (_context.Database.IsRelational())
+        {
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"UPDATE Rules SET DownloadCount = DownloadCount + 1 WHERE Id = {ruleId}");
+        }
+        else
         {
             var rule = await _context.Rules.FindAsync(ruleId);
             if (rule != null)
             {
-                rule.Rating = ratings.Average(c => c.Rating);
-                rule.RatingCount = ratings.Count;
+                rule.DownloadCount++;
+                await _context.SaveChangesAsync();
             }
         }
     }

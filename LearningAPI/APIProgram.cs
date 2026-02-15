@@ -85,6 +85,10 @@ builder.Services.AddSingleton<ISpacedRepetitionService, SpacedRepetitionService>
 builder.Services.AddScoped<IDictionaryService, DictionaryService>();
 builder.Services.AddHttpClient<LearningTrainer.Services.ExternalDictionaryService>();
 
+// Асинхронная обработка транскрипций (Channel + BackgroundService)
+builder.Services.AddSingleton<TranscriptionChannel>();
+builder.Services.AddHostedService<TranscriptionBackgroundService>();
+
 // Health Check конфигурация и сервис
 builder.Services.Configure<HealthCheckConfiguration>(
     builder.Configuration.GetSection(HealthCheckConfiguration.SectionName));

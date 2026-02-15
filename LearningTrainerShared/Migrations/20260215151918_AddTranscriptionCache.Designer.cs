@@ -4,6 +4,7 @@ using LearningTrainerShared.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LearningTrainerShared.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    partial class ApiDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260215151918_AddTranscriptionCache")]
+    partial class AddTranscriptionCache
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -54,9 +57,7 @@ namespace LearningTrainerShared.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ContentType", "ContentId");
-
-                    b.HasIndex("UserId", "ContentType", "ContentId");
+                    b.HasIndex("UserId");
 
                     b.ToTable("Comments");
                 });
@@ -212,10 +213,6 @@ namespace LearningTrainerShared.Migrations
                     b.HasIndex("UserId");
 
                     b.HasIndex("WordId");
-
-                    b.HasIndex("UserId", "LastPracticed");
-
-                    b.HasIndex("UserId", "NextReview");
 
                     b.ToTable("LearningProgresses");
                 });

@@ -190,47 +190,44 @@ public class StatisticsService : IStatisticsService
 
     public async Task<List<DictionaryStats>> GetDictionaryStatsAsync(int userId, CancellationToken ct = default)
     {
-        var userWordIds = await _context.LearningProgresses
-            .Where(p => p.UserId == userId)
-            .Select(p => p.WordId)
-            .ToListAsync(ct);
-
-        var dictionaries = await _context.Dictionaries
-            .Where(d => d.Words.Any(w => userWordIds.Contains(w.Id)))
-            .Include(d => d.Words)
-            .ToListAsync(ct);
-
-        var progresses = await _context.LearningProgresses
-            .Where(p => p.UserId == userId)
-            .ToListAsync(ct);
-
-        var progressLookup = progresses.ToDictionary(p => p.WordId);
-
-        return dictionaries.Select(d =>
-        {
-            var dictWordIds = d.Words.Select(w => w.Id).ToHashSet();
-            var dictProgresses = progresses.Where(p => dictWordIds.Contains(p.WordId)).ToList();
-            
-            var totalAttempts = dictProgresses.Sum(p => p.TotalAttempts);
-            var correctAnswers = dictProgresses.Sum(p => p.CorrectAnswers);
-
-            return new DictionaryStats
+        // Один SQL-запрос: JOIN Dictionaries → Words → LearningProgresses, агрегация на сервере
+        return await _context.Dictionaries
+            .Where(d => d.Words.Any(w => w.Progress.Any(p => p.UserId == userId)))
+            .Select(d => new DictionaryStats
             {
                 DictionaryId = d.Id,
                 DictionaryName = d.Name,
                 TotalWords = d.Words.Count,
-                LearnedWords = dictProgresses.Count(p => p.KnowledgeLevel >= 4),
-                InProgressWords = dictProgresses.Count(p => p.KnowledgeLevel > 0 && p.KnowledgeLevel < 4),
-                NotStartedWords = d.Words.Count - dictProgresses.Count,
-                CompletionPercent = d.Words.Count > 0 
-                    ? dictProgresses.Count(p => p.KnowledgeLevel >= 4) * 100.0 / d.Words.Count 
+                LearnedWords = d.Words
+                    .SelectMany(w => w.Progress)
+                    .Count(p => p.UserId == userId && p.KnowledgeLevel >= 4),
+                InProgressWords = d.Words
+                    .SelectMany(w => w.Progress)
+                    .Count(p => p.UserId == userId && p.KnowledgeLevel > 0 && p.KnowledgeLevel < 4),
+                NotStartedWords = d.Words.Count - d.Words
+                    .SelectMany(w => w.Progress)
+                    .Count(p => p.UserId == userId),
+                CompletionPercent = d.Words.Count > 0
+                    ? d.Words.SelectMany(w => w.Progress)
+                        .Count(p => p.UserId == userId && p.KnowledgeLevel >= 4) * 100.0 / d.Words.Count
                     : 0,
-                Accuracy = totalAttempts > 0 ? (double)correctAnswers / totalAttempts : 0,
-                LastPracticed = dictProgresses.Any() 
-                    ? dictProgresses.Max(p => p.LastPracticed) 
-                    : null
-            };
-        }).OrderByDescending(d => d.LastPracticed).ToList();
+                Accuracy = d.Words.SelectMany(w => w.Progress)
+                    .Where(p => p.UserId == userId)
+                    .Sum(p => p.TotalAttempts) > 0
+                        ? (double)d.Words.SelectMany(w => w.Progress)
+                            .Where(p => p.UserId == userId)
+                            .Sum(p => p.CorrectAnswers)
+                          / d.Words.SelectMany(w => w.Progress)
+                            .Where(p => p.UserId == userId)
+                            .Sum(p => p.TotalAttempts)
+                        : 0,
+                LastPracticed = d.Words
+                    .SelectMany(w => w.Progress)
+                    .Where(p => p.UserId == userId)
+                    .Max(p => (DateTime?)p.LastPracticed)
+            })
+            .OrderByDescending(d => d.LastPracticed)
+            .ToListAsync(ct);
     }
 
     public async Task<List<DifficultWord>> GetDifficultWordsAsync(int userId, int limit, CancellationToken ct = default)
@@ -336,10 +333,18 @@ public class StatisticsService : IStatisticsService
 
         if (newlyUnlocked.Count > 0)
         {
-            _context.UserAchievements.AddRange(newlyUnlocked);
-            await _context.SaveChangesAsync(ct);
-            _logger.LogInformation("Auto-unlocked {Count} achievements for User {UserId}", 
-                newlyUnlocked.Count, userId);
+            try
+            {
+                _context.UserAchievements.AddRange(newlyUnlocked);
+                await _context.SaveChangesAsync(ct);
+                _logger.LogInformation("Auto-unlocked {Count} achievements for User {UserId}", 
+                    newlyUnlocked.Count, userId);
+            }
+            catch (DbUpdateException)
+            {
+                // Параллельный запрос уже вставил эти достижения — это нормально
+                _logger.LogDebug("Achievement auto-unlock conflict for User {UserId}, already saved by another request", userId);
+            }
         }
 
         return result;
