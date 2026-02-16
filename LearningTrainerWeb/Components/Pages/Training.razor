@@ -644,6 +644,13 @@ private async Task InstallStarterPack()
             PrepareCurrentWord();
             await FocusContainer();
         }
+        else
+        {
+            // No words available — return to the daily plan view
+            IsTrainingActive = false;
+            CurrentWord = null;
+            CorrectCount = 0;
+        }
 
         IsLoading = false;
     }

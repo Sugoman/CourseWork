@@ -11,7 +11,7 @@ public interface IContentApiService
     Task<PagedResult<DictionaryListItem>> GetPublicDictionariesAsync(
         string? search, string? languageFrom, string? languageTo, int page, int pageSize);
     Task<DictionaryDetailDto?> GetDictionaryDetailsAsync(int id);
-    Task<List<CommentItem>> GetDictionaryCommentsAsync(int id);
+    Task<PagedResult<CommentItem>> GetDictionaryCommentsAsync(int id, int page = 1, int pageSize = 5);
     Task AddDictionaryCommentAsync(int dictionaryId, int rating, string text);
     Task DownloadDictionaryAsync(int dictionaryId);
 
@@ -19,7 +19,7 @@ public interface IContentApiService
     Task<PagedResult<RuleListItem>> GetPublicRulesAsync(
         string? search, string? category, int difficulty, int page, int pageSize);
     Task<RuleDetailDto?> GetRuleDetailsAsync(int id);
-    Task<List<CommentItem>> GetRuleCommentsAsync(int id);
+    Task<PagedResult<CommentItem>> GetRuleCommentsAsync(int id, int page = 1, int pageSize = 5);
     Task AddRuleCommentAsync(int ruleId, int rating, string text);
     Task DownloadRuleAsync(int ruleId);
     Task<List<RuleListItem>> GetRelatedRulesAsync(int ruleId, string category);
@@ -82,11 +82,11 @@ public class ContentApiService : IContentApiService
         return await _httpClient.GetFromJsonAsync<DictionaryDetailDto>($"api/marketplace/dictionaries/{id}");
     }
 
-    public async Task<List<CommentItem>> GetDictionaryCommentsAsync(int id)
+    public async Task<PagedResult<CommentItem>> GetDictionaryCommentsAsync(int id, int page = 1, int pageSize = 5)
     {
         ApplyAuth();
-        var result = await _httpClient.GetFromJsonAsync<List<CommentItem>>($"api/marketplace/dictionaries/{id}/comments");
-        return result ?? new List<CommentItem>();
+        var result = await _httpClient.GetFromJsonAsync<PagedResult<CommentItem>>($"api/marketplace/dictionaries/{id}/comments?page={page}&pageSize={pageSize}");
+        return result ?? new PagedResult<CommentItem>();
     }
 
     public async Task AddDictionaryCommentAsync(int dictionaryId, int rating, string text)
@@ -136,11 +136,11 @@ public class ContentApiService : IContentApiService
         return await _httpClient.GetFromJsonAsync<RuleDetailDto>($"api/marketplace/rules/{id}");
     }
 
-    public async Task<List<CommentItem>> GetRuleCommentsAsync(int id)
+    public async Task<PagedResult<CommentItem>> GetRuleCommentsAsync(int id, int page = 1, int pageSize = 5)
     {
         ApplyAuth();
-        var result = await _httpClient.GetFromJsonAsync<List<CommentItem>>($"api/marketplace/rules/{id}/comments");
-        return result ?? new List<CommentItem>();
+        var result = await _httpClient.GetFromJsonAsync<PagedResult<CommentItem>>($"api/marketplace/rules/{id}/comments?page={page}&pageSize={pageSize}");
+        return result ?? new PagedResult<CommentItem>();
     }
 
     public async Task AddRuleCommentAsync(int ruleId, int rating, string text)

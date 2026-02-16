@@ -201,7 +201,7 @@
 
 .knowledge-level-row {
     display: grid;
-    grid-template-columns: 120px 1fr 40px;
+    grid-template-columns: auto 1fr 40px;
     gap: 1rem;
     align-items: center;
 }
@@ -210,10 +210,12 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    white-space: nowrap;
 }
 
 .level-badge {
     width: 24px;
+    min-width: 24px;
     height: 24px;
     border-radius: 6px;
     display: flex;
@@ -222,6 +224,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     color: white;
+    flex-shrink: 0;
 }
 
 .level-name {

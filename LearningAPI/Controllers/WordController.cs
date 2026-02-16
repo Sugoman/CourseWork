@@ -1,8 +1,10 @@
+using LearningAPI.Extensions;
 using LearningTrainerShared.Context;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using LearningAPI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
 using System.Collections.Generic;
 using System.Security.Claims;
 
@@ -14,11 +16,13 @@ namespace LearningAPI.Controllers
     {
         private readonly ApiDbContext _context;
         private readonly TranscriptionChannel _transcriptionChannel;
+        private readonly IDistributedCache _cache;
 
-        public WordsController(ApiDbContext context, TranscriptionChannel transcriptionChannel)
+        public WordsController(ApiDbContext context, TranscriptionChannel transcriptionChannel, IDistributedCache cache)
         {
             _context = context;
             _transcriptionChannel = transcriptionChannel;
+            _cache = cache;
         }
         [HttpPost]
         public async Task<IActionResult> AddWord([FromBody] CreateWordRequest requestDto)
@@ -48,6 +52,9 @@ namespace LearningAPI.Controllers
             _context.Words.Add(newWord);
             await _context.SaveChangesAsync();
 
+            // Инвалидируем кэш словаря (он кэшируется вместе со словами)
+            await _cache.TryRemoveAsync($"dict:{userId}:{requestDto.DictionaryId}");
+
             // Отправляем задачу на получение транскрипции в фоновый воркер
             await _transcriptionChannel.Writer.WriteAsync(
                 new TranscriptionRequest(newWord.Id, newWord.OriginalWord));
@@ -73,8 +80,13 @@ namespace LearningAPI.Controllers
                 return Forbid();
             }
 
+            var dictionaryId = word.DictionaryId;
             _context.Words.Remove(word);
             await _context.SaveChangesAsync();
+
+            // Инвалидируем кэш словаря
+            await _cache.TryRemoveAsync($"dict:{userId}:{dictionaryId}");
+
             return NoContent();
         }
     }

@@ -5,12 +5,12 @@
     <div class="card-body">
         <h5 class="d-flex align-items-center gap-2 mb-4">
             <i class="bi bi-chat-dots" style="color: var(--primary-500);"></i>
-            Отзывы (@(Comments?.Count ?? 0))
+            Отзывы (@(CommentsResult?.TotalCount ?? 0))
         </h5>
 
-        @if (Comments != null && Comments.Any())
+        @if (CommentsResult != null && CommentsResult.Items.Any())
         {
-            @foreach (var comment in Comments)
+            @foreach (var comment in CommentsResult.Items)
             {
                 <div class="p-3 mb-3" style="background: var(--gray-50); border-radius: var(--radius);">
                     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -34,6 +34,40 @@
                     </div>
                     <p class="mb-0" style="color: var(--gray-700);">@comment.Text</p>
                 </div>
+            }
+
+            @if (CommentsResult.TotalPages > 1)
+            {
+                <nav class="d-flex justify-content-center mt-3">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(CurrentPage <= 1 ? "disabled" : "")">
+                            <button class="page-link" @onclick="PreviousPage" disabled="@(CurrentPage <= 1)">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                        </li>
+                        @foreach (var pageNum in GetPageWindow())
+                        {
+                            @if (pageNum == -1)
+                            {
+                                <li class="page-item disabled">
+                                    <span class="page-link">&hellip;</span>
+                                </li>
+                            }
+                            else
+                            {
+                                var p = pageNum;
+                                <li class="page-item @(p == CurrentPage ? "active" : "")">
+                                    <button class="page-link" @onclick="() => GoToPage(p)">@p</button>
+                                </li>
+                            }
+                        }
+                        <li class="page-item @(CurrentPage >= CommentsResult.TotalPages ? "disabled" : "")">
+                            <button class="page-link" @onclick="NextPage" disabled="@(CurrentPage >= CommentsResult.TotalPages)">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
             }
         }
         else
@@ -113,29 +147,92 @@
     [Parameter]
     public bool IsAuthenticated { get; set; }
 
-    private List<CommentItem>? Comments;
+    private PagedResult<CommentItem>? CommentsResult;
+    private int CurrentPage = 1;
+    private const int PageSize = 5;
     private bool IsSubmitting;
     private int NewRating = 5;
     private string NewComment = "";
     private string? CommentError;
     private string? CommentSuccess;
 
-    protected override async Task OnInitializedAsync()
+    private int _previousEntityId;
+    private string _previousEntityType = "";
+
+    protected override async Task OnParametersSetAsync()
     {
-        await LoadComments();
+        if (EntityId != _previousEntityId || EntityType != _previousEntityType)
+        {
+            _previousEntityId = EntityId;
+            _previousEntityType = EntityType;
+            CurrentPage = 1;
+            await LoadComments();
+        }
+    }
+
+    private IEnumerable<int> GetPageWindow()
+    {
+        var total = CommentsResult?.TotalPages ?? 1;
+        var current = CurrentPage;
+        const int wing = 2;
+
+        var pages = new List<int>();
+
+        pages.Add(1);
+
+        var rangeStart = Math.Max(2, current - wing);
+        var rangeEnd = Math.Min(total - 1, current + wing);
+
+        if (rangeStart > 2)
+            pages.Add(-1);
+
+        for (int p = rangeStart; p <= rangeEnd; p++)
+            pages.Add(p);
+
+        if (rangeEnd < total - 1)
+            pages.Add(-1);
+
+        if (total > 1)
+            pages.Add(total);
+
+        return pages;
     }
 
     private async Task LoadComments()
     {
         try
         {
-            Comments = EntityType == "dictionary"
-                ? await ContentApi.GetDictionaryCommentsAsync(EntityId)
-                : await ContentApi.GetRuleCommentsAsync(EntityId);
+            CommentsResult = EntityType == "dictionary"
+                ? await ContentApi.GetDictionaryCommentsAsync(EntityId, CurrentPage, PageSize)
+                : await ContentApi.GetRuleCommentsAsync(EntityId, CurrentPage, PageSize);
         }
         catch
         {
-            Comments = new List<CommentItem>();
+            CommentsResult = new PagedResult<CommentItem>();
+        }
+    }
+
+    private async Task GoToPage(int page)
+    {
+        CurrentPage = page;
+        await LoadComments();
+    }
+
+    private async Task PreviousPage()
+    {
+        if (CurrentPage > 1)
+        {
+            CurrentPage--;
+            await LoadComments();
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (CommentsResult != null && CurrentPage < CommentsResult.TotalPages)
+        {
+            CurrentPage++;
+            await LoadComments();
         }
     }
 
@@ -162,6 +259,7 @@
             CommentSuccess = "Отзыв успешно добавлен!";
             NewComment = "";
             NewRating = 5;
+            CurrentPage = 1;
             await LoadComments();
         }
         catch (Exception ex)

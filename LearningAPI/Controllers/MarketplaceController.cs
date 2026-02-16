@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -23,13 +24,19 @@ public class MarketplaceController : BaseApiController
     private readonly ILogger<MarketplaceController> _logger;
     private readonly IDistributedCache _cache;
     private readonly HtmlSanitizer _htmlSanitizer;
+    private readonly IConnectionMultiplexer? _redis;
 
-    public MarketplaceController(ApiDbContext context, ILogger<MarketplaceController> logger, IDistributedCache cache)
+    public MarketplaceController(
+        ApiDbContext context,
+        ILogger<MarketplaceController> logger,
+        IDistributedCache cache,
+        IConnectionMultiplexer? redis = null)
     {
         _context = context;
         _logger = logger;
         _cache = cache;
         _htmlSanitizer = SharedSanitizerFactory.Create();
+        _redis = redis;
     }
 
     #region Public Dictionaries
@@ -243,6 +250,7 @@ public class MarketplaceController : BaseApiController
         await IncrementDictionaryDownloadCountAsync(id);
 
         await _cache.TryRemoveAsync($"marketplace:dict:{id}");
+        await InvalidateDictionaryListCacheAsync();
 
         return Ok(new { Message = "Словарь успешно скачан", NewDictionaryId = newDict.Id });
     }
@@ -438,6 +446,7 @@ public class MarketplaceController : BaseApiController
         await IncrementRuleDownloadCountAsync(id);
 
         await _cache.TryRemoveAsync($"marketplace:rule:{id}");
+        await InvalidateRuleListCacheAsync();
 
         return Ok(new { Message = "Правило успешно скачано", NewRuleId = newRule.Id });
     }
@@ -471,12 +480,22 @@ public class MarketplaceController : BaseApiController
 
     [HttpGet("dictionaries/{id}/comments")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetDictionaryComments(int id)
+    public async Task<IActionResult> GetDictionaryComments(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = 5)
     {
-        var comments = await _context.Comments
+        pageSize = Math.Clamp(pageSize, 1, 50);
+        page = Math.Max(1, page);
+
+        var query = _context.Comments
             .Include(c => c.User)
             .Where(c => c.ContentType == "Dictionary" && c.ContentId == id)
-            .OrderByDescending(c => c.CreatedAt)
+            .OrderByDescending(c => c.CreatedAt);
+
+        var totalCount = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var comments = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(c => new CommentItemDto
             {
                 Id = c.Id,
@@ -487,7 +506,13 @@ public class MarketplaceController : BaseApiController
             })
             .ToListAsync();
 
-        return Ok(comments);
+        return Ok(new PagedResultDto<CommentItemDto>
+        {
+            Items = comments,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            CurrentPage = page
+        });
     }
 
     [HttpPost("dictionaries/{id}/comments")]
@@ -522,6 +547,7 @@ public class MarketplaceController : BaseApiController
         await UpdateDictionaryRatingAtomicAsync(id);
 
         await _cache.TryRemoveAsync($"marketplace:dict:{id}");
+        await InvalidateDictionaryListCacheAsync();
 
         return Ok(new { Message = "Комментарий добавлен" });
     }
@@ -539,12 +565,22 @@ public class MarketplaceController : BaseApiController
 
     [HttpGet("rules/{id}/comments")]
     [AllowAnonymous]
-    public async Task<IActionResult> GetRuleComments(int id)
+    public async Task<IActionResult> GetRuleComments(int id, [FromQuery] int page = 1, [FromQuery] int pageSize = 5)
     {
-        var comments = await _context.Comments
+        pageSize = Math.Clamp(pageSize, 1, 50);
+        page = Math.Max(1, page);
+
+        var query = _context.Comments
             .Include(c => c.User)
             .Where(c => c.ContentType == "Rule" && c.ContentId == id)
-            .OrderByDescending(c => c.CreatedAt)
+            .OrderByDescending(c => c.CreatedAt);
+
+        var totalCount = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        var comments = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(c => new CommentItemDto
             {
                 Id = c.Id,
@@ -555,7 +591,13 @@ public class MarketplaceController : BaseApiController
             })
             .ToListAsync();
 
-        return Ok(comments);
+        return Ok(new PagedResultDto<CommentItemDto>
+        {
+            Items = comments,
+            TotalCount = totalCount,
+            TotalPages = totalPages,
+            CurrentPage = page
+        });
     }
 
     [HttpPost("rules/{id}/comments")]
@@ -590,6 +632,7 @@ public class MarketplaceController : BaseApiController
         await UpdateRuleRatingAtomicAsync(id);
 
         await _cache.TryRemoveAsync($"marketplace:rule:{id}");
+        await InvalidateRuleListCacheAsync();
 
         return Ok(new { Message = "Комментарий добавлен" });
     }
@@ -788,35 +831,20 @@ public class MarketplaceController : BaseApiController
     #region Private Methods
 
     /// <summary>
-    /// Инвалидирует кэш списка словарей (первые несколько страниц без фильтров)
+    /// Инвалидирует кэш списка словарей маркетплейса (все варианты фильтров/страниц)
     /// </summary>
     private async Task InvalidateDictionaryListCacheAsync()
     {
-        // Инвалидируем первые страницы без фильтров (самые частые запросы)
-        var pageSizes = new[] { 9, 12, 20 };
-        foreach (var pageSize in pageSizes)
-        {
-            for (int page = 1; page <= 3; page++)
-            {
-                await _cache.TryRemoveAsync($"marketplace:dicts::::{page}:{pageSize}");
-            }
-        }
+        await _cache.TryRemoveByPrefixAsync("marketplace:dicts:", _redis);
     }
 
     /// <summary>
-    /// Инвалидирует кэш списка правил (первые несколько страниц без фильтров)
+    /// <summary>
+    /// Инвалидирует кэш списка правил маркетплейса (все варианты фильтров/страниц)
     /// </summary>
     private async Task InvalidateRuleListCacheAsync()
     {
-        // Инвалидируем первые страницы без фильтров (самые частые запросы)
-        var pageSizes = new[] { 8, 12, 20 };
-        foreach (var pageSize in pageSizes)
-        {
-            for (int page = 1; page <= 3; page++)
-            {
-                await _cache.TryRemoveAsync($"marketplace:rules:::0:{page}:{pageSize}");
-            }
-        }
+        await _cache.TryRemoveByPrefixAsync("marketplace:rules:", _redis);
     }
 
     /// <summary>

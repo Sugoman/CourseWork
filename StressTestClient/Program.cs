@@ -18,20 +18,20 @@ public class Program
     private static readonly string ApiBaseUrl = "http://localhost:5077";
 
     // Пользователи
-    private static readonly int TOTAL_USERS = 150;
+    private static readonly int TOTAL_USERS = 1500;
 
     // Длительность фаз (секунды)
-    private static readonly int WARMUP_SECONDS = 10;
-    private static readonly int RAMP_SECONDS = 20;
-    private static readonly int SPIKE_SECONDS = 15;
-    private static readonly int SUSTAINED_SECONDS = 45;
+    private static readonly int WARMUP_SECONDS = 100;
+    private static readonly int RAMP_SECONDS = 200;
+    private static readonly int SPIKE_SECONDS = 150;
+    private static readonly int SUSTAINED_SECONDS = 450;
     private static readonly int TOTAL_DURATION_SECONDS =
         WARMUP_SECONDS + RAMP_SECONDS + SPIKE_SECONDS + SUSTAINED_SECONDS;
 
     // Пользователей по фазам
-    private static readonly int WARMUP_USERS = 20;
-    private static readonly int RAMP_TARGET_USERS = 100;
-    private static readonly int SPIKE_USERS = 150;
+    private static readonly int WARMUP_USERS = 200;
+    private static readonly int RAMP_TARGET_USERS = 1000;
+    private static readonly int SPIKE_USERS = 1500;
 
     // Параллельные действия в одном «тике» пользователя
     private static readonly int MAX_PARALLEL_ACTIONS = 4;
@@ -257,7 +257,7 @@ public class Program
                 Email = $"st_{Guid.NewGuid():N}@test.local",
                 Password = "StressTest123!"
             })
-            .Chunk(5)
+            .Chunk(50)
             .ToList();
 
         foreach (var batch in batches)

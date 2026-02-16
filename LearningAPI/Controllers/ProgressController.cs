@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 using System.Text.Json;
 
 namespace LearningAPI.Controllers
@@ -19,13 +20,20 @@ namespace LearningAPI.Controllers
         private readonly ILogger<ProgressController> _logger;
         private readonly IDistributedCache _cache;
         private readonly ISpacedRepetitionService _spacedRepetition;
+        private readonly IConnectionMultiplexer? _redis;
 
-        public ProgressController(ApiDbContext context, ILogger<ProgressController> logger, IDistributedCache cache, ISpacedRepetitionService spacedRepetition)
+        public ProgressController(
+            ApiDbContext context,
+            ILogger<ProgressController> logger,
+            IDistributedCache cache,
+            ISpacedRepetitionService spacedRepetition,
+            IConnectionMultiplexer? redis = null)
         {
             _context = context;
             _logger = logger;
             _cache = cache;
             _spacedRepetition = spacedRepetition;
+            _redis = redis;
         }
 
         // POST /api/progress/update
@@ -73,7 +81,7 @@ namespace LearningAPI.Controllers
                 await _context.SaveChangesAsync();
                 _logger.LogInformation("Progress successfully updated for User={UserId}, Word={WordId}", userId, request.WordId);
 
-                await _cache.TryRemoveAsync($"stats:{userId}");
+                await InvalidateUserStatsCacheAsync(userId);
 
                 return Ok(progress);
             }
@@ -93,7 +101,7 @@ namespace LearningAPI.Controllers
                     {
                         _spacedRepetition.ApplyAnswer(progress, request.Quality);
                         await _context.SaveChangesAsync();
-                        await _cache.TryRemoveAsync($"stats:{userId}");
+                        await InvalidateUserStatsCacheAsync(GetUserId());
                         return Ok(progress);
                     }
                 }
@@ -183,6 +191,12 @@ namespace LearningAPI.Controllers
             });
 
             return Ok(stats);
+        }
+
+        private async Task InvalidateUserStatsCacheAsync(int userId)
+        {
+            await _cache.TryRemoveAsync($"stats:{userId}");
+            await _cache.TryRemoveByPrefixAsync($"stats:full:{userId}:", _redis);
         }
     }
 }

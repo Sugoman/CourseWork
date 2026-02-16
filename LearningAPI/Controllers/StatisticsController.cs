@@ -1,8 +1,10 @@
+using LearningAPI.Extensions;
 using LearningAPI.Services;
 using LearningTrainerShared.Models.Statistics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
+using StackExchange.Redis;
 using System.Text.Json;
 
 namespace LearningAPI.Controllers;
@@ -15,15 +17,18 @@ public class StatisticsController : BaseApiController
     private readonly IStatisticsService _statisticsService;
     private readonly IDistributedCache _cache;
     private readonly ILogger<StatisticsController> _logger;
+    private readonly IConnectionMultiplexer? _redis;
 
     public StatisticsController(
         IStatisticsService statisticsService,
         IDistributedCache cache,
-        ILogger<StatisticsController> logger)
+        ILogger<StatisticsController> logger,
+        IConnectionMultiplexer? redis = null)
     {
         _statisticsService = statisticsService;
         _cache = cache;
         _logger = logger;
+        _redis = redis;
     }
 
     /// <summary>
@@ -38,33 +43,19 @@ public class StatisticsController : BaseApiController
         var userId = GetUserId();
         var cacheKey = $"stats:full:{userId}:{period}";
 
-        try
+        var cached = await _cache.TryGetStringAsync(cacheKey);
+        if (!string.IsNullOrEmpty(cached))
         {
-            var cached = await _cache.GetStringAsync(cacheKey, ct);
-            if (!string.IsNullOrEmpty(cached))
-            {
-                return Content(cached, "application/json");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Cache unavailable for statistics");
+            return Content(cached, "application/json");
         }
 
         var stats = await _statisticsService.GetFullStatisticsAsync(userId, period, ct);
 
-        try
+        var json = JsonSerializer.Serialize(stats);
+        await _cache.TrySetStringAsync(cacheKey, json, new DistributedCacheEntryOptions
         {
-            var json = JsonSerializer.Serialize(stats);
-            await _cache.SetStringAsync(cacheKey, json, new DistributedCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
-            }, ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to cache statistics");
-        }
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2)
+        });
 
         return Ok(stats);
     }
@@ -169,17 +160,7 @@ public class StatisticsController : BaseApiController
         await _statisticsService.SaveSessionAsync(userId, request, ct);
 
         // Инвалидируем кеш
-        try
-        {
-            await _cache.RemoveAsync($"stats:full:{userId}:week", ct);
-            await _cache.RemoveAsync($"stats:full:{userId}:month", ct);
-            await _cache.RemoveAsync($"stats:full:{userId}:all", ct);
-            await _cache.RemoveAsync($"stats:{userId}", ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to invalidate cache");
-        }
+        await InvalidateUserStatsCacheAsync(userId);
 
         return Ok(new { message = "Session saved successfully" });
     }
@@ -194,17 +175,14 @@ public class StatisticsController : BaseApiController
         await _statisticsService.UpdateUserStatsAsync(userId, ct);
 
         // Инвалидируем кеш
-        try
-        {
-            await _cache.RemoveAsync($"stats:full:{userId}:week", ct);
-            await _cache.RemoveAsync($"stats:full:{userId}:month", ct);
-            await _cache.RemoveAsync($"stats:full:{userId}:all", ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to invalidate cache");
-        }
+        await InvalidateUserStatsCacheAsync(userId);
 
         return Ok(new { message = "Statistics refreshed" });
+    }
+
+    private async Task InvalidateUserStatsCacheAsync(int userId)
+    {
+        await _cache.TryRemoveAsync($"stats:{userId}");
+        await _cache.TryRemoveByPrefixAsync($"stats:full:{userId}:", _redis);
     }
 }

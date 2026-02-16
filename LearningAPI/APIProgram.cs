@@ -1,6 +1,7 @@
 using LearningTrainer;
 using LearningTrainerShared.Context;
 using LearningTrainerShared.Services;
+using LearningAPI.Extensions;
 using LearningAPI.Middleware;
 using LearningAPI.Configuration;
 using LearningAPI.Services;
@@ -11,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -60,6 +62,9 @@ var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
 
 if (!string.IsNullOrEmpty(redisConnectionString))
 {
+    builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
+        ConnectionMultiplexer.Connect(redisConnectionString));
+
     builder.Services.AddStackExchangeRedisCache(options =>
     {
         options.Configuration = redisConnectionString;
@@ -160,6 +165,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 var app = builder.Build();
+
+// Инициализация логгера для кэш-расширений
+DistributedCacheExtensions.InitializeLogger(app.Services.GetRequiredService<ILoggerFactory>());
 
 app.UseSwagger();
 app.UseSwaggerUI();
