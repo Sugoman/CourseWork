@@ -1,4 +1,5 @@
 using LearningTrainerShared.Models;
+using Polly;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -18,12 +19,13 @@ namespace LearningTrainer.Services
         private readonly HttpClient _httpClient;
         private readonly JsonSerializerOptions _jsonOptions;
         private readonly IConfiguration _configuration;
+        private readonly IAsyncPolicy<HttpResponseMessage> _resiliencePolicy;
 
         public ApiDataService(IConfiguration configuration)
         {
             _configuration = configuration;
             _httpClient = new HttpClient();
-            
+
             var apiBaseUrl = _configuration["Api:BaseUrl"] 
                 ?? "http://localhost:5077";
             _httpClient.BaseAddress = new Uri(apiBaseUrl);
@@ -34,6 +36,17 @@ namespace LearningTrainer.Services
                 PropertyNameCaseInsensitive = true,
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All)
             };
+
+            // Polly: retry (exponential backoff) + circuit breaker
+            _resiliencePolicy = HttpPolicyFactory.GetCombinedPolicy();
+        }
+
+        /// <summary>
+        /// Выполняет HTTP-запрос через Polly resilience policy (retry + circuit breaker).
+        /// </summary>
+        private Task<HttpResponseMessage> SendWithResilienceAsync(Func<Task<HttpResponseMessage>> action)
+        {
+            return _resiliencePolicy.ExecuteAsync(_ => action(), CancellationToken.None);
         }
 
         public void SetToken(string accessToken)

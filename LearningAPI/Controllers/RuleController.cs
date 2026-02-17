@@ -43,6 +43,7 @@ namespace LearningAPI.Controllers
                 .ToListAsync();
 
             var rules = await _context.Rules
+                .IgnoreQueryFilters()
                 .Where(r => r.UserId == currentUserId || sharedRuleIds.Contains(r.Id))
                 .Select(r => new
                 {
@@ -83,6 +84,7 @@ namespace LearningAPI.Controllers
             var teacherId = currentUser?.UserId;
 
             var rules = await _context.Rules
+                .IgnoreQueryFilters()
                 .Where(r => r.UserId == userId || (teacherId != null && r.UserId == teacherId))
                 .Select(r => new
                 {

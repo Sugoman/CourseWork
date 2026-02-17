@@ -228,6 +228,28 @@
                             {
                                 <div class="word-transcription">@CurrentWord.Transcription</div>
                             }
+                            <div class="audio-group">
+                                <button class="btn-tts" @onclick="SpeakWord" title="Прослушать">
+                                    <i class="bi bi-volume-up-fill"></i>
+                                </button>
+
+                                <div class="volume-wrapper">
+                                    <button class="btn-volume-toggle" @onclick="ToggleVolumeSlider" title="Громкость">
+                                        <i class="@VolumeIcon"></i>
+                                    </button>
+
+                                    @if (ShowVolumeSlider)
+                                    {
+                                        <div class="volume-popover">
+                                            <input type="range" 
+                                                   min="0" max="1" step="0.01" 
+                                                   value="@TtsVolumeFormatted" 
+                                                   @oninput="OnVolumeChanged" />
+                                            <span class="volume-value">@TtsVolumePercent%</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
                             @if (!IsAnswerRevealed)
                             {
                                 <button class="btn btn-outline-primary btn-lg mt-4" @onclick="RevealAnswer">
@@ -290,6 +312,23 @@
                             {
                                 <div class="word-transcription">@CurrentWord.Transcription</div>
                             }
+                            <div class="tts-controls">
+                                <button class="btn btn-outline-secondary btn-sm speak-btn" @onclick="SpeakWord" title="Прослушать">
+                                    <i class="bi bi-volume-up"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm volume-toggle-btn" @onclick="ToggleVolumeSlider" title="Громкость">
+                                    <i class="bi @VolumeIcon"></i>
+                                </button>
+                                @if (ShowVolumeSlider)
+                                {
+                                    <div class="volume-slider-container">
+                                        <input type="range" class="volume-slider" min="0" max="1" step="0.05"
+                                               value="@TtsVolumeFormatted"
+                                               @onchange="OnVolumeChanged" />
+                                        <span class="volume-value">@TtsVolumePercent%</span>
+                                    </div>
+                                }
+                            </div>
                         </div>
 
                         <div class="mcq-options">
@@ -341,6 +380,12 @@
                                     <span>Неверно. Правильный ответ: @CurrentWord.Translation</span>
                                 }
                             </div>
+                            @if (!string.IsNullOrEmpty(CurrentWord.Example))
+                            {
+                                <div class="example mt-2">
+                                    <i class="bi bi-chat-quote"></i> @CurrentWord.Example
+                                </div>
+                            }
                             <button class="btn btn-primary btn-lg mt-3" @onclick="NextMcqWord">
                                 <i class="bi bi-arrow-right me-2"></i>Далее
                             </button>
@@ -360,6 +405,23 @@
                             {
                                 <div class="word-transcription">@CurrentWord.Transcription</div>
                             }
+                            <div class="tts-controls">
+                                <button class="btn btn-outline-secondary btn-sm speak-btn" @onclick="SpeakWord" title="Прослушать">
+                                    <i class="bi bi-volume-up"></i>
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm volume-toggle-btn" @onclick="ToggleVolumeSlider" title="Громкость">
+                                    <i class="bi @VolumeIcon"></i>
+                                </button>
+                                @if (ShowVolumeSlider)
+                                {
+                                    <div class="volume-slider-container">
+                                        <input type="range" class="volume-slider" min="0" max="1" step="0.05"
+                                               value="@TtsVolumeFormatted"
+                                               @onchange="OnVolumeChanged" />
+                                        <span class="volume-value">@TtsVolumePercent%</span>
+                                    </div>
+                                }
+                            </div>
                         </div>
 
                         <div class="typing-input">
@@ -392,6 +454,12 @@
                                     <span>Правильный ответ: <strong>@CurrentWord.Translation</strong></span>
                                 }
                             </div>
+                            @if (!string.IsNullOrEmpty(CurrentWord.Example))
+                            {
+                                <div class="example mt-2">
+                                    <i class="bi bi-chat-quote"></i> @CurrentWord.Example
+                                </div>
+                            }
                             <button class="btn btn-primary btn-lg mt-3" @onclick="NextTypingWord">
                                 <i class="bi bi-arrow-right me-2"></i>Далее
                             </button>
@@ -483,6 +551,10 @@ private string TypedAnswer = "";
 private bool TypingAnswered;
 private bool TypingWasCorrect;
 private Random _random = new();
+
+// TTS state
+private double TtsVolume = 0.8;
+private bool ShowVolumeSlider;
 
 // Element reference for focus
 private ElementReference trainingContainer;
@@ -860,4 +932,31 @@ private async Task InstallStarterPack()
         IsTrainingActive = false;
         CurrentWord = null;
     }
+
+    private async Task SpeakWord()
+    {
+        if (CurrentWord != null)
+        {
+            await JS.InvokeVoidAsync("speakText", CurrentWord.OriginalWord, "en-US", TtsVolume);
+        }
+    }
+
+    private void ToggleVolumeSlider()
+    {
+        ShowVolumeSlider = !ShowVolumeSlider;
+    }
+
+    private void OnVolumeChanged(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var vol))
+        {
+            TtsVolume = Math.Max(0, Math.Min(1, vol));
+        }
+    }
+
+    private string VolumeIcon => TtsVolume == 0 ? "bi-volume-mute" : TtsVolume < 0.5 ? "bi-volume-down" : "bi-volume-up";
+
+    private string TtsVolumeFormatted => TtsVolume.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    private int TtsVolumePercent => (int)(TtsVolume * 100);
 }

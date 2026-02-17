@@ -39,6 +39,39 @@ public class MarketplaceController : BaseApiController
         _redis = redis;
     }
 
+    #region Platform Stats
+
+    /// <summary>
+    /// Получить статистику платформы (количество словарей, правил, пользователей)
+    /// </summary>
+    [HttpGet("stats")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetPlatformStats()
+    {
+        var cacheKey = "marketplace:platform-stats";
+        var cached = await _cache.TryGetStringAsync(cacheKey);
+        if (cached != null)
+        {
+            return Content(cached, "application/json");
+        }
+
+        var dictionaryCount = await _context.Dictionaries.IgnoreQueryFilters().Where(d => d.IsPublished).CountAsync();
+        var ruleCount = await _context.Rules.IgnoreQueryFilters().Where(r => r.IsPublished).CountAsync();
+        var userCount = await _context.Users.CountAsync();
+
+        var result = new { DictionaryCount = dictionaryCount, RuleCount = ruleCount, UserCount = userCount };
+
+        var json = JsonSerializer.Serialize(result);
+        await _cache.TrySetStringAsync(cacheKey, json, new DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+        });
+
+        return Ok(result);
+    }
+
+    #endregion
+
     #region Public Dictionaries
 
     /// <summary>
@@ -61,6 +94,7 @@ public class MarketplaceController : BaseApiController
         }
 
         var query = _context.Dictionaries
+            .IgnoreQueryFilters()
             .Include(d => d.User)
             .Include(d => d.Words)
             .Where(d => d.IsPublished);
@@ -139,6 +173,7 @@ public class MarketplaceController : BaseApiController
         }
 
         var dictionary = await _context.Dictionaries
+            .IgnoreQueryFilters()
             .Include(d => d.User)
             .Include(d => d.Words)
             .Where(d => d.Id == id && d.IsPublished)
@@ -148,6 +183,7 @@ public class MarketplaceController : BaseApiController
             return NotFound();
 
         var authorContentCount = await _context.Dictionaries
+            .IgnoreQueryFilters()
             .Where(d => d.UserId == dictionary.UserId && d.IsPublished)
             .CountAsync();
 
@@ -202,6 +238,7 @@ public class MarketplaceController : BaseApiController
             return BadRequest(new { Message = "Вы уже скачали этот словарь" });
 
         var originalDict = await _context.Dictionaries
+            .IgnoreQueryFilters()
             .AsNoTracking()
             .Include(d => d.Words)
             .FirstOrDefaultAsync(d => d.Id == id && d.IsPublished);
@@ -279,6 +316,7 @@ public class MarketplaceController : BaseApiController
         }
 
         var query = _context.Rules
+            .IgnoreQueryFilters()
             .Include(r => r.User)
             .Where(r => r.IsPublished);
 
@@ -357,6 +395,7 @@ public class MarketplaceController : BaseApiController
         }
 
         var rule = await _context.Rules
+            .IgnoreQueryFilters()
             .Include(r => r.User)
             .Where(r => r.Id == id && r.IsPublished)
             .FirstOrDefaultAsync();
@@ -365,6 +404,7 @@ public class MarketplaceController : BaseApiController
             return NotFound();
 
         var authorContentCount = await _context.Rules
+            .IgnoreQueryFilters()
             .Where(r => r.UserId == rule.UserId && r.IsPublished)
             .CountAsync();
 
@@ -412,6 +452,7 @@ public class MarketplaceController : BaseApiController
             return BadRequest(new { Message = "Вы уже скачали это правило" });
 
         var originalRule = await _context.Rules
+            .IgnoreQueryFilters()
             .FirstOrDefaultAsync(r => r.Id == id && r.IsPublished);
 
         if (originalRule == null)
@@ -459,6 +500,7 @@ public class MarketplaceController : BaseApiController
     public async Task<IActionResult> GetRelatedRules(int id, [FromQuery] string category)
     {
         var related = await _context.Rules
+            .IgnoreQueryFilters()
             .Include(r => r.User)
             .Where(r => r.Id != id && r.Category == category && r.IsPublished)
             .OrderByDescending(r => r.Rating)
@@ -665,6 +707,7 @@ public class MarketplaceController : BaseApiController
             {
                 Id = d.Id,
                 Name = d.Name,
+                Description = d.Description ?? "",
                 WordCount = d.Words.Count,
                 IsPublished = d.IsPublished,
                 Rating = d.Rating,
@@ -719,6 +762,7 @@ public class MarketplaceController : BaseApiController
             if (download.ContentType == "Dictionary")
             {
                 var dict = await _context.Dictionaries
+                    .IgnoreQueryFilters()
                     .Include(d => d.User)
                     .FirstOrDefaultAsync(d => d.Id == download.ContentId);
                 title = dict?.Name ?? "Удалено";
@@ -727,6 +771,7 @@ public class MarketplaceController : BaseApiController
             else if (download.ContentType == "Rule")
             {
                 var rule = await _context.Rules
+                    .IgnoreQueryFilters()
                     .Include(r => r.User)
                     .FirstOrDefaultAsync(r => r.Id == download.ContentId);
                 title = rule?.Title ?? "Удалено";
@@ -1059,6 +1104,7 @@ public class MyDictionaryItemDto
 {
     public int Id { get; set; }
     public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
     public int WordCount { get; set; }
     public bool IsPublished { get; set; }
     public double Rating { get; set; }

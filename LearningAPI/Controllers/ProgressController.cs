@@ -38,7 +38,7 @@ namespace LearningAPI.Controllers
 
         // POST /api/progress/update
         [HttpPost("update")]
-        public async Task<IActionResult> UpdateProgress([FromBody] UpdateProgressRequest request)
+        public async Task<IActionResult> UpdateProgress([FromBody] UpdateProgressRequest request, CancellationToken ct = default)
         {
             try
             {
@@ -121,7 +121,7 @@ namespace LearningAPI.Controllers
 
         // GET /api/progress/stats
         [HttpGet("stats")]
-        public async Task<IActionResult> GetStats()
+        public async Task<IActionResult> GetStats(CancellationToken ct = default)
         {
             var userId = GetUserId();
 
@@ -163,6 +163,30 @@ namespace LearningAPI.Controllers
 
             var today = DateTime.UtcNow.Date;
             var fromDate = today.AddDays(-6);
+
+            // Calculate streak
+            var practiceDates = await progresses
+                .Where(p => p.LastPracticed != default)
+                .Select(p => p.LastPracticed.Date)
+                .Distinct()
+                .OrderByDescending(d => d)
+                .Take(400)
+                .ToListAsync();
+
+            var practiceSet = practiceDates.ToHashSet();
+            var streak = 0;
+            var checkDate = today;
+            if (!practiceSet.Contains(today))
+                checkDate = today.AddDays(-1);
+            while (practiceSet.Contains(checkDate))
+            {
+                streak++;
+                checkDate = checkDate.AddDays(-1);
+            }
+            stats.CurrentStreak = streak;
+
+            var userStats = await _context.UserStats.FindAsync(userId);
+            stats.BestStreak = userStats != null ? Math.Max(userStats.BestStreak, streak) : streak;
 
             stats.ActivityLast7Days = await progresses
                 .Where(p => p.LastPracticed >= fromDate)

@@ -3,6 +3,7 @@ using LearningTrainerShared.Services;
 using LearningTrainerShared.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using BCrypt.Net;
 using NanoidDotNet;
@@ -32,14 +33,15 @@ namespace LearningAPI.Controllers
         
         [AllowAnonymous]
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        [EnableRateLimiting("auth")]
+        public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct = default)
         {
             try
             {
                 // Ищем по Username или Email
                 var user = await _context.Users
                                    .Include(u => u.Role)
-                                   .FirstOrDefaultAsync(u => u.Username == request.Username || u.Email == request.Username);
+                                   .FirstOrDefaultAsync(u => u.Username == request.Username || u.Email == request.Username, ct);
 
                 if (user == null || !await Task.Run(() => BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash)))
                 {
@@ -54,7 +56,7 @@ namespace LearningAPI.Controllers
                 user.RefreshToken = refreshToken;
                 user.RefreshTokenExpiryTime = _tokenService.GetRefreshTokenExpiryTime();
                 user.IsRefreshTokenRevoked = false;
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(ct);
 
                 _logger.LogInformation("User {UserId} logged in successfully", user.Id);
 
@@ -81,11 +83,11 @@ namespace LearningAPI.Controllers
 
         [Authorize]
         [HttpPost("change-password")]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct = default)
         {
             var userId = GetUserId();
 
-            var user = await _context.Users.FindAsync(userId);
+            var user = await _context.Users.FindAsync(new object[] { userId }, ct);
             if (user == null)
             {
                 return NotFound("User not found.");
@@ -97,23 +99,24 @@ namespace LearningAPI.Controllers
             }
 
             user.PasswordHash = await Task.Run(() => BCrypt.Net.BCrypt.HashPassword(request.NewPassword));
-            await _context.SaveChangesAsync();            
+            await _context.SaveChangesAsync(ct);
 
             return Ok(new { message = "Пароль успешно обновлен" });
         }
 
         [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        [EnableRateLimiting("auth")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct = default)
         {
             // Проверка уникальности Username
-            if (await _context.Users.AnyAsync(u => u.Username == request.Username))
+            if (await _context.Users.AnyAsync(u => u.Username == request.Username, ct))
             {
                 return BadRequest(new { message = "Это имя пользователя уже занято" });
             }
 
             // Проверка уникальности Email
-            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email, ct))
             {
                 return BadRequest(new { message = "Этот Email уже зарегистрирован" });
             }
@@ -125,12 +128,12 @@ namespace LearningAPI.Controllers
             {
                 var teacher = await _context.Users
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.InviteCode == request.InviteCode);
+                    .FirstOrDefaultAsync(u => u.InviteCode == request.InviteCode, ct);
 
                 if (teacher != null)
                 {
                     roleToAssign = await _context.Roles.AsNoTracking()
-                        .FirstOrDefaultAsync(r => r.Name == "Student");
+                        .FirstOrDefaultAsync(r => r.Name == "Student", ct);
                     teacherId = teacher.Id;
 
                 }
@@ -142,7 +145,7 @@ namespace LearningAPI.Controllers
             else
             {
                 roleToAssign = await _context.Roles.AsNoTracking()
-                    .FirstOrDefaultAsync(r => r.Name == "User");
+                    .FirstOrDefaultAsync(r => r.Name == "User", ct);
             }
 
             if (roleToAssign == null)
@@ -167,7 +170,7 @@ namespace LearningAPI.Controllers
 
             try
             {
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(ct);
             }
             catch (DbUpdateException)
             {
@@ -180,10 +183,10 @@ namespace LearningAPI.Controllers
 
         [Authorize]
         [HttpPost("upgrade-to-teacher")]
-        public async Task<IActionResult> UpgradeToTeacher()
+        public async Task<IActionResult> UpgradeToTeacher(CancellationToken ct = default)
         {
             var userId = GetUserId();
-            var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId, ct);
 
             if (user == null) return NotFound("User not found.");
 
@@ -193,7 +196,7 @@ namespace LearningAPI.Controllers
                 return StatusCode(403, new { message = "Только пользователь или администратор может стать учителем." });
             }
 
-            var teacherRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Teacher");
+            var teacherRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Teacher", ct);
             if (teacherRole == null)
             {
                 return StatusCode(500, new { message = "Критическая ошибка: Роль 'Teacher' не найдена в базе данных." });
@@ -202,7 +205,7 @@ namespace LearningAPI.Controllers
             user.RoleId = teacherRole.Id;
             user.InviteCode = GenerateInviteCode();
 
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(ct);
             var newAccessToken = _tokenService.GenerateAccessToken(user);
 
             return Ok(new

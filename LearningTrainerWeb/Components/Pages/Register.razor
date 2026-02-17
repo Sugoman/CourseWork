@@ -1,6 +1,7 @@
 ﻿@page "/register"
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
+@using LearningTrainerShared.Services
 
 <PageTitle>Регистрация - LearningTrainer</PageTitle>
 
@@ -12,7 +13,7 @@
                 <h1 class="h2">Создайте аккаунт</h1>
                 <p class="text-muted">Присоединяйтесь к сообществу LearningTrainer</p>
             </div>
-            
+
             <div class="card" style="border-radius: var(--radius-xl);">
                 <div class="card-body p-4 p-md-5">
                     @if (!string.IsNullOrEmpty(ErrorMessage))
@@ -33,7 +34,7 @@
 
                     <EditForm Model="RegisterModel" OnValidSubmit="HandleRegister" FormName="RegisterForm">
                         <DataAnnotationsValidator />
-                        
+
                         <div class="mb-4">
                             <label class="form-label">
                                 <i class="bi bi-person me-1"></i> Имя пользователя
@@ -50,13 +51,49 @@
                             <ValidationMessage For="() => RegisterModel.Email" class="text-danger small mt-1" />
                         </div>
 
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label class="form-label">
                                 <i class="bi bi-lock me-1"></i> Пароль
                             </label>
-                            <InputText @bind-Value="RegisterModel.Password" type="password" class="form-control form-control-lg" />
+                            <InputText @bind-Value="RegisterModel.Password" @bind-Value:after="OnPasswordChanged" type="password" class="form-control form-control-lg" />
                             <ValidationMessage For="() => RegisterModel.Password" class="text-danger small mt-1" />
                         </div>
+
+                        @* Password strength indicator *@
+                        @if (!string.IsNullOrEmpty(RegisterModel.Password))
+                        {
+                            <div class="mb-4">
+                                <div class="d-flex gap-1 mb-1">
+                                    @for (int i = 0; i < 4; i++)
+                                    {
+                                        var idx = i;
+                                        <div class="flex-fill rounded-pill" style="height: 4px; background-color: @(idx < (int)_passwordStrength ? GetStrengthColor(_passwordStrength) : "#e5e7eb");"></div>
+                                    }
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small style="color: @GetStrengthColor(_passwordStrength);">
+                                        <i class="bi @GetStrengthIcon(_passwordStrength) me-1"></i>@GetStrengthLabel(_passwordStrength)
+                                    </small>
+                                    <small class="text-muted">@RegisterModel.Password.Length / @PasswordValidator.MinLength+ символов</small>
+                                </div>
+
+                                @* Password requirement checklist *@
+                                <div class="mt-2">
+                                    <small class="d-block @(_hasMinLength ? "text-success" : "text-muted")">
+                                        <i class="bi @(_hasMinLength ? "bi-check-circle-fill" : "bi-circle") me-1"></i>
+                                        Минимум @PasswordValidator.MinLength символов
+                                    </small>
+                                    <small class="d-block @(_hasLetter ? "text-success" : "text-muted")">
+                                        <i class="bi @(_hasLetter ? "bi-check-circle-fill" : "bi-circle") me-1"></i>
+                                        Хотя бы одна буква
+                                    </small>
+                                    <small class="d-block @(_hasDigit ? "text-success" : "text-muted")">
+                                        <i class="bi @(_hasDigit ? "bi-check-circle-fill" : "bi-circle") me-1"></i>
+                                        Хотя бы одна цифра
+                                    </small>
+                                </div>
+                            </div>
+                        }
 
                         <div class="mb-4">
                             <label class="form-label">
@@ -99,13 +136,36 @@
 @code {
     [SupplyParameterFromForm]
     private RegisterFormModel RegisterModel { get; set; } = new();
-    
+
     private bool IsLoading = false;
     private string? ErrorMessage;
     private string? SuccessMessage;
 
+    // Password strength state
+    private PasswordStrength _passwordStrength;
+    private bool _hasMinLength;
+    private bool _hasLetter;
+    private bool _hasDigit;
+
+    private void OnPasswordChanged()
+    {
+        var pwd = RegisterModel.Password ?? "";
+        _passwordStrength = PasswordValidator.GetStrength(pwd);
+        _hasMinLength = pwd.Length >= PasswordValidator.MinLength;
+        _hasLetter = System.Text.RegularExpressions.Regex.IsMatch(pwd, @"[a-zA-Zа-яА-ЯёЁ]");
+        _hasDigit = System.Text.RegularExpressions.Regex.IsMatch(pwd, @"[0-9]");
+    }
+
     private async Task HandleRegister()
     {
+        // Password strength check (server also validates via FluentValidation)
+        var passwordErrors = PasswordValidator.Validate(RegisterModel.Password);
+        if (passwordErrors.Count > 0)
+        {
+            ErrorMessage = string.Join(". ", passwordErrors);
+            return;
+        }
+
         if (RegisterModel.Password != RegisterModel.ConfirmPassword)
         {
             ErrorMessage = "Пароли не совпадают";
@@ -122,11 +182,12 @@
                 RegisterModel.Email, 
                 RegisterModel.Password,
                 RegisterModel.InviteCode);
-            
+
             if (success)
             {
                 SuccessMessage = "Регистрация успешна! Теперь вы можете войти.";
                 RegisterModel = new();
+                _passwordStrength = PasswordStrength.VeryWeak;
             }
             else
             {
@@ -143,10 +204,40 @@
         }
     }
 
+    private static string GetStrengthColor(PasswordStrength strength) => strength switch
+    {
+        PasswordStrength.VeryWeak => "#ef4444",
+        PasswordStrength.Weak => "#f97316",
+        PasswordStrength.Fair => "#eab308",
+        PasswordStrength.Good => "#22c55e",
+        PasswordStrength.Strong => "#10b981",
+        _ => "#9ca3af"
+    };
+
+    private static string GetStrengthLabel(PasswordStrength strength) => strength switch
+    {
+        PasswordStrength.VeryWeak => "Очень слабый",
+        PasswordStrength.Weak => "Слабый",
+        PasswordStrength.Fair => "Средний",
+        PasswordStrength.Good => "Хороший",
+        PasswordStrength.Strong => "Отличный",
+        _ => ""
+    };
+
+    private static string GetStrengthIcon(PasswordStrength strength) => strength switch
+    {
+        PasswordStrength.VeryWeak or PasswordStrength.Weak => "bi-shield-exclamation",
+        PasswordStrength.Fair => "bi-shield",
+        PasswordStrength.Good or PasswordStrength.Strong => "bi-shield-check",
+        _ => "bi-shield"
+    };
+
     private class RegisterFormModel
     {
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Введите имя пользователя")]
         [System.ComponentModel.DataAnnotations.MinLength(3, ErrorMessage = "Минимум 3 символа")]
+        [System.ComponentModel.DataAnnotations.MaxLength(50, ErrorMessage = "Максимум 50 символов")]
+        [System.ComponentModel.DataAnnotations.RegularExpression(@"^[a-zA-Z0-9_]+$", ErrorMessage = "Только буквы, цифры и _")]
         public string Username { get; set; } = "";
 
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Введите email")]
@@ -154,10 +245,14 @@
         public string Email { get; set; } = "";
 
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Введите пароль")]
-        [System.ComponentModel.DataAnnotations.MinLength(6, ErrorMessage = "Минимум 6 символов")]
+        [System.ComponentModel.DataAnnotations.MinLength(8, ErrorMessage = "Минимум 8 символов")]
+        [System.ComponentModel.DataAnnotations.MaxLength(128, ErrorMessage = "Максимум 128 символов")]
+        [System.ComponentModel.DataAnnotations.RegularExpression(@"^(?=.*[a-zA-Zа-яА-ЯёЁ])(?=.*[0-9]).+$",
+            ErrorMessage = "Пароль должен содержать буквы и цифры")]
         public string Password { get; set; } = "";
 
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Подтвердите пароль")]
+        [System.ComponentModel.DataAnnotations.Compare(nameof(Password), ErrorMessage = "Пароли не совпадают")]
         public string ConfirmPassword { get; set; } = "";
 
         public string? InviteCode { get; set; }

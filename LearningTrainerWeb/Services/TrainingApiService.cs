@@ -48,7 +48,7 @@ public class TrainingApiService : ITrainingApiService
         _logger = logger;
     }
 
-    private void ApplyAuth() => _tokenProvider.ApplyTo(_httpClient);
+    private async Task ApplyAuthAsync() => await _tokenProvider.EnsureValidTokenAsync(_httpClient);
 
     public void SetAuthToken(string? token)
     {
@@ -59,7 +59,7 @@ public class TrainingApiService : ITrainingApiService
     {
         try
         {
-            ApplyAuth();
+            await ApplyAuthAsync();
             var url = $"api/training/daily-plan?newWordsLimit={newWordsLimit}&reviewLimit={reviewLimit}";
             return await _httpClient.GetFromJsonAsync<DailyPlanDto>(url);
         }
@@ -74,7 +74,7 @@ public class TrainingApiService : ITrainingApiService
     {
         try
         {
-            ApplyAuth();
+            await ApplyAuthAsync();
             var url = $"api/training/words?mode={mode}&limit={limit}";
             if (dictionaryId.HasValue)
             {
@@ -95,7 +95,7 @@ public class TrainingApiService : ITrainingApiService
     {
         try
         {
-            ApplyAuth();
+            await ApplyAuthAsync();
             var request = new UpdateProgressRequest { WordId = wordId, Quality = quality };
             var response = await _httpClient.PostAsJsonAsync("api/progress/update", request);
             return response.IsSuccessStatusCode;
@@ -111,7 +111,7 @@ public class TrainingApiService : ITrainingApiService
     {
         try
         {
-            ApplyAuth();
+            await ApplyAuthAsync();
             var response = await _httpClient.PostAsync("api/training/starter-pack", null);
             if (response.IsSuccessStatusCode)
             {

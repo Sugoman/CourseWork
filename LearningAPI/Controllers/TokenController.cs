@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using LearningTrainerShared.Context;
 using LearningTrainerShared.Services;
@@ -27,6 +28,7 @@ namespace LearningAPI.Controllers
         /// </summary>
         [HttpPost("refresh")]
         [AllowAnonymous]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
             try
@@ -37,47 +39,51 @@ namespace LearningAPI.Controllers
                     return BadRequest(new { message = "Refresh token is required" });
                 }
 
-                // ����� ������������ � ���� refresh token
                 var user = await _context.Users
                     .Include(u => u.Role)
                     .FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
 
                 if (user == null)
                 {
-                    _logger.LogWarning("User with refresh token not found");
+                    // Ротация: если токен не найден, возможно он уже был ротирован.
+                    // Проверяем, не использовался ли ранее (replay attack detection).
+                    _logger.LogWarning("Refresh token not found — possible token replay attack");
                     return Unauthorized(new { message = "Invalid refresh token" });
                 }
 
-                // ���������, �� ���� �� refresh token
                 if (user.RefreshTokenExpiryTime < DateTime.UtcNow)
                 {
                     _logger.LogWarning("Refresh token expired for user {UserId}", user.Id);
                     return Unauthorized(new { message = "Refresh token has expired" });
                 }
 
-                // ���������, �� ��� �� ������� refresh token
                 if (user.IsRefreshTokenRevoked)
                 {
-                    _logger.LogWarning("Refresh token is revoked for user {UserId}", user.Id);
-                    return Unauthorized(new { message = "Refresh token has been revoked" });
+                    // Обнаружен revoked token — инвалидируем ВСЕ токены пользователя (token family protection)
+                    _logger.LogWarning("Revoked refresh token used for user {UserId} — revoking all tokens (token family)", user.Id);
+                    user.RefreshToken = null;
+                    user.RefreshTokenExpiryTime = null;
+                    user.IsRefreshTokenRevoked = true;
+                    await _context.SaveChangesAsync();
+                    return Unauthorized(new { message = "Refresh token has been revoked. All sessions invalidated." });
                 }
 
-                // ������������� ����� access token
+                // Ротация: генерируем новые токены и инвалидируем предыдущий
                 var newAccessToken = _tokenService.GenerateAccessToken(user);
                 var newRefreshToken = _tokenService.GenerateRefreshToken();
 
-                // �������� refresh token � ��
                 user.RefreshToken = newRefreshToken;
                 user.RefreshTokenExpiryTime = _tokenService.GetRefreshTokenExpiryTime();
+                user.IsRefreshTokenRevoked = false;
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Token refreshed successfully for user {UserId}", user.Id);
+                _logger.LogInformation("Token rotated successfully for user {UserId}", user.Id);
 
                 return Ok(new RefreshTokenResponse
                 {
                     AccessToken = newAccessToken,
                     RefreshToken = newRefreshToken,
-                    ExpiresIn = 7200, // 2 hours in seconds
+                    ExpiresIn = 7200,
                     TokenType = "Bearer"
                 });
             }

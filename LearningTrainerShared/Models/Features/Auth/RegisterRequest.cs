@@ -19,7 +19,10 @@ namespace LearningTrainerShared.Models
         public string Email { get; set; } = "";
 
         [Required(ErrorMessage = "Пароль обязателен")]
-        [MinLength(6, ErrorMessage = "Пароль должен быть не менее 6 символов")]
+        [MinLength(8, ErrorMessage = "Пароль должен быть не менее 8 символов")]
+        [MaxLength(128, ErrorMessage = "Пароль не должен превышать 128 символов")]
+        [RegularExpression(@"^(?=.*[a-zA-Zа-яА-ЯёЁ])(?=.*[0-9]).+$",
+            ErrorMessage = "Пароль должен содержать хотя бы одну букву и одну цифру")]
         public string Password { get; set; } = "";
 
         public string? InviteCode { get; set; }

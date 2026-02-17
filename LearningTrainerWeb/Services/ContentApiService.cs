@@ -41,6 +41,9 @@ public interface IContentApiService
     // Token management
     [Obsolete("Token is now managed automatically via AuthTokenDelegatingHandler")]
     void SetAuthToken(string? token);
+
+    // Platform stats
+    Task<PlatformStatsResponse> GetPlatformStatsAsync();
 }
 
 public class ContentApiService : IContentApiService
@@ -54,7 +57,7 @@ public class ContentApiService : IContentApiService
         _tokenProvider = tokenProvider;
     }
 
-    private void ApplyAuth() => _tokenProvider.ApplyTo(_httpClient);
+    private async Task ApplyAuthAsync() => await _tokenProvider.EnsureValidTokenAsync(_httpClient);
 
     public void SetAuthToken(string? token)
     {
@@ -71,27 +74,27 @@ public class ContentApiService : IContentApiService
         if (!string.IsNullOrEmpty(languageFrom)) url += $"&languageFrom={languageFrom}";
         if (!string.IsNullOrEmpty(languageTo)) url += $"&languageTo={languageTo}";
 
-        ApplyAuth();
+        await ApplyAuthAsync();
         var response = await _httpClient.GetFromJsonAsync<PagedResult<DictionaryListItem>>(url);
         return response ?? new PagedResult<DictionaryListItem>();
     }
 
     public async Task<DictionaryDetailDto?> GetDictionaryDetailsAsync(int id)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         return await _httpClient.GetFromJsonAsync<DictionaryDetailDto>($"api/marketplace/dictionaries/{id}");
     }
 
     public async Task<PagedResult<CommentItem>> GetDictionaryCommentsAsync(int id, int page = 1, int pageSize = 5)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var result = await _httpClient.GetFromJsonAsync<PagedResult<CommentItem>>($"api/marketplace/dictionaries/{id}/comments?page={page}&pageSize={pageSize}");
         return result ?? new PagedResult<CommentItem>();
     }
 
     public async Task AddDictionaryCommentAsync(int dictionaryId, int rating, string text)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var request = new { Rating = rating, Text = text };
         var response = await _httpClient.PostAsJsonAsync($"api/marketplace/dictionaries/{dictionaryId}/comments", request);
         if (!response.IsSuccessStatusCode)
@@ -103,7 +106,7 @@ public class ContentApiService : IContentApiService
 
     public async Task DownloadDictionaryAsync(int dictionaryId)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var response = await _httpClient.PostAsync($"api/marketplace/dictionaries/{dictionaryId}/download", null);
         if (!response.IsSuccessStatusCode)
         {
@@ -125,27 +128,27 @@ public class ContentApiService : IContentApiService
         if (!string.IsNullOrEmpty(category)) url += $"&category={category}";
         if (difficulty > 0) url += $"&difficulty={difficulty}";
 
-        ApplyAuth();
+        await ApplyAuthAsync();
         var response = await _httpClient.GetFromJsonAsync<PagedResult<RuleListItem>>(url);
         return response ?? new PagedResult<RuleListItem>();
     }
 
     public async Task<RuleDetailDto?> GetRuleDetailsAsync(int id)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         return await _httpClient.GetFromJsonAsync<RuleDetailDto>($"api/marketplace/rules/{id}");
     }
 
     public async Task<PagedResult<CommentItem>> GetRuleCommentsAsync(int id, int page = 1, int pageSize = 5)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var result = await _httpClient.GetFromJsonAsync<PagedResult<CommentItem>>($"api/marketplace/rules/{id}/comments?page={page}&pageSize={pageSize}");
         return result ?? new PagedResult<CommentItem>();
     }
 
     public async Task AddRuleCommentAsync(int ruleId, int rating, string text)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var request = new { Rating = rating, Text = text };
         var response = await _httpClient.PostAsJsonAsync($"api/marketplace/rules/{ruleId}/comments", request);
         if (!response.IsSuccessStatusCode)
@@ -157,7 +160,7 @@ public class ContentApiService : IContentApiService
 
     public async Task DownloadRuleAsync(int ruleId)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var response = await _httpClient.PostAsync($"api/marketplace/rules/{ruleId}/download", null);
         if (!response.IsSuccessStatusCode)
         {
@@ -169,7 +172,7 @@ public class ContentApiService : IContentApiService
 
     public async Task<List<RuleListItem>> GetRelatedRulesAsync(int ruleId, string category)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var result = await _httpClient.GetFromJsonAsync<List<RuleListItem>>(
             $"api/marketplace/rules/{ruleId}/related?category={category}");
         return result ?? new List<RuleListItem>();
@@ -181,46 +184,46 @@ public class ContentApiService : IContentApiService
 
     public async Task<List<MyDictionaryItem>> GetMyDictionariesAsync()
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var result = await _httpClient.GetFromJsonAsync<List<MyDictionaryItem>>("api/marketplace/my/dictionaries");
         return result ?? new List<MyDictionaryItem>();
     }
 
     public async Task<List<MyRuleItem>> GetMyRulesAsync()
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var result = await _httpClient.GetFromJsonAsync<List<MyRuleItem>>("api/marketplace/my/rules");
         return result ?? new List<MyRuleItem>();
     }
 
     public async Task<List<DownloadedItem>> GetDownloadedContentAsync()
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var result = await _httpClient.GetFromJsonAsync<List<DownloadedItem>>("api/marketplace/my/downloads");
         return result ?? new List<DownloadedItem>();
     }
 
     public async Task PublishDictionaryAsync(int id)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         await _httpClient.PostAsync($"api/marketplace/dictionaries/{id}/publish", null);
     }
 
     public async Task UnpublishDictionaryAsync(int id)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         await _httpClient.PostAsync($"api/marketplace/dictionaries/{id}/unpublish", null);
     }
 
     public async Task PublishRuleAsync(int id)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         await _httpClient.PostAsync($"api/marketplace/rules/{id}/publish", null);
     }
 
     public async Task UnpublishRuleAsync(int id)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         await _httpClient.PostAsync($"api/marketplace/rules/{id}/unpublish", null);
     }
 
@@ -230,7 +233,7 @@ public class ContentApiService : IContentApiService
 
     public async Task<ExportResult> ExportDictionaryAsJsonAsync(int dictionaryId)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var response = await _httpClient.GetAsync($"api/dictionaries/export/{dictionaryId}/json");
         response.EnsureSuccessStatusCode();
 
@@ -242,7 +245,7 @@ public class ContentApiService : IContentApiService
 
     public async Task<ExportResult> ExportDictionaryAsCsvAsync(int dictionaryId)
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var response = await _httpClient.GetAsync($"api/dictionaries/export/{dictionaryId}/csv");
         response.EnsureSuccessStatusCode();
 
@@ -254,7 +257,7 @@ public class ContentApiService : IContentApiService
 
     public async Task<ExportResult> ExportAllDictionariesAsZipAsync()
     {
-        ApplyAuth();
+        await ApplyAuthAsync();
         var response = await _httpClient.GetAsync("api/dictionaries/export/all/zip");
         response.EnsureSuccessStatusCode();
 
@@ -290,6 +293,16 @@ public class ContentApiService : IContentApiService
         }
         catch { }
         return null;
+    }
+
+    #endregion
+
+    #region Platform Stats
+
+    public async Task<PlatformStatsResponse> GetPlatformStatsAsync()
+    {
+        var result = await _httpClient.GetFromJsonAsync<PlatformStatsResponse>("api/marketplace/stats");
+        return result ?? new PlatformStatsResponse();
     }
 
     #endregion
@@ -364,6 +377,7 @@ public class MyDictionaryItem
 {
     public int Id { get; set; }
     public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
     public int WordCount { get; set; }
     public bool IsPublished { get; set; }
     public double Rating { get; set; }
@@ -394,6 +408,13 @@ public class ExportResult
     public byte[] Data { get; set; } = Array.Empty<byte>();
     public string FileName { get; set; } = "";
     public string ContentType { get; set; } = "";
+}
+
+public class PlatformStatsResponse
+{
+    public int DictionaryCount { get; set; }
+    public int RuleCount { get; set; }
+    public int UserCount { get; set; }
 }
 
 #endregion

@@ -129,8 +129,8 @@
                                     <a href="rule/@rule.Id" class="btn btn-sm btn-outline-primary gap-2">
                                         <i class="bi bi-book-half me-1"></i> Читать
                                     </a>
-                                    <button class="btn btn-sm btn-success" @onclick="() => DownloadRule(rule.Id)">
-                                        <i class="bi bi-download"></i>
+                                    <button class="btn btn-sm btn-success" @onclick="() => DownloadRule(rule.Id)" disabled="@IsDownloading">
+                                        <i class="bi bi-download"></i> @(IsDownloading ? "..." : "Скачать")
                                     </button>
                                 </div>
                             </div>
@@ -189,6 +189,18 @@
     }
 </div>
 
+@if (!string.IsNullOrEmpty(DownloadMessage))
+{
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050; margin-top: 80px;">
+        <div class="d-flex align-items-center gap-2 px-4 py-3 text-white" 
+             style="background: @(DownloadSuccess ? "var(--accent-green, #198754)" : "var(--accent-red, #dc3545)"); border-radius: var(--radius, 8px); box-shadow: var(--shadow-lg, 0 4px 16px rgba(0,0,0,0.15));">
+            <i class="bi @(DownloadSuccess ? "bi-check-circle" : "bi-exclamation-circle")"></i>
+            @DownloadMessage
+            <button type="button" class="btn-close btn-close-white ms-2" @onclick="() => DownloadMessage = null" style="font-size: 0.75rem;"></button>
+        </div>
+    </div>
+}
+
 @code {
     private List<RuleListItem>? RuleItems;
     private bool IsLoading = true;
@@ -198,6 +210,9 @@
     private int CurrentPage = 1;
     private int TotalPages = 1;
     private const int PageSize = 8;
+    private string? DownloadMessage;
+    private bool DownloadSuccess;
+    private bool IsDownloading;
 
     protected override async Task OnInitializedAsync()
     {
@@ -257,14 +272,30 @@
 
     private async Task DownloadRule(int ruleId)
     {
+        if (IsDownloading) return;
+
+        IsDownloading = true;
+        StateHasChanged();
         try
         {
             await ContentApi.DownloadRuleAsync(ruleId);
+            DownloadMessage = "Правило успешно скачано!";
+            DownloadSuccess = true;
         }
         catch (Exception ex)
         {
+            DownloadMessage = $"Ошибка: {ex.Message}";
+            DownloadSuccess = false;
             Logger.LogError(ex, "Error downloading rule {RuleId}", ruleId);
         }
+        finally
+        {
+            IsDownloading = false;
+        }
+        StateHasChanged();
+        await Task.Delay(3000);
+        DownloadMessage = null;
+        StateHasChanged();
     }
 
     private string GetDifficultyBadgeClass(int level) => level switch

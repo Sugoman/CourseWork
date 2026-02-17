@@ -24,7 +24,8 @@ namespace LearningAPI.Controllers
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
             [FromQuery] string orderBy = "Id",
-            [FromQuery] bool descending = true)
+            [FromQuery] bool descending = true,
+            CancellationToken ct = default)
         {
             const int maxPageSize = 100;
             if (pageSize > maxPageSize) pageSize = maxPageSize;
@@ -64,7 +65,7 @@ namespace LearningAPI.Controllers
         }
 
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetDictionaryById(int id)
+        public async Task<IActionResult> GetDictionaryById(int id, CancellationToken ct = default)
         {
             var dictionary = await _dictionaryService.GetByIdAsync(GetUserId(), id);
             if (dictionary == null) return NotFound();
@@ -72,7 +73,7 @@ namespace LearningAPI.Controllers
         }
 
         [HttpGet("list/available")]
-        public async Task<IActionResult> GetAvailableDictionaries()
+        public async Task<IActionResult> GetAvailableDictionaries(CancellationToken ct = default)
         {
             var dictionaries = await _dictionaryService.GetAvailableAsync(GetUserId());
             return Ok(dictionaries);
@@ -80,7 +81,7 @@ namespace LearningAPI.Controllers
 
         [HttpPost]
         [Authorize(Roles = UserRoles.ContentCreators)]
-        public async Task<IActionResult> AddDictionary([FromBody] CreateDictionaryRequest requestDto)
+        public async Task<IActionResult> AddDictionary([FromBody] CreateDictionaryRequest requestDto, CancellationToken ct = default)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -98,7 +99,7 @@ namespace LearningAPI.Controllers
         }
 
         [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteDictionary(int id)
+        public async Task<IActionResult> DeleteDictionary(int id, CancellationToken ct = default)
         {
             var userId = GetUserId();
             var deleted = await _dictionaryService.DeleteAsync(userId, id);
@@ -107,14 +108,14 @@ namespace LearningAPI.Controllers
         }
 
         [HttpGet("{id:int}/review")]
-        public async Task<IActionResult> GetReviewSession(int id)
+        public async Task<IActionResult> GetReviewSession(int id, CancellationToken ct = default)
         {
             var words = await _dictionaryService.GetReviewSessionAsync(GetUserId(), id);
             return Ok(words);
         }
 
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> UpdateDictionary(int id, [FromBody] UpdateDictionaryRequest request)
+        public async Task<IActionResult> UpdateDictionary(int id, [FromBody] UpdateDictionaryRequest request, CancellationToken ct = default)
         {
             if (id != request.Id) return BadRequest("ID mismatch");
 

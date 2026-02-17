@@ -30,13 +30,13 @@ public class StatisticsApiService : IStatisticsApiService
         _logger = logger;
     }
 
-    private void ApplyAuth() => _tokenProvider.ApplyTo(_httpClient);
+    private async Task ApplyAuthAsync() => await _tokenProvider.EnsureValidTokenAsync(_httpClient);
 
     public async Task<UserStatistics?> GetStatisticsAsync(string period = "week")
     {
         try
         {
-            ApplyAuth();
+            await ApplyAuthAsync();
             var response = await _httpClient.GetAsync($"api/statistics?period={period}");
             
             if (response.IsSuccessStatusCode)
@@ -58,7 +58,7 @@ public class StatisticsApiService : IStatisticsApiService
     {
         try
         {
-            ApplyAuth();
+            await ApplyAuthAsync();
             var response = await _httpClient.GetAsync("api/statistics/summary");
 
             if (response.IsSuccessStatusCode)
@@ -79,7 +79,7 @@ public class StatisticsApiService : IStatisticsApiService
     {
         try
         {
-            ApplyAuth();
+            await ApplyAuthAsync();
             var response = await _httpClient.GetAsync($"api/statistics/daily?days={days}");
 
             if (response.IsSuccessStatusCode)
@@ -101,7 +101,7 @@ public class StatisticsApiService : IStatisticsApiService
     {
         try
         {
-            ApplyAuth();
+            await ApplyAuthAsync();
             var response = await _httpClient.GetAsync("api/statistics/dictionaries");
 
             if (response.IsSuccessStatusCode)
@@ -123,7 +123,7 @@ public class StatisticsApiService : IStatisticsApiService
     {
         try
         {
-            ApplyAuth();
+            await ApplyAuthAsync();
             var response = await _httpClient.GetAsync($"api/statistics/difficult-words?limit={limit}");
 
             if (response.IsSuccessStatusCode)
@@ -145,7 +145,7 @@ public class StatisticsApiService : IStatisticsApiService
     {
         try
         {
-            ApplyAuth();
+            await ApplyAuthAsync();
             var response = await _httpClient.GetAsync("api/statistics/achievements");
 
             if (response.IsSuccessStatusCode)
@@ -167,7 +167,7 @@ public class StatisticsApiService : IStatisticsApiService
     {
         try
         {
-            ApplyAuth();
+            await ApplyAuthAsync();
             var response = await _httpClient.PostAsJsonAsync("api/statistics/session", request);
             return response.IsSuccessStatusCode;
         }

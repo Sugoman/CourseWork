@@ -5,6 +5,12 @@ namespace LearningTrainerShared.Context
 {
     public class ApiDbContext : DbContext
     {
+        /// <summary>
+        /// ID текущего пользователя для EF Core Query Filters (multi-tenant изоляция).
+        /// Устанавливается через DI в API-проекте. Если null — фильтры не применяются.
+        /// </summary>
+        public int? TenantUserId { get; set; }
+
         public ApiDbContext(DbContextOptions<ApiDbContext> options)
         : base(options)
         {
@@ -169,6 +175,21 @@ namespace LearningTrainerShared.Context
             // LearningProgress: ускоряет streak-вычисление
             modelBuilder.Entity<LearningProgress>()
                 .HasIndex(p => new { p.UserId, p.LastPracticed });
+
+            // === EF CORE QUERY FILTERS (multi-tenant изоляция по UserId) ===
+            // Если TenantUserId != null — автоматически фильтрует данные по текущему пользователю.
+            // Для кросс-пользовательских запросов (marketplace, admin) используйте .IgnoreQueryFilters().
+            modelBuilder.Entity<Dictionary>()
+                .HasQueryFilter(d => TenantUserId == null || d.UserId == TenantUserId);
+
+            modelBuilder.Entity<Word>()
+                .HasQueryFilter(w => TenantUserId == null || w.UserId == TenantUserId);
+
+            modelBuilder.Entity<LearningProgress>()
+                .HasQueryFilter(p => TenantUserId == null || p.UserId == TenantUserId);
+
+            modelBuilder.Entity<Rule>()
+                .HasQueryFilter(r => TenantUserId == null || r.UserId == TenantUserId);
         }
     }
 }

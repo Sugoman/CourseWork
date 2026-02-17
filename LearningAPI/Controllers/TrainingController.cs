@@ -33,7 +33,8 @@ public class TrainingController : BaseApiController
     [HttpGet("daily-plan")]
     public async Task<ActionResult<DailyPlanDto>> GetDailyPlan(
         [FromQuery] int newWordsLimit = DefaultNewWordsLimit,
-        [FromQuery] int reviewLimit = DefaultReviewLimit)
+        [FromQuery] int reviewLimit = DefaultReviewLimit,
+        CancellationToken ct = default)
     {
         var userId = GetUserId();
         var now = DateTime.UtcNow;
@@ -142,7 +143,8 @@ public class TrainingController : BaseApiController
     public async Task<ActionResult<List<TrainingWordDto>>> GetTrainingWords(
         [FromQuery] string mode = "mixed",
         [FromQuery] int? dictionaryId = null,
-        [FromQuery] int limit = 20)
+        [FromQuery] int limit = 20,
+        CancellationToken ct = default)
     {
         var userId = GetUserId();
         var now = DateTime.UtcNow;
@@ -283,7 +285,7 @@ public class TrainingController : BaseApiController
     /// Получить стартовый набор контента для новичков
     /// </summary>
     [HttpPost("starter-pack")]
-    public async Task<ActionResult> GetStarterPack()
+    public async Task<ActionResult> GetStarterPack(CancellationToken ct = default)
     {
         var userId = GetUserId();
 

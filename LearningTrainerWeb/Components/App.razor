@@ -29,6 +29,17 @@
             link.click();
             document.body.removeChild(link);
         }
+
+        function speakText(text, lang, volume) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                var utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = lang || 'en-US';
+                utterance.rate = 0.9;
+                utterance.volume = (typeof volume === 'number') ? Math.max(0, Math.min(1, volume)) : 1;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
     </script>
 </body>
 

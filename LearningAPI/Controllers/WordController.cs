@@ -25,7 +25,7 @@ namespace LearningAPI.Controllers
             _cache = cache;
         }
         [HttpPost]
-        public async Task<IActionResult> AddWord([FromBody] CreateWordRequest requestDto)
+        public async Task<IActionResult> AddWord([FromBody] CreateWordRequest requestDto, CancellationToken ct = default)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdString, out var userId))
@@ -64,7 +64,7 @@ namespace LearningAPI.Controllers
 
         // DELETE: /api/Words/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteWord(int id)
+        public async Task<IActionResult> DeleteWord(int id, CancellationToken ct = default)
         {
             var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!int.TryParse(userIdString, out var userId))

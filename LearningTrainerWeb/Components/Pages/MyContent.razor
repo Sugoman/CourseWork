@@ -68,47 +68,53 @@
             <div class="row g-4">
                 @if (MyDictionaries != null && MyDictionaries.Any())
                 {
-                    @foreach (var dict in MyDictionaries)
+                    @foreach (var dict in PagedDictionaries)
                     {
                         <div class="col-md-4">
                             <div class="card h-100">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="card-title mb-0">@dict.Name</h5>
-                                        <span class="badge @(dict.IsPublished ? "bg-success" : "bg-secondary")">
+                                        <span class="badge rounded-pill @(dict.IsPublished ? "bg-success bg-opacity-10 text-success" : "bg-secondary bg-opacity-10 text-secondary")" style="font-size: 0.75rem;">
                                             @(dict.IsPublished ? "✔ Опубликован" : "Черновик")
                                         </span>
                                     </div>
+
+                                    @if (!string.IsNullOrWhiteSpace(dict.Description))
+                                    {
+                                        <p class="card-text text-muted small mb-2" style="min-height: 36px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                            @dict.Description
+                                        </p>
+                                    }
+
                                     <p class="text-muted small mb-3">
                                         <i class="bi bi-collection me-1"></i> @dict.WordCount слов
                                     </p>
+
                                     <div class="d-flex gap-2 flex-wrap">
                                         @if (!dict.IsPublished)
                                         {
-                                            <button class="btn btn-sm btn-primary gap-2" @onclick="() => PublishDictionary(dict.Id)">
+                                            <button class="btn btn-primary btn-sm" @onclick="() => PublishDictionary(dict.Id)">
                                                 <i class="bi bi-cloud-upload me-1"></i> Опубликовать
                                             </button>
                                         }
                                         else
                                         {
-                                            <button class="btn btn-sm btn-outline-danger gap-2" @onclick="() => UnpublishDictionary(dict.Id)">
+                                            <button class="btn btn-outline-danger btn-sm" @onclick="() => UnpublishDictionary(dict.Id)">
                                                 <i class="bi bi-x-circle me-1"></i> Снять
                                             </button>
                                         }
-                                        <div class="position-relative">
-                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" @onclick="() => ToggleExportDropdown(dict.Id)">
-                                                <i class="bi bi-download me-1"></i> Экспорт
-                                            </button>
-                                            @if (OpenExportDropdownId == dict.Id)
-                                            {
-                                                <ul class="dropdown-menu show" style="position: absolute; top: 100%; right: 0;">
-                                                    <li><button class="dropdown-item" @onclick="() => { ExportDictionaryAsJson(dict.Id, dict.Name); OpenExportDropdownId = null; }"><i class="bi bi-filetype-json me-2"></i>JSON</button></li>
-                                                    <li><button class="dropdown-item" @onclick="() => { ExportDictionaryAsCsv(dict.Id, dict.Name); OpenExportDropdownId = null; }"><i class="bi bi-filetype-csv me-2"></i>CSV</button></li>
-                                                </ul>
-                                            }
-                                        </div>
+                                        <button class="btn btn-outline-secondary btn-sm" title="Экспорт JSON"
+                                                @onclick="() => ExportDictionaryAsJson(dict.Id, dict.Name)">
+                                            <i class="bi bi-filetype-json"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" title="Экспорт CSV"
+                                                @onclick="() => ExportDictionaryAsCsv(dict.Id, dict.Name)">
+                                            <i class="bi bi-filetype-csv"></i>
+                                        </button>
                                     </div>
                                 </div>
+
                                 <div class="card-footer">
                                     <div class="d-flex justify-content-between align-items-center text-muted small">
                                         <span>
@@ -138,6 +144,37 @@
                     </div>
                 }
             </div>
+            @if (DictionaryTotalPages > 1)
+            {
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(DictionaryPage == 1 ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => DictionaryPage--">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                        </li>
+                        @foreach (var pageNum in GetPageWindow(DictionaryPage, DictionaryTotalPages))
+                        {
+                            @if (pageNum == -1)
+                            {
+                                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                            }
+                            else
+                            {
+                                var p = pageNum;
+                                <li class="page-item @(p == DictionaryPage ? "active" : "")">
+                                    <button class="page-link" @onclick="() => DictionaryPage = p">@p</button>
+                                </li>
+                            }
+                        }
+                        <li class="page-item @(DictionaryPage == DictionaryTotalPages ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => DictionaryPage++">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            }
         }
 
         @if (ActiveTab == "rules")
@@ -145,7 +182,7 @@
             <div class="row g-4">
                 @if (MyRules != null && MyRules.Any())
                 {
-                    @foreach (var rule in MyRules)
+                    @foreach (var rule in PagedRules)
                     {
                         <div class="col-md-4">
                             <div class="card h-100">
@@ -153,21 +190,21 @@
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="card-title mb-0">@rule.Title</h5>
                                         <span class="badge @(rule.IsPublished ? "bg-success" : "bg-secondary")">
-                                            @(rule.IsPublished ? "? Опубликовано" : "Черновик")
+                                            @(rule.IsPublished ? "✔ Опубликовано" : "Черновик")
                                         </span>
                                     </div>
                                     <span class="badge bg-info mb-3">@rule.Category</span>
                                     <div class="d-flex gap-2">
                                         @if (!rule.IsPublished)
                                         {
-                                            <button class="btn btn-sm btn-primary" @onclick="() => PublishRule(rule.Id)">
-                                                <i class="bi bi-cloud-upload me-1"></i> Опубликовать
+                                            <button class="btn btn-sm btn-primary gap-2" @onclick="() => PublishRule(rule.Id)">
+                                                <i class="bi bi-cloud-upload me-1 "></i> Опубликовать
                                             </button>
                                         }
                                         else
                                         {
-                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => UnpublishRule(rule.Id)">
-                                                <i class="bi bi-x-circle me-1"></i> Снять
+                                            <button class="btn btn-sm btn-outline-danger gap-2" @onclick="() => UnpublishRule(rule.Id)">
+                                                <i class="bi bi-x-circle gap-2"></i> Снять
                                             </button>
                                         }
                                     </div>
@@ -201,6 +238,37 @@
                     </div>
                 }
             </div>
+            @if (RuleTotalPages > 1)
+            {
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(RulePage == 1 ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => RulePage--">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                        </li>
+                        @foreach (var pageNum in GetPageWindow(RulePage, RuleTotalPages))
+                        {
+                            @if (pageNum == -1)
+                            {
+                                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                            }
+                            else
+                            {
+                                var p = pageNum;
+                                <li class="page-item @(p == RulePage ? "active" : "")">
+                                    <button class="page-link" @onclick="() => RulePage = p">@p</button>
+                                </li>
+                            }
+                        }
+                        <li class="page-item @(RulePage == RuleTotalPages ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => RulePage++">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            }
         }
 
         @if (ActiveTab == "downloaded")
@@ -208,12 +276,14 @@
             <div class="row g-4">
                 @if (DownloadedContent != null && DownloadedContent.Any())
                 {
-                    @foreach (var item in DownloadedContent)
+                    @foreach (var item in PagedDownloads)
                     {
                         <div class="col-md-4">
                             <div class="card h-100">
                                 <div class="card-body">
-                                    <span class="badge @(item.Type == "Словарь" ? "bg-info" : "bg-warning") mb-2">@item.Type</span>
+                                    <span class="badge @(item.Type == "Dictionary" ? "bg-info" : "bg-warning") mb-2">
+                                        @(item.Type == "Dictionary" ? "Словарь" : "Правило")
+                                    </span>
                                     <h5 class="card-title">@item.Title</h5>
                                     <p class="text-muted small mb-0">
                                         <i class="bi bi-person-circle me-1"></i> @item.AuthorName
@@ -240,13 +310,44 @@
                     </div>
                 }
             </div>
+            @if (DownloadTotalPages > 1)
+            {
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(DownloadPage == 1 ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => DownloadPage--">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                        </li>
+                        @foreach (var pageNum in GetPageWindow(DownloadPage, DownloadTotalPages))
+                        {
+                            @if (pageNum == -1)
+                            {
+                                <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                            }
+                            else
+                            {
+                                var p = pageNum;
+                                <li class="page-item @(p == DownloadPage ? "active" : "")">
+                                    <button class="page-link" @onclick="() => DownloadPage = p">@p</button>
+                                </li>
+                            }
+                        }
+                        <li class="page-item @(DownloadPage == DownloadTotalPages ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => DownloadPage++">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            }
         }
     }
 </div>
 
 @if (!string.IsNullOrEmpty(ExportMessage))
 {
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050; margin-top: 80px;">
         <div class="d-flex align-items-center gap-2 px-4 py-3 text-white" 
              style="background: @(ExportSuccess ? "var(--accent-green)" : "var(--accent-red)"); border-radius: var(--radius); box-shadow: var(--shadow-lg);">
             <i class="bi @(ExportSuccess ? "bi-check-circle" : "bi-exclamation-circle")"></i>
@@ -262,15 +363,46 @@
     private string ActiveTab = "dictionaries";
     private string? ExportMessage;
     private bool ExportSuccess;
-    private int? OpenExportDropdownId;
 
     private List<MyDictionaryItem>? MyDictionaries;
     private List<MyRuleItem>? MyRules;
     private List<DownloadedItem>? DownloadedContent;
 
-    private void ToggleExportDropdown(int dictId)
+    // Pagination
+    private const int MyContentPageSize = 9;
+    private int DictionaryPage = 1;
+    private int RulePage = 1;
+    private int DownloadPage = 1;
+
+    private int DictionaryTotalPages => MyDictionaries == null || !MyDictionaries.Any() ? 1 : (int)Math.Ceiling(MyDictionaries.Count / (double)MyContentPageSize);
+    private int RuleTotalPages => MyRules == null || !MyRules.Any() ? 1 : (int)Math.Ceiling(MyRules.Count / (double)MyContentPageSize);
+    private int DownloadTotalPages => DownloadedContent == null || !DownloadedContent.Any() ? 1 : (int)Math.Ceiling(DownloadedContent.Count / (double)MyContentPageSize);
+
+    private IEnumerable<MyDictionaryItem> PagedDictionaries => MyDictionaries?.Skip((DictionaryPage - 1) * MyContentPageSize).Take(MyContentPageSize) ?? Enumerable.Empty<MyDictionaryItem>();
+    private IEnumerable<MyRuleItem> PagedRules => MyRules?.Skip((RulePage - 1) * MyContentPageSize).Take(MyContentPageSize) ?? Enumerable.Empty<MyRuleItem>();
+    private IEnumerable<DownloadedItem> PagedDownloads => DownloadedContent?.Skip((DownloadPage - 1) * MyContentPageSize).Take(MyContentPageSize) ?? Enumerable.Empty<DownloadedItem>();
+
+    private IEnumerable<int> GetPageWindow(int current, int total)
     {
-        OpenExportDropdownId = OpenExportDropdownId == dictId ? null : dictId;
+        const int wing = 2;
+        var pages = new List<int> { 1 };
+
+        var rangeStart = Math.Max(2, current - wing);
+        var rangeEnd = Math.Min(total - 1, current + wing);
+
+        if (rangeStart > 2)
+            pages.Add(-1);
+
+        for (int p = rangeStart; p <= rangeEnd; p++)
+            pages.Add(p);
+
+        if (rangeEnd < total - 1)
+            pages.Add(-1);
+
+        if (total > 1)
+            pages.Add(total);
+
+        return pages;
     }
 
     protected override async Task OnInitializedAsync()

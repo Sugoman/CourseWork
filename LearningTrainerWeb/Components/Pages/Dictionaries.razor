@@ -36,10 +36,10 @@
                     </label>
                     <select class="form-select" @bind="SelectedLanguageFrom" @bind:after="ApplyFilters">
                         <option value="">Все языки</option>
-                        <option value="en">English</option>
-                        <option value="ru">Русский</option>
-                        <option value="de">Deutsch</option>
-                        <option value="es">Español</option>
+                        <option value="English">English</option>
+                        <option value="Russian">Русский</option>
+                        <option value="German">Deutsch</option>
+                        <option value="Spanish">Español</option>
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -48,10 +48,10 @@
                     </label>
                     <select class="form-select" @bind="SelectedLanguageTo" @bind:after="ApplyFilters">
                         <option value="">Все языки</option>
-                        <option value="en">English</option>
-                        <option value="ru">Русский</option>
-                        <option value="de">Deutsch</option>
-                        <option value="es">Español</option>
+                        <option value="English">English</option>
+                        <option value="Russian">Русский</option>
+                        <option value="German">Deutsch</option>
+                        <option value="Spanish">Español</option>
                     </select>
                 </div>
                 <div class="col-md-2" style="margin-top: 32px;">
@@ -231,7 +231,7 @@
 
 @if (!string.IsNullOrEmpty(DownloadMessage))
 {
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050; margin-top: 80px;">
         <div class="d-flex align-items-center gap-2 px-4 py-3 text-white" 
              style="background: @(DownloadSuccess ? "var(--accent-green, #198754)" : "var(--accent-red, #dc3545)"); border-radius: var(--radius, 8px); box-shadow: var(--shadow-lg, 0 4px 16px rgba(0,0,0,0.15));">
             <i class="bi @(DownloadSuccess ? "bi-check-circle" : "bi-exclamation-circle")"></i>

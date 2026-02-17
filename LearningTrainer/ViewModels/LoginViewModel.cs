@@ -1,6 +1,7 @@
 using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Services;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -201,6 +202,13 @@ namespace LearningTrainer.ViewModels
             {
                 IsError = true;
                 ErrorMessage = "Имя пользователя должно быть не менее 3 символов";
+                return;
+            }
+            var passwordErrors = PasswordValidator.Validate(CurrentPassword);
+            if (passwordErrors.Count > 0)
+            {
+                IsError = true;
+                ErrorMessage = string.Join(". ", passwordErrors);
                 return;
             }
             try

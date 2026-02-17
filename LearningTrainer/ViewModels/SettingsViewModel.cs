@@ -1,6 +1,7 @@
 ﻿using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Services;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Windows;
@@ -437,6 +438,14 @@ namespace LearningTrainer.ViewModels
             {
                 IsError = true;
                 ChangePasswordMessage = "Заполните все поля.";
+                return;
+            }
+
+            var passwordErrors = PasswordValidator.Validate(newPassword);
+            if (passwordErrors.Count > 0)
+            {
+                IsError = true;
+                ChangePasswordMessage = string.Join(". ", passwordErrors);
                 return;
             }
 

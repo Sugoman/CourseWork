@@ -213,6 +213,7 @@
     {
         try
         {
+            var statsTask = ContentApi.GetPlatformStatsAsync();
             var dictionaries = await ContentApi.GetPublicDictionariesAsync(null, null, null, 1, 3);
             var rules = await ContentApi.GetPublicRulesAsync(null, null, 0, 1, 3);
 
@@ -224,11 +225,12 @@
 
             FeaturedContent = items.OrderByDescending(x => x.Rating).Take(6).ToList();
 
+            var platformStats = await statsTask;
             PlatformStats = new PlatformStatsDto
             {
-                DictionaryCount = dictionaries.TotalCount > 0 ? dictionaries.TotalCount : 0,
-                RuleCount = rules.TotalCount > 0 ? rules.TotalCount : 0,
-                UserCount = 0
+                DictionaryCount = platformStats.DictionaryCount,
+                RuleCount = platformStats.RuleCount,
+                UserCount = platformStats.UserCount
             };
         }
         catch

@@ -13,6 +13,9 @@ namespace LearningTrainerShared.Models
         public int LearnedWords { get; set; }
         public double AverageSuccessRate { get; set; }
 
+        public int CurrentStreak { get; set; }
+        public int BestStreak { get; set; }
+
         public List<ActivityPoint> ActivityLast7Days { get; set; } = new();
         public List<KnowledgeDistributionPoint> KnowledgeDistribution { get; set; } = new();
     }

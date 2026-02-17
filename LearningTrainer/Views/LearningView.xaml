@@ -19,26 +19,119 @@
         <Grid Background="{DynamicResource MainBackgroundBrush}" 
               VerticalAlignment="Center" HorizontalAlignment="Center"
               Visibility="{Binding IsSessionComplete, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <StackPanel HorizontalAlignment="Center">
-                <TextBlock Text="🎉" Foreground="{DynamicResource TertiaryTextBrush}" FontSize="80" HorizontalAlignment="Center"/>
-                <TextBlock Text="Отличная работа!"
-                           FontSize="28" FontWeight="Bold" 
-                           Foreground="{DynamicResource PrimaryTextBrush}"
-                           HorizontalAlignment="Center"
-                           Margin="0,10,0,0"/>
-                <TextBlock Text="Все слова на сегодня выучены."
-                           FontSize="{DynamicResource BaseFontSize}" 
-                           Foreground="{DynamicResource SecondaryTextBrush}" 
-                           HorizontalAlignment="Center"
-                           Margin="0,5,0,30"/>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="550">
+                <StackPanel HorizontalAlignment="Center" Margin="20">
+                    <!-- Emoji + Message -->
+                    <TextBlock Text="{Binding ResultEmoji}" FontSize="72" HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding ResultMessage}"
+                               FontSize="28" FontWeight="Bold" 
+                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               HorizontalAlignment="Center"
+                               Margin="0,8,0,0"/>
 
-                <Button Content="   Вернуться на дашборд   " 
-                        Command="{Binding CloseTabCommand}" 
-                        Style="{StaticResource BaseButton}" 
-                        HorizontalAlignment="Center"
-                        Padding="20,10"
-                        MinHeight="40"/>
-            </StackPanel>
+                    <!-- Stats cards -->
+                    <UniformGrid Columns="4" Margin="0,24,0,0" HorizontalAlignment="Center" MaxWidth="520">
+                        <!-- Total -->
+                        <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                                CornerRadius="10" Margin="4" Padding="16,12"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding TotalWordsCount}" FontSize="28" FontWeight="Bold"
+                                           Foreground="{DynamicResource PrimaryAccentBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Всего" FontSize="12"
+                                           Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <!-- Correct -->
+                        <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                                CornerRadius="10" Margin="4" Padding="16,12"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding CorrectCount}" FontSize="28" FontWeight="Bold"
+                                           Foreground="{DynamicResource SuccessBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Верно" FontSize="12"
+                                           Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <!-- Wrong -->
+                        <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                                CornerRadius="10" Margin="4" Padding="16,12"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding WrongCount}" FontSize="28" FontWeight="Bold"
+                                           Foreground="{DynamicResource DangerBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Ошибки" FontSize="12"
+                                           Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <!-- Duration -->
+                        <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                                CornerRadius="10" Margin="4" Padding="16,12"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding SessionDuration}" FontSize="22" FontWeight="Bold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Время" FontSize="12"
+                                           Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <!-- Accuracy bar -->
+                    <StackPanel Margin="0,20,0,0" HorizontalAlignment="Center" Width="400">
+                        <Grid>
+                            <TextBlock Text="Точность" FontSize="14" 
+                                       Foreground="{DynamicResource SecondaryTextBrush}"/>
+                            <TextBlock HorizontalAlignment="Right" FontSize="14" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"
+                                       Text="{Binding AccuracyPercent, StringFormat={}{0:0}%}"/>
+                        </Grid>
+                        <Border CornerRadius="5" Height="10" Margin="0,6,0,0"
+                                Background="{DynamicResource BorderBrush}">
+                            <Border CornerRadius="5" HorizontalAlignment="Left"
+                                    Background="{DynamicResource SuccessBrush}"
+                                    Width="{Binding AccuracyPercent, Converter={StaticResource PercentToFixedWidthConverter}}"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Difficult words list -->
+                    <StackPanel Margin="0,20,0,0" HorizontalAlignment="Center" Width="400">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DifficultWords.Count}" Value="0">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+                        <TextBlock Text="Слова с ошибками:" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,8"/>
+                        <ItemsControl ItemsSource="{Binding DifficultWords}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{DynamicResource SecondaryMainBackgroundBrush}"
+                                            CornerRadius="6" Margin="0,2" Padding="12,6"
+                                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                        <TextBlock Text="{Binding OriginalWord}" FontSize="14"
+                                                   Foreground="{DynamicResource DangerBrush}"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- Close button -->
+                    <Button Content="   Вернуться на дашборд   " 
+                            Command="{Binding CloseTabCommand}" 
+                            Style="{StaticResource BaseButton}" 
+                            HorizontalAlignment="Center"
+                            Padding="20,10"
+                            MinHeight="40"
+                            Margin="0,24,0,0"/>
+                </StackPanel>
+            </ScrollViewer>
         </Grid>
 
         <Grid>
@@ -100,7 +193,34 @@
                         </Style>
                     </Border.Style>
 
-                    <TextBlock Text="{Binding CurrentWord.Translation}" Style="{StaticResource CardTextStyle}" Foreground="White"/>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding CurrentWord.Translation}" Style="{StaticResource CardTextStyle}" Foreground="White"/>
+
+                        <TextBlock Text="{Binding CurrentWord.Example}"
+                                   FontSize="14"
+                                   FontStyle="Italic"
+                                   Foreground="White"
+                                   Opacity="0.85"
+                                   HorizontalAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"
+                                   Margin="10,10,10,0"
+                                   MaxWidth="360">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CurrentWord.Example}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding CurrentWord.Example}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
                 </Border>
 
                 <Border>
