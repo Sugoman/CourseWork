@@ -49,6 +49,29 @@ namespace LearningTrainer.ViewModels
 
         #region Properties - Loading & Pagination
 
+        // Card dimensions for adaptive layout (card width + margin)
+        public const double CardTotalWidth = 368; // 352 + 2×8
+        public const double CardTotalHeight = 210; // approximate card height + 2×8
+        public const double ContentPadding = 30;  // ItemsControl Margin="15" × 2
+
+        private int _pageSize = 9;
+        public int PageSize
+        {
+            get => _pageSize;
+            set
+            {
+                var clamped = Math.Max(1, value);
+                if (SetProperty(ref _pageSize, clamped))
+                {
+                    CurrentPage = 1;
+                    if (IsDictionariesTab)
+                        LoadDictionariesAsync();
+                    else
+                        LoadRulesAsync();
+                }
+            }
+        }
+
         private bool _isLoading;
         public bool IsLoading
         {
@@ -65,6 +88,10 @@ namespace LearningTrainer.ViewModels
                 if (SetProperty(ref _currentPage, value))
                 {
                     OnPropertyChanged(nameof(PageInfo));
+                    OnPropertyChanged(nameof(CanGoNext));
+                    OnPropertyChanged(nameof(CanGoPrevious));
+                    (NextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    (PreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -80,6 +107,8 @@ namespace LearningTrainer.ViewModels
                     OnPropertyChanged(nameof(PageInfo));
                     OnPropertyChanged(nameof(CanGoNext));
                     OnPropertyChanged(nameof(CanGoPrevious));
+                    (NextPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    (PreviousPageCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -214,7 +243,7 @@ namespace LearningTrainer.ViewModels
                     string.IsNullOrEmpty(SelectedLanguageFrom) ? null : SelectedLanguageFrom,
                     string.IsNullOrEmpty(SelectedLanguageTo) ? null : SelectedLanguageTo,
                     CurrentPage,
-                    9);
+                    PageSize);
 
                 Dictionaries.Clear();
                 foreach (var item in result.Items)
@@ -246,7 +275,7 @@ namespace LearningTrainer.ViewModels
                     string.IsNullOrEmpty(SelectedCategory) ? null : SelectedCategory,
                     SelectedDifficulty,
                     CurrentPage,
-                    8);
+                    PageSize);
 
                 Rules.Clear();
                 foreach (var item in result.Items)

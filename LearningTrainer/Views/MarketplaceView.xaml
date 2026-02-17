@@ -132,7 +132,7 @@
         </Border>
 
         <!-- Content Area -->
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="2" x:Name="ContentArea" SizeChanged="ContentArea_SizeChanged">
             <!-- Loading Spinner -->
             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                         Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
@@ -147,13 +147,13 @@
                 <ItemsControl ItemsSource="{Binding Dictionaries}" Margin="15">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel/>
+                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Background="{DynamicResource CardBackgroundBrush}" 
-                                    CornerRadius="10" Margin="8" MinWidth="260" MaxWidth="420" Padding="14"
+                                    CornerRadius="10" Margin="8" MinWidth="352" MaxWidth="352" Padding="14"
                                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                 <Grid>
                                     <Grid.RowDefinitions>
@@ -251,13 +251,13 @@
                 <ItemsControl ItemsSource="{Binding Rules}" Margin="15">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <WrapPanel/>
+                            <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border Background="{DynamicResource CardBackgroundBrush}" 
-                                    CornerRadius="10" Margin="8" MinWidth="280" MaxWidth="380" Padding="14"
+                                    CornerRadius="10" Margin="8" MinWidth="352" MaxWidth="352" Padding="14"
                                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                                 <Grid>
                                     <Grid.RowDefinitions>
@@ -274,7 +274,7 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="15" FontWeight="SemiBold"
+                                        <TextBlock Grid.Column="0" Text="{Binding Title}" FontSize="{DynamicResource HeaderFontSize}" FontWeight="SemiBold"
                                                    Foreground="{DynamicResource PrimaryTextBrush}" TextTrimming="CharacterEllipsis"/>
                                         <Border Grid.Column="1" CornerRadius="8" Padding="6,2">
                                             <Border.Style>
@@ -290,7 +290,7 @@
                                                     </Style.Triggers>
                                                 </Style>
                                             </Border.Style>
-                                            <TextBlock FontSize="10" Foreground="White">
+                                            <TextBlock FontSize="{DynamicResource BaseFontSize}" Foreground="White">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
                                                         <Setter Property="Text" Value="Нач."/>
@@ -309,30 +309,30 @@
                                     </Grid>
 
                                     <!-- Description -->
-                                    <TextBlock Grid.Row="1" Text="{Binding Description}" FontSize="12" 
+                                    <TextBlock Grid.Row="1" Text="{Binding Description}" FontSize="{DynamicResource BaseFontSize}" 
                                                Foreground="{DynamicResource SecondaryTextBrush}"
-                                               TextTrimming="CharacterEllipsis" MaxHeight="36" Margin="0,6,0,0"/>
+                                               TextTrimming="CharacterEllipsis" MaxHeight="36" Margin="0,6,0,8"/>
 
                                     <!-- Category -->
                                     <Border Grid.Row="2" Background="{DynamicResource MainBackgroundBrush}" 
-                                            CornerRadius="4" Padding="6,3" HorizontalAlignment="Left" Margin="0,8,0,0">
-                                        <TextBlock Text="{Binding Category}" FontSize="11"
+                                            CornerRadius="4" Padding="6,3" HorizontalAlignment="Left" Margin="0,8,0,8">
+                                        <TextBlock Text="{Binding Category}" FontSize="{DynamicResource BaseFontSize}"
                                                    Foreground="{DynamicResource PrimaryTextBrush}"/>
                                     </Border>
 
                                     <!-- Rating & Author -->
-                                    <Grid Grid.Row="3" Margin="0,8,0,0">
+                                    <Grid Grid.Row="3" Margin="0,8,0,12">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0" Orientation="Horizontal">
                                             <TextBlock Text="{Binding Rating, Converter={StaticResource RatingToStars}}" 
-                                                       Foreground="#F59E0B" FontSize="11"/>
-                                            <TextBlock Text="{Binding Rating, StringFormat=' {0:F1}'}" FontSize="12" FontWeight="SemiBold"
+                                                       Foreground="#F59E0B" FontSize="{DynamicResource BaseFontSize}"/>
+                                            <TextBlock Text="{Binding Rating, StringFormat=' {0:F1}'}" FontSize="{DynamicResource BaseFontSize}" FontWeight="SemiBold"
                                                        Foreground="{DynamicResource PrimaryTextBrush}"/>
                                         </StackPanel>
-                                        <TextBlock Grid.Column="1" Text="{Binding AuthorName}" FontSize="11"
+                                        <TextBlock Grid.Column="1" Text="{Binding AuthorName}" FontSize="{DynamicResource BaseFontSize}"
                                                    Foreground="{DynamicResource TertiaryTextBrush}"/>
                                     </Grid>
 
@@ -347,8 +347,8 @@
                                                 CommandParameter="{Binding}"
                                                 Style="{StaticResource BaseButton}" Padding="8,4" HorizontalAlignment="Left">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="📖" FontSize="11" Margin="0,0,4,0"/>
-                                                <TextBlock Text="Читать" FontSize="12"/>
+                                                <TextBlock Text="📖" FontSize="{DynamicResource BaseFontSize}" Margin="0,0,4,0"/>
+                                                <TextBlock Text="Читать" FontSize="{DynamicResource BaseFontSize}"/>
                                             </StackPanel>
                                         </Button>
                                         <Button Grid.Column="1"
@@ -356,8 +356,8 @@
                                                 CommandParameter="{Binding}"
                                                 Style="{StaticResource SuccessButton}" Padding="8,4">
                                             <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="⬇" FontSize="11" Margin="0,0,4,0"/>
-                                                <TextBlock Text="Скачать" FontSize="12"/>
+                                                <TextBlock Text="⬇" FontSize="{DynamicResource BaseFontSize}" Margin="0,0,4,0"/>
+                                                <TextBlock Text="Скачать" FontSize="{DynamicResource BaseFontSize}"/>
                                             </StackPanel>
                                         </Button>
                                     </Grid>

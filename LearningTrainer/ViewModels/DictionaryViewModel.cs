@@ -2,6 +2,7 @@
 using LearningTrainerShared.Models;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using static LearningTrainer.Core.EventAggregator;
 
 namespace LearningTrainer.ViewModels
@@ -65,16 +66,28 @@ namespace LearningTrainer.ViewModels
         public ObservableCollection<Word> Words
         {
             get => _words;
-            set => SetProperty(ref _words, value);
+            set
+            {
+                if (SetProperty(ref _words, value))
+                {
+                    OnPropertyChanged(nameof(WordCount));
+                }
+            }
         }
 
-        public int WordCount => Words?.Count ?? 0;
+        private int _cachedWordCount;
+        public int WordCount => Words?.Count > 0 && Words.Any(w => !string.IsNullOrEmpty(w.OriginalWord))
+            ? Words.Count
+            : _cachedWordCount;
 
         public DictionaryViewModel(Dictionary dictionary)
         {
             Model = dictionary;
+            _cachedWordCount = dictionary.WordCount;
 
-            Words = new ObservableCollection<Word>(dictionary.Words ?? new List<Word>());
+            // Only populate Words if they contain real data (not dummy placeholders)
+            var realWords = dictionary.Words?.Where(w => !string.IsNullOrEmpty(w.OriginalWord)).ToList();
+            Words = new ObservableCollection<Word>(realWords ?? new List<Word>());
 
             Words.CollectionChanged += (sender, e) =>
             {

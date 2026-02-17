@@ -148,6 +148,7 @@
     <system:String x:Key="Loc.Tab.ViewRule">Просмотр правила</system:String>
     <system:String x:Key="Loc.Tab.Learning">Обучение</system:String>
     <system:String x:Key="Loc.Tab.ShareAccess">Управление доступом</system:String>
+    <system:String x:Key="Loc.Tab.Marketplace">Маркетплейс</system:String>
 
                                 <!-- SETTINGS - NEW -->
     <system:String x:Key="Loc.Settings.NotificationsRadio">Уведомления</system:String>

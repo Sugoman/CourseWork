@@ -33,6 +33,10 @@ public interface IContentApiService
     Task PublishRuleAsync(int id);
     Task UnpublishRuleAsync(int id);
 
+    // Import
+    Task<ImportResult> ImportDictionaryFromFileAsync(Stream fileStream, string fileName,
+        string? dictionaryName = null, string? languageFrom = null, string? languageTo = null);
+
     // Export
     Task<ExportResult> ExportDictionaryAsJsonAsync(int dictionaryId);
     Task<ExportResult> ExportDictionaryAsCsvAsync(int dictionaryId);
@@ -229,6 +233,40 @@ public class ContentApiService : IContentApiService
 
     #endregion
 
+    #region Import
+
+    public async Task<ImportResult> ImportDictionaryFromFileAsync(Stream fileStream, string fileName,
+        string? dictionaryName = null, string? languageFrom = null, string? languageTo = null)
+    {
+        await ApplyAuthAsync();
+
+        using var formContent = new MultipartFormDataContent();
+        var streamContent = new StreamContent(fileStream);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+        formContent.Add(streamContent, "file", fileName);
+
+        if (!string.IsNullOrEmpty(dictionaryName))
+            formContent.Add(new StringContent(dictionaryName), "dictionaryName");
+        if (!string.IsNullOrEmpty(languageFrom))
+            formContent.Add(new StringContent(languageFrom), "languageFrom");
+        if (!string.IsNullOrEmpty(languageTo))
+            formContent.Add(new StringContent(languageTo), "languageTo");
+
+        var response = await _httpClient.PostAsync("api/dictionaries/import/json/auto", formContent);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            var msg = TryExtractMessage(body) ?? body;
+            throw new HttpRequestException(msg);
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<ImportResult>();
+        return result ?? new ImportResult();
+    }
+
+    #endregion
+
     #region Export
 
     public async Task<ExportResult> ExportDictionaryAsJsonAsync(int dictionaryId)
@@ -408,6 +446,23 @@ public class ExportResult
     public byte[] Data { get; set; } = Array.Empty<byte>();
     public string FileName { get; set; } = "";
     public string ContentType { get; set; } = "";
+}
+
+public class ImportResult
+{
+    public string Message { get; set; } = "";
+    public int DictionaryId { get; set; }
+    public string Name { get; set; } = "";
+    public int WordCount { get; set; }
+    public ImportDetectedMapping? DetectedMapping { get; set; }
+}
+
+public class ImportDetectedMapping
+{
+    public string? Original { get; set; }
+    public string? Translation { get; set; }
+    public string? Transcription { get; set; }
+    public string? Example { get; set; }
 }
 
 public class PlatformStatsResponse

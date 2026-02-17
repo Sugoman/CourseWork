@@ -3,8 +3,9 @@
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Forms
 
-<PageTitle>Мой контент - LearningTrainer</PageTitle>
+<PageTitle>Мой контент - Ingat</PageTitle>
 
 <div class="container">
     @if (!IsAuthenticated)
@@ -27,6 +28,10 @@
                 <h1 style="margin-bottom: 0;">Мой контент</h1>
             </div>
             <div class="d-flex gap-2">
+                <button class="btn btn-outline-success gap-2" @onclick="ShowImportDialog">
+                    <i class="bi bi-upload me-1"></i>
+                    Импорт
+                </button>
                 <button class="btn btn-outline-primary gap-2" @onclick="ExportAllDictionaries" disabled="@IsExporting">
                     @if (IsExporting)
                     {
@@ -345,6 +350,84 @@
     }
 </div>
 
+@if (ShowImportModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: var(--radius-lg);">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-upload me-2"></i>Импорт словаря
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseImportDialog"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        Поддерживается JSON любой структуры. Система автоматически определит поля
+                        (Original/Word → слово, Translation/Meaning → перевод и т.д.).
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label">Файл <span class="text-danger">*</span></label>
+                        <InputFile OnChange="OnImportFileSelected" accept=".json,.csv" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Название словаря</label>
+                        <input type="text" class="form-control" @bind="ImportDictionaryName"
+                               placeholder="Определится автоматически из имени файла" />
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Язык оригинала</label>
+                            <select class="form-select" @bind="ImportLanguageFrom">
+                                <option value="">Авто (English)</option>
+                                <option value="English">English</option>
+                                <option value="Russian">Русский</option>
+                                <option value="German">Deutsch</option>
+                                <option value="Spanish">Español</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Язык перевода</label>
+                            <select class="form-select" @bind="ImportLanguageTo">
+                                <option value="">Авто (Russian)</option>
+                                <option value="English">English</option>
+                                <option value="Russian">Русский</option>
+                                <option value="German">Deutsch</option>
+                                <option value="Spanish">Español</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(ImportError))
+                    {
+                        <div class="alert alert-danger mt-3 mb-0">
+                            <i class="bi bi-exclamation-triangle me-1"></i> @ImportError
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseImportDialog">Отмена</button>
+                    <button class="btn btn-primary" @onclick="ImportDictionary" disabled="@(IsImporting || ImportFile == null)">
+                        @if (IsImporting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            <span>Импорт...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-upload me-1"></i>
+                            <span>Импортировать</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @if (!string.IsNullOrEmpty(ExportMessage))
 {
     <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050; margin-top: 80px;">
@@ -363,6 +446,15 @@
     private string ActiveTab = "dictionaries";
     private string? ExportMessage;
     private bool ExportSuccess;
+
+    // Import state
+    private bool ShowImportModal = false;
+    private bool IsImporting = false;
+    private IBrowserFile? ImportFile;
+    private string? ImportDictionaryName;
+    private string? ImportLanguageFrom;
+    private string? ImportLanguageTo;
+    private string? ImportError;
 
     private List<MyDictionaryItem>? MyDictionaries;
     private List<MyRuleItem>? MyRules;
@@ -495,6 +587,66 @@
             StateHasChanged();
             await Task.Delay(3000);
             ExportMessage = null;
+        }
+    }
+
+    private void ShowImportDialog()
+    {
+        ShowImportModal = true;
+        ImportFile = null;
+        ImportDictionaryName = null;
+        ImportLanguageFrom = null;
+        ImportLanguageTo = null;
+        ImportError = null;
+    }
+
+    private void CloseImportDialog()
+    {
+        ShowImportModal = false;
+        ImportError = null;
+    }
+
+    private void OnImportFileSelected(InputFileChangeEventArgs e)
+    {
+        ImportFile = e.File;
+        ImportError = null;
+    }
+
+    private async Task ImportDictionary()
+    {
+        if (ImportFile == null) return;
+
+        IsImporting = true;
+        ImportError = null;
+        StateHasChanged();
+
+        try
+        {
+            using var stream = ImportFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            var result = await ContentApi.ImportDictionaryFromFileAsync(
+                stream,
+                ImportFile.Name,
+                string.IsNullOrWhiteSpace(ImportDictionaryName) ? null : ImportDictionaryName,
+                string.IsNullOrWhiteSpace(ImportLanguageFrom) ? null : ImportLanguageFrom,
+                string.IsNullOrWhiteSpace(ImportLanguageTo) ? null : ImportLanguageTo);
+
+            ShowImportModal = false;
+            ExportMessage = $"Словарь «{result.Name}» ({result.WordCount} слов) успешно импортирован!";
+            ExportSuccess = true;
+            await LoadMyContent();
+            StateHasChanged();
+            await Task.Delay(4000);
+            ExportMessage = null;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ImportError = ex.Message;
+        }
+        finally
+        {
+            IsImporting = false;
+            StateHasChanged();
         }
     }
 

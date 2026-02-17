@@ -133,6 +133,7 @@
     <system:String x:Key="Loc.Tab.ViewRule">སྒྲིག་གཞི་ལྟ།</system:String>
     <system:String x:Key="Loc.Tab.Learning">སློབ་སྦྱོང་།</system:String>
     <system:String x:Key="Loc.Tab.ShareAccess">འཛུལ་ཆོག་འཛིན་སྐྱོང་།</system:String>
+    <system:String x:Key="Loc.Tab.Marketplace">ཚོང་ཁང་།</system:String>
 
                                 <!-- SETTINGS - NEW -->
     <system:String x:Key="Loc.Settings.NotificationsRadio">བརྡ་ཐོ།</system:String>

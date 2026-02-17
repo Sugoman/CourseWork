@@ -133,6 +133,7 @@
     <system:String x:Key="Loc.Tab.ViewRule">查看规则</system:String>
     <system:String x:Key="Loc.Tab.Learning">学习</system:String>
     <system:String x:Key="Loc.Tab.ShareAccess">管理权限</system:String>
+    <system:String x:Key="Loc.Tab.Marketplace">市场</system:String>
 
                                 <!-- SETTINGS - NEW -->
     <system:String x:Key="Loc.Settings.NotificationsRadio">通知</system:String>

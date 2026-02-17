@@ -275,6 +275,23 @@ namespace LearningTrainer.ViewModels
             }
         }
 
+        private static readonly HashSet<string> _originalAliases = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "original", "word", "originalword", "original_word", "term", "source", "english", "front", "question"
+        };
+        private static readonly HashSet<string> _translationAliases = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "translation", "translate", "meaning", "definition", "target", "russian", "back", "answer", "перевод"
+        };
+        private static readonly HashSet<string> _transcriptionAliases = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "transcription", "pronunciation", "phonetic", "ipa", "partofspeech", "part_of_speech", "pos"
+        };
+        private static readonly HashSet<string> _exampleAliases = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "example", "sentence", "usage", "context", "sample", "example_sentence", "пример"
+        };
+
         private async Task ImportDictionary()
         {
             if (_dialogService.ShowOpenDialog(out string filePath))
@@ -289,11 +306,36 @@ namespace LearningTrainer.ViewModels
                         PropertyNameCaseInsensitive = true
                     };
 
-                    var newDictionary = JsonSerializer.Deserialize<Dictionary>(json, options);
+                    // Сначала пробуем строгий формат (Dictionary с $id/$ref)
+                    Dictionary newDictionary = null;
+                    List<Word> wordsToImport = null;
 
-                    newDictionary.Id = 0;
-                    var wordsToImport = newDictionary.Words.ToList();
-                    newDictionary.Words.Clear();
+                    try
+                    {
+                        newDictionary = JsonSerializer.Deserialize<Dictionary>(json, options);
+                        if (newDictionary?.Words != null && newDictionary.Words.Any())
+                        {
+                            newDictionary.Id = 0;
+                            wordsToImport = newDictionary.Words.ToList();
+                            newDictionary.Words.Clear();
+                        }
+                        else
+                        {
+                            newDictionary = null;
+                        }
+                    }
+                    catch
+                    {
+                        newDictionary = null;
+                    }
+
+                    // Если строгий формат не подошёл — пробуем автоопределение
+                    if (newDictionary == null)
+                    {
+                        var (dict, words) = ParseFlexibleJson(json, filePath);
+                        newDictionary = dict;
+                        wordsToImport = words;
+                    }
 
                     var savedDictionary = await _dataService.AddDictionaryAsync(newDictionary);
 
@@ -316,6 +358,146 @@ namespace LearningTrainer.ViewModels
                         $"Не удалось импортировать словарь: {ex.Message}");
                 }
             }
+        }
+
+        private (Dictionary dict, List<Word> words) ParseFlexibleJson(string json, string filePath)
+        {
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            string? name = null;
+            string? langFrom = null;
+            string? langTo = null;
+            JsonElement itemsElement;
+
+            if (root.ValueKind == JsonValueKind.Array)
+            {
+                itemsElement = root;
+            }
+            else if (root.ValueKind == JsonValueKind.Object)
+            {
+                TryGetProp(root, "name", out name);
+                TryGetProp(root, "languagefrom", out langFrom);
+                TryGetProp(root, "languageto", out langTo);
+                itemsElement = FindArray(root);
+            }
+            else
+            {
+                throw new FormatException("JSON должен быть массивом или объектом");
+            }
+
+            if (itemsElement.ValueKind != JsonValueKind.Array)
+                throw new FormatException("Не удалось найти массив слов в JSON");
+
+            var mapping = DetectMapping(itemsElement);
+            if (mapping.origKey == null || mapping.transKey == null)
+                throw new FormatException("Не удалось определить поля 'слово' и 'перевод' автоматически");
+
+            var words = new List<Word>();
+            foreach (var item in itemsElement.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object) continue;
+                var orig = GetStr(item, mapping.origKey);
+                var trans = GetStr(item, mapping.transKey);
+                if (string.IsNullOrWhiteSpace(orig) || string.IsNullOrWhiteSpace(trans)) continue;
+
+                words.Add(new Word
+                {
+                    OriginalWord = orig,
+                    Translation = trans,
+                    Transcription = mapping.trscKey != null ? GetStr(item, mapping.trscKey) : null,
+                    Example = mapping.exKey != null ? GetStr(item, mapping.exKey) ?? "" : ""
+                });
+            }
+
+            if (!words.Any())
+                throw new FormatException("Файл не содержит валидных слов");
+
+            var dict = new Dictionary
+            {
+                Id = 0,
+                Name = name ?? Path.GetFileNameWithoutExtension(filePath),
+                Description = "",
+                LanguageFrom = langFrom ?? "English",
+                LanguageTo = langTo ?? "Russian"
+            };
+
+            return (dict, words);
+        }
+
+        private static (string? origKey, string? transKey, string? trscKey, string? exKey) DetectMapping(JsonElement arr)
+        {
+            string? origKey = null, transKey = null, trscKey = null, exKey = null;
+
+            var keys = new HashSet<string>();
+            int count = 0;
+            foreach (var item in arr.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object) continue;
+                foreach (var p in item.EnumerateObject()) keys.Add(p.Name);
+                if (++count >= 3) break;
+            }
+
+            foreach (var key in keys)
+            {
+                var norm = key.Replace(" ", "").Replace("_", "").Replace("-", "");
+                if (origKey == null && _originalAliases.Contains(norm)) origKey = key;
+                else if (transKey == null && _translationAliases.Contains(norm)) transKey = key;
+                else if (trscKey == null && _transcriptionAliases.Contains(norm)) trscKey = key;
+                else if (exKey == null && _exampleAliases.Contains(norm)) exKey = key;
+            }
+
+            if (origKey == null || transKey == null)
+            {
+                var stringKeys = new List<string>();
+                foreach (var item in arr.EnumerateArray())
+                {
+                    if (item.ValueKind != JsonValueKind.Object) continue;
+                    foreach (var p in item.EnumerateObject())
+                        if (p.Value.ValueKind == JsonValueKind.String && !stringKeys.Contains(p.Name))
+                            stringKeys.Add(p.Name);
+                    break;
+                }
+                if (origKey == null && stringKeys.Count >= 1) origKey = stringKeys[0];
+                if (transKey == null && stringKeys.Count >= 2) transKey = stringKeys[1];
+            }
+
+            return (origKey, transKey, trscKey, exKey);
+        }
+
+        private static JsonElement FindArray(JsonElement obj)
+        {
+            var aliases = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                { "words", "items", "data", "entries", "vocabulary", "list", "cards" };
+            foreach (var p in obj.EnumerateObject())
+                if (p.Value.ValueKind == JsonValueKind.Array && aliases.Contains(p.Name))
+                    return p.Value;
+            foreach (var p in obj.EnumerateObject())
+                if (p.Value.ValueKind == JsonValueKind.Array)
+                    return p.Value;
+            return default;
+        }
+
+        private static bool TryGetProp(JsonElement obj, string normalized, out string? value)
+        {
+            value = null;
+            foreach (var p in obj.EnumerateObject())
+            {
+                if (string.Equals(p.Name.Replace(" ", "").Replace("_", ""), normalized, StringComparison.OrdinalIgnoreCase)
+                    && p.Value.ValueKind == JsonValueKind.String)
+                {
+                    value = p.Value.GetString();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static string? GetStr(JsonElement obj, string key)
+        {
+            if (obj.TryGetProperty(key, out var val) && val.ValueKind == JsonValueKind.String)
+                return val.GetString();
+            return null;
         }
 
         private void OnWordAdded(WordAddedMessage message)
@@ -507,7 +689,7 @@ namespace LearningTrainer.ViewModels
                 return $"MISSING_LOC:{key}";
             }
         }
-        private void ManageDictionary(object parameter)
+        private async void ManageDictionary(object parameter)
         {
             if (parameter is DictionaryViewModel dictionaryVM)
             {
@@ -521,14 +703,30 @@ namespace LearningTrainer.ViewModels
                 {
                     int currentUserId = _currentUser.Id;
 
-                    var managementVm = new DictionaryManagementViewModel(
-                        _dataService,
-                        dictionaryVM.Model,
-                        dictionaryVM.Words,
-                        currentUserId
-                    );
-                    EventAggregator.Instance.Publish(managementVm);
+                    try
+                    {
+                        // Загружаем полный словарь с реальными словами
+                        var fullDictionary = await _dataService.GetDictionaryByIdAsync(dictionaryVM.Id);
+                        if (fullDictionary != null)
+                        {
+                            var words = new ObservableCollection<Word>(fullDictionary.Words ?? new List<Word>());
+                            dictionaryVM.Words = words;
 
+                            var managementVm = new DictionaryManagementViewModel(
+                                _dataService,
+                                fullDictionary,
+                                words,
+                                currentUserId
+                            );
+                            EventAggregator.Instance.Publish(managementVm);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _notificationService.AddErrorNotification(
+                            "Ошибка загрузки",
+                            $"Не удалось загрузить словарь: {ex.Message}");
+                    }
                 }
             }
         }

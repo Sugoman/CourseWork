@@ -418,12 +418,12 @@
 
                                         <Grid>
                                             <Grid.RowDefinitions>
-                                                <RowDefinition Height="*"/>
-                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
                                                 <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
 
-                                            <TextBlock Grid.Row="0" Text="{Binding Title}" 
+                                            <TextBlock Grid.Row="0" Text="{Binding Title}"
                                                        Foreground="{DynamicResource PrimaryTextBrush}" 
                                                        FontWeight="Bold" 
                                                        TextAlignment="Center" TextWrapping="Wrap"

@@ -7,7 +7,7 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 
-<PageTitle>Тренировка - LearningTrainer</PageTitle>
+<PageTitle>Тренировка - Ingat</PageTitle>
 
 <div class="training-container" @onkeydown="HandleKeyDown" tabindex="0" @ref="trainingContainer">
     @if (!IsAuthenticated)
@@ -266,6 +266,9 @@
                                 {
                                     <div class="example">
                                         <i class="bi bi-chat-quote"></i> @CurrentWord.Example
+                                        <button class="btn-tts-sm" @onclick="SpeakExample" title="Прослушать пример">
+                                            <i class="bi bi-volume-up"></i>
+                                        </button>
                                     </div>
                                 }
                             </div>
@@ -312,22 +315,24 @@
                             {
                                 <div class="word-transcription">@CurrentWord.Transcription</div>
                             }
-                            <div class="tts-controls">
-                                <button class="btn btn-outline-secondary btn-sm speak-btn" @onclick="SpeakWord" title="Прослушать">
-                                    <i class="bi bi-volume-up"></i>
+                            <div class="audio-group">
+                                <button class="btn-tts" @onclick="SpeakWord" title="Прослушать">
+                                    <i class="bi bi-volume-up-fill"></i>
                                 </button>
-                                <button class="btn btn-outline-secondary btn-sm volume-toggle-btn" @onclick="ToggleVolumeSlider" title="Громкость">
-                                    <i class="bi @VolumeIcon"></i>
-                                </button>
-                                @if (ShowVolumeSlider)
-                                {
-                                    <div class="volume-slider-container">
-                                        <input type="range" class="volume-slider" min="0" max="1" step="0.05"
-                                               value="@TtsVolumeFormatted"
-                                               @onchange="OnVolumeChanged" />
-                                        <span class="volume-value">@TtsVolumePercent%</span>
-                                    </div>
-                                }
+                                <div class="volume-wrapper">
+                                    <button class="btn-volume-toggle" @onclick="ToggleVolumeSlider" title="Громкость">
+                                        <i class="@VolumeIcon"></i>
+                                    </button>
+                                    @if (ShowVolumeSlider)
+                                    {
+                                        <div class="volume-popover">
+                                            <input type="range" min="0" max="1" step="0.01"
+                                                   value="@TtsVolumeFormatted"
+                                                   @oninput="OnVolumeChanged" />
+                                            <span class="volume-value">@TtsVolumePercent%</span>
+                                        </div>
+                                    }
+                                </div>
                             </div>
                         </div>
 
@@ -384,6 +389,9 @@
                             {
                                 <div class="example mt-2">
                                     <i class="bi bi-chat-quote"></i> @CurrentWord.Example
+                                    <button class="btn-tts-sm" @onclick="SpeakExample" title="Прослушать пример">
+                                        <i class="bi bi-volume-up"></i>
+                                    </button>
                                 </div>
                             }
                             <button class="btn btn-primary btn-lg mt-3" @onclick="NextMcqWord">
@@ -405,22 +413,24 @@
                             {
                                 <div class="word-transcription">@CurrentWord.Transcription</div>
                             }
-                            <div class="tts-controls">
-                                <button class="btn btn-outline-secondary btn-sm speak-btn" @onclick="SpeakWord" title="Прослушать">
-                                    <i class="bi bi-volume-up"></i>
+                            <div class="audio-group">
+                                <button class="btn-tts" @onclick="SpeakWord" title="Прослушать">
+                                    <i class="bi bi-volume-up-fill"></i>
                                 </button>
-                                <button class="btn btn-outline-secondary btn-sm volume-toggle-btn" @onclick="ToggleVolumeSlider" title="Громкость">
-                                    <i class="bi @VolumeIcon"></i>
-                                </button>
-                                @if (ShowVolumeSlider)
-                                {
-                                    <div class="volume-slider-container">
-                                        <input type="range" class="volume-slider" min="0" max="1" step="0.05"
-                                               value="@TtsVolumeFormatted"
-                                               @onchange="OnVolumeChanged" />
-                                        <span class="volume-value">@TtsVolumePercent%</span>
-                                    </div>
-                                }
+                                <div class="volume-wrapper">
+                                    <button class="btn-volume-toggle" @onclick="ToggleVolumeSlider" title="Громкость">
+                                        <i class="@VolumeIcon"></i>
+                                    </button>
+                                    @if (ShowVolumeSlider)
+                                    {
+                                        <div class="volume-popover">
+                                            <input type="range" min="0" max="1" step="0.01"
+                                                   value="@TtsVolumeFormatted"
+                                                   @oninput="OnVolumeChanged" />
+                                            <span class="volume-value">@TtsVolumePercent%</span>
+                                        </div>
+                                    }
+                                </div>
                             </div>
                         </div>
 
@@ -458,6 +468,9 @@
                             {
                                 <div class="example mt-2">
                                     <i class="bi bi-chat-quote"></i> @CurrentWord.Example
+                                    <button class="btn-tts-sm" @onclick="SpeakExample" title="Прослушать пример">
+                                        <i class="bi bi-volume-up"></i>
+                                    </button>
                                 </div>
                             }
                             <button class="btn btn-primary btn-lg mt-3" @onclick="NextTypingWord">
@@ -472,38 +485,69 @@
                 <!-- Результаты тренировки -->
                 <div class="session-results">
                     <div class="results-icon">
-                        @if (CorrectCount >= TrainingWords.Count * 0.8)
+                        @if (SessionAccuracy >= 90)
                         {
-                            <i class="bi bi-trophy text-warning"></i>
+                            <span>🏆</span>
                         }
-                        else if (CorrectCount >= TrainingWords.Count * 0.5)
+                        else if (SessionAccuracy >= 70)
                         {
-                            <i class="bi bi-hand-thumbs-up text-success"></i>
+                            <span>🎉</span>
+                        }
+                        else if (SessionAccuracy >= 50)
+                        {
+                            <span>👍</span>
                         }
                         else
                         {
-                            <i class="bi bi-arrow-repeat text-primary"></i>
+                            <span>💪</span>
                         }
                     </div>
-                    <h2>Тренировка завершена!</h2>
+                    <h2>@SessionResultMessage</h2>
+
                     <div class="results-stats">
                         <div class="result-stat">
                             <span class="result-value">@TrainingWords.Count</span>
                             <span class="result-label">Всего слов</span>
                         </div>
                         <div class="result-stat result-correct">
-                            <span class="result-value">@CorrectCount</span>
+                            <span class="result-value">@SessionCorrectCount</span>
                             <span class="result-label">Правильно</span>
                         </div>
                         <div class="result-stat result-wrong">
-                            <span class="result-value">@(TrainingWords.Count - CorrectCount)</span>
+                            <span class="result-value">@SessionWrongCount</span>
                             <span class="result-label">С ошибками</span>
                         </div>
+                        <div class="result-stat">
+                            <span class="result-value">@SessionDurationFormatted</span>
+                            <span class="result-label">Время</span>
+                        </div>
                     </div>
+
+                    <!-- Accuracy bar -->
                     <div class="results-accuracy">
-                        <div class="accuracy-value">@((CorrectCount * 100.0 / Math.Max(1, TrainingWords.Count)).ToString("F0"))%</div>
+                        <div class="accuracy-value">@SessionAccuracy.ToString("F0")%</div>
                         <div class="accuracy-label">Точность</div>
+                        <div class="accuracy-bar-container mt-2">
+                            <div class="progress" style="height: 10px; border-radius: 5px; max-width: 300px; margin: 0 auto;">
+                                <div class="progress-bar bg-success" style="width: @SessionAccuracy%"></div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Difficult words -->
+                    @if (DifficultWordsList.Count > 0)
+                    {
+                        <div class="difficult-words-section">
+                            <h5 class="text-muted mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Слова с ошибками</h5>
+                            <div class="difficult-words-list">
+                                @foreach (var word in DifficultWordsList)
+                                {
+                                    <span class="badge bg-danger-subtle text-danger me-1 mb-1 px-3 py-2" style="font-size: 0.9rem;">@word</span>
+                                }
+                            </div>
+                        </div>
+                    }
+
                     <div class="results-actions">
                         <button class="btn btn-primary btn-lg" @onclick="ContinueTraining">
                             <i class="bi bi-arrow-repeat me-2"></i>Продолжить
@@ -555,6 +599,10 @@ private Random _random = new();
 // TTS state
 private double TtsVolume = 0.8;
 private bool ShowVolumeSlider;
+
+// Results tracking
+private List<string> DifficultWordsList = new();
+private string _sessionDurationSnapshot = "";
 
 // Element reference for focus
 private ElementReference trainingContainer;
@@ -709,6 +757,7 @@ private async Task InstallStarterPack()
             CorrectCount = 0;
             SessionCorrectCount = 0;
             SessionWrongCount = 0;
+            DifficultWordsList.Clear();
             SessionStartedAt = DateTime.UtcNow;
             CurrentWord = TrainingWords[0];
             IsAnswerRevealed = false;
@@ -799,6 +848,8 @@ private async Task InstallStarterPack()
         else
         {
             SessionWrongCount++;
+            if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
+                DifficultWordsList.Add(CurrentWord.OriginalWord);
         }
 
         // Переход к следующему слову
@@ -818,14 +869,16 @@ private async Task InstallStarterPack()
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality);
 
         if (McqWasCorrect)
-        {
-            CorrectCount++;
-            SessionCorrectCount++;
-        }
-        else
-        {
-            SessionWrongCount++;
-        }
+            {
+                CorrectCount++;
+                SessionCorrectCount++;
+            }
+            else
+            {
+                SessionWrongCount++;
+                if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
+                    DifficultWordsList.Add(CurrentWord.OriginalWord);
+            }
     }
 
     private async Task NextMcqWord()
@@ -866,6 +919,8 @@ private async Task InstallStarterPack()
         else
         {
             SessionWrongCount++;
+            if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
+                DifficultWordsList.Add(CurrentWord.OriginalWord);
         }
     }
 
@@ -884,8 +939,15 @@ private async Task InstallStarterPack()
         }
         else
         {
-            // Тренировка завершена — сохраняем сессию
+            // Тренировка завершена — фиксируем время и сохраняем сессию
             CurrentWord = null;
+            var elapsed = DateTime.UtcNow - SessionStartedAt;
+            if (elapsed.TotalHours >= 1)
+                _sessionDurationSnapshot = $"{(int)elapsed.TotalHours}ч {elapsed.Minutes}мин";
+            else if (elapsed.TotalMinutes >= 1)
+                _sessionDurationSnapshot = $"{elapsed.Minutes}мин {elapsed.Seconds}с";
+            else
+                _sessionDurationSnapshot = $"{elapsed.Seconds}с";
             await SaveTrainingSessionAsync();
         }
     }
@@ -941,6 +1003,14 @@ private async Task InstallStarterPack()
         }
     }
 
+    private async Task SpeakExample()
+    {
+        if (CurrentWord != null && !string.IsNullOrEmpty(CurrentWord.Example))
+        {
+            await JS.InvokeVoidAsync("speakText", CurrentWord.Example, "en-US", TtsVolume);
+        }
+    }
+
     private void ToggleVolumeSlider()
     {
         ShowVolumeSlider = !ShowVolumeSlider;
@@ -959,4 +1029,18 @@ private async Task InstallStarterPack()
     private string TtsVolumeFormatted => TtsVolume.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
     private int TtsVolumePercent => (int)(TtsVolume * 100);
+
+    private double SessionAccuracy => TrainingWords.Count > 0
+        ? Math.Round((double)SessionCorrectCount / TrainingWords.Count * 100, 0)
+        : 0;
+
+    private string SessionResultMessage => SessionAccuracy switch
+    {
+        >= 90 => "Превосходно!",
+        >= 70 => "Отличная работа!",
+        >= 50 => "Хороший результат!",
+        _ => "Продолжайте тренироваться!"
+    };
+
+    private string SessionDurationFormatted => _sessionDurationSnapshot;
 }

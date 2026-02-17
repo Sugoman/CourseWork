@@ -133,6 +133,7 @@
     <system:String x:Key="Loc.Tab.ViewRule">නීතිය බලන්න</system:String>
     <system:String x:Key="Loc.Tab.Learning">ඉගෙනීම</system:String>
     <system:String x:Key="Loc.Tab.ShareAccess">ප්‍රවේශය කළමනාකරණය කරන්න</system:String>
+    <system:String x:Key="Loc.Tab.Marketplace">වෙළී පොළ</system:String>
 
                                 <!-- SETTINGS - NEW -->
     <system:String x:Key="Loc.Settings.NotificationsRadio">දැනුම්දීම්</system:String>
