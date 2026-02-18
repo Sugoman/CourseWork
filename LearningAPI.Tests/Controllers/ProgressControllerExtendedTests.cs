@@ -143,7 +143,7 @@ public class ProgressControllerExtendedTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateProgress_KnowledgeLevelDoesNotExceedFive()
+    public async Task UpdateProgress_KnowledgeLevelIncrementsByOne_ForCorrectAnswer()
     {
         // Arrange
         var word = await CreateTestWord();
@@ -151,7 +151,7 @@ public class ProgressControllerExtendedTests : IDisposable
         {
             UserId = _testUserId,
             WordId = word.Id,
-            KnowledgeLevel = 5, // Already at max
+            KnowledgeLevel = 5,
             TotalAttempts = 10,
             CorrectAnswers = 9,
             LastPracticed = DateTime.UtcNow.AddDays(-1),
@@ -173,7 +173,9 @@ public class ProgressControllerExtendedTests : IDisposable
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         var progress = okResult.Value as LearningProgress;
         progress.Should().NotBeNull();
-        progress!.KnowledgeLevel.Should().BeLessOrEqualTo(5);
+        progress!.KnowledgeLevel.Should().Be(6); // SM-2: +1 per correct answer, no cap
+        progress.EaseFactor.Should().BeGreaterOrEqualTo(1.3); // SM-2: minimum EF = 1.3
+        progress.IntervalDays.Should().BeGreaterThan(0);
     }
 
     [Fact]

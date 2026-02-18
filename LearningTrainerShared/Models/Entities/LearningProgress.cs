@@ -20,8 +20,19 @@ namespace LearningTrainerShared.Models
         public int CorrectAnswers { get; set; }
         public int TotalAttempts { get; set; }
 
-        [Range(0, 5)]
-        public int KnowledgeLevel { get; set; } // 0-5: от "не знаю" до "отлично знаю"
+        [Range(0, 10)]
+        public int KnowledgeLevel { get; set; } // 0-10: уровень знания (repetition count в SM-2)
+
+        /// <summary>
+        /// Фактор лёгкости (SM-2 EaseFactor). Минимум 1.3, начальное значение 2.5.
+        /// Определяет, насколько быстро растут интервалы повторения.
+        /// </summary>
+        public double EaseFactor { get; set; } = 2.5;
+
+        /// <summary>
+        /// Текущий интервал повторения в днях.
+        /// </summary>
+        public double IntervalDays { get; set; }
 
         public DateTime LastPracticed { get; set; }
         public DateTime NextReview { get; set; }

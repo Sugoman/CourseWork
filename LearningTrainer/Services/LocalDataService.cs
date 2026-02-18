@@ -1,6 +1,7 @@
 ﻿using BCrypt.Net;
 using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Windows.Forms;
 
@@ -331,48 +332,8 @@ namespace LearningTrainer.Services
                 db.LearningProgresses.Add(existingProgress);
             }
 
-            existingProgress.LastPracticed = DateTime.UtcNow;
-            existingProgress.TotalAttempts++;
-
-            switch (progress.Quality)
-            {
-                case ResponseQuality.Again:
-                    existingProgress.KnowledgeLevel = 0;
-                    existingProgress.NextReview = DateTime.UtcNow.AddMinutes(5);
-                    break;
-                case ResponseQuality.Hard:
-                    existingProgress.CorrectAnswers++;
-                    existingProgress.NextReview = DateTime.UtcNow.AddDays(1);
-                    break;
-                case ResponseQuality.Good:
-                    existingProgress.CorrectAnswers++;
-                    if (existingProgress.KnowledgeLevel < 5)
-                        existingProgress.KnowledgeLevel++;
-
-                    existingProgress.NextReview = existingProgress.KnowledgeLevel switch
-                    {
-                        1 => DateTime.UtcNow.AddDays(1),
-                        2 => DateTime.UtcNow.AddDays(3),
-                        3 => DateTime.UtcNow.AddDays(7),
-                        4 => DateTime.UtcNow.AddDays(14),
-                        _ => DateTime.UtcNow.AddDays(30)
-                    };
-                    break;
-                case ResponseQuality.Easy:
-                    existingProgress.CorrectAnswers++;
-                    existingProgress.KnowledgeLevel = Math.Min(5, existingProgress.KnowledgeLevel + 2);
-
-                    var baseIntervalDays = existingProgress.KnowledgeLevel switch
-                    {
-                        1 => 1,
-                        2 => 3,
-                        3 => 7,
-                        4 => 14,
-                        _ => 30
-                    };
-                    existingProgress.NextReview = DateTime.UtcNow.AddDays(baseIntervalDays * 1.5);
-                    break;
-            }
+            var sr = new SpacedRepetitionService();
+            sr.ApplyAnswer(existingProgress, progress.Quality);
 
             await db.SaveChangesAsync();
         }

@@ -162,10 +162,11 @@ public class ProgressControllerTests : IDisposable
         progress.Should().NotBeNull();
         progress!.KnowledgeLevel.Should().Be(0); // Reset to 0
         progress.TotalAttempts.Should().Be(6);
+        progress.EaseFactor.Should().BeApproximately(1.96, 0.01); // SM-2: q=1 → EF снижается
     }
 
     [Fact]
-    public async Task UpdateProgress_WithEasyQuality_IncreasesKnowledgeLevelByTwo()
+    public async Task UpdateProgress_WithEasyQuality_IncreasesKnowledgeLevel()
     {
         // Arrange
         var word = await CreateTestWord();
@@ -182,7 +183,9 @@ public class ProgressControllerTests : IDisposable
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         var progress = okResult.Value as LearningProgress;
         progress.Should().NotBeNull();
-        progress!.KnowledgeLevel.Should().Be(2); // +2 levels
+        progress!.KnowledgeLevel.Should().Be(1); // SM-2: +1 per correct answer
+        progress.EaseFactor.Should().BeApproximately(2.6, 0.01); // SM-2: q=5 → EF' = 2.5 + 0.1 = 2.6
+        progress.IntervalDays.Should().BeGreaterThan(0);
     }
 
     [Fact]

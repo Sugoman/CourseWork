@@ -669,8 +669,9 @@ public class StatisticsService : IStatisticsService
 
     private static List<KnowledgeLevelDistribution> GetKnowledgeDistribution(List<LearningProgress> progresses)
     {
+        // SM-2: KnowledgeLevel может быть > 5, группируем 5+ в «Выучено»
         var grouped = progresses
-            .GroupBy(p => p.KnowledgeLevel)
+            .GroupBy(p => Math.Min(p.KnowledgeLevel, 5))
             .ToDictionary(g => g.Key, g => g.Count());
 
         var total = progresses.Count;
