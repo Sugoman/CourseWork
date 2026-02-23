@@ -605,7 +605,7 @@ namespace LearningTrainer.ViewModels
         {
             if (parameter is DictionaryViewModel dictionaryVM)
             {
-                var addWordVm = new AddWordViewModel(_dataService, dictionaryVM.Model);
+                var addWordVm = new AddWordViewModel(_dataService, dictionaryVM.Model, dictionaryVM.Words);
                 EventAggregator.Instance.Publish(addWordVm);
             }
         }
@@ -630,7 +630,7 @@ namespace LearningTrainer.ViewModels
         {
             if (parameter is DictionaryViewModel dictionaryVM)
             {
-                var learningVM = new LearningViewModel(_dataService, dictionaryVM.Id, dictionaryVM.Name);
+                var learningVM = new LearningViewModel(_dataService, dictionaryVM.Id, dictionaryVM.Name, dictionaryVM.LanguageFrom ?? "English", _settingsService);
 
                 EventAggregator.Instance.Publish(learningVM);
             }

@@ -81,7 +81,7 @@
 | 📝 **Правила** | Markdown-редактор с live-preview |
 | 🎓 **Обучение** | Полноценный SM-2 алгоритм (EaseFactor, адаптивные интервалы) |
 | 🃏 **Режимы тренировки** | Flashcards, MCQ (4 варианта), Typing (ввод перевода) |
-| 🔊 **Озвучка** | Text-to-Speech через Web Speech API (Blazor) |
+| 🔊 **Озвучка** | Локальный нейро-TTS через Piper (ONNX, офлайн) + Web Speech API (Blazor) |
 | 📊 **Статистика** | Графики прогресса, streak, экран результатов сессии |
 | 🔤 **Транскрипция** | IPA, ромадзи, пиньинь |
 | 🎨 **Темы** | Light, Dark, Dracula, Forest |
@@ -163,6 +163,7 @@ CourseWork/
 │   ├── Models/                 # EntityTests
 │   └── Helpers/                # TestDbContextFactory
 ├── 📈 StressTestClient/        # Нагрузочное тестирование
+├── 🔊 setup_piper.ps1          # Установка Piper TTS + голосовых моделей
 └── 📄 docs/                    # Документация
 ```
 
@@ -215,7 +216,39 @@ dotnet run
 # 5. Или запустить WPF клиент (новый терминал)
 cd ../LearningTrainer
 dotnet run
+
+# 6. (Опционально) Установить Piper TTS для озвучки слов
+cd ..
+.\setup_piper.ps1
 ```
+
+---
+
+## 🔊 Озвучка слов (Piper TTS)
+
+WPF-клиент использует **Piper** — локальный нейро-TTS движок на ONNX Runtime. Работает **полностью офлайн**, без API-ключей и серверов.
+
+### Установка (один раз)
+
+```powershell
+# Из корня репозитория
+.\setup_piper.ps1
+```
+
+Скрипт скачает в `%LOCALAPPDATA%\LearningTrainer\piper\`:
+
+| Компонент | Размер | Описание |
+|-----------|--------|----------|
+| `piper.exe` | ~22 MB | Движок синтеза речи |
+| `en_US-lessac-medium` | ~60 MB | Английский нейро-голос |
+| `ru_RU-irina-medium` | ~60 MB | Русский нейро-голос |
+
+### Особенности
+
+- ⚡ Синтез за ~40 мс (real-time factor 0.04x)
+- 🎚️ Регулировка громкости в настройках (0–100%)
+- 🎧 Поддержка Bluetooth-наушников (silent padding для пробуждения кодека)
+- 🔇 Без интернета, без ключей, без подписок
 
 ---
 
@@ -223,7 +256,7 @@ dotnet run
 
 | Слой | Стек |
 |------|------|
-| **Desktop** | WPF, MVVM, WebView2, LiveCharts2 |
+| **Desktop** | WPF, MVVM, WebView2, LiveCharts2, Piper TTS (ONNX) |
 | **Web** | Blazor Server, Bootstrap 5, CSS3 (Custom Properties, Gradients, Animations) |
 | **Backend** | ASP.NET Core 8.0, EF Core 8.0, MediatR |
 | **Database** | SQL Server 2022, SQLite (offline), Redis (кэширование) |

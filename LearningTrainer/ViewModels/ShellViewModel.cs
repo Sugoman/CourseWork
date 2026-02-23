@@ -44,6 +44,7 @@ namespace LearningTrainer.ViewModels
             EventAggregator.Instance.Subscribe<AddDictionaryViewModel>(OpenTab);
             EventAggregator.Instance.Subscribe<AddRuleViewModel>(OpenTab);
             EventAggregator.Instance.Subscribe<AddWordViewModel>(OpenTab);
+            EventAggregator.Instance.Subscribe<BulkAddWordViewModel>(OpenTab);
             EventAggregator.Instance.Subscribe<CloseTabMessage>(HandleCloseTabMessage);
             EventAggregator.Instance.Subscribe<DictionaryManagementViewModel>(OpenTab);
             EventAggregator.Instance.Subscribe<SettingsViewModel>(OpenTab);
@@ -124,7 +125,9 @@ namespace LearningTrainer.ViewModels
         {
             if (message?.TabToClose != null && Tabs.Contains(message.TabToClose))
             {
-                Tabs.Remove(message.TabToClose);
+                var tab = message.TabToClose;
+                Tabs.Remove(tab);
+                tab.Dispose();
                 var dashboard = Tabs.FirstOrDefault(t => t is DashboardViewModel);
                 if (dashboard != null)
                 {
@@ -138,6 +141,7 @@ namespace LearningTrainer.ViewModels
             if (tabToClose is TabViewModelBase tab && Tabs.Contains(tab))
             {
                 Tabs.Remove(tab);
+                tab.Dispose();
             }
         }
 
@@ -153,6 +157,7 @@ namespace LearningTrainer.ViewModels
             EventAggregator.Instance.Unsubscribe<AddDictionaryViewModel>(OpenTab);
             EventAggregator.Instance.Unsubscribe<AddRuleViewModel>(OpenTab);
             EventAggregator.Instance.Unsubscribe<AddWordViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<BulkAddWordViewModel>(OpenTab);
             EventAggregator.Instance.Unsubscribe<CloseTabMessage>(HandleCloseTabMessage);
             EventAggregator.Instance.Unsubscribe<DictionaryManagementViewModel>(OpenTab);
             EventAggregator.Instance.Unsubscribe<SettingsViewModel>(OpenTab);

@@ -16,7 +16,16 @@
         // === LEARNING ===
         public int DailyGoal { get; set; } = 10;
         public bool EnableSoundEffects { get; set; } = false;
+        public int TtsVolume { get; set; } = 100;
         public bool ShowTranscription { get; set; } = true;
+        /// <summary>
+        /// Направление перевода: "direct" (оригинал→перевод), "reverse" (перевод→оригинал), "random"
+        /// </summary>
+        public string DefaultTranslationDirection { get; set; } = "direct";
+        /// <summary>
+        /// Адаптивная сложность: автовыбор типа упражнения по KnowledgeLevel
+        /// </summary>
+        public bool EnableAdaptiveDifficulty { get; set; } = false;
 
         // === PRIVACY ===
         public bool KeepMeLoggedIn { get; set; } = false;

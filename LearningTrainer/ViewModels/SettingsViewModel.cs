@@ -191,6 +191,20 @@ namespace LearningTrainer.ViewModels
             }
         }
 
+        private int _ttsVolume = 100;
+        public int TtsVolume
+        {
+            get => _ttsVolume;
+            set
+            {
+                if (SetProperty(ref _ttsVolume, value))
+                {
+                    _settingsService.CurrentSettings.TtsVolume = value;
+                    _settingsService.SaveSettings(_settingsService.CurrentSettings);
+                }
+            }
+        }
+
         private bool _showTranscription;
         public bool ShowTranscription
         {
@@ -364,6 +378,7 @@ namespace LearningTrainer.ViewModels
             // Инициализация обучения
             _dailyGoal = _settingsService.CurrentSettings.DailyGoal;
             _enableSoundEffects = _settingsService.CurrentSettings.EnableSoundEffects;
+            _ttsVolume = _settingsService.CurrentSettings.TtsVolume;
             _showTranscription = _settingsService.CurrentSettings.ShowTranscription;
 
             // Инициализация приватности

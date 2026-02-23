@@ -2,10 +2,18 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:LearningTrainer.Converters"
              mc:Ignorable="d" 
              d:DesignHeight="500" d:DesignWidth="600"
              Background="{DynamicResource MainBackgroundBrush}">
+
+    <UserControl.Resources>
+        <converters:StringNullOrEmptyToVisibilityConverter x:Key="StringNullOrEmptyToVisibilityConverter"/>
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
 
         <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
@@ -22,11 +30,24 @@
             </Border.Effect>
 
             <StackPanel>
-                <TextBlock Text="{DynamicResource Loc.AddWord.CreateDict}" 
-                           FontSize="{DynamicResource HeaderFontSize}"
-                           FontWeight="Bold" 
-                           Foreground="{DynamicResource PrimaryTextBrush}"
-                           Margin="0,0,0,25"/>
+                <!-- Заголовок + счётчик -->
+                <DockPanel Margin="0,0,0,25">
+                    <TextBlock Text="{DynamicResource Loc.AddWord.CreateDict}" 
+                               FontSize="{DynamicResource HeaderFontSize}"
+                               FontWeight="Bold" 
+                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               DockPanel.Dock="Left"/>
+                    <Border Background="{DynamicResource InputBackgroundBrush}" 
+                            CornerRadius="10" Padding="10,4" 
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Right"
+                            Visibility="{Binding AddedCount, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, ConverterParameter=invert}">
+                        <TextBlock Foreground="{DynamicResource SuccessBrush}" FontWeight="SemiBold" FontSize="13">
+                            <Run Text="✓ Добавлено:"/>
+                            <Run Text="{Binding AddedCount, Mode=OneWay}"/>
+                        </TextBlock>
+                    </Border>
+                </DockPanel>
 
                 <TextBlock Text="{DynamicResource Loc.AddWord.TitleDictLabel}" 
                            Foreground="{DynamicResource SecondaryTextBrush}"
@@ -44,6 +65,14 @@
                              Padding="0,2"/>
                 </Border>
 
+                <!-- Предупреждение о дубликате -->
+                <TextBlock Text="{Binding DuplicateWarning}" 
+                           Foreground="#DC2626"
+                           FontSize="12" FontWeight="Medium"
+                           Margin="0,4,0,0"
+                           TextWrapping="Wrap"
+                           Visibility="{Binding DuplicateWarning, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, ConverterParameter=invert}"/>
+
                 <TextBlock Margin="0,5,0,15" 
                            FontSize="13"
                            Visibility="{Binding DataContext.CanManage, Converter={StaticResource BooleanToVisibilityConverter}}">
@@ -55,19 +84,45 @@
                            Foreground="{DynamicResource SecondaryTextBrush}"
                            FontWeight="Medium" Margin="0,0,0,5"/>
 
-                <Border Style="{StaticResource InputContainerStyle}">
-                    <TextBox Text="{Binding Translation, UpdateSourceTrigger=PropertyChanged}" 
-                             Foreground="{DynamicResource PrimaryTextBrush}"
-                             CaretBrush="{DynamicResource PrimaryTextBrush}"
-                             FontSize="{DynamicResource BaseFontSize}"
-                             Background="Transparent"
-                             BorderThickness="0"
-                             Padding="0,2"/>
-                </Border>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" 
+                            Command="{Binding AutoTranslateCommand}"
+                            ToolTip="Автоперевод (MyMemory API)"
+                            Cursor="Hand" 
+                            Background="Transparent" BorderThickness="0"
+                            Margin="8,0,0,0" VerticalAlignment="Center"
+                            Width="32" Height="32">
+                        <TextBlock Text="🔄" FontSize="16" 
+                                   Visibility="{Binding IsAutoTranslating, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
+                    </Button>
+                    <Border Style="{StaticResource InputContainerStyle}">
+                        <TextBox Text="{Binding Translation, UpdateSourceTrigger=PropertyChanged}" 
+                                 x:Name="TranslationTextBox"
+                                 Foreground="{DynamicResource PrimaryTextBrush}"
+                                 CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                 FontSize="{DynamicResource BaseFontSize}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Padding="0,2"/>
+                    </Border>
+                </DockPanel>
 
-                <TextBlock Text="{DynamicResource Loc.AddWord.WordExampleLabel}" 
-                           Foreground="{DynamicResource SecondaryTextBrush}"
-                           FontWeight="Medium" Margin="0,10,0,5"/>
+                <DockPanel Margin="0,10,0,0">
+                    <TextBlock Text="{DynamicResource Loc.AddWord.WordExampleLabel}" 
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               FontWeight="Medium" DockPanel.Dock="Left"/>
+                    <Button DockPanel.Dock="Right"
+                            Command="{Binding FetchExampleCommand}"
+                            ToolTip="Найти пример из словаря (dictionaryapi.dev)"
+                            Cursor="Hand"
+                            Background="Transparent" BorderThickness="0"
+                            HorizontalAlignment="Right"
+                            Width="32" Height="20">
+                        <TextBlock Text="💡" FontSize="14"
+                                   Visibility="{Binding IsFetchingDetails, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
+                    </Button>
+                </DockPanel>
+                <Separator Margin="0,2,0,5" Opacity="0"/>
 
                 <Border Style="{StaticResource InputContainerStyle}">
                     <TextBox Text="{Binding Example, UpdateSourceTrigger=PropertyChanged}" 
@@ -83,9 +138,34 @@
                              AcceptsReturn="True"/>
                 </Border>
 
+                <!-- Подсказка примера из API -->
+                <Border Background="{DynamicResource InputBackgroundBrush}"
+                        CornerRadius="6" Padding="10,6" Margin="0,6,0,0"
+                        Visibility="{Binding SuggestedExample, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, ConverterParameter=invert}">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" 
+                                Command="{Binding AcceptExampleCommand}"
+                                Content="✓ Использовать" 
+                                Cursor="Hand"
+                                Background="Transparent" BorderThickness="0"
+                                Foreground="{DynamicResource PrimaryAccentBrush}"
+                                FontWeight="SemiBold" FontSize="12"
+                                VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        <TextBlock Text="{Binding SuggestedExample}" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}" 
+                                   FontStyle="Italic" FontSize="13"
+                                   TextWrapping="Wrap" VerticalAlignment="Center"/>
+                    </DockPanel>
+                </Border>
+
                 <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,20,0,20" Opacity="0.3"/>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">               
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Готово" 
+                            Command="{Binding DoneCommand}"
+                            Style="{StaticResource BaseButton}" 
+                            Width="110"
+                            Margin="0,0,10,0"/>
                     <Button Content="Сохранить" 
                             Command="{Binding SaveCommand}"
                             Style="{StaticResource SuccessButton}" 

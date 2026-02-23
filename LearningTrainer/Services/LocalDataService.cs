@@ -170,7 +170,78 @@ namespace LearningTrainer.Services
 
             db.Words.Add(word);
             await db.SaveChangesAsync();
+
+            // Пытаемся получить транскрипцию в фоне (если есть интернет)
+            _ = TryFetchTranscriptionAsync(word);
+
             return word;
+        }
+
+        /// <summary>
+        /// Пытается подтянуть транскрипцию из внешнего API и обновить слово в локальной БД.
+        /// Ошибки игнорируются — транскрипция подтянется при следующей онлайн-синхронизации.
+        /// </summary>
+        private async Task TryFetchTranscriptionAsync(Word word)
+        {
+            try
+            {
+                using var http = new System.Net.Http.HttpClient();
+                var dictService = new ExternalDictionaryService(http);
+                var details = await dictService.GetWordDetailsAsync(word.OriginalWord);
+
+                if (details?.Transcription != null)
+                {
+                    var db = Context;
+                    var existing = await db.Words.FindAsync(word.Id);
+                    if (existing != null && existing.Transcription == null)
+                    {
+                        existing.Transcription = details.Transcription;
+                        await db.SaveChangesAsync();
+                    }
+                }
+            }
+            catch
+            {
+                // Нет интернета или API недоступен — транскрипция подтянется при синхронизации
+            }
+        }
+
+        public async Task<bool> UpdateWordAsync(Word word)
+        {
+            var db = Context;
+            var existing = await db.Words.FindAsync(word.Id);
+            if (existing == null) return false;
+
+            existing.OriginalWord = word.OriginalWord;
+            existing.Translation = word.Translation;
+            existing.Example = word.Example ?? "";
+            await db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<(int Added, int Skipped, List<Word> Words)> AddWordsBatchAsync(List<Word> words)
+        {
+            var db = Context;
+            var addedWords = new List<Word>();
+            var skipped = 0;
+
+            foreach (var word in words)
+            {
+                if (string.IsNullOrWhiteSpace(word.OriginalWord) || string.IsNullOrWhiteSpace(word.Translation))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                word.UserId = _currentLocalUserId;
+                db.Words.Add(word);
+                addedWords.Add(word);
+            }
+
+            if (addedWords.Count > 0)
+                await db.SaveChangesAsync();
+
+            return (addedWords.Count, skipped, addedWords);
         }
 
         public async Task<bool> DeleteDictionaryAsync(int dictionaryId)

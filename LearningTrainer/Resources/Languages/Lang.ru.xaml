@@ -143,6 +143,8 @@
     <system:String x:Key="Loc.Tab.CreateDictionary">Создать словарь</system:String>
     <system:String x:Key="Loc.Tab.CreateRule">Создать правило</system:String>
     <system:String x:Key="Loc.Tab.AddWord">Добавить слово</system:String>
+    <system:String x:Key="Loc.Tab.EditWord">Редактировать слово</system:String>
+    <system:String x:Key="Loc.Tab.BulkAdd">Массовое добавление</system:String>
     <system:String x:Key="Loc.Tab.EditDictionary">Редактировать словарь</system:String>
     <system:String x:Key="Loc.Tab.EditRule">Редактировать правило</system:String>
     <system:String x:Key="Loc.Tab.ViewRule">Просмотр правила</system:String>
@@ -162,8 +164,9 @@
     <system:String x:Key="Loc.SettingsNotif.DurationLabel">Длительность показа (секунды)</system:String>
     
     <system:String x:Key="Loc.SettingsGen.SoundEffectsLabel">Звуковые эффекты</system:String>
+    <system:String x:Key="Loc.SettingsGen.TtsVolumeLabel">Громкость озвучки</system:String>
     <system:String x:Key="Loc.SettingsGen.ShowTranscriptionLabel">Показывать транскрипцию на карточках</system:String>
-    
+
     <system:String x:Key="Loc.SettingsAcc.KeepLoggedInLabel">Оставаться в системе</system:String>
     <system:String x:Key="Loc.SettingsAcc.AutoSyncLabel">Авто-синхронизация данных</system:String>
 

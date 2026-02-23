@@ -15,7 +15,14 @@ namespace LearningTrainer.Converters
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            bool isNullOrEmpty = string.IsNullOrEmpty(value as string);
+            bool isNullOrEmpty;
+
+            if (value is string strValue)
+                isNullOrEmpty = string.IsNullOrEmpty(strValue);
+            else if (value is int intValue)
+                isNullOrEmpty = intValue == 0;
+            else
+                isNullOrEmpty = value == null;
 
             if (parameter as string == "invert")
             {

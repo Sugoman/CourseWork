@@ -139,6 +139,47 @@ namespace LearningTrainer.Services
             return response.IsSuccessStatusCode;
         }
 
+        public async Task<bool> UpdateWordAsync(Word word)
+        {
+            var requestDto = new UpdateWordRequest
+            {
+                Id = word.Id,
+                OriginalWord = word.OriginalWord,
+                Translation = word.Translation,
+                Example = word.Example ?? ""
+            };
+
+            var response = await _httpClient.PutAsJsonAsync($"/api/words/{word.Id}", requestDto, _jsonOptions);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<(int Added, int Skipped, List<Word> Words)> AddWordsBatchAsync(List<Word> words)
+        {
+            if (words == null || words.Count == 0)
+                return (0, 0, new List<Word>());
+
+            var requestDtos = words.Select(w => new CreateWordRequest
+            {
+                OriginalWord = w.OriginalWord,
+                Translation = w.Translation,
+                Example = w.Example ?? "",
+                DictionaryId = w.DictionaryId
+            }).ToList();
+
+            var response = await _httpClient.PostAsJsonAsync("/api/words/batch", requestDtos, _jsonOptions);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<BatchAddResult>(_jsonOptions);
+            return (result?.Added ?? 0, result?.Skipped ?? 0, result?.Words ?? new List<Word>());
+        }
+
+        private class BatchAddResult
+        {
+            public int Added { get; set; }
+            public int Skipped { get; set; }
+            public List<Word> Words { get; set; } = new();
+        }
+
         public Task<List<Word>> GetWordsByDictionaryAsync(int dictionaryId)
         {
             throw new NotImplementedException("Онлайн-метод GetWordsByDictionaryAsync еще не создан");

@@ -295,13 +295,19 @@
             </Grid.ColumnDefinitions>
 
             <!-- Кнопка "Добавить" -->
-            <Button Grid.Column="0" 
-                    Content="{DynamicResource Loc.Button.AddWordButton}"
-                    MinWidth="130"
-                    Command="{Binding AddWordCommand}"
-                    Style="{StaticResource PrimaryButton}"
-                    Padding="20,10"
-                    Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+            <StackPanel Grid.Column="0" Orientation="Horizontal"
+                        Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <Button Content="{DynamicResource Loc.Button.AddWordButton}"
+                        MinWidth="130"
+                        Command="{Binding AddWordCommand}"
+                        Style="{StaticResource PrimaryButton}"
+                        Padding="20,10"/>
+                <Button Content="📋 Вставить список"
+                        MinWidth="140"
+                        Command="{Binding BulkAddCommand}"
+                        Style="{StaticResource BaseButton}"
+                        Padding="15,10" Margin="8,0,0,0"/>
+            </StackPanel>
 
             <!-- Поиск -->
             <Grid Grid.Column="2">
@@ -398,7 +404,9 @@
                             <DataTemplate>
                                 <StackPanel Orientation="Horizontal">
                                     <!-- Кнопка Редактировать -->
-                                    <Button Style="{StaticResource GridActionButton}" ToolTip="Edit Word">
+                                    <Button Style="{StaticResource GridActionButton}" ToolTip="Edit Word"
+                                            Command="{Binding DataContext.EditWordCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}">
                                         <Rectangle Width="16" Height="16" Fill="{DynamicResource PrimaryTextBrush}">
                                             <Rectangle.OpacityMask>
                                                 <VisualBrush Stretch="Uniform">

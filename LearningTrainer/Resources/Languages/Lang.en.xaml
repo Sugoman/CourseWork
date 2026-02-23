@@ -141,6 +141,8 @@
     <system:String x:Key="Loc.Tab.CreateDictionary">Create Dictionary</system:String>
     <system:String x:Key="Loc.Tab.CreateRule">Create Rule</system:String>
     <system:String x:Key="Loc.Tab.AddWord">Add Word</system:String>
+    <system:String x:Key="Loc.Tab.EditWord">Edit Word</system:String>
+    <system:String x:Key="Loc.Tab.BulkAdd">Bulk Add</system:String>
     <system:String x:Key="Loc.Tab.EditDictionary">Edit Dictionary</system:String>
     <system:String x:Key="Loc.Tab.EditRule">Edit Rule</system:String>
     <system:String x:Key="Loc.Tab.ViewRule">View Rule</system:String>
@@ -160,8 +162,9 @@
     <system:String x:Key="Loc.SettingsNotif.DurationLabel">Display duration (seconds)</system:String>
     
     <system:String x:Key="Loc.SettingsGen.SoundEffectsLabel">Sound effects</system:String>
+    <system:String x:Key="Loc.SettingsGen.TtsVolumeLabel">TTS Volume</system:String>
     <system:String x:Key="Loc.SettingsGen.ShowTranscriptionLabel">Show transcription on cards</system:String>
-    
+
     <system:String x:Key="Loc.SettingsAcc.KeepLoggedInLabel">Keep me logged in</system:String>
     <system:String x:Key="Loc.SettingsAcc.AutoSyncLabel">Auto-sync data</system:String>
 

@@ -25,6 +25,9 @@
         <DataTemplate DataType="{x:Type viewmodels:AddWordViewModel}">
             <views:AddWordView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type viewmodels:BulkAddWordViewModel}">
+            <views:BulkAddWordView/>
+        </DataTemplate>
         <DataTemplate DataType="{x:Type viewmodels:AddDictionaryViewModel}">
             <views:AddDictionaryView/>
         </DataTemplate>

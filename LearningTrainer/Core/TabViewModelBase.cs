@@ -3,7 +3,7 @@ using System.Windows;
 
 namespace LearningTrainer.Core
 {
-    public abstract class TabViewModelBase : ObservableObject
+    public abstract class TabViewModelBase : ObservableObject, IDisposable
     {
         private string _title;
         public string Title 
@@ -21,6 +21,8 @@ namespace LearningTrainer.Core
         /// Суффикс для названия вкладки (например, ": Dictionary Name")
         /// </summary>
         protected string TitleSuffix { get; set; } = "";
+
+        private bool _baseDisposed;
 
         protected TabViewModelBase()
         {
@@ -66,6 +68,13 @@ namespace LearningTrainer.Core
             {
                 return key;
             }
+        }
+
+        public virtual void Dispose()
+        {
+            if (_baseDisposed) return;
+            _baseDisposed = true;
+            LanguageService.LanguageChanged -= OnLanguageChanged;
         }
     }
 }

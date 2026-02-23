@@ -66,6 +66,8 @@ namespace LearningTrainer.ViewModels
         }
 
         public ICommand AddWordCommand { get; }
+        public ICommand EditWordCommand { get; }
+        public ICommand BulkAddCommand { get; }
         public ICommand DeleteWordCommand { get; }
         public ICommand DeleteDictionaryCommand { get; }
         public ICommand ExportDictionaryCommand { get; }
@@ -108,6 +110,8 @@ namespace LearningTrainer.ViewModels
             Words = new ObservableCollection<Word>(words);
 
             AddWordCommand = new RelayCommand(AddWord, (_) => IsEditable);
+            EditWordCommand = new RelayCommand(EditWord, (_) => IsEditable);
+            BulkAddCommand = new RelayCommand(BulkAdd, (_) => IsEditable);
             DeleteWordCommand = new RelayCommand(async (p) => await DeleteWord(p), (_) => IsEditable);
             SaveChangesCommand = new RelayCommand(async (p) =>
             {
@@ -238,8 +242,23 @@ namespace LearningTrainer.ViewModels
 
         private void AddWord(object obj)
         {
-            var addWordVm = new AddWordViewModel(_dataService, _dictionaryModel);
+            var addWordVm = new AddWordViewModel(_dataService, _dictionaryModel, _allWords);
             EventAggregator.Instance.Publish(addWordVm);
+        }
+
+        private void EditWord(object parameter)
+        {
+            if (parameter is Word word)
+            {
+                var editWordVm = new AddWordViewModel(_dataService, _dictionaryModel, _allWords, word);
+                EventAggregator.Instance.Publish(editWordVm);
+            }
+        }
+
+        private void BulkAdd(object obj)
+        {
+            var bulkAddVm = new BulkAddWordViewModel(_dataService, _dictionaryModel, _allWords);
+            EventAggregator.Instance.Publish(bulkAddVm);
         }
 
         private void OnWordAdded(WordAddedMessage message)

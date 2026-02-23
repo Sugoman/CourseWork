@@ -12,6 +12,10 @@
         WindowStyle="None" 
         AllowsTransparency="True"
         Background="Transparent"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
         Name="AppWindow">
 
     <Border Background="{DynamicResource MainBackgroundBrush}" 
@@ -43,7 +47,8 @@
 
                     <!-- App Icon/Title -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="15,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="📚" FontSize="16" VerticalAlignment="Center"/>
+                        <TextBlock Text="◆" FontSize="14" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource PrimaryAccentBrush}"/>
                         <TextBlock Text="Learning Trainer" 
                                    Foreground="{DynamicResource SecondaryTextBrush}" 
                                    FontSize="13" 

@@ -9,13 +9,15 @@
              xmlns:converters="clr-namespace:LearningTrainer.Converters"
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="800"
-             Background="{DynamicResource MainBackgroundBrush}">
+             Background="{DynamicResource MainBackgroundBrush}"
+             Focusable="True" PreviewKeyDown="UserControl_PreviewKeyDown">
 
     <UserControl.Resources>
         <system:Boolean x:Key="True">True</system:Boolean>
         <system:Boolean x:Key="False">False</system:Boolean>
         <converters:BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <converters:InvertedBooleanToVisibilityConverter x:Key="InverseBoolToVis"/>
+        <converters:InvertedBooleanConverter x:Key="InverseBoolConverter"/>
 
         <Style x:Key="McqOptionButton" TargetType="Button">
             <Setter Property="FontSize" Value="16"/>
@@ -81,13 +83,85 @@
     </UserControl.Resources>
 
     <Grid>
+        <!-- ====== EMPTY SESSION SCREEN ====== -->
+        <Grid Background="{DynamicResource MainBackgroundBrush}"
+              VerticalAlignment="Center" HorizontalAlignment="Center"
+              Visibility="{Binding IsEmptySession, Converter={StaticResource BoolToVis}}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="420">
+                <TextBlock Text="✓" FontSize="64" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource SuccessBrush}" FontWeight="Bold"/>
+                <TextBlock Text="Все слова повторены!" FontSize="24" FontWeight="Bold"
+                           Foreground="{DynamicResource PrimaryTextBrush}" 
+                           HorizontalAlignment="Center" Margin="0,12,0,0"/>
+                <TextBlock Text="На данный момент нет слов, требующих повторения. Вы можете вернуться позже или начать тренировку со всеми словами досрочно."
+                           FontSize="14" TextWrapping="Wrap" TextAlignment="Center"
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           HorizontalAlignment="Center" Margin="0,12,0,24"/>
+
+                <Button Content="Начать досрочно" 
+                        Command="{Binding StartEarlyCommand}"
+                        HorizontalAlignment="Center"
+                        Width="220" Height="44" FontSize="15"
+                        Margin="0,0,0,10">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasDictionaryWords}" Value="False">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
+                <Button Content="Вернуться на дашборд" 
+                        Command="{Binding CloseTabCommand}" 
+                        Style="{StaticResource BaseButton}" 
+                        HorizontalAlignment="Center"
+                        Width="220" Height="40" FontSize="14"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- ====== SESSION RESULTS SCREEN ====== -->
         <Grid Background="{DynamicResource MainBackgroundBrush}" 
               VerticalAlignment="Center" HorizontalAlignment="Center"
               Visibility="{Binding IsSessionComplete, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="550">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="600"
+                          Padding="0,0,4,0">
+                <ScrollViewer.Resources>
+                    <Style TargetType="ScrollBar">
+                        <Setter Property="Width" Value="6"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ScrollBar">
+                                    <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                        <Track.Thumb>
+                                            <Thumb>
+                                                <Thumb.Style>
+                                                    <Style TargetType="Thumb">
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="Thumb">
+                                                                    <Border Background="{DynamicResource BorderBrush}" 
+                                                                            CornerRadius="3" Opacity="0.6"/>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Style>
+                                                </Thumb.Style>
+                                            </Thumb>
+                                        </Track.Thumb>
+                                    </Track>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ScrollViewer.Resources>
                 <StackPanel HorizontalAlignment="Center" Margin="20">
-                    <!-- Emoji + Message -->
-                    <TextBlock Text="{Binding ResultEmoji}" FontSize="72" HorizontalAlignment="Center"/>
+                    <!-- Result Icon -->
+                    <TextBlock Text="{Binding ResultEmoji}" FontSize="72" HorizontalAlignment="Center"
+                               Foreground="{DynamicResource PrimaryAccentBrush}"/>
                     <TextBlock Text="{Binding ResultMessage}"
                                FontSize="28" FontWeight="Bold" 
                                Foreground="{DynamicResource PrimaryTextBrush}"
@@ -131,11 +205,12 @@
                         </Border>
                         <!-- Duration -->
                         <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
-                                CornerRadius="10" Margin="4" Padding="16,12"
+                                CornerRadius="10" Margin="4" Padding="12,12"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <StackPanel HorizontalAlignment="Center">
-                                <TextBlock Text="{Binding SessionDuration}" FontSize="22" FontWeight="Bold"
-                                           Foreground="{DynamicResource PrimaryTextBrush}" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding SessionDuration}" FontSize="16" FontWeight="Bold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}" HorizontalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"/>
                                 <TextBlock Text="Время" FontSize="12"
                                            Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
@@ -187,14 +262,20 @@
                         </ItemsControl>
                     </StackPanel>
 
-                    <!-- Close button -->
-                    <Button Content="   Вернуться на дашборд   " 
-                            Command="{Binding CloseTabCommand}" 
-                            Style="{StaticResource BaseButton}" 
-                            HorizontalAlignment="Center"
-                            Padding="20,10"
-                            MinHeight="40"
-                            Margin="0,24,0,0"/>
+                    <!-- Action buttons -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
+                        <Button Content="  📋 Скопировать отчёт  " 
+                                Command="{Binding CopyReportCommand}" 
+                                Style="{StaticResource BaseButton}" 
+                                Padding="16,10"
+                                MinHeight="40"
+                                Margin="0,0,8,0"/>
+                        <Button Content="   Вернуться на дашборд   " 
+                                Command="{Binding CloseTabCommand}" 
+                                Style="{StaticResource BaseButton}" 
+                                Padding="20,10"
+                                MinHeight="40"/>
+                    </StackPanel>
                 </StackPanel>
             </ScrollViewer>
         </Grid>
@@ -207,6 +288,9 @@
                         <DataTrigger Binding="{Binding IsSessionComplete}" Value="True">
                             <Setter Property="Visibility" Value="Collapsed"/>
                         </DataTrigger>
+                        <DataTrigger Binding="{Binding IsEmptySession}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </Grid.Style>
@@ -217,13 +301,78 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
+            <!-- Session progress bar -->
+            <StackPanel Grid.Row="0" Margin="20,12,20,4"
+                        Visibility="{Binding IsExerciseTypeChosen, Converter={StaticResource BoolToVis}}">
+                <Grid Margin="0,0,0,4">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}">
+                            <Run Text="{Binding CompletedWordsCount, Mode=OneWay}"/>
+                            <Run Text=" / "/>
+                            <Run Text="{Binding TotalWordsCount, Mode=OneWay}"/>
+                        </TextBlock>
+                        <!-- Streak indicator -->
+                        <Border Margin="12,0,0,0" CornerRadius="8" Padding="8,2"
+                                Background="#20FF6B00"
+                                Visibility="{Binding ShowStreak, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                            <TextBlock FontSize="12" Foreground="#FF6B00" FontWeight="SemiBold">
+                                <Run Text="🔥"/>
+                                <Run Text="{Binding CurrentStreak, Mode=OneWay}"/>
+                            </TextBlock>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock HorizontalAlignment="Right" FontSize="13"
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               Text="{Binding SessionProgress, Mode=OneWay, StringFormat={}{0:0}%}"/>
+                </Grid>
+                <ProgressBar Value="{Binding SessionProgress, Mode=OneWay}" Minimum="0" Maximum="100" Height="6">
+                    <ProgressBar.Template>
+                        <ControlTemplate TargetType="ProgressBar">
+                            <Border CornerRadius="3" Background="{DynamicResource BorderBrush}" x:Name="PART_Track">
+                                <Border CornerRadius="3" HorizontalAlignment="Left"
+                                        Background="{DynamicResource PrimaryAccentBrush}"
+                                        x:Name="PART_Indicator"/>
+                            </Border>
+                        </ControlTemplate>
+                    </ProgressBar.Template>
+                </ProgressBar>
+            </StackPanel>
+
             <!-- Exercise type selector (shown before training starts) -->
             <Grid Grid.Row="0" Grid.RowSpan="3" 
                   Visibility="{Binding IsExerciseTypeChosen, Converter={StaticResource InverseBoolToVis}}">
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="400">
                     <TextBlock Text="Выберите режим тренировки" FontSize="22" FontWeight="SemiBold"
                                Foreground="{DynamicResource PrimaryTextBrush}" HorizontalAlignment="Center"
-                               Margin="0,0,0,24"/>
+                               Margin="0,0,0,16"/>
+
+                    <!-- Word limit selector (4.3) -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
+                        <TextBlock Text="Слов:" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        <RadioButton Content="10" GroupName="WordLimit" Style="{StaticResource ExerciseTypeRadio}"
+                                     Command="{Binding SetWordLimitCommand}" CommandParameter="10"/>
+                        <RadioButton Content="20" GroupName="WordLimit" Style="{StaticResource ExerciseTypeRadio}"
+                                     Command="{Binding SetWordLimitCommand}" CommandParameter="20"/>
+                        <RadioButton Content="50" GroupName="WordLimit" Style="{StaticResource ExerciseTypeRadio}"
+                                     Command="{Binding SetWordLimitCommand}" CommandParameter="50"/>
+                        <RadioButton Content="Все" GroupName="WordLimit" Style="{StaticResource ExerciseTypeRadio}"
+                                     IsChecked="True"
+                                     Command="{Binding SetWordLimitCommand}" CommandParameter="0"/>
+                    </StackPanel>
+
+                    <!-- Translation direction selector -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
+                        <TextBlock Text="Направление:" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"/>
+                        <RadioButton Content="Прямой" GroupName="TransDir" Style="{StaticResource ExerciseTypeRadio}"
+                                     IsChecked="True"
+                                     Command="{Binding SetTranslationDirectionCommand}" CommandParameter="direct"/>
+                        <RadioButton Content="Обратный" GroupName="TransDir" Style="{StaticResource ExerciseTypeRadio}"
+                                     Command="{Binding SetTranslationDirectionCommand}" CommandParameter="reverse"/>
+                        <RadioButton Content="Случайный" GroupName="TransDir" Style="{StaticResource ExerciseTypeRadio}"
+                                     Command="{Binding SetTranslationDirectionCommand}" CommandParameter="random"/>
+                    </StackPanel>
 
                     <Button Command="{Binding SetExerciseTypeCommand}" CommandParameter="flashcard"
                             Margin="0,4" Height="60" Cursor="Hand">
@@ -269,6 +418,40 @@
                             <StackPanel VerticalAlignment="Center">
                                 <TextBlock Text="Ввод" FontSize="16" FontWeight="SemiBold"/>
                                 <TextBlock Text="Напишите перевод самостоятельно" FontSize="12" Opacity="0.6"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Mixed mode (2.3) -->
+                    <Button Command="{Binding SetExerciseTypeCommand}" CommandParameter="mixed"
+                            Margin="0,4" Height="60" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource McqOptionButton}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🎲" FontSize="22" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Смешанный" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Тип упражнения меняется для каждого слова" FontSize="12" Opacity="0.6"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Listening mode -->
+                    <Button Command="{Binding SetExerciseTypeCommand}" CommandParameter="listening"
+                            Margin="0,4" Height="60" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource McqOptionButton}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🎧" FontSize="22" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Аудирование" FontSize="16" FontWeight="SemiBold"/>
+                                <TextBlock Text="Услышьте слово и напишите его" FontSize="12" Opacity="0.6"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -340,7 +523,7 @@
                         </Border.Style>
 
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding CurrentWord.Translation}" Style="{StaticResource CardTextStyle}" Foreground="White"/>
+                            <TextBlock Text="{Binding ExpectedAnswer}" Style="{StaticResource CardTextStyle}" Foreground="White"/>
                             <TextBlock Text="{Binding CurrentWord.Example}"
                                        FontSize="14" FontStyle="Italic" Foreground="White" Opacity="0.85"
                                        HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"
@@ -401,12 +584,19 @@
                         </Border.Style>
 
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding CurrentWord.OriginalWord}" 
+                            <TextBlock Text="{Binding DisplayedText}" 
                                        Style="{StaticResource CardTextStyle}"
                                        Foreground="{DynamicResource PrimaryTextBrush}"/>
-                            <TextBlock Text="{Binding CurrentWord.Transcription}"
+                            <TextBlock Text="{Binding DisplayedTranscription}"
                                        FontSize="20" Foreground="{DynamicResource PrimaryAccentBrush}"
                                        FontFamily="Arial" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                            <Button Command="{Binding SpeakWordCommand}" 
+                                    ToolTip="Озвучить слово"
+                                    Background="Transparent" BorderThickness="0" 
+                                    Cursor="Hand" Margin="0,8,0,0"
+                                    HorizontalAlignment="Center">
+                                <TextBlock Text="🔊" FontSize="22"/>
+                            </Button>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -436,23 +626,79 @@
                             <DropShadowEffect ShadowDepth="4" Color="Black" Opacity="0.2" BlurRadius="20"/>
                         </Border.Effect>
                         <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Text="{Binding CurrentWord.OriginalWord}" 
+                            <TextBlock Text="{Binding DisplayedText}" 
                                        FontSize="32" FontWeight="Bold" HorizontalAlignment="Center"
                                        Foreground="{DynamicResource PrimaryTextBrush}"/>
-                            <TextBlock Text="{Binding CurrentWord.Transcription}"
+                            <TextBlock Text="{Binding DisplayedTranscription}"
                                        FontSize="18" Foreground="{DynamicResource PrimaryAccentBrush}"
                                        HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                            <Button Command="{Binding SpeakWordCommand}" 
+                                    ToolTip="Озвучить слово"
+                                    Background="Transparent" BorderThickness="0" 
+                                    Cursor="Hand" Margin="0,6,0,0"
+                                    HorizontalAlignment="Center">
+                                <TextBlock Text="🔊" FontSize="20"/>
+                            </Button>
                         </StackPanel>
                     </Border>
 
-                    <!-- Options -->
+                    <!-- Options with highlighting -->
                     <ItemsControl ItemsSource="{Binding McqOptions}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Content="{Binding}" Style="{StaticResource McqOptionButton}"
-                                        Command="{Binding DataContext.SelectMcqOptionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                <Button Command="{Binding DataContext.SelectMcqOptionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}"
-                                        IsEnabled="{Binding DataContext.McqAnswered, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBoolConverter}}"/>
+                                        IsEnabled="{Binding DataContext.McqAnswered, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBoolConverter}}"
+                                        Cursor="Hand" FontSize="16" Padding="16,12" Margin="0,4"
+                                        HorizontalContentAlignment="Left"
+                                        Foreground="{DynamicResource PrimaryTextBrush}">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Bd" 
+                                                                Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                                                                BorderBrush="{DynamicResource BorderBrush}" 
+                                                                BorderThickness="2" CornerRadius="10" 
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                                              VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                                            </Trigger>
+                                                            <DataTrigger Binding="{Binding IsRevealed}" Value="True">
+                                                                <Setter TargetName="Bd" Property="Opacity" Value="0.5"/>
+                                                            </DataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding IsRevealed}" Value="True"/>
+                                                                    <Condition Binding="{Binding IsCorrect}" Value="True"/>
+                                                                </MultiDataTrigger.Conditions>
+                                                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource SuccessBrush}"/>
+                                                                <Setter TargetName="Bd" Property="Background" Value="#20198754"/>
+                                                                <Setter TargetName="Bd" Property="Opacity" Value="1"/>
+                                                            </MultiDataTrigger>
+                                                            <MultiDataTrigger>
+                                                                <MultiDataTrigger.Conditions>
+                                                                    <Condition Binding="{Binding IsRevealed}" Value="True"/>
+                                                                    <Condition Binding="{Binding IsSelected}" Value="True"/>
+                                                                    <Condition Binding="{Binding IsCorrect}" Value="False"/>
+                                                                </MultiDataTrigger.Conditions>
+                                                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource DangerBrush}"/>
+                                                                <Setter TargetName="Bd" Property="Background" Value="#20dc3545"/>
+                                                                <Setter TargetName="Bd" Property="Opacity" Value="1"/>
+                                                            </MultiDataTrigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                    <TextBlock Text="{Binding Text}" TextWrapping="Wrap"/>
+                                </Button>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -486,29 +732,90 @@
                             </TextBlock>
                         </Border>
 
-                        <!-- Show correct answer if wrong -->
-                        <TextBlock Margin="0,8,0,0" FontSize="14" HorizontalAlignment="Center"
-                                   Foreground="{DynamicResource SecondaryTextBrush}">
+                        <!-- Example after answer (3.6) -->
+                        <TextBlock Margin="0,8,0,0" FontSize="13" FontStyle="Italic"
+                                   HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Text="{Binding CurrentWord.Example}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding McqWasCorrect}" Value="True">
+                                        <DataTrigger Binding="{Binding CurrentWord.Example}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding CurrentWord.Example}" Value="">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </TextBlock.Style>
-                            <Run Text="Правильный ответ: "/>
-                            <Run Text="{Binding CurrentWord.Translation, Mode=OneWay}" FontWeight="Bold"
-                                 Foreground="{DynamicResource SuccessBrush}"/>
                         </TextBlock>
+
+                        <!-- Error context block (#3) -->
+                        <Border CornerRadius="8" Padding="10,8" Margin="0,8,0,0"
+                                Background="{DynamicResource MainBackgroundBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                Visibility="{Binding ShowErrorContext, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding ErrorContextTranscription}"
+                                           FontSize="16" FontFamily="Arial"
+                                           Foreground="{DynamicResource PrimaryAccentBrush}"
+                                           HorizontalAlignment="Center" Margin="0,0,0,4">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ErrorContextTranscription}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ErrorContextTranscription}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="{Binding ErrorContextExample}"
+                                           FontSize="13" FontStyle="Italic" TextWrapping="Wrap"
+                                           TextAlignment="Center"
+                                           Foreground="{DynamicResource SecondaryTextBrush}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ErrorContextExample}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ErrorContextExample}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <Button Command="{Binding SpeakWordCommand}" 
+                                        ToolTip="Озвучить слово"
+                                        Background="Transparent" BorderThickness="0" 
+                                        Cursor="Hand" Margin="0,4,0,0"
+                                        HorizontalAlignment="Center">
+                                    <TextBlock Text="🔊 Послушать" FontSize="13" Foreground="{DynamicResource PrimaryAccentBrush}"/>
+                                </Button>
+                            </StackPanel>
+                        </Border>
 
                         <Button Content="Далее →" Command="{Binding NextMcqWordCommand}"
                                 Style="{StaticResource PrimaryButton}" 
                                 HorizontalAlignment="Center" Margin="0,12,0,0"
                                 Width="160" Height="40" FontSize="15"/>
                     </StackPanel>
+
+                    <!-- Skip button (3.5) -->
+                    <Button Content="Пропустить (Esc)" Command="{Binding SkipWordCommand}"
+                            Background="Transparent" BorderThickness="0" Cursor="Hand"
+                            Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"
+                            HorizontalAlignment="Center" Margin="0,8,0,0"
+                            Visibility="{Binding McqAnswered, Converter={StaticResource InverseBoolToVis}}"/>
                 </StackPanel>
             </Grid>
 
@@ -533,12 +840,19 @@
                     <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" CornerRadius="16" Padding="24"
                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,20">
                         <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Text="{Binding CurrentWord.OriginalWord}" 
+                            <TextBlock Text="{Binding DisplayedText}" 
                                        FontSize="32" FontWeight="Bold" HorizontalAlignment="Center"
                                        Foreground="{DynamicResource PrimaryTextBrush}"/>
-                            <TextBlock Text="{Binding CurrentWord.Transcription}"
+                            <TextBlock Text="{Binding DisplayedTranscription}"
                                        FontSize="18" Foreground="{DynamicResource PrimaryAccentBrush}"
                                        HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                            <Button Command="{Binding SpeakWordCommand}" 
+                                    ToolTip="Озвучить слово"
+                                    Background="Transparent" BorderThickness="0" 
+                                    Cursor="Hand" Margin="0,6,0,0"
+                                    HorizontalAlignment="Center">
+                                <TextBlock Text="🔊" FontSize="20"/>
+                            </Button>
                         </StackPanel>
                     </Border>
 
@@ -577,6 +891,9 @@
                                         <DataTrigger Binding="{Binding TypingWasCorrect}" Value="True">
                                             <Setter Property="Background" Value="#20198754"/>
                                         </DataTrigger>
+                                        <DataTrigger Binding="{Binding TypingWasAlmostCorrect}" Value="True">
+                                            <Setter Property="Background" Value="#200066FF"/>
+                                        </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
@@ -589,6 +906,10 @@
                                             <DataTrigger Binding="{Binding TypingWasCorrect}" Value="True">
                                                 <Setter Property="Text" Value="✅ Правильно!"/>
                                                 <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding TypingWasAlmostCorrect}" Value="True">
+                                                <Setter Property="Text" Value="⚡ Почти правильно!"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource PrimaryAccentBrush}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -610,15 +931,284 @@
                                 </Style>
                             </TextBlock.Style>
                             <Run Text="Правильный ответ: "/>
-                            <Run Text="{Binding CurrentWord.Translation, Mode=OneWay}" FontWeight="Bold"
+                            <Run Text="{Binding CorrectAnswerDisplay, Mode=OneWay}" FontWeight="Bold"
                                  Foreground="{DynamicResource SuccessBrush}"/>
                         </TextBlock>
+
+                        <!-- Example after answer (3.6) -->
+                        <TextBlock Margin="0,8,0,0" FontSize="13" FontStyle="Italic"
+                                   HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   Text="{Binding CurrentWord.Example}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CurrentWord.Example}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding CurrentWord.Example}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                        <!-- Error context block (#3) -->
+                        <Border CornerRadius="8" Padding="10,8" Margin="0,8,0,0"
+                                Background="{DynamicResource MainBackgroundBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                Visibility="{Binding ShowErrorContext, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding ErrorContextTranscription}"
+                                           FontSize="16" FontFamily="Arial"
+                                           Foreground="{DynamicResource PrimaryAccentBrush}"
+                                           HorizontalAlignment="Center" Margin="0,0,0,4">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ErrorContextTranscription}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ErrorContextTranscription}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <TextBlock Text="{Binding ErrorContextExample}"
+                                           FontSize="13" FontStyle="Italic" TextWrapping="Wrap"
+                                           TextAlignment="Center"
+                                           Foreground="{DynamicResource SecondaryTextBrush}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ErrorContextExample}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ErrorContextExample}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                                <Button Command="{Binding SpeakWordCommand}" 
+                                        ToolTip="Озвучить слово"
+                                        Background="Transparent" BorderThickness="0" 
+                                        Cursor="Hand" Margin="0,4,0,0"
+                                        HorizontalAlignment="Center">
+                                    <TextBlock Text="🔊 Послушать" FontSize="13" Foreground="{DynamicResource PrimaryAccentBrush}"/>
+                                </Button>
+                            </StackPanel>
+                        </Border>
 
                         <Button Content="Далее →" Command="{Binding NextTypingWordCommand}"
                                 Style="{StaticResource PrimaryButton}" 
                                 HorizontalAlignment="Center" Margin="0,12,0,0"
                                 Width="160" Height="40" FontSize="15"/>
                     </StackPanel>
+
+                    <!-- Skip button (3.5) -->
+                    <Button Content="Пропустить (Esc)" Command="{Binding SkipWordCommand}"
+                            Background="Transparent" BorderThickness="0" Cursor="Hand"
+                            Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"
+                            HorizontalAlignment="Center" Margin="0,8,0,0"
+                            Visibility="{Binding TypingAnswered, Converter={StaticResource InverseBoolToVis}}"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ====== LISTENING MODE ====== -->
+            <Grid Grid.Row="1">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsExerciseTypeChosen}" Value="True"/>
+                                    <Condition Binding="{Binding IsListeningMode}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="450">
+                    <!-- Audio prompt -->
+                    <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" CornerRadius="16" Padding="24"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,20">
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="4" Color="Black" Opacity="0.2" BlurRadius="20"/>
+                        </Border.Effect>
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="🎧" FontSize="48" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Прослушайте и напишите слово" FontSize="16"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                            <Button Command="{Binding ReplayListeningCommand}" 
+                                    ToolTip="Повторить озвучку"
+                                    Background="Transparent" BorderThickness="0" 
+                                    Cursor="Hand" Margin="0,10,0,0"
+                                    HorizontalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔊" FontSize="22" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Повторить" FontSize="16" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource PrimaryAccentBrush}"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Input -->
+                    <TextBox Text="{Binding ListeningTypedAnswer, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="20" Padding="12" HorizontalContentAlignment="Center"
+                             Background="{DynamicResource SecondaryMainBackgroundBrush}"
+                             Foreground="{DynamicResource PrimaryTextBrush}"
+                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="2"
+                             IsEnabled="{Binding ListeningAnswered, Converter={StaticResource InverseBoolConverter}}">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ListeningWasCorrect}" Value="True">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+
+                    <!-- Check button -->
+                    <Button Content="Проверить" Command="{Binding CheckListeningCommand}"
+                            Style="{StaticResource PrimaryButton}"
+                            HorizontalAlignment="Center" Margin="0,12,0,0"
+                            Width="180" Height="44" FontSize="16"
+                            Visibility="{Binding ListeningAnswered, Converter={StaticResource InverseBoolToVis}}"/>
+
+                    <!-- Listening Feedback -->
+                    <StackPanel Margin="0,16,0,0" Visibility="{Binding ListeningAnswered, Converter={StaticResource BoolToVis}}">
+                        <Border CornerRadius="10" Padding="12,8" HorizontalAlignment="Center">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="#20dc3545"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ListeningWasCorrect}" Value="True">
+                                            <Setter Property="Background" Value="#20198754"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding ListeningWasAlmostCorrect}" Value="True">
+                                            <Setter Property="Background" Value="#200066FF"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Text" Value="❌ Неверно"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ListeningWasCorrect}" Value="True">
+                                                <Setter Property="Text" Value="✅ Правильно!"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding ListeningWasAlmostCorrect}" Value="True">
+                                                <Setter Property="Text" Value="⚡ Почти правильно!"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Border>
+
+                        <!-- Show correct answer if wrong -->
+                        <TextBlock Margin="0,8,0,0" FontSize="14" HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource SecondaryTextBrush}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ListeningWasCorrect}" Value="True">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                            <Run Text="Правильный ответ: "/>
+                            <Run Text="{Binding CurrentWord.OriginalWord, Mode=OneWay}" FontWeight="Bold"
+                                 Foreground="{DynamicResource SuccessBrush}"/>
+                        </TextBlock>
+
+                        <!-- Transcription after answer -->
+                        <TextBlock Text="{Binding CurrentWord.Transcription}"
+                                   FontSize="16" FontFamily="Arial"
+                                   Foreground="{DynamicResource PrimaryAccentBrush}"
+                                   HorizontalAlignment="Center" Margin="0,4,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CurrentWord.Transcription}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding CurrentWord.Transcription}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                        <!-- Translation hint -->
+                        <TextBlock Margin="0,4,0,0" FontSize="13" HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource SecondaryTextBrush}">
+                            <Run Text="Перевод: "/>
+                            <Run Text="{Binding CurrentWord.Translation, Mode=OneWay}" FontStyle="Italic"/>
+                        </TextBlock>
+
+                        <!-- Error context block (#3) -->
+                        <Border CornerRadius="8" Padding="10,8" Margin="0,8,0,0"
+                                Background="{DynamicResource MainBackgroundBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                Visibility="{Binding ShowErrorContext, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding ErrorContextExample}"
+                                           FontSize="13" FontStyle="Italic" TextWrapping="Wrap"
+                                           TextAlignment="Center"
+                                           Foreground="{DynamicResource SecondaryTextBrush}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ErrorContextExample}" Value="{x:Null}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding ErrorContextExample}" Value="">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+
+                        <Button Content="Далее →" Command="{Binding NextListeningWordCommand}"
+                                Style="{StaticResource PrimaryButton}" 
+                                HorizontalAlignment="Center" Margin="0,12,0,0"
+                                Width="160" Height="40" FontSize="15"/>
+                    </StackPanel>
+
+                    <!-- Skip button -->
+                    <Button Content="Пропустить (Esc)" Command="{Binding SkipWordCommand}"
+                            Background="Transparent" BorderThickness="0" Cursor="Hand"
+                            Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"
+                            HorizontalAlignment="Center" Margin="0,8,0,0"
+                            Visibility="{Binding ListeningAnswered, Converter={StaticResource InverseBoolToVis}}"/>
                 </StackPanel>
             </Grid>
 

@@ -96,6 +96,8 @@ namespace LearningTrainer.Services
         Task WipeAndStoreRulesAsync(List<Rule> rulesFromServer);
         Task<Dictionary> AddDictionaryAsync(Dictionary dictionary);
         Task<Word> AddWordAsync(Word word);
+        Task<bool> UpdateWordAsync(Word word);
+        Task<(int Added, int Skipped, List<Word> Words)> AddWordsBatchAsync(List<Word> words);
         Task<Rule> AddRuleAsync(Rule rule);
         Task<bool> DeleteWordAsync(int wordId);
         Task<bool> DeleteRuleAsync(int ruleId);

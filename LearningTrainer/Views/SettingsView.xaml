@@ -324,6 +324,21 @@
                                   Margin="0,20,0,0"
                                   Style="{StaticResource ToggleSwitchStyle}"/>
 
+                        <!-- TTS Volume -->
+                        <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,15,0,0">
+                            <StackPanel>
+                                <Grid>
+                                    <TextBlock Text="{DynamicResource Loc.SettingsGen.TtsVolumeLabel}" Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <TextBlock Text="{Binding ElementName=TtsVolumeSlider, Path=Value, StringFormat={}{0:0}}" FontWeight="Bold" Foreground="#3B82F6"/>
+                                        <TextBlock Text="%" FontWeight="Bold" Foreground="#3B82F6"/>
+                                    </StackPanel>
+                                </Grid>
+                                <Slider x:Name="TtsVolumeSlider" Minimum="0" Maximum="100" Value="{Binding TtsVolume}" 
+                                        TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,10,0,0"/>
+                            </StackPanel>
+                        </Border>
+
                         <!-- Show Transcription -->
                         <CheckBox Content="{DynamicResource Loc.SettingsGen.ShowTranscriptionLabel}"
                                   IsChecked="{Binding ShowTranscription}"
