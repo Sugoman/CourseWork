@@ -85,8 +85,25 @@ namespace LearningTrainer.Services
         private void ApplyFont()
         {
             if (CurrentSettings.BaseFontSize <= 0) CurrentSettings.BaseFontSize = 14;
+            double scale = CurrentSettings.BaseFontSize / 14.0;
+
             Application.Current.Resources["BaseFontSize"] = CurrentSettings.BaseFontSize;
             Application.Current.Resources["HeaderFontSize"] = CurrentSettings.BaseFontSize + 6;
+
+            Application.Current.Resources["FontSizeSmall"] = Math.Round(12 * scale);
+            Application.Current.Resources["FontSizeCaption"] = Math.Round(13 * scale);
+            Application.Current.Resources["FontSizeBase"] = Math.Round(14 * scale);
+            Application.Current.Resources["FontSizeBody"] = Math.Round(15 * scale);
+            Application.Current.Resources["FontSizeMedium"] = Math.Round(16 * scale);
+            Application.Current.Resources["FontSizeSubtitle"] = Math.Round(18 * scale);
+            Application.Current.Resources["FontSizeLarge"] = Math.Round(20 * scale);
+            Application.Current.Resources["FontSizeXLarge"] = Math.Round(22 * scale);
+            Application.Current.Resources["FontSizeTitle"] = Math.Round(24 * scale);
+            Application.Current.Resources["FontSizeDisplay3"] = Math.Round(28 * scale);
+            Application.Current.Resources["FontSizeDisplay2"] = Math.Round(32 * scale);
+            Application.Current.Resources["FontSizeDisplay1"] = Math.Round(48 * scale);
+            Application.Current.Resources["FontSizeHuge"] = Math.Round(64 * scale);
+            Application.Current.Resources["FontSizeMega"] = Math.Round(72 * scale);
 
             MarkdownConfigChanged?.Invoke(CurrentMarkdownConfig);
         }

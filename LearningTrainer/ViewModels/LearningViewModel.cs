@@ -338,6 +338,47 @@ namespace LearningTrainer.ViewModels
 
         public ObservableCollection<WordResultDto> DifficultWords { get; } = new();
 
+        // --- Error Review Round (#8) ---
+        private bool _isErrorReviewRound;
+        public bool IsErrorReviewRound
+        {
+            get => _isErrorReviewRound;
+            set => SetProperty(ref _isErrorReviewRound, value);
+        }
+
+        public bool HasDifficultWords => DifficultWords.Count > 0;
+
+        // --- Hint System (#5) ---
+        private int _hintCount;
+        private string _hintText = "";
+        public string HintText
+        {
+            get => _hintText;
+            set => SetProperty(ref _hintText, value);
+        }
+
+        private bool _hintUsed;
+        public bool HintUsed
+        {
+            get => _hintUsed;
+            set => SetProperty(ref _hintUsed, value);
+        }
+
+        // --- Typing Diff (#16) ---
+        private string _typingDiffCorrect = "";
+        public string TypingDiffCorrect
+        {
+            get => _typingDiffCorrect;
+            set => SetProperty(ref _typingDiffCorrect, value);
+        }
+
+        private string _typingDiffUser = "";
+        public string TypingDiffUser
+        {
+            get => _typingDiffUser;
+            set => SetProperty(ref _typingDiffUser, value);
+        }
+
         public ICommand FlipCardCommand { get; }
         public ICommand AnswerCommand { get; }
         public ICommand CloseTabCommand { get; }
@@ -355,6 +396,8 @@ namespace LearningTrainer.ViewModels
         public ICommand CheckListeningCommand { get; }
         public ICommand NextListeningWordCommand { get; }
         public ICommand SetTranslationDirectionCommand { get; }
+        public ICommand ReviewErrorsCommand { get; }
+        public ICommand UseHintCommand { get; }
 
         private int _selectedWordLimit;
         public int SelectedWordLimit
@@ -515,6 +558,16 @@ namespace LearningTrainer.ViewModels
                 }
             );
 
+            ReviewErrorsCommand = new RelayCommand(
+                (param) => StartErrorReviewRound(),
+                (param) => IsSessionComplete && DifficultWords.Count > 0
+            );
+
+            UseHintCommand = new RelayCommand(
+                (param) => UseHint(),
+                (param) => CurrentWord != null && !TypingAnswered && !ListeningAnswered && _hintCount < 3
+            );
+
             _ = LoadSessionAsync();
         }
 
@@ -628,6 +681,11 @@ namespace LearningTrainer.ViewModels
             ErrorContextExample = null;
             ErrorContextTranscription = null;
 
+            // Reset hints and diff
+            ResetHint();
+            TypingDiffCorrect = "";
+            TypingDiffUser = "";
+
             McqAnswered = false;
             McqWasCorrect = false;
             SelectedMcqOption = null;
@@ -656,6 +714,7 @@ namespace LearningTrainer.ViewModels
             (ReplayListeningCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (SpeakWordCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (SkipWordCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (UseHintCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
         private Func<Word, string> GetMcqDistractorField()
@@ -739,13 +798,16 @@ namespace LearningTrainer.ViewModels
                 {
                     TypingWasCorrect = true;
                     TypingWasAlmostCorrect = false;
-                    await TrackAndSubmitAsync(ResponseQuality.Good);
+                    await TrackAndSubmitAsync(HintUsed ? ResponseQuality.Hard : ResponseQuality.Good);
                 }
                 else
                 {
                     int distance = LevenshteinDistance(userAnswer, correctAnswer);
                     int threshold = Math.Max(1, correctAnswer.Length / 5);
                     bool isAlmostCorrect = distance > 0 && distance <= threshold && correctAnswer.Length >= 3;
+
+                    // Build character-level diff (#16)
+                    BuildTypingDiff(userAnswer, correctAnswer);
 
                     if (isAlmostCorrect)
                     {
@@ -937,6 +999,180 @@ namespace LearningTrainer.ViewModels
             catch { }
 
             IsSessionComplete = true;
+            OnPropertyChanged(nameof(HasDifficultWords));
+            (ReviewErrorsCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (CopyReportCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        // ── #8 Error Review Round ────────────────────────────────────
+
+        private void StartErrorReviewRound()
+        {
+            if (DifficultWords.Count == 0) return;
+
+            IsSessionComplete = false;
+            IsErrorReviewRound = true;
+
+            // Build queue from difficult words
+            var errorWords = _allWords
+                .Where(w => DifficultWords.Any(d => d.WordId == w.Id))
+                .ToList();
+
+            if (errorWords.Count == 0) return;
+
+            _wordsQueue = new Queue<Word>(errorWords.OrderBy(_ => _random.Next()));
+            _totalWordsCount = _wordsQueue.Count;
+            CorrectCount = 0;
+            WrongCount = 0;
+            DifficultWords.Clear();
+
+            // Force flashcard mode for review
+            _isMixedMode = false;
+            ExerciseType = "flashcard";
+            IsExerciseTypeChosen = true;
+
+            CurrentWord = _wordsQueue.Peek();
+            IsFlipped = false;
+            ApplyTranslationDirection();
+            PrepareCurrentExercise();
+
+            _sessionStopwatch.Restart();
+        }
+
+        // ── #5 Hint System ───────────────────────────────────────────
+
+        private void UseHint()
+        {
+            if (CurrentWord == null) return;
+
+            _hintCount++;
+            HintUsed = true;
+            var answer = ExpectedAnswer;
+
+            HintText = _hintCount switch
+            {
+                1 => $"Первая буква: {answer[0]}…",
+                2 => $"Букв: {answer.Length}  ({new string('●', answer.Length)})",
+                3 when !string.IsNullOrEmpty(CurrentWord.Example) => $"Пример: {CurrentWord.Example}",
+                3 => $"Слово: {answer[..Math.Min(answer.Length, answer.Length / 2 + 1)]}…",
+                _ => HintText
+            };
+
+            (UseHintCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        private void ResetHint()
+        {
+            _hintCount = 0;
+            HintText = "";
+            HintUsed = false;
+        }
+
+        // ── #16 Typing Diff ──────────────────────────────────────────
+
+        private void BuildTypingDiff(string userAnswer, string correctAnswer)
+        {
+            // When strings are too different, skip per-character diff
+            int maxLen = Math.Max(userAnswer.Length, correctAnswer.Length);
+            if (maxLen == 0)
+            {
+                TypingDiffCorrect = correctAnswer;
+                TypingDiffUser = userAnswer;
+                return;
+            }
+
+            // Compute LCS to align characters properly
+            var lcs = ComputeLcs(userAnswer.ToLowerInvariant(), correctAnswer.ToLowerInvariant());
+
+            // If similarity is very low, just show plain strings
+            double similarity = (double)lcs.Count / maxLen;
+            if (similarity < 0.3)
+            {
+                TypingDiffUser = userAnswer;
+                TypingDiffCorrect = correctAnswer;
+                return;
+            }
+
+            // Build diff using LCS alignment
+            var diffUser = new System.Text.StringBuilder();
+            var diffCorrect = new System.Text.StringBuilder();
+            var lcsSet = new HashSet<(int, int)>(lcs);
+
+            int ui = 0, ci = 0, li = 0;
+            while (ui < userAnswer.Length || ci < correctAnswer.Length)
+            {
+                if (li < lcs.Count && ui == lcs[li].Item1 && ci == lcs[li].Item2)
+                {
+                    // Matched character
+                    diffUser.Append(userAnswer[ui]);
+                    diffCorrect.Append(correctAnswer[ci]);
+                    ui++; ci++; li++;
+                }
+                else
+                {
+                    // Check if the current user char is part of a future LCS match
+                    bool userInLcs = li < lcs.Count && ui < userAnswer.Length && ui < lcs[li].Item1;
+                    bool correctInLcs = li < lcs.Count && ci < correctAnswer.Length && ci < lcs[li].Item2;
+
+                    if (userInLcs && !correctInLcs)
+                    {
+                        diffUser.Append($"[{userAnswer[ui]}]");
+                        ui++;
+                    }
+                    else if (correctInLcs && !userInLcs)
+                    {
+                        diffCorrect.Append($"[{correctAnswer[ci]}]");
+                        ci++;
+                    }
+                    else
+                    {
+                        if (ui < userAnswer.Length)
+                        {
+                            diffUser.Append($"[{userAnswer[ui]}]");
+                            ui++;
+                        }
+                        if (ci < correctAnswer.Length)
+                        {
+                            diffCorrect.Append($"[{correctAnswer[ci]}]");
+                            ci++;
+                        }
+                    }
+                }
+            }
+
+            TypingDiffUser = diffUser.ToString();
+            TypingDiffCorrect = diffCorrect.ToString();
+        }
+
+        private static List<(int, int)> ComputeLcs(string a, string b)
+        {
+            int m = a.Length, n = b.Length;
+            var dp = new int[m + 1, n + 1];
+
+            for (int i = 1; i <= m; i++)
+                for (int j = 1; j <= n; j++)
+                    dp[i, j] = a[i - 1] == b[j - 1]
+                        ? dp[i - 1, j - 1] + 1
+                        : Math.Max(dp[i - 1, j], dp[i, j - 1]);
+
+            // Backtrack to find matched indices
+            var result = new List<(int, int)>();
+            int x = m, y = n;
+            while (x > 0 && y > 0)
+            {
+                if (a[x - 1] == b[y - 1])
+                {
+                    result.Add((x - 1, y - 1));
+                    x--; y--;
+                }
+                else if (dp[x - 1, y] >= dp[x, y - 1])
+                    x--;
+                else
+                    y--;
+            }
+
+            result.Reverse();
+            return result;
         }
 
         private async Task SkipWordAsync()
