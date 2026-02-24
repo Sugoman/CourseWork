@@ -90,6 +90,11 @@
     <system:String x:Key="Loc.AddWord.AutocorrectionLabel">Возможно, вы имели в виду:</system:String>
     <system:String x:Key="Loc.AddWord.WordTranslateLabel">Перевод</system:String>
     <system:String x:Key="Loc.AddWord.WordExampleLabel">Пример использования (опционально)</system:String>
+    <system:String x:Key="Loc.AddWord.AiTranslateToolTip">ИИ-перевод (Phi-3.5)</system:String>
+    <system:String x:Key="Loc.AddWord.AiExampleToolTip">Сгенерировать пример (ИИ)</system:String>
+    <system:String x:Key="Loc.AddWord.AiTranslateAllToolTip">Перевести все слова через ИИ</system:String>
+    <system:String x:Key="Loc.AddWord.PartOfSpeechLabel">Часть речи</system:String>
+    <system:String x:Key="Loc.AddWord.LanguageLevelLabel">Уровень (CEFR)</system:String>
                                 
                                 <!-- DICTIONARY MANAGER -->
     <system:String x:Key="Loc.DictManager.TotalWordsLabel">Всего слов:</system:String>

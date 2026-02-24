@@ -1,6 +1,8 @@
 using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Models.Features.Ai;
+using Microsoft.Extensions.Configuration;
 using System.Collections.ObjectModel;
 using System.Threading;
 using System.Windows.Input;
@@ -12,8 +14,7 @@ namespace LearningTrainer.ViewModels
         private readonly IDataService _dataService;
         private readonly Dictionary _selectedDictionary;
         private readonly SpellCheckService _spellCheckService;
-        private readonly TranslationService _translationService;
-        private readonly ExternalDictionaryService _externalDictionaryService;
+        private readonly IAiTranslationService _aiService;
         private readonly ObservableCollection<Word> _existingWords;
 
         /// <summary>Слово, которое редактируется (null = режим создания).</summary>
@@ -95,6 +96,32 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _isFetchingDetails, value);
         }
 
+        private string _selectedPartOfSpeech;
+        /// <summary>Выбранная часть речи (noun, verb, adjective...). null = авто.</summary>
+        public string SelectedPartOfSpeech
+        {
+            get => _selectedPartOfSpeech;
+            set => SetProperty(ref _selectedPartOfSpeech, value);
+        }
+
+        private string _selectedLanguageLevel = "A2";
+        /// <summary>Уровень CEFR (A1–C2) для генерации примеров.</summary>
+        public string SelectedLanguageLevel
+        {
+            get => _selectedLanguageLevel;
+            set => SetProperty(ref _selectedLanguageLevel, value);
+        }
+
+        public List<string> PartsOfSpeech { get; } = new()
+        {
+            "", "noun", "verb", "adjective", "adverb", "preposition", "pronoun", "conjunction", "phrasal verb"
+        };
+
+        public List<string> LanguageLevels { get; } = new()
+        {
+            "A1", "A2", "B1", "B2", "C1", "C2"
+        };
+
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
         public ICommand DoneCommand { get; }
@@ -121,8 +148,7 @@ namespace LearningTrainer.ViewModels
             _existingWords = existingWords;
             _editingWord = editingWord;
             _spellCheckService = new SpellCheckService(dictionary.LanguageFrom ?? "English");
-            _translationService = new TranslationService();
-            _externalDictionaryService = new ExternalDictionaryService(new System.Net.Http.HttpClient());
+            _aiService = CreateAiService();
 
             if (IsEditMode)
             {
@@ -171,13 +197,15 @@ namespace LearningTrainer.ViewModels
             IsAutoTranslating = true;
             try
             {
-                var result = await _translationService.TranslateAsync(
+                var pos = string.IsNullOrEmpty(SelectedPartOfSpeech) ? null : SelectedPartOfSpeech;
+                var result = await _aiService.TranslateAsync(
                     OriginalWord.Trim(),
                     _selectedDictionary.LanguageFrom ?? "English",
-                    _selectedDictionary.LanguageTo ?? "Russian");
+                    _selectedDictionary.LanguageTo ?? "Russian",
+                    pos);
 
-                if (!string.IsNullOrEmpty(result))
-                    Translation = result;
+                if (result != null && !string.IsNullOrEmpty(result.Translation))
+                    Translation = result.Translation;
                 else
                     EventAggregator.Instance.Publish(ShowNotificationMessage.Info(
                         "Автоперевод", "Не удалось получить перевод"));
@@ -201,20 +229,34 @@ namespace LearningTrainer.ViewModels
             IsFetchingDetails = true;
             try
             {
-                var details = await _externalDictionaryService.GetWordDetailsAsync(OriginalWord.Trim());
-                if (details?.Example != null)
+                var pos = string.IsNullOrEmpty(SelectedPartOfSpeech) ? null : SelectedPartOfSpeech;
+                var examples = await _aiService.GetExamplesAsync(
+                    OriginalWord.Trim(),
+                    _selectedDictionary.LanguageFrom ?? "English",
+                    _selectedDictionary.LanguageTo ?? "Russian",
+                    pos, SelectedLanguageLevel,
+                    count: 1);
+
+                var first = examples.FirstOrDefault();
+                if (first != null)
                 {
-                    SuggestedExample = details.Example;
+                    SuggestedExample = first.Sentence;
                 }
                 else
                 {
                     EventAggregator.Instance.Publish(ShowNotificationMessage.Info(
-                        "Пример", "Пример не найден в словаре"));
+                        "Пример", "ИИ вернул пустой ответ. Попробуйте другое слово."));
                 }
+            }
+            catch (TimeoutException)
+            {
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Пример", "AI-сервис не ответил вовремя. Попробуйте ещё раз."));
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"FetchExample error: {ex.Message}");
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                    "Пример", $"Ошибка: {ex.Message}"));
             }
             finally
             {
@@ -282,6 +324,7 @@ namespace LearningTrainer.ViewModels
                     Suggestion = null;
                     DuplicateWarning = null;
                     SuggestedExample = null;
+                    SelectedPartOfSpeech = null;
 
                     WordSaved?.Invoke();
                 }
@@ -344,6 +387,32 @@ namespace LearningTrainer.ViewModels
             DuplicateWarning = duplicate != null
                 ? $"Слово «{duplicate.OriginalWord}» уже есть в словаре (перевод: {duplicate.Translation})"
                 : null;
+        }
+
+        /// <summary>
+        /// Создаёт IAiTranslationService с fallback на MyMemory + dictionaryapi.dev.
+        /// BaseUrl читается из appsettings.json (AiService:BaseUrl).
+        /// </summary>
+        private static IAiTranslationService CreateAiService()
+        {
+            var baseUrl = "http://localhost:5200";
+            try
+            {
+                var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                    .AddJsonFile("appsettings.json", optional: true)
+                    .Build();
+
+                var configUrl = config["AiService:BaseUrl"];
+                if (!string.IsNullOrWhiteSpace(configUrl))
+                    baseUrl = configUrl;
+            }
+            catch { }
+
+            var ai = new AiTranslationHttpService(baseUrl);
+            var translationFallback = new TranslationService();
+            var exampleFallback = new ExternalDictionaryService(new System.Net.Http.HttpClient());
+            return new AiTranslationWithFallback(ai, translationFallback, exampleFallback);
         }
     }
 }

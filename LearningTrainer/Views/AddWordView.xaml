@@ -80,14 +80,49 @@
                     <Run Text="{Binding Suggestion}" Foreground="{DynamicResource PrimaryAccentBrush}" FontWeight="SemiBold"/>
                 </TextBlock>
 
-                <TextBlock Text="{DynamicResource Loc.AddWord.WordTranslateLabel}" 
+                <!-- Часть речи + Уровень языка -->
+                <Grid Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="{DynamicResource Loc.AddWord.PartOfSpeechLabel}" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   FontWeight="Medium" Margin="0,0,0,5"/>
+                        <Border Style="{StaticResource InputContainerStyle}">
+                            <ComboBox ItemsSource="{Binding PartsOfSpeech}" 
+                                      SelectedItem="{Binding SelectedPartOfSpeech}"
+                                      Foreground="{DynamicResource PrimaryTextBrush}"
+                                      FontSize="{DynamicResource BaseFontSize}"
+                                      Background="Transparent"
+                                      BorderThickness="0"/>
+                        </Border>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="{DynamicResource Loc.AddWord.LanguageLevelLabel}" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   FontWeight="Medium" Margin="0,0,0,5"/>
+                        <Border Style="{StaticResource InputContainerStyle}">
+                            <ComboBox ItemsSource="{Binding LanguageLevels}" 
+                                      SelectedItem="{Binding SelectedLanguageLevel}"
+                                      Foreground="{DynamicResource PrimaryTextBrush}"
+                                      FontSize="{DynamicResource BaseFontSize}"
+                                      Background="Transparent"
+                                      BorderThickness="0"/>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="{DynamicResource Loc.AddWord.WordTranslateLabel}"
                            Foreground="{DynamicResource SecondaryTextBrush}"
                            FontWeight="Medium" Margin="0,0,0,5"/>
 
                 <DockPanel>
                     <Button DockPanel.Dock="Right" 
                             Command="{Binding AutoTranslateCommand}"
-                            ToolTip="Автоперевод (MyMemory API)"
+                            ToolTip="{DynamicResource Loc.AddWord.AiTranslateToolTip}"
                             Cursor="Hand" 
                             Background="Transparent" BorderThickness="0"
                             Margin="8,0,0,0" VerticalAlignment="Center"
@@ -113,7 +148,7 @@
                                FontWeight="Medium" DockPanel.Dock="Left"/>
                     <Button DockPanel.Dock="Right"
                             Command="{Binding FetchExampleCommand}"
-                            ToolTip="Найти пример из словаря (dictionaryapi.dev)"
+                            ToolTip="{DynamicResource Loc.AddWord.AiExampleToolTip}"
                             Cursor="Hand"
                             Background="Transparent" BorderThickness="0"
                             HorizontalAlignment="Right"

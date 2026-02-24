@@ -88,6 +88,11 @@
     <system:String x:Key="Loc.AddWord.AutocorrectionLabel">Perhaps you meant: </system:String>
     <system:String x:Key="Loc.AddWord.WordTranslateLabel">Translate</system:String>
     <system:String x:Key="Loc.AddWord.WordExampleLabel">Example of Use (Optional)</system:String>
+    <system:String x:Key="Loc.AddWord.AiTranslateToolTip">AI Translation (Phi-3.5)</system:String>
+    <system:String x:Key="Loc.AddWord.AiExampleToolTip">Generate example (AI)</system:String>
+    <system:String x:Key="Loc.AddWord.AiTranslateAllToolTip">Translate all words via AI</system:String>
+    <system:String x:Key="Loc.AddWord.PartOfSpeechLabel">Part of Speech</system:String>
+    <system:String x:Key="Loc.AddWord.LanguageLevelLabel">Level (CEFR)</system:String>
 
                                 <!-- DICTIONARY MANAGER -->
     <system:String x:Key="Loc.DictManager.TotalWordsLabel">Total words: </system:String>

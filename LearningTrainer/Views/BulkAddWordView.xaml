@@ -40,9 +40,13 @@
                     <TextBlock Text="Вставьте список слов (каждое слово на новой строке):" 
                                Foreground="{DynamicResource SecondaryTextBrush}"
                                FontWeight="Medium" Margin="0,0,0,5"/>
-                    <TextBlock Text="Формат: слово - перевод (разделители: -, —, =, Tab)" 
-                               Foreground="{DynamicResource TertiaryTextBrush}"
-                               FontSize="12" Margin="0,0,0,10"/>
+                    <TextBlock Foreground="{DynamicResource TertiaryTextBrush}"
+                               FontSize="12" Margin="0,0,0,10"
+                               TextWrapping="Wrap">
+                        <Run Text="Формат: слово - перевод (разделители: -, —, =, Tab)"/>
+                        <LineBreak/>
+                        <Run Text="Или просто слова — перевод через ИИ 🤖"/>
+                    </TextBlock>
 
                     <Border Style="{StaticResource InputContainerStyle}">
                         <TextBox Text="{Binding RawText, UpdateSourceTrigger=PropertyChanged}" 
@@ -138,6 +142,18 @@
                                 Command="{Binding BackToInputCommand}"
                                 Style="{StaticResource BaseButton}" 
                                 Width="100" Margin="0,0,10,0"/>
+                        <Button Command="{Binding AutoTranslateAllCommand}"
+                                ToolTip="{DynamicResource Loc.AddWord.AiTranslateAllToolTip}"
+                                Style="{StaticResource BaseButton}"
+                                Width="160" Margin="0,0,10,0"
+                                IsEnabled="{Binding IsAutoTranslating, Converter={StaticResource InvertedBooleanToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🤖 ИИ-перевод" 
+                                           Visibility="{Binding IsAutoTranslating, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
+                                <TextBlock Text="⏳ Перевод..." 
+                                           Visibility="{Binding IsAutoTranslating, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            </StackPanel>
+                        </Button>
                         <Button Content="Готово" 
                                 Command="{Binding DoneCommand}"
                                 Style="{StaticResource BaseButton}" 

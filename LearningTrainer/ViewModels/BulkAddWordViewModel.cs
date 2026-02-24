@@ -1,6 +1,8 @@
 using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Models.Features.Ai;
+using Microsoft.Extensions.Configuration;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
@@ -42,6 +44,7 @@ namespace LearningTrainer.ViewModels
         private readonly IDataService _dataService;
         private readonly Dictionary _selectedDictionary;
         private readonly ObservableCollection<Word> _existingWords;
+        private readonly IAiTranslationService _aiService;
 
         private string _rawText = "";
         public string RawText
@@ -66,6 +69,13 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _isSaving, value);
         }
 
+        private bool _isAutoTranslating;
+        public bool IsAutoTranslating
+        {
+            get => _isAutoTranslating;
+            set => SetProperty(ref _isAutoTranslating, value);
+        }
+
         private string _resultMessage;
         public string ResultMessage
         {
@@ -82,17 +92,20 @@ namespace LearningTrainer.ViewModels
         public ICommand RemoveEntryCommand { get; }
         public ICommand BackToInputCommand { get; }
         public ICommand DoneCommand { get; }
+        public ICommand AutoTranslateAllCommand { get; }
 
         public BulkAddWordViewModel(IDataService dataService, Dictionary dictionary, ObservableCollection<Word> existingWords)
         {
             _dataService = dataService;
             _selectedDictionary = dictionary;
             _existingWords = existingWords;
+            _aiService = CreateAiService();
 
             SetLocalizedTitle("Loc.Tab.BulkAdd", $": {dictionary.Name}");
 
             ParseCommand = new RelayCommand((p) => ParseText());
             SaveAllCommand = new RelayCommand(async (p) => await SaveAllAsync());
+            AutoTranslateAllCommand = new RelayCommand(async (p) => await AutoTranslateAllAsync());
             RemoveEntryCommand = new RelayCommand((p) =>
             {
                 if (p is BulkWordEntry entry)
@@ -143,7 +156,11 @@ namespace LearningTrainer.ViewModels
                 }
 
                 if (word == null || translation == null)
-                    continue;
+                {
+                    // Строка без разделителя — считаем целую строку словом (перевод через ИИ)
+                    word = trimmed;
+                    translation = "";
+                }
 
                 var entry = new BulkWordEntry
                 {
@@ -207,6 +224,83 @@ namespace LearningTrainer.ViewModels
             {
                 IsSaving = false;
             }
+        }
+
+        /// <summary>
+        /// Переводит через ИИ все слова, у которых пустой перевод.
+        /// </summary>
+        private async Task AutoTranslateAllAsync()
+        {
+            var untranslated = ParsedWords
+                .Where(w => string.IsNullOrWhiteSpace(w.Translation) && !string.IsNullOrWhiteSpace(w.OriginalWord))
+                .ToList();
+
+            if (untranslated.Count == 0)
+            {
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Info(
+                    "ИИ-перевод", "Все слова уже имеют перевод."));
+                return;
+            }
+
+            IsAutoTranslating = true;
+            int translated = 0;
+            try
+            {
+                var langFrom = _selectedDictionary.LanguageFrom ?? "English";
+                var langTo = _selectedDictionary.LanguageTo ?? "Russian";
+
+                foreach (var entry in untranslated)
+                {
+                    try
+                    {
+                        var result = await _aiService.TranslateAsync(entry.OriginalWord.Trim(), langFrom, langTo);
+                        if (result != null && !string.IsNullOrWhiteSpace(result.Translation))
+                        {
+                            entry.Translation = result.Translation;
+                            translated++;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"AI translate failed for '{entry.OriginalWord}': {ex.Message}");
+                    }
+                }
+
+                OnPropertyChanged(nameof(ValidCount));
+
+                if (translated > 0)
+                    EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
+                        "ИИ-перевод", $"Переведено {translated} из {untranslated.Count} слов"));
+                else
+                    EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
+                        "ИИ-перевод", "Не удалось перевести слова. Проверьте доступность AI-сервиса."));
+            }
+            finally
+            {
+                IsAutoTranslating = false;
+            }
+        }
+
+        private static IAiTranslationService CreateAiService()
+        {
+            var baseUrl = "http://localhost:5200";
+            try
+            {
+                var config = new ConfigurationBuilder()
+                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                    .AddJsonFile("appsettings.json", optional: true)
+                    .Build();
+
+                var configUrl = config["AiService:BaseUrl"];
+                if (!string.IsNullOrWhiteSpace(configUrl))
+                    baseUrl = configUrl;
+            }
+            catch { }
+
+            var ai = new AiTranslationHttpService(baseUrl);
+            var translationFallback = new TranslationService();
+            var exampleFallback = new ExternalDictionaryService(new System.Net.Http.HttpClient());
+            return new AiTranslationWithFallback(ai, translationFallback, exampleFallback);
         }
     }
 }
