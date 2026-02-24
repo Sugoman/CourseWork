@@ -20,7 +20,7 @@
         <converters:InvertedBooleanConverter x:Key="InverseBoolConverter"/>
 
         <Style x:Key="McqOptionButton" TargetType="Button">
-            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeMedium}"/>
             <Setter Property="Padding" Value="16,12"/>
             <Setter Property="Margin" Value="0,4"/>
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
@@ -50,7 +50,7 @@
         </Style>
 
         <Style x:Key="ExerciseTypeRadio" TargetType="RadioButton">
-            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeBase}"/>
             <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Margin" Value="4,0"/>
@@ -88,20 +88,20 @@
               VerticalAlignment="Center" HorizontalAlignment="Center"
               Visibility="{Binding IsEmptySession, Converter={StaticResource BoolToVis}}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="420">
-                <TextBlock Text="✓" FontSize="64" HorizontalAlignment="Center"
+                <TextBlock Text="✓" FontSize="{DynamicResource FontSizeHuge}" HorizontalAlignment="Center"
                            Foreground="{DynamicResource SuccessBrush}" FontWeight="Bold"/>
-                <TextBlock Text="Все слова повторены!" FontSize="24" FontWeight="Bold"
+                <TextBlock Text="Все слова повторены!" FontSize="{DynamicResource FontSizeTitle}" FontWeight="Bold"
                            Foreground="{DynamicResource PrimaryTextBrush}" 
                            HorizontalAlignment="Center" Margin="0,12,0,0"/>
                 <TextBlock Text="На данный момент нет слов, требующих повторения. Вы можете вернуться позже или начать тренировку со всеми словами досрочно."
-                           FontSize="14" TextWrapping="Wrap" TextAlignment="Center"
+                           FontSize="{DynamicResource FontSizeBase}" TextWrapping="Wrap" TextAlignment="Center"
                            Foreground="{DynamicResource SecondaryTextBrush}"
                            HorizontalAlignment="Center" Margin="0,12,0,24"/>
 
                 <Button Content="Начать досрочно" 
                         Command="{Binding StartEarlyCommand}"
                         HorizontalAlignment="Center"
-                        Width="220" Height="44" FontSize="15"
+                        Width="220" Height="44" FontSize="{DynamicResource FontSizeBody}"
                         Margin="0,0,0,10">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
@@ -119,7 +119,7 @@
                         Command="{Binding CloseTabCommand}" 
                         Style="{StaticResource BaseButton}" 
                         HorizontalAlignment="Center"
-                        Width="220" Height="40" FontSize="14"/>
+                        Width="220" Height="40" FontSize="{DynamicResource FontSizeBase}"/>
             </StackPanel>
         </Grid>
 
@@ -160,24 +160,24 @@
                 </ScrollViewer.Resources>
                 <StackPanel HorizontalAlignment="Center" Margin="20">
                     <!-- Result Icon -->
-                    <TextBlock Text="{Binding ResultEmoji}" FontSize="72" HorizontalAlignment="Center"
+                    <TextBlock Text="{Binding ResultEmoji}" FontSize="{DynamicResource FontSizeMega}" HorizontalAlignment="Center"
                                Foreground="{DynamicResource PrimaryAccentBrush}"/>
                     <TextBlock Text="{Binding ResultMessage}"
-                               FontSize="28" FontWeight="Bold" 
+                               FontSize="{DynamicResource FontSizeDisplay3}" FontWeight="Bold" 
                                Foreground="{DynamicResource PrimaryTextBrush}"
                                HorizontalAlignment="Center"
                                Margin="0,8,0,0"/>
 
                     <!-- Stats cards -->
-                    <UniformGrid Columns="4" Margin="0,24,0,0" HorizontalAlignment="Center" MaxWidth="520">
+                    <UniformGrid Columns="4" Margin="0,24,0,0" HorizontalAlignment="Center" MaxWidth="700">
                         <!-- Total -->
                         <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
                                 CornerRadius="10" Margin="4" Padding="16,12"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <StackPanel HorizontalAlignment="Center">
-                                <TextBlock Text="{Binding TotalWordsCount}" FontSize="28" FontWeight="Bold"
+                                <TextBlock Text="{Binding TotalWordsCount}" FontSize="{DynamicResource FontSizeDisplay3}" FontWeight="Bold"
                                            Foreground="{DynamicResource PrimaryAccentBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Всего" FontSize="12"
+                                <TextBlock Text="Всего" FontSize="{DynamicResource FontSizeSmall}"
                                            Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Border>
@@ -186,9 +186,9 @@
                                 CornerRadius="10" Margin="4" Padding="16,12"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <StackPanel HorizontalAlignment="Center">
-                                <TextBlock Text="{Binding CorrectCount}" FontSize="28" FontWeight="Bold"
+                                <TextBlock Text="{Binding CorrectCount}" FontSize="{DynamicResource FontSizeDisplay3}" FontWeight="Bold"
                                            Foreground="{DynamicResource SuccessBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Верно" FontSize="12"
+                                <TextBlock Text="Верно" FontSize="{DynamicResource FontSizeSmall}"
                                            Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Border>
@@ -197,9 +197,9 @@
                                 CornerRadius="10" Margin="4" Padding="16,12"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <StackPanel HorizontalAlignment="Center">
-                                <TextBlock Text="{Binding WrongCount}" FontSize="28" FontWeight="Bold"
+                                <TextBlock Text="{Binding WrongCount}" FontSize="{DynamicResource FontSizeDisplay3}" FontWeight="Bold"
                                            Foreground="{DynamicResource DangerBrush}" HorizontalAlignment="Center"/>
-                                <TextBlock Text="Ошибки" FontSize="12"
+                                <TextBlock Text="Ошибки" FontSize="{DynamicResource FontSizeSmall}"
                                            Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Border>
@@ -208,10 +208,10 @@
                                 CornerRadius="10" Margin="4" Padding="12,12"
                                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                             <StackPanel HorizontalAlignment="Center">
-                                <TextBlock Text="{Binding SessionDuration}" FontSize="16" FontWeight="Bold"
+                                <TextBlock Text="{Binding SessionDuration}" FontSize="{DynamicResource FontSizeMedium}" FontWeight="Bold"
                                            Foreground="{DynamicResource PrimaryTextBrush}" HorizontalAlignment="Center"
-                                           TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="Время" FontSize="12"
+                                           TextWrapping="Wrap" TextAlignment="Center"/>
+                                <TextBlock Text="Время" FontSize="{DynamicResource FontSizeSmall}"
                                            Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"/>
                             </StackPanel>
                         </Border>
@@ -220,9 +220,9 @@
                     <!-- Accuracy bar -->
                     <StackPanel Margin="0,20,0,0" HorizontalAlignment="Center" Width="400">
                         <Grid>
-                            <TextBlock Text="Точность" FontSize="14" 
+                            <TextBlock Text="Точность" FontSize="{DynamicResource FontSizeBase}" 
                                        Foreground="{DynamicResource SecondaryTextBrush}"/>
-                            <TextBlock HorizontalAlignment="Right" FontSize="14" FontWeight="SemiBold"
+                            <TextBlock HorizontalAlignment="Right" FontSize="{DynamicResource FontSizeBase}" FontWeight="SemiBold"
                                        Foreground="{DynamicResource PrimaryTextBrush}"
                                        Text="{Binding AccuracyPercent, StringFormat={}{0:0}%}"/>
                         </Grid>
@@ -246,7 +246,7 @@
                                 </Style.Triggers>
                             </Style>
                         </StackPanel.Style>
-                        <TextBlock Text="Слова с ошибками:" FontSize="14" FontWeight="SemiBold"
+                        <TextBlock Text="Слова с ошибками:" FontSize="{DynamicResource FontSizeBase}" FontWeight="SemiBold"
                                    Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,8"/>
                         <ItemsControl ItemsSource="{Binding DifficultWords}">
                             <ItemsControl.ItemTemplate>
@@ -254,7 +254,7 @@
                                     <Border Background="{DynamicResource SecondaryMainBackgroundBrush}"
                                             CornerRadius="6" Margin="0,2" Padding="12,6"
                                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                                        <TextBlock Text="{Binding OriginalWord}" FontSize="14"
+                                        <TextBlock Text="{Binding OriginalWord}" FontSize="{DynamicResource FontSizeBase}"
                                                    Foreground="{DynamicResource DangerBrush}"/>
                                     </Border>
                                 </DataTemplate>
@@ -264,6 +264,17 @@
 
                     <!-- Action buttons -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,24,0,0">
+                        <!-- Review Errors button (#8) -->
+                        <Button Content="  🔁 Повторить ошибки  "
+                                Command="{Binding ReviewErrorsCommand}"
+                                Style="{StaticResource BaseButton}"
+                                Padding="16,10"
+                                MinHeight="40"
+                                Margin="0,0,8,0">
+                            <Button.Visibility>
+                                <Binding Path="HasDifficultWords" Converter="{StaticResource BooleanToVisibilityConverter}"/>
+                            </Button.Visibility>
+                        </Button>
                         <Button Content="  📋 Скопировать отчёт  " 
                                 Command="{Binding CopyReportCommand}" 
                                 Style="{StaticResource BaseButton}" 
@@ -301,12 +312,20 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
+            <!-- Error Review Round banner (#8) -->
+            <Border Grid.Row="0" Background="#200066FF" CornerRadius="8" 
+                    Padding="12,6" Margin="20,8,20,0"
+                    Visibility="{Binding IsErrorReviewRound, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="🔁 Бонусный раунд — повторение ошибок" FontSize="{DynamicResource FontSizeBase}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource PrimaryAccentBrush}" HorizontalAlignment="Center"/>
+            </Border>
+
             <!-- Session progress bar -->
             <StackPanel Grid.Row="0" Margin="20,12,20,4"
                         Visibility="{Binding IsExerciseTypeChosen, Converter={StaticResource BoolToVis}}">
                 <Grid Margin="0,0,0,4">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}">
+                        <TextBlock FontSize="{DynamicResource FontSizeCaption}" Foreground="{DynamicResource SecondaryTextBrush}">
                             <Run Text="{Binding CompletedWordsCount, Mode=OneWay}"/>
                             <Run Text=" / "/>
                             <Run Text="{Binding TotalWordsCount, Mode=OneWay}"/>
@@ -315,13 +334,13 @@
                         <Border Margin="12,0,0,0" CornerRadius="8" Padding="8,2"
                                 Background="#20FF6B00"
                                 Visibility="{Binding ShowStreak, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                            <TextBlock FontSize="12" Foreground="#FF6B00" FontWeight="SemiBold">
+                            <TextBlock FontSize="{DynamicResource FontSizeSmall}" Foreground="#FF6B00" FontWeight="SemiBold">
                                 <Run Text="🔥"/>
                                 <Run Text="{Binding CurrentStreak, Mode=OneWay}"/>
                             </TextBlock>
                         </Border>
                     </StackPanel>
-                    <TextBlock HorizontalAlignment="Right" FontSize="13"
+                    <TextBlock HorizontalAlignment="Right" FontSize="{DynamicResource FontSizeCaption}"
                                Foreground="{DynamicResource SecondaryTextBrush}"
                                Text="{Binding SessionProgress, Mode=OneWay, StringFormat={}{0:0}%}"/>
                 </Grid>
@@ -341,14 +360,17 @@
             <!-- Exercise type selector (shown before training starts) -->
             <Grid Grid.Row="0" Grid.RowSpan="3" 
                   Visibility="{Binding IsExerciseTypeChosen, Converter={StaticResource InverseBoolToVis}}">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Width="400">
-                    <TextBlock Text="Выберите режим тренировки" FontSize="22" FontWeight="SemiBold"
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                              Padding="0,0,4,0">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="500" Margin="20,20">
+                    <TextBlock Text="Выберите режим тренировки" FontSize="{DynamicResource FontSizeXLarge}" FontWeight="SemiBold"
                                Foreground="{DynamicResource PrimaryTextBrush}" HorizontalAlignment="Center"
+                               TextWrapping="Wrap" TextAlignment="Center"
                                Margin="0,0,0,16"/>
 
                     <!-- Word limit selector (4.3) -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,12">
-                        <TextBlock Text="Слов:" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"
+                        <TextBlock Text="Слов:" FontSize="{DynamicResource FontSizeCaption}" VerticalAlignment="Center" Margin="0,0,8,0"
                                    Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <RadioButton Content="10" GroupName="WordLimit" Style="{StaticResource ExerciseTypeRadio}"
                                      Command="{Binding SetWordLimitCommand}" CommandParameter="10"/>
@@ -363,7 +385,7 @@
 
                     <!-- Translation direction selector -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,20">
-                        <TextBlock Text="Направление:" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"
+                        <TextBlock Text="Направление:" FontSize="{DynamicResource FontSizeCaption}" VerticalAlignment="Center" Margin="0,0,8,0"
                                    Foreground="{DynamicResource SecondaryTextBrush}"/>
                         <RadioButton Content="Прямой" GroupName="TransDir" Style="{StaticResource ExerciseTypeRadio}"
                                      IsChecked="True"
@@ -382,10 +404,10 @@
                             </Style>
                         </Button.Style>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🃏" FontSize="22" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="🃏" FontSize="{DynamicResource FontSizeXLarge}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Карточки" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Переверните карточку и оцените себя" FontSize="12" Opacity="0.6"/>
+                                <TextBlock Text="Карточки" FontSize="{DynamicResource FontSizeMedium}" FontWeight="SemiBold"/>
+                                <TextBlock Text="Переверните карточку и оцените себя" FontSize="{DynamicResource FontSizeSmall}" Opacity="0.6"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -398,10 +420,10 @@
                             </Style>
                         </Button.Style>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="📝" FontSize="22" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="📝" FontSize="{DynamicResource FontSizeXLarge}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Тест" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Выберите правильный перевод из 4 вариантов" FontSize="12" Opacity="0.6"/>
+                                <TextBlock Text="Тест" FontSize="{DynamicResource FontSizeMedium}" FontWeight="SemiBold"/>
+                                <TextBlock Text="Выберите правильный перевод из 4 вариантов" FontSize="{DynamicResource FontSizeSmall}" Opacity="0.6"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -414,10 +436,10 @@
                             </Style>
                         </Button.Style>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="⌨️" FontSize="22" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="⌨️" FontSize="{DynamicResource FontSizeXLarge}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Ввод" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Напишите перевод самостоятельно" FontSize="12" Opacity="0.6"/>
+                                <TextBlock Text="Ввод" FontSize="{DynamicResource FontSizeMedium}" FontWeight="SemiBold"/>
+                                <TextBlock Text="Напишите перевод самостоятельно" FontSize="{DynamicResource FontSizeSmall}" Opacity="0.6"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -431,10 +453,10 @@
                             </Style>
                         </Button.Style>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🎲" FontSize="22" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="🎲" FontSize="{DynamicResource FontSizeXLarge}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Смешанный" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Тип упражнения меняется для каждого слова" FontSize="12" Opacity="0.6"/>
+                                <TextBlock Text="Смешанный" FontSize="{DynamicResource FontSizeMedium}" FontWeight="SemiBold"/>
+                                <TextBlock Text="Тип упражнения меняется для каждого слова" FontSize="{DynamicResource FontSizeSmall}" Opacity="0.6"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
@@ -448,14 +470,15 @@
                             </Style>
                         </Button.Style>
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="🎧" FontSize="22" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="🎧" FontSize="{DynamicResource FontSizeXLarge}" Margin="0,0,8,0" VerticalAlignment="Center"/>
                             <StackPanel VerticalAlignment="Center">
-                                <TextBlock Text="Аудирование" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Услышьте слово и напишите его" FontSize="12" Opacity="0.6"/>
+                                <TextBlock Text="Аудирование" FontSize="{DynamicResource FontSizeMedium}" FontWeight="SemiBold"/>
+                                <TextBlock Text="Услышьте слово и напишите его" FontSize="{DynamicResource FontSizeSmall}" Opacity="0.6"/>
                             </StackPanel>
                         </StackPanel>
                     </Button>
                 </StackPanel>
+                </ScrollViewer>
             </Grid>
 
             <!-- ====== FLASHCARD MODE ====== -->
@@ -477,7 +500,7 @@
                 <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Width="400" Height="250">
                     <Grid.Resources>
                         <Style TargetType="TextBlock" x:Key="CardTextStyle">
-                            <Setter Property="FontSize" Value="32"/>
+                            <Setter Property="FontSize" Value="{DynamicResource FontSizeDisplay2}"/>
                             <Setter Property="FontWeight" Value="Bold"/>
                             <Setter Property="HorizontalAlignment" Value="Center"/>
                             <Setter Property="VerticalAlignment" Value="Center"/>
@@ -525,7 +548,7 @@
                         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                             <TextBlock Text="{Binding ExpectedAnswer}" Style="{StaticResource CardTextStyle}" Foreground="White"/>
                             <TextBlock Text="{Binding CurrentWord.Example}"
-                                       FontSize="14" FontStyle="Italic" Foreground="White" Opacity="0.85"
+                                       FontSize="{DynamicResource FontSizeBase}" FontStyle="Italic" Foreground="White" Opacity="0.85"
                                        HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"
                                        Margin="10,10,10,0" MaxWidth="360">
                                 <TextBlock.Style>
@@ -588,14 +611,14 @@
                                        Style="{StaticResource CardTextStyle}"
                                        Foreground="{DynamicResource PrimaryTextBrush}"/>
                             <TextBlock Text="{Binding DisplayedTranscription}"
-                                       FontSize="20" Foreground="{DynamicResource PrimaryAccentBrush}"
+                                       FontSize="{DynamicResource FontSizeLarge}" Foreground="{DynamicResource PrimaryAccentBrush}"
                                        FontFamily="Arial" HorizontalAlignment="Center" Margin="0,8,0,0"/>
                             <Button Command="{Binding SpeakWordCommand}" 
                                     ToolTip="Озвучить слово"
                                     Background="Transparent" BorderThickness="0" 
                                     Cursor="Hand" Margin="0,8,0,0"
                                     HorizontalAlignment="Center">
-                                <TextBlock Text="🔊" FontSize="22"/>
+                                <TextBlock Text="🔊" FontSize="{DynamicResource FontSizeXLarge}"/>
                             </Button>
                         </StackPanel>
                     </Border>
@@ -627,17 +650,17 @@
                         </Border.Effect>
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="{Binding DisplayedText}" 
-                                       FontSize="32" FontWeight="Bold" HorizontalAlignment="Center"
+                                       FontSize="{DynamicResource FontSizeDisplay2}" FontWeight="Bold" HorizontalAlignment="Center"
                                        Foreground="{DynamicResource PrimaryTextBrush}"/>
                             <TextBlock Text="{Binding DisplayedTranscription}"
-                                       FontSize="18" Foreground="{DynamicResource PrimaryAccentBrush}"
+                                       FontSize="{DynamicResource FontSizeSubtitle}" Foreground="{DynamicResource PrimaryAccentBrush}"
                                        HorizontalAlignment="Center" Margin="0,6,0,0"/>
                             <Button Command="{Binding SpeakWordCommand}" 
                                     ToolTip="Озвучить слово"
                                     Background="Transparent" BorderThickness="0" 
                                     Cursor="Hand" Margin="0,6,0,0"
                                     HorizontalAlignment="Center">
-                                <TextBlock Text="🔊" FontSize="20"/>
+                                <TextBlock Text="🔊" FontSize="{DynamicResource FontSizeLarge}"/>
                             </Button>
                         </StackPanel>
                     </Border>
@@ -649,7 +672,7 @@
                                 <Button Command="{Binding DataContext.SelectMcqOptionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         CommandParameter="{Binding}"
                                         IsEnabled="{Binding DataContext.McqAnswered, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource InverseBoolConverter}}"
-                                        Cursor="Hand" FontSize="16" Padding="16,12" Margin="0,4"
+                                        Cursor="Hand" FontSize="{DynamicResource FontSizeMedium}" Padding="16,12" Margin="0,4"
                                         HorizontalContentAlignment="Left"
                                         Foreground="{DynamicResource PrimaryTextBrush}">
                                     <Button.Style>
@@ -716,7 +739,7 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
-                            <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center">
+                            <TextBlock FontSize="{DynamicResource FontSizeMedium}" FontWeight="SemiBold" HorizontalAlignment="Center">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Text" Value="❌ Неверно"/>
@@ -733,7 +756,7 @@
                         </Border>
 
                         <!-- Example after answer (3.6) -->
-                        <TextBlock Margin="0,8,0,0" FontSize="13" FontStyle="Italic"
+                        <TextBlock Margin="0,8,0,0" FontSize="{DynamicResource FontSizeCaption}" FontStyle="Italic"
                                    HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"
                                    Foreground="{DynamicResource SecondaryTextBrush}"
                                    Text="{Binding CurrentWord.Example}">
@@ -759,7 +782,7 @@
                                 Visibility="{Binding ShowErrorContext, Converter={StaticResource BoolToVis}}">
                             <StackPanel>
                                 <TextBlock Text="{Binding ErrorContextTranscription}"
-                                           FontSize="16" FontFamily="Arial"
+                                           FontSize="{DynamicResource FontSizeMedium}" FontFamily="Arial"
                                            Foreground="{DynamicResource PrimaryAccentBrush}"
                                            HorizontalAlignment="Center" Margin="0,0,0,4">
                                     <TextBlock.Style>
@@ -777,7 +800,7 @@
                                     </TextBlock.Style>
                                 </TextBlock>
                                 <TextBlock Text="{Binding ErrorContextExample}"
-                                           FontSize="13" FontStyle="Italic" TextWrapping="Wrap"
+                                           FontSize="{DynamicResource FontSizeCaption}" FontStyle="Italic" TextWrapping="Wrap"
                                            TextAlignment="Center"
                                            Foreground="{DynamicResource SecondaryTextBrush}">
                                     <TextBlock.Style>
@@ -799,7 +822,7 @@
                                         Background="Transparent" BorderThickness="0" 
                                         Cursor="Hand" Margin="0,4,0,0"
                                         HorizontalAlignment="Center">
-                                    <TextBlock Text="🔊 Послушать" FontSize="13" Foreground="{DynamicResource PrimaryAccentBrush}"/>
+                                    <TextBlock Text="🔊 Послушать" FontSize="{DynamicResource FontSizeCaption}" Foreground="{DynamicResource PrimaryAccentBrush}"/>
                                 </Button>
                             </StackPanel>
                         </Border>
@@ -807,13 +830,13 @@
                         <Button Content="Далее →" Command="{Binding NextMcqWordCommand}"
                                 Style="{StaticResource PrimaryButton}" 
                                 HorizontalAlignment="Center" Margin="0,12,0,0"
-                                Width="160" Height="40" FontSize="15"/>
+                                Width="160" Height="40" FontSize="{DynamicResource FontSizeBody}"/>
                     </StackPanel>
 
                     <!-- Skip button (3.5) -->
                     <Button Content="Пропустить (Esc)" Command="{Binding SkipWordCommand}"
                             Background="Transparent" BorderThickness="0" Cursor="Hand"
-                            Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"
+                            Foreground="{DynamicResource SecondaryTextBrush}" FontSize="{DynamicResource FontSizeSmall}"
                             HorizontalAlignment="Center" Margin="0,8,0,0"
                             Visibility="{Binding McqAnswered, Converter={StaticResource InverseBoolToVis}}"/>
                 </StackPanel>
@@ -841,24 +864,24 @@
                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,20">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="{Binding DisplayedText}" 
-                                       FontSize="32" FontWeight="Bold" HorizontalAlignment="Center"
+                                       FontSize="{DynamicResource FontSizeDisplay2}" FontWeight="Bold" HorizontalAlignment="Center"
                                        Foreground="{DynamicResource PrimaryTextBrush}"/>
                             <TextBlock Text="{Binding DisplayedTranscription}"
-                                       FontSize="18" Foreground="{DynamicResource PrimaryAccentBrush}"
+                                       FontSize="{DynamicResource FontSizeSubtitle}" Foreground="{DynamicResource PrimaryAccentBrush}"
                                        HorizontalAlignment="Center" Margin="0,6,0,0"/>
                             <Button Command="{Binding SpeakWordCommand}" 
                                     ToolTip="Озвучить слово"
                                     Background="Transparent" BorderThickness="0" 
                                     Cursor="Hand" Margin="0,6,0,0"
                                     HorizontalAlignment="Center">
-                                <TextBlock Text="🔊" FontSize="20"/>
+                                <TextBlock Text="🔊" FontSize="{DynamicResource FontSizeLarge}"/>
                             </Button>
                         </StackPanel>
                     </Border>
 
                     <!-- Input -->
                     <TextBox Text="{Binding TypedAnswer, UpdateSourceTrigger=PropertyChanged}"
-                             FontSize="20" Padding="12" HorizontalContentAlignment="Center"
+                             FontSize="{DynamicResource FontSizeLarge}" Padding="12" HorizontalContentAlignment="Center"
                              Background="{DynamicResource SecondaryMainBackgroundBrush}"
                              Foreground="{DynamicResource PrimaryTextBrush}"
                              BorderBrush="{DynamicResource BorderBrush}" BorderThickness="2"
@@ -874,11 +897,23 @@
                         </TextBox.Style>
                     </TextBox>
 
+                    <!-- Hint (#5) -->
+                    <StackPanel Visibility="{Binding TypingAnswered, Converter={StaticResource InverseBoolToVis}}">
+                        <Button Content="💡 Подсказка" Command="{Binding UseHintCommand}"
+                                Style="{StaticResource BaseButton}"
+                                HorizontalAlignment="Center" Margin="0,8,0,0"
+                                Padding="14,6" FontSize="{DynamicResource FontSizeCaption}" Opacity="0.8"/>
+                        <TextBlock Text="{Binding HintText}" FontSize="{DynamicResource FontSizeBase}" FontStyle="Italic"
+                                   HorizontalAlignment="Center" Margin="0,6,0,0"
+                                   Foreground="{DynamicResource PrimaryAccentBrush}"
+                                   Visibility="{Binding HintUsed, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+
                     <!-- Check button -->
                     <Button Content="Проверить" Command="{Binding CheckTypingCommand}"
                             Style="{StaticResource PrimaryButton}"
                             HorizontalAlignment="Center" Margin="0,12,0,0"
-                            Width="180" Height="44" FontSize="16"
+                            Width="180" Height="44" FontSize="{DynamicResource FontSizeMedium}"
                             Visibility="{Binding TypingAnswered, Converter={StaticResource InverseBoolToVis}}"/>
 
                     <!-- Typing Feedback -->
@@ -897,7 +932,7 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
-                            <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center">
+                            <TextBlock FontSize="{DynamicResource FontSizeMedium}" FontWeight="SemiBold" HorizontalAlignment="Center">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Text" Value="❌ Неверно"/>
@@ -918,7 +953,7 @@
                         </Border>
 
                         <!-- Show correct answer if wrong -->
-                        <TextBlock Margin="0,8,0,0" FontSize="14" HorizontalAlignment="Center"
+                        <TextBlock Margin="0,8,0,0" FontSize="{DynamicResource FontSizeBase}" HorizontalAlignment="Center"
                                    Foreground="{DynamicResource SecondaryTextBrush}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
@@ -935,25 +970,35 @@
                                  Foreground="{DynamicResource SuccessBrush}"/>
                         </TextBlock>
 
-                        <!-- Example after answer (3.6) -->
-                        <TextBlock Margin="0,8,0,0" FontSize="13" FontStyle="Italic"
-                                   HorizontalAlignment="Center" TextWrapping="Wrap" TextAlignment="Center"
-                                   Foreground="{DynamicResource SecondaryTextBrush}"
-                                   Text="{Binding CurrentWord.Example}">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Visible"/>
+                        <!-- Typing Diff (#16) -->
+                        <StackPanel HorizontalAlignment="Center" Margin="0,6,0,0">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding CurrentWord.Example}" Value="{x:Null}">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding CurrentWord.Example}" Value="">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding TypingWasCorrect}" Value="False"/>
+                                                <Condition Binding="{Binding TypingAnswered}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                            </StackPanel.Style>
+                            <TextBlock FontSize="{DynamicResource FontSizeSmall}" Foreground="{DynamicResource SecondaryTextBrush}"
+                                       HorizontalAlignment="Center" Margin="0,0,0,2">
+                                <Run Text="Ваш ввод: "/>
+                                <Run Text="{Binding TypingDiffUser, Mode=OneWay}" Foreground="{DynamicResource DangerBrush}"/>
+                            </TextBlock>
+                            <TextBlock FontSize="{DynamicResource FontSizeSmall}" Foreground="{DynamicResource SecondaryTextBrush}"
+                                       HorizontalAlignment="Center">
+                                <Run Text="Верно:       "/>
+                                <Run Text="{Binding TypingDiffCorrect, Mode=OneWay}" Foreground="{DynamicResource SuccessBrush}"/>
+                            </TextBlock>
+                        </StackPanel>
+
+                       
 
                         <!-- Error context block (#3) -->
                         <Border CornerRadius="8" Padding="10,8" Margin="0,8,0,0"
@@ -962,7 +1007,7 @@
                                 Visibility="{Binding ShowErrorContext, Converter={StaticResource BoolToVis}}">
                             <StackPanel>
                                 <TextBlock Text="{Binding ErrorContextTranscription}"
-                                           FontSize="16" FontFamily="Arial"
+                                           FontSize="{DynamicResource FontSizeMedium}" FontFamily="Arial"
                                            Foreground="{DynamicResource PrimaryAccentBrush}"
                                            HorizontalAlignment="Center" Margin="0,0,0,4">
                                     <TextBlock.Style>
@@ -980,7 +1025,7 @@
                                     </TextBlock.Style>
                                 </TextBlock>
                                 <TextBlock Text="{Binding ErrorContextExample}"
-                                           FontSize="13" FontStyle="Italic" TextWrapping="Wrap"
+                                           FontSize="{DynamicResource FontSizeCaption}" FontStyle="Italic" TextWrapping="Wrap"
                                            TextAlignment="Center"
                                            Foreground="{DynamicResource SecondaryTextBrush}">
                                     <TextBlock.Style>
@@ -1002,7 +1047,7 @@
                                         Background="Transparent" BorderThickness="0" 
                                         Cursor="Hand" Margin="0,4,0,0"
                                         HorizontalAlignment="Center">
-                                    <TextBlock Text="🔊 Послушать" FontSize="13" Foreground="{DynamicResource PrimaryAccentBrush}"/>
+                                    <TextBlock Text="🔊 Послушать" FontSize="{DynamicResource FontSizeCaption}" Foreground="{DynamicResource PrimaryAccentBrush}"/>
                                 </Button>
                             </StackPanel>
                         </Border>
@@ -1010,13 +1055,13 @@
                         <Button Content="Далее →" Command="{Binding NextTypingWordCommand}"
                                 Style="{StaticResource PrimaryButton}" 
                                 HorizontalAlignment="Center" Margin="0,12,0,0"
-                                Width="160" Height="40" FontSize="15"/>
+                                Width="160" Height="40" FontSize="{DynamicResource FontSizeBody}"/>
                     </StackPanel>
 
                     <!-- Skip button (3.5) -->
                     <Button Content="Пропустить (Esc)" Command="{Binding SkipWordCommand}"
                             Background="Transparent" BorderThickness="0" Cursor="Hand"
-                            Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"
+                            Foreground="{DynamicResource SecondaryTextBrush}" FontSize="{DynamicResource FontSizeSmall}"
                             HorizontalAlignment="Center" Margin="0,8,0,0"
                             Visibility="{Binding TypingAnswered, Converter={StaticResource InverseBoolToVis}}"/>
                 </StackPanel>
@@ -1046,8 +1091,8 @@
                             <DropShadowEffect ShadowDepth="4" Color="Black" Opacity="0.2" BlurRadius="20"/>
                         </Border.Effect>
                         <StackPanel HorizontalAlignment="Center">
-                            <TextBlock Text="🎧" FontSize="48" HorizontalAlignment="Center"/>
-                            <TextBlock Text="Прослушайте и напишите слово" FontSize="16"
+                            <TextBlock Text="🎧" FontSize="{DynamicResource FontSizeDisplay1}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Прослушайте и напишите слово" FontSize="{DynamicResource FontSizeMedium}"
                                        Foreground="{DynamicResource SecondaryTextBrush}"
                                        HorizontalAlignment="Center" Margin="0,8,0,0"/>
                             <Button Command="{Binding ReplayListeningCommand}" 
@@ -1056,8 +1101,8 @@
                                     Cursor="Hand" Margin="0,10,0,0"
                                     HorizontalAlignment="Center">
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="🔊" FontSize="22" Margin="0,0,6,0"/>
-                                    <TextBlock Text="Повторить" FontSize="16" VerticalAlignment="Center"
+                                    <TextBlock Text="🔊" FontSize="{DynamicResource FontSizeXLarge}" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Повторить" FontSize="{DynamicResource FontSizeMedium}" VerticalAlignment="Center"
                                                Foreground="{DynamicResource PrimaryAccentBrush}"/>
                                 </StackPanel>
                             </Button>
@@ -1066,7 +1111,7 @@
 
                     <!-- Input -->
                     <TextBox Text="{Binding ListeningTypedAnswer, UpdateSourceTrigger=PropertyChanged}"
-                             FontSize="20" Padding="12" HorizontalContentAlignment="Center"
+                             FontSize="{DynamicResource FontSizeLarge}" Padding="12" HorizontalContentAlignment="Center"
                              Background="{DynamicResource SecondaryMainBackgroundBrush}"
                              Foreground="{DynamicResource PrimaryTextBrush}"
                              BorderBrush="{DynamicResource BorderBrush}" BorderThickness="2"
@@ -1086,7 +1131,7 @@
                     <Button Content="Проверить" Command="{Binding CheckListeningCommand}"
                             Style="{StaticResource PrimaryButton}"
                             HorizontalAlignment="Center" Margin="0,12,0,0"
-                            Width="180" Height="44" FontSize="16"
+                            Width="180" Height="44" FontSize="{DynamicResource FontSizeMedium}"
                             Visibility="{Binding ListeningAnswered, Converter={StaticResource InverseBoolToVis}}"/>
 
                     <!-- Listening Feedback -->
@@ -1105,7 +1150,7 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
-                            <TextBlock FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center">
+                            <TextBlock FontSize="{DynamicResource FontSizeMedium}" FontWeight="SemiBold" HorizontalAlignment="Center">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Text" Value="❌ Неверно"/>
@@ -1126,7 +1171,7 @@
                         </Border>
 
                         <!-- Show correct answer if wrong -->
-                        <TextBlock Margin="0,8,0,0" FontSize="14" HorizontalAlignment="Center"
+                        <TextBlock Margin="0,8,0,0" FontSize="{DynamicResource FontSizeBase}" HorizontalAlignment="Center"
                                    Foreground="{DynamicResource SecondaryTextBrush}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
@@ -1145,7 +1190,7 @@
 
                         <!-- Transcription after answer -->
                         <TextBlock Text="{Binding CurrentWord.Transcription}"
-                                   FontSize="16" FontFamily="Arial"
+                                   FontSize="{DynamicResource FontSizeMedium}" FontFamily="Arial"
                                    Foreground="{DynamicResource PrimaryAccentBrush}"
                                    HorizontalAlignment="Center" Margin="0,4,0,0">
                             <TextBlock.Style>
@@ -1164,7 +1209,7 @@
                         </TextBlock>
 
                         <!-- Translation hint -->
-                        <TextBlock Margin="0,4,0,0" FontSize="13" HorizontalAlignment="Center"
+                        <TextBlock Margin="0,4,0,0" FontSize="{DynamicResource FontSizeCaption}" HorizontalAlignment="Center"
                                    Foreground="{DynamicResource SecondaryTextBrush}">
                             <Run Text="Перевод: "/>
                             <Run Text="{Binding CurrentWord.Translation, Mode=OneWay}" FontStyle="Italic"/>
@@ -1177,7 +1222,7 @@
                                 Visibility="{Binding ShowErrorContext, Converter={StaticResource BoolToVis}}">
                             <StackPanel>
                                 <TextBlock Text="{Binding ErrorContextExample}"
-                                           FontSize="13" FontStyle="Italic" TextWrapping="Wrap"
+                                           FontSize="{DynamicResource FontSizeCaption}" FontStyle="Italic" TextWrapping="Wrap"
                                            TextAlignment="Center"
                                            Foreground="{DynamicResource SecondaryTextBrush}">
                                     <TextBlock.Style>
@@ -1200,13 +1245,13 @@
                         <Button Content="Далее →" Command="{Binding NextListeningWordCommand}"
                                 Style="{StaticResource PrimaryButton}" 
                                 HorizontalAlignment="Center" Margin="0,12,0,0"
-                                Width="160" Height="40" FontSize="15"/>
+                                Width="160" Height="40" FontSize="{DynamicResource FontSizeBody}"/>
                     </StackPanel>
 
                     <!-- Skip button -->
                     <Button Content="Пропустить (Esc)" Command="{Binding SkipWordCommand}"
                             Background="Transparent" BorderThickness="0" Cursor="Hand"
-                            Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12"
+                            Foreground="{DynamicResource SecondaryTextBrush}" FontSize="{DynamicResource FontSizeSmall}"
                             HorizontalAlignment="Center" Margin="0,8,0,0"
                             Visibility="{Binding ListeningAnswered, Converter={StaticResource InverseBoolToVis}}"/>
                 </StackPanel>
@@ -1233,7 +1278,7 @@
 
                 <Button Content="{DynamicResource Loc.Learning.ShowAnswerButton}" 
                         Command="{Binding FlipCardCommand}"
-                        Width="220" Height="48" FontSize="16" Cursor="Hand">
+                        Width="220" Height="48" FontSize="{DynamicResource FontSizeMedium}" Cursor="Hand">
                     <Button.Style>
                         <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
                             <Setter Property="Visibility" Value="Visible"/>
