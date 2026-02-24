@@ -28,6 +28,7 @@ namespace LearningTrainerShared.Context
         public DbSet<Word> Words { get; set; }
         public DbSet<Rule> Rules { get; set; }
         public DbSet<LearningProgress> LearningProgresses { get; set; }
+        public DbSet<GrammarExercise> GrammarExercises { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -49,6 +50,12 @@ namespace LearningTrainerShared.Context
                 .HasOne(lp => lp.Word)
                 .WithMany(w => w.Progress)
                 .HasForeignKey(lp => lp.WordId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GrammarExercise>()
+                .HasOne(ge => ge.Rule)
+                .WithMany(r => r.Exercises)
+                .HasForeignKey(ge => ge.RuleId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

@@ -1,0 +1,272 @@
+@page "/my-content/rule/{Id:int}"
+@using LearningTrainerWeb.Services
+@inject IContentApiService ContentApi
+@inject IAuthService AuthService
+@inject IHtmlSanitizerService HtmlSanitizer
+@inject NavigationManager Navigation
+
+<PageTitle>@(Rule?.Title ?? "Правило") - Ingat</PageTitle>
+
+<div class="container" style="max-width: 900px;">
+    @if (!IsAuthenticated)
+    {
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-lock"></i></div>
+            <h2>Требуется авторизация</h2>
+            <p class="text-muted mb-4">Войдите, чтобы просматривать свои правила</p>
+            <a href="login" class="btn btn-primary btn-lg">
+                <i class="bi bi-box-arrow-in-right me-2"></i> Войти
+            </a>
+        </div>
+    }
+    else if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="text-muted mt-3">Загрузка правила...</p>
+        </div>
+    }
+    else if (Rule == null)
+    {
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--gray-400);"><i class="bi bi-emoji-frown"></i></div>
+            <h2>Правило не найдено</h2>
+            <p class="text-muted mb-4">Возможно, оно было удалено</p>
+            <a href="my-content" class="btn btn-primary">
+                <i class="bi bi-arrow-left me-2"></i> Мой контент
+            </a>
+        </div>
+    }
+    else
+    {
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb" style="background: transparent; padding: 0;">
+                <li class="breadcrumb-item">
+                    <a href="my-content" style="color: var(--primary-600);">
+                        <i class="bi bi-folder2-open me-1"></i> Мой контент
+                    </a>
+                </li>
+                <li class="breadcrumb-item active" style="color: var(--gray-500);">@Rule.Title</li>
+            </ol>
+        </nav>
+
+        <!-- Header -->
+        <div class="card mb-4" style="border-radius: var(--radius-xl); overflow: hidden;">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                    <div>
+                        <h1 class="mb-2" style="color: var(--primary-700);">@Rule.Title</h1>
+                        @if (!string.IsNullOrWhiteSpace(Rule.Description))
+                        {
+                            <p class="text-muted mb-3">@Rule.Description</p>
+                        }
+                        <div class="d-flex gap-2 flex-wrap">
+                            <span class="badge bg-info">@Rule.Category</span>
+                            <span class="badge @GetDifficultyBadgeClass(Rule.DifficultyLevel)">
+                                @GetDifficultyText(Rule.DifficultyLevel)
+                            </span>
+                            <span class="badge @(Rule.IsPublished ? "bg-success" : "bg-secondary")">
+                                @(Rule.IsPublished ? "✔ Опубликовано" : "Черновик")
+                            </span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 text-muted small">
+                        <span><i class="bi bi-star-fill me-1" style="color: var(--accent-yellow);"></i> @Rule.Rating.ToString("F1")</span>
+                        <span><i class="bi bi-download me-1"></i> @Rule.Downloads</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rule Content -->
+        <div class="card mb-4" style="border-radius: var(--radius-lg);">
+            <div class="card-body p-4">
+                <h5 class="d-flex align-items-center gap-2 mb-4">
+                    <i class="bi bi-file-text" style="color: var(--primary-500);"></i>
+                    Содержание
+                </h5>
+                <div class="markdown-content">
+                    @((MarkupString)HtmlSanitizer.Sanitize(Rule.HtmlContent))
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Yourself -->
+        @if (Rule.Exercises != null && Rule.Exercises.Any())
+        {
+            <div class="card mb-4" style="border-radius: var(--radius-lg);">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4 cursor-pointer" @onclick="ToggleQuiz" style="cursor: pointer;">
+                        <h5 class="d-flex align-items-center gap-2 mb-0">
+                            <i class="bi bi-pencil-square" style="color: var(--primary-500);"></i>
+                            Проверь себя
+                            <span class="badge bg-secondary bg-opacity-25 text-secondary">@Rule.Exercises.Count</span>
+                        </h5>
+                        <i class="bi @(QuizExpanded ? "bi-chevron-up" : "bi-chevron-down") fs-5 text-muted"></i>
+                    </div>
+
+                    @if (QuizExpanded)
+                    {
+                        @for (int i = 0; i < Rule.Exercises.Count; i++)
+                        {
+                            var exercise = Rule.Exercises[i];
+                            var index = i;
+                            <div class="card mb-3" style="border-radius: var(--radius); border: 1px solid var(--gray-200);">
+                                <div class="card-body p-3">
+                                    <p class="fw-semibold mb-3">
+                                        <span class="text-muted me-2">@(index + 1).</span>
+                                        @exercise.Question
+                                    </p>
+
+                                    <div class="row g-2 mb-2">
+                                        @for (int j = 0; j < exercise.Options.Length; j++)
+                                        {
+                                            var optionIndex = j;
+                                            var option = exercise.Options[j];
+                                            var answered = Answers.ContainsKey(index);
+                                            var selected = answered && Answers[index] == optionIndex;
+                                            var isCorrect = optionIndex == exercise.CorrectIndex;
+
+                                            var btnClass = "btn btn-outline-secondary w-100 text-start";
+                                            if (answered)
+                                            {
+                                                if (isCorrect)
+                                                    btnClass = "btn btn-success w-100 text-start";
+                                                else if (selected)
+                                                    btnClass = "btn btn-danger w-100 text-start";
+                                            }
+
+                                            <div class="col-6">
+                                                <button class="@btnClass" 
+                                                        disabled="@answered"
+                                                        @onclick="() => SelectAnswer(index, optionIndex)"
+                                                        style="border-radius: var(--radius);">
+                                                    @option
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    @if (Answers.ContainsKey(index))
+                                    {
+                                        var userCorrect = Answers[index] == exercise.CorrectIndex;
+                                        <div class="mt-2 p-2 rounded" style="background: @(userCorrect ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)");">
+                                            <small>
+                                                @if (userCorrect)
+                                                {
+                                                    <span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i> Верно!</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-danger fw-semibold"><i class="bi bi-x-circle me-1"></i> Неверно</span>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(exercise.Explanation))
+                                                {
+                                                    <span class="text-muted ms-2">— @exercise.Explanation</span>
+                                                }
+                                            </small>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (Answers.Count == Rule.Exercises.Count)
+                        {
+                            var correctCount = Rule.Exercises.Where((e, i) => Answers.ContainsKey(i) && Answers[i] == e.CorrectIndex).Count();
+                            <div class="card mt-3" style="border-radius: var(--radius); background: var(--gray-50);">
+                                <div class="card-body text-center p-3">
+                                    <h5 class="mb-2">Результат: @correctCount / @Rule.Exercises.Count</h5>
+                                    <button class="btn btn-primary btn-sm" @onclick="ResetQuiz">
+                                        <i class="bi bi-arrow-clockwise me-1"></i> Попробовать снова
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private MyRuleDetailItem? Rule;
+    private bool IsLoading = true;
+    private bool IsAuthenticated;
+    private bool QuizExpanded = true;
+    private Dictionary<int, int> Answers = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.InitializeAsync();
+        var session = await AuthService.GetCurrentSessionAsync();
+        IsAuthenticated = session != null;
+
+        if (IsAuthenticated)
+        {
+            await LoadRule();
+        }
+    }
+
+    private async Task LoadRule()
+    {
+        IsLoading = true;
+        try
+        {
+            Rule = await ContentApi.GetMyRuleDetailsAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading rule: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void ToggleQuiz()
+    {
+        QuizExpanded = !QuizExpanded;
+    }
+
+    private void SelectAnswer(int exerciseIndex, int optionIndex)
+    {
+        if (!Answers.ContainsKey(exerciseIndex))
+        {
+            Answers[exerciseIndex] = optionIndex;
+        }
+    }
+
+    private void ResetQuiz()
+    {
+        Answers.Clear();
+    }
+
+    private string GetDifficultyBadgeClass(int level) => level switch
+    {
+        1 => "bg-success",
+        2 => "bg-info",
+        3 => "bg-warning text-dark",
+        4 => "bg-danger",
+        5 => "bg-dark",
+        _ => "bg-secondary"
+    };
+
+    private string GetDifficultyText(int level) => level switch
+    {
+        1 => "Начальный",
+        2 => "Базовый",
+        3 => "Средний",
+        4 => "Продвинутый",
+        5 => "Эксперт",
+        _ => "Неизвестно"
+    };
+}

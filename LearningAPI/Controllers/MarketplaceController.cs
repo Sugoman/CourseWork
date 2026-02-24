@@ -397,6 +397,7 @@ public class MarketplaceController : BaseApiController
         var rule = await _context.Rules
             .IgnoreQueryFilters()
             .Include(r => r.User)
+            .Include(r => r.Exercises.OrderBy(e => e.OrderIndex))
             .Where(r => r.Id == id && r.IsPublished)
             .FirstOrDefaultAsync();
 
@@ -423,7 +424,16 @@ public class MarketplaceController : BaseApiController
             Downloads = rule.DownloadCount,
             AuthorContentCount = authorContentCount,
             HtmlContent = htmlContent,
-            CreatedAt = rule.CreatedAt
+            CreatedAt = rule.CreatedAt,
+            Exercises = rule.Exercises.OrderBy(e => e.OrderIndex).Select(e => new ExerciseItemDto
+            {
+                Id = e.Id,
+                Question = e.Question,
+                Options = e.Options,
+                CorrectIndex = e.CorrectIndex,
+                Explanation = e.Explanation ?? "",
+                OrderIndex = e.OrderIndex
+            }).ToList()
         };
 
         var ruleJson = JsonSerializer.Serialize(ruleDetail);
@@ -738,6 +748,51 @@ public class MarketplaceController : BaseApiController
             .ToListAsync();
 
         return Ok(rules);
+    }
+
+    /// <summary>
+    /// Получить детальную информацию о собственном правиле (включая упражнения)
+    /// </summary>
+    [HttpGet("my/rules/{id}")]
+    [Authorize]
+    public async Task<IActionResult> GetMyRuleDetails(int id)
+    {
+        var userId = GetUserId();
+
+        var rule = await _context.Rules
+            .Include(r => r.Exercises.OrderBy(e => e.OrderIndex))
+            .Where(r => r.Id == id && r.UserId == userId)
+            .FirstOrDefaultAsync();
+
+        if (rule == null)
+            return NotFound();
+
+        var htmlContent = ConvertMarkdownToHtml(rule.MarkdownContent);
+
+        var result = new MyRuleDetailsDto
+        {
+            Id = rule.Id,
+            Title = rule.Title,
+            Description = rule.Description ?? "",
+            Category = rule.Category ?? "",
+            DifficultyLevel = rule.DifficultyLevel,
+            IsPublished = rule.IsPublished,
+            Rating = rule.Rating,
+            Downloads = rule.DownloadCount,
+            HtmlContent = htmlContent,
+            CreatedAt = rule.CreatedAt,
+            Exercises = rule.Exercises.OrderBy(e => e.OrderIndex).Select(e => new ExerciseItemDto
+            {
+                Id = e.Id,
+                Question = e.Question,
+                Options = e.Options,
+                CorrectIndex = e.CorrectIndex,
+                Explanation = e.Explanation ?? "",
+                OrderIndex = e.OrderIndex
+            }).ToList()
+        };
+
+        return Ok(result);
     }
 
     [HttpGet("my/downloads")]
@@ -1083,6 +1138,7 @@ public class RuleDetailsDto : RuleListItemDto
     public string HtmlContent { get; set; } = "";
     public int RatingCount { get; set; }
     public int AuthorContentCount { get; set; }
+    public List<ExerciseItemDto> Exercises { get; set; } = new();
 }
 
 public class CommentItemDto
@@ -1128,6 +1184,31 @@ public class DownloadedItemDto
     public string Title { get; set; } = "";
     public string AuthorName { get; set; } = "";
     public DateTime DownloadedAt { get; set; }
+}
+
+public class MyRuleDetailsDto
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string Category { get; set; } = "";
+    public int DifficultyLevel { get; set; }
+    public bool IsPublished { get; set; }
+    public double Rating { get; set; }
+    public int Downloads { get; set; }
+    public string HtmlContent { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+    public List<ExerciseItemDto> Exercises { get; set; } = new();
+}
+
+public class ExerciseItemDto
+{
+    public int Id { get; set; }
+    public string Question { get; set; } = "";
+    public string[] Options { get; set; } = Array.Empty<string>();
+    public int CorrectIndex { get; set; }
+    public string Explanation { get; set; } = "";
+    public int OrderIndex { get; set; }
 }
 
 #endregion

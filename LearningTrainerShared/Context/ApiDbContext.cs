@@ -38,6 +38,9 @@ namespace LearningTrainerShared.Context
         // Transcription cache
         public DbSet<TranscriptionCache> TranscriptionCache { get; set; } = null!;
 
+        // Grammar exercises
+        public DbSet<GrammarExercise> GrammarExercises { get; set; } = null!;
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -105,6 +108,16 @@ namespace LearningTrainerShared.Context
                 .WithMany()
                 .HasForeignKey(rs => rs.RuleId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // GrammarExercise -> Rule
+            modelBuilder.Entity<GrammarExercise>()
+                .HasOne(ge => ge.Rule)
+                .WithMany(r => r.Exercises)
+                .HasForeignKey(ge => ge.RuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GrammarExercise>()
+                .HasIndex(ge => ge.RuleId);
 
             // === STATISTICS ENTITIES ===
 

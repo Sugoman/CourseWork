@@ -12,6 +12,7 @@
 
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:ExerciseAnswerConverter x:Key="ExerciseAnswerConverter"/>
         
         <!-- ComboBox Toggle Button Style -->
         <Style x:Key="ComboBoxToggleButtonStyle" TargetType="ToggleButton">
@@ -192,7 +193,8 @@
                                    FontWeight="Medium" 
                                    Margin="0,0,0,5"/>
                         <Border Style="{StaticResource InputContainerStyle}">
-                            <TextBox Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" 
+                            <TextBox Text="{Binding RuleTitle, UpdateSourceTrigger=PropertyChanged}" 
+                                     Validation.ErrorTemplate="{StaticResource ValidationErrorTemplate}"
                                      Foreground="{DynamicResource PrimaryTextBrush}"
                                      CaretBrush="{DynamicResource PrimaryTextBrush}"
                                      FontSize="16" FontWeight="SemiBold"
@@ -243,7 +245,8 @@
                         <TextBlock Text="{DynamicResource Loc.AddRule.ContainsLabel}" Foreground="{DynamicResource SecondaryTextBrush}" FontWeight="Medium" Margin="0,15,0,5"/>
                         <Border Style="{StaticResource InputContainerStyle}" Padding="0">
                             <TextBox Text="{Binding MarkdownContent, UpdateSourceTrigger=PropertyChanged}" 
-                                     AcceptsReturn="True" 
+                                     Validation.ErrorTemplate="{StaticResource ValidationErrorTemplate}"
+                                     AcceptsReturn="True"
                                      TextWrapping="Wrap"
                                      MinHeight="400"
                                      Padding="15"
@@ -255,6 +258,155 @@
                                      FontFamily="Consolas"
                                      FontSize="{DynamicResource BaseFontSize}"/>
                         </Border>
+
+                        <!-- Exercises Editor Section (for teachers) -->
+                        <StackPanel Visibility="{Binding IsEditable, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,25,0,0">
+                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="0,20,0,0">
+                                <StackPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                                        <TextBlock Text="📝" FontSize="20" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Text="{DynamicResource Loc.EditRule.ExercisesLabel}" 
+                                                   FontSize="18" FontWeight="Bold" 
+                                                   Foreground="{DynamicResource PrimaryTextBrush}" 
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Exercises.Count, StringFormat=' ({0})'}" 
+                                                   FontSize="14" 
+                                                   Foreground="{DynamicResource TertiaryTextBrush}" 
+                                                   VerticalAlignment="Center" Margin="5,0,0,0"/>
+                                    </StackPanel>
+
+                                    <ItemsControl ItemsSource="{Binding Exercises}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{DynamicResource InputBackgroundBrush}" 
+                                                        CornerRadius="8" 
+                                                        BorderBrush="{DynamicResource BorderBrush}" 
+                                                        BorderThickness="1" 
+                                                        Padding="15" 
+                                                        Margin="0,0,0,10">
+                                                    <StackPanel>
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Text="{DynamicResource Loc.EditRule.QuestionLabel}" 
+                                                                       Foreground="{DynamicResource SecondaryTextBrush}" 
+                                                                       FontWeight="Medium" FontSize="13" Margin="0,0,0,4"/>
+                                                            <Button Grid.Column="1" 
+                                                                    Content="✕" FontSize="14" 
+                                                                    Command="{Binding DataContext.RemoveExerciseCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+                                                                    CommandParameter="{Binding}" 
+                                                                    Background="Transparent" BorderThickness="0" 
+                                                                    Foreground="{DynamicResource SecondaryTextBrush}" 
+                                                                    Cursor="Hand" Padding="5,0"/>
+                                                        </Grid>
+                                                        <TextBox Text="{Binding Question, UpdateSourceTrigger=PropertyChanged}" 
+                                                                 Foreground="{DynamicResource PrimaryTextBrush}"
+                                                                 CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                                                 Background="Transparent" BorderThickness="0" 
+                                                                 FontSize="{DynamicResource BaseFontSize}" Padding="0,2" Margin="0,0,0,10"/>
+
+                                                        <TextBlock Text="{DynamicResource Loc.EditRule.OptionsLabel}" 
+                                                                   Foreground="{DynamicResource SecondaryTextBrush}" 
+                                                                   FontWeight="Medium" FontSize="13" Margin="0,0,0,4"/>
+                                                        <Grid Margin="0,0,0,5">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="10"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <Grid.RowDefinitions>
+                                                                <RowDefinition Height="Auto"/>
+                                                                <RowDefinition Height="5"/>
+                                                                <RowDefinition Height="Auto"/>
+                                                            </Grid.RowDefinitions>
+                                                            <TextBox Grid.Row="0" Grid.Column="0" 
+                                                                     Text="{Binding Option1, UpdateSourceTrigger=PropertyChanged}" 
+                                                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                                                     CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                                                     Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                                                                     BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
+                                                                     Padding="8,5" FontSize="13"/>
+                                                            <TextBox Grid.Row="0" Grid.Column="2" 
+                                                                     Text="{Binding Option2, UpdateSourceTrigger=PropertyChanged}" 
+                                                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                                                     CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                                                     Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                                                                     BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
+                                                                     Padding="8,5" FontSize="13"/>
+                                                            <TextBox Grid.Row="2" Grid.Column="0" 
+                                                                     Text="{Binding Option3, UpdateSourceTrigger=PropertyChanged}" 
+                                                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                                                     CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                                                     Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                                                                     BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
+                                                                     Padding="8,5" FontSize="13"/>
+                                                            <TextBox Grid.Row="2" Grid.Column="2" 
+                                                                     Text="{Binding Option4, UpdateSourceTrigger=PropertyChanged}" 
+                                                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                                                     CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                                                     Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                                                                     BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
+                                                                     Padding="8,5" FontSize="13"/>
+                                                        </Grid>
+
+                                                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                                            <TextBlock Text="{DynamicResource Loc.EditRule.CorrectAnswerLabel}" 
+                                                                       Foreground="{DynamicResource SecondaryTextBrush}" 
+                                                                       FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                            <ComboBox SelectedIndex="{Binding CorrectIndex}" Width="60" Height="30" FontSize="13">
+                                                                <ComboBoxItem Content="1"/>
+                                                                <ComboBoxItem Content="2"/>
+                                                                <ComboBoxItem Content="3"/>
+                                                                <ComboBoxItem Content="4"/>
+                                                            </ComboBox>
+                                                        </StackPanel>
+
+                                                        <TextBlock Text="{DynamicResource Loc.EditRule.ExplanationLabel}" 
+                                                                   Foreground="{DynamicResource SecondaryTextBrush}" 
+                                                                   FontWeight="Medium" FontSize="13" Margin="0,10,0,4"/>
+                                                        <TextBox Text="{Binding Explanation, UpdateSourceTrigger=PropertyChanged}" 
+                                                                 Foreground="{DynamicResource PrimaryTextBrush}"
+                                                                 CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                                                 Background="Transparent" BorderThickness="0" 
+                                                                 TextWrapping="Wrap" FontSize="13" Padding="0,2"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <Button Command="{Binding AddExerciseCommand}" 
+                                            Cursor="Hand" Margin="0,5,0,0"
+                                            HorizontalAlignment="Left">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="addBorder" 
+                                                        Background="{DynamicResource InputBackgroundBrush}" 
+                                                        CornerRadius="8" Padding="15,10" 
+                                                        BorderBrush="{DynamicResource BorderBrush}" 
+                                                        BorderThickness="1" 
+                                                        Cursor="Hand">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <TextBlock Text="+" FontSize="18" Foreground="{DynamicResource PrimaryAccentBrush}" 
+                                                                   VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                                        <TextBlock Text="{DynamicResource Loc.EditRule.AddExerciseButton}" 
+                                                                   FontSize="14" Foreground="{DynamicResource SecondaryTextBrush}" 
+                                                                   VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="addBorder" Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </ScrollViewer>
@@ -273,6 +425,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="25,20">
@@ -296,6 +449,338 @@
                         behaviors:WebBrowserBehavior.Config="{Binding Config, UpdateSourceTrigger=PropertyChanged}"
                         DefaultBackgroundColor="Transparent"
                         Margin="5"/>
+
+                    <!-- Quiz Section: Проверь себя -->
+                    <Border Grid.Row="2" 
+                            BorderBrush="{DynamicResource BorderBrush}" 
+                            BorderThickness="0,1,0,0"
+                            Visibility="{Binding HasExercises, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            MaxHeight="400">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="15">
+                            <StackPanel Margin="10">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                    <TextBlock Text="📝" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="{DynamicResource Loc.EditRule.QuizSectionLabel}" 
+                                               FontSize="16" FontWeight="Bold" 
+                                               Foreground="{DynamicResource PrimaryTextBrush}" 
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <ItemsControl ItemsSource="{Binding Exercises}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{DynamicResource InputBackgroundBrush}" 
+                                                    CornerRadius="8" Padding="12" Margin="0,0,0,8"
+                                                    BorderBrush="{DynamicResource BorderBrush}" 
+                                                    BorderThickness="1">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Question}" 
+                                                               FontSize="14" FontWeight="SemiBold" 
+                                                               Foreground="{DynamicResource PrimaryTextBrush}" 
+                                                               TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                                                    <UniformGrid Columns="2" Margin="0,0,0,5">
+                                                        <Button Content="{Binding Option1}" Margin="0,0,4,4" Padding="8,6" 
+                                                                FontSize="13" Cursor="Hand"
+                                                                Command="{Binding DataContext.CheckAnswerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                HorizontalContentAlignment="Left">
+                                                            <Button.CommandParameter>
+                                                                <MultiBinding Converter="{StaticResource ExerciseAnswerConverter}">
+                                                                    <Binding/>
+                                                                    <Binding Source="0"/>
+                                                                </MultiBinding>
+                                                            </Button.CommandParameter>
+                                                            <Button.Style>
+                                                                <Style TargetType="Button">
+                                                                    <Setter Property="Background" Value="{DynamicResource SecondaryMainBackgroundBrush}"/>
+                                                                    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                                                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                                    <Setter Property="Template">
+                                                                        <Setter.Value>
+                                                                            <ControlTemplate TargetType="Button">
+                                                                                <Border x:Name="optBorder" Background="{TemplateBinding Background}" 
+                                                                                        CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                                                                        BorderBrush="{TemplateBinding BorderBrush}" 
+                                                                                        BorderThickness="{TemplateBinding BorderThickness}">
+                                                                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                                                                </Border>
+                                                                                <ControlTemplate.Triggers>
+                                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                                        <Setter TargetName="optBorder" Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                                                                    </Trigger>
+                                                                                </ControlTemplate.Triggers>
+                                                                            </ControlTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                    <Style.Triggers>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsAnswered}" Value="True"/>
+                                                                                <Condition Binding="{Binding CorrectIndex}" Value="0"/>
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <Setter Property="Background" Value="#2210B981"/>
+                                                                            <Setter Property="BorderBrush" Value="#10B981"/>
+                                                                        </MultiDataTrigger>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsAnswered}" Value="True"/>
+                                                                                <Condition Binding="{Binding SelectedAnswer}" Value="0"/>
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                                                            <Setter Property="BorderThickness" Value="2"/>
+                                                                        </MultiDataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                        <Button Content="{Binding Option2}" Margin="4,0,0,4" Padding="8,6" 
+                                                                FontSize="13" Cursor="Hand"
+                                                                Command="{Binding DataContext.CheckAnswerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                HorizontalContentAlignment="Left">
+                                                            <Button.CommandParameter>
+                                                                <MultiBinding Converter="{StaticResource ExerciseAnswerConverter}">
+                                                                    <Binding/>
+                                                                    <Binding Source="1"/>
+                                                                </MultiBinding>
+                                                            </Button.CommandParameter>
+                                                            <Button.Style>
+                                                                <Style TargetType="Button">
+                                                                    <Setter Property="Background" Value="{DynamicResource SecondaryMainBackgroundBrush}"/>
+                                                                    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                                                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                                    <Setter Property="Template">
+                                                                        <Setter.Value>
+                                                                            <ControlTemplate TargetType="Button">
+                                                                                <Border x:Name="optBorder" Background="{TemplateBinding Background}" 
+                                                                                        CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                                                                        BorderBrush="{TemplateBinding BorderBrush}" 
+                                                                                        BorderThickness="{TemplateBinding BorderThickness}">
+                                                                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                                                                </Border>
+                                                                                <ControlTemplate.Triggers>
+                                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                                        <Setter TargetName="optBorder" Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                                                                    </Trigger>
+                                                                                </ControlTemplate.Triggers>
+                                                                            </ControlTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                    <Style.Triggers>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsAnswered}" Value="True"/>
+                                                                                <Condition Binding="{Binding CorrectIndex}" Value="1"/>
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <Setter Property="Background" Value="#2210B981"/>
+                                                                            <Setter Property="BorderBrush" Value="#10B981"/>
+                                                                        </MultiDataTrigger>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsAnswered}" Value="True"/>
+                                                                                <Condition Binding="{Binding SelectedAnswer}" Value="1"/>
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                                                            <Setter Property="BorderThickness" Value="2"/>
+                                                                        </MultiDataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                        <Button Content="{Binding Option3}" Margin="0,0,4,0" Padding="8,6" 
+                                                                FontSize="13" Cursor="Hand"
+                                                                Command="{Binding DataContext.CheckAnswerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                HorizontalContentAlignment="Left">
+                                                            <Button.CommandParameter>
+                                                                <MultiBinding Converter="{StaticResource ExerciseAnswerConverter}">
+                                                                    <Binding/>
+                                                                    <Binding Source="2"/>
+                                                                </MultiBinding>
+                                                            </Button.CommandParameter>
+                                                            <Button.Style>
+                                                                <Style TargetType="Button">
+                                                                    <Setter Property="Background" Value="{DynamicResource SecondaryMainBackgroundBrush}"/>
+                                                                    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                                                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                                    <Setter Property="Template">
+                                                                        <Setter.Value>
+                                                                            <ControlTemplate TargetType="Button">
+                                                                                <Border x:Name="optBorder" Background="{TemplateBinding Background}" 
+                                                                                        CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                                                                        BorderBrush="{TemplateBinding BorderBrush}" 
+                                                                                        BorderThickness="{TemplateBinding BorderThickness}">
+                                                                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                                                                </Border>
+                                                                                <ControlTemplate.Triggers>
+                                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                                        <Setter TargetName="optBorder" Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                                                                    </Trigger>
+                                                                                </ControlTemplate.Triggers>
+                                                                            </ControlTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                    <Style.Triggers>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsAnswered}" Value="True"/>
+                                                                                <Condition Binding="{Binding CorrectIndex}" Value="2"/>
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <Setter Property="Background" Value="#2210B981"/>
+                                                                            <Setter Property="BorderBrush" Value="#10B981"/>
+                                                                        </MultiDataTrigger>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsAnswered}" Value="True"/>
+                                                                                <Condition Binding="{Binding SelectedAnswer}" Value="2"/>
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                                                            <Setter Property="BorderThickness" Value="2"/>
+                                                                        </MultiDataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                        <Button Content="{Binding Option4}" Margin="4,0,0,0" Padding="8,6" 
+                                                                FontSize="13" Cursor="Hand"
+                                                                Command="{Binding DataContext.CheckAnswerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                HorizontalContentAlignment="Left">
+                                                            <Button.CommandParameter>
+                                                                <MultiBinding Converter="{StaticResource ExerciseAnswerConverter}">
+                                                                    <Binding/>
+                                                                    <Binding Source="3"/>
+                                                                </MultiBinding>
+                                                            </Button.CommandParameter>
+                                                            <Button.Style>
+                                                                <Style TargetType="Button">
+                                                                    <Setter Property="Background" Value="{DynamicResource SecondaryMainBackgroundBrush}"/>
+                                                                    <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                                                                    <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+                                                                    <Setter Property="BorderThickness" Value="1"/>
+                                                                    <Setter Property="Template">
+                                                                        <Setter.Value>
+                                                                            <ControlTemplate TargetType="Button">
+                                                                                <Border x:Name="optBorder" Background="{TemplateBinding Background}" 
+                                                                                        CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                                                                        BorderBrush="{TemplateBinding BorderBrush}" 
+                                                                                        BorderThickness="{TemplateBinding BorderThickness}">
+                                                                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                                                                                </Border>
+                                                                                <ControlTemplate.Triggers>
+                                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                                        <Setter TargetName="optBorder" Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                                                                    </Trigger>
+                                                                                </ControlTemplate.Triggers>
+                                                                            </ControlTemplate>
+                                                                        </Setter.Value>
+                                                                    </Setter>
+                                                                    <Style.Triggers>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsAnswered}" Value="True"/>
+                                                                                <Condition Binding="{Binding CorrectIndex}" Value="3"/>
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <Setter Property="Background" Value="#2210B981"/>
+                                                                            <Setter Property="BorderBrush" Value="#10B981"/>
+                                                                        </MultiDataTrigger>
+                                                                        <MultiDataTrigger>
+                                                                            <MultiDataTrigger.Conditions>
+                                                                                <Condition Binding="{Binding IsAnswered}" Value="True"/>
+                                                                                <Condition Binding="{Binding SelectedAnswer}" Value="3"/>
+                                                                            </MultiDataTrigger.Conditions>
+                                                                            <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                                                            <Setter Property="BorderThickness" Value="2"/>
+                                                                        </MultiDataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                    </UniformGrid>
+
+                                                    <!-- Explanation shown after answering -->
+                                                    <StackPanel Visibility="{Binding IsAnswered, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,5,0,0">
+                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                            <TextBlock FontSize="13" VerticalAlignment="Center">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="❌"/>
+                                                                        <Setter Property="Foreground" Value="#EF4444"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsCorrect}" Value="True">
+                                                                                <Setter Property="Text" Value="✅"/>
+                                                                                <Setter Property="Foreground" Value="#10B981"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                            <TextBlock FontSize="13" Margin="5,0,0,0" VerticalAlignment="Center">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="{DynamicResource Loc.EditRule.WrongAnswer}"/>
+                                                                        <Setter Property="Foreground" Value="#EF4444"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsCorrect}" Value="True">
+                                                                                <Setter Property="Text" Value="{DynamicResource Loc.EditRule.CorrectAnswer}"/>
+                                                                                <Setter Property="Foreground" Value="#10B981"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                        <TextBlock Text="{Binding Explanation}" 
+                                                                   FontSize="12" FontStyle="Italic" 
+                                                                   Foreground="{DynamicResource TertiaryTextBrush}" 
+                                                                   TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- Results summary -->
+                                <StackPanel Visibility="{Binding AllAnswered, Converter={StaticResource BooleanToVisibilityConverter}}" 
+                                            Margin="0,5,0,0">
+                                    <Border Background="{DynamicResource InputBackgroundBrush}" CornerRadius="8" Padding="12">
+                                        <StackPanel HorizontalAlignment="Center">
+                                            <TextBlock FontSize="14" FontWeight="SemiBold" 
+                                                       Foreground="{DynamicResource PrimaryTextBrush}" 
+                                                       HorizontalAlignment="Center">
+                                                <Run Text="{DynamicResource Loc.EditRule.ResultLabel}"/>
+                                                <Run Text="{Binding CorrectAnswersCount, Mode=OneWay}"/>
+                                                <Run Text="/"/>
+                                                <Run Text="{Binding Exercises.Count, Mode=OneWay}"/>
+                                            </TextBlock>
+                                            <Button Content="{DynamicResource Loc.EditRule.RetryButton}" 
+                                                    Command="{Binding ResetExercisesCommand}" 
+                                                    HorizontalAlignment="Center" 
+                                                    Margin="0,8,0,0" Padding="15,6" 
+                                                    FontSize="13" Cursor="Hand"
+                                                    Background="{DynamicResource PrimaryAccentBrush}" 
+                                                    Foreground="White" BorderThickness="0">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="retryBorder" Background="{TemplateBinding Background}" 
+                                                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="retryBorder" Property="Opacity" Value="0.85"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
                 </Grid>
             </Border>
         </Grid>

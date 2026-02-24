@@ -14,14 +14,14 @@ namespace LearningTrainerShared.Models
         [Required]
         [MaxLength(70)]
         public string Title { get; set; }
-        
+
         [Required]
         public string MarkdownContent { get; set; }
-        
+
         public string Description { get; set; }
         [MaxLength(50)]
         public string Category { get; set; } // "Grammar", "Vocabulary", "Pronunciation"
-        
+
         public int DifficultyLevel { get; set; } = 1;
 
         // Marketplace fields
@@ -29,7 +29,7 @@ namespace LearningTrainerShared.Models
         public double Rating { get; set; } = 0;
         public int RatingCount { get; set; } = 0;
         public int DownloadCount { get; set; } = 0;
-        
+
         /// <summary>
         /// Ссылка на оригинальное правило, если это было скачано
         /// </summary>
@@ -37,6 +37,11 @@ namespace LearningTrainerShared.Models
 
         [JsonIgnore]
         public virtual User? User { get; set; }
+
+        /// <summary>
+        /// Грамматические упражнения, привязанные к правилу
+        /// </summary>
+        public virtual List<GrammarExercise> Exercises { get; set; } = new();
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow; 
         [NotMapped]

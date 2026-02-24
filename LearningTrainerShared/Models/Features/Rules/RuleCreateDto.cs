@@ -25,5 +25,23 @@ namespace LearningTrainerShared.Models
         public int DifficultyLevel { get; set; } = 1;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public List<GrammarExerciseDto> Exercises { get; set; } = new();
+    }
+
+    public class GrammarExerciseDto
+    {
+        [Required]
+        [MaxLength(500)]
+        public string Question { get; set; } = "";
+
+        public string[] Options { get; set; } = Array.Empty<string>();
+
+        public int CorrectIndex { get; set; }
+
+        [MaxLength(1000)]
+        public string Explanation { get; set; } = "";
+
+        public int OrderIndex { get; set; }
     }
 }

@@ -106,6 +106,17 @@
     <system:String x:Key="Loc.EditRule.DiscriptionLabel">Discription</system:String>
     <system:String x:Key="Loc.EditRule.LivePreviewLabel">Live Preview</system:String>
     <system:String x:Key="Loc.EditRule.MarkdownRenderedLabel">Markdown Rendered</system:String>
+    <system:String x:Key="Loc.EditRule.ExercisesLabel">Exercises</system:String>
+    <system:String x:Key="Loc.EditRule.QuestionLabel">Question</system:String>
+    <system:String x:Key="Loc.EditRule.OptionsLabel">Answer Options</system:String>
+    <system:String x:Key="Loc.EditRule.CorrectAnswerLabel">Correct answer:</system:String>
+    <system:String x:Key="Loc.EditRule.ExplanationLabel">Explanation</system:String>
+    <system:String x:Key="Loc.EditRule.AddExerciseButton">Add exercise</system:String>
+    <system:String x:Key="Loc.EditRule.QuizSectionLabel">Test Yourself</system:String>
+    <system:String x:Key="Loc.EditRule.CorrectAnswer">Correct!</system:String>
+    <system:String x:Key="Loc.EditRule.WrongAnswer">Incorrect</system:String>
+    <system:String x:Key="Loc.EditRule.ResultLabel">Result: </system:String>
+    <system:String x:Key="Loc.EditRule.RetryButton">Try Again</system:String>
 
                                 <!-- SETTINGS -->
     <system:String x:Key="Loc.Settings.GeneralRadio">General</system:String>

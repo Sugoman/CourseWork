@@ -266,6 +266,54 @@
     color: var(--bs-secondary);
 }
 
+/* Training Settings */
+.training-settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+}
+
+.setting-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.setting-label {
+    font-size: 0.9rem;
+    color: var(--bs-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.setting-options {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.setting-pill {
+    padding: 0.4rem 1rem;
+    border: 2px solid #e9ecef;
+    border-radius: 2rem;
+    background: white;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--bs-secondary);
+    transition: all 0.2s;
+}
+
+.setting-pill:hover {
+    border-color: var(--bs-primary);
+    color: var(--bs-primary);
+}
+
+.setting-pill.active {
+    background: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: white;
+}
+
 /* Quick Start */
 .quick-start {
     text-align: center;
@@ -1016,12 +1064,22 @@
     color: var(--bs-danger);
 }
 
+.typing-feedback.almost {
+    background: rgba(13, 110, 253, 0.1);
+    color: var(--bs-primary);
+}
+
 .typing-feedback i {
     font-size: 1.5rem;
 }
 
 .typing-feedback strong {
     color: var(--bs-dark);
+}
+
+.is-almost {
+    border-color: var(--bs-primary) !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
 }
 
 /* Keyboard Hints */

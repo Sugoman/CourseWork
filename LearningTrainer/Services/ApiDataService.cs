@@ -18,6 +18,7 @@ namespace LearningTrainer.Services
 
         private readonly HttpClient _httpClient;
         private readonly JsonSerializerOptions _jsonOptions;
+        private readonly JsonSerializerOptions _writeJsonOptions;
         private readonly IConfiguration _configuration;
         private readonly IAsyncPolicy<HttpResponseMessage> _resiliencePolicy;
 
@@ -33,6 +34,12 @@ namespace LearningTrainer.Services
             _jsonOptions = new JsonSerializerOptions
             {
                 ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve,
+                PropertyNameCaseInsensitive = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All)
+            };
+
+            _writeJsonOptions = new JsonSerializerOptions
+            {
                 PropertyNameCaseInsensitive = true,
                 Encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(System.Text.Unicode.UnicodeRanges.All)
             };
@@ -102,8 +109,25 @@ namespace LearningTrainer.Services
 
         public async Task<Rule> AddRuleAsync(Rule rule)
         {
-            // POST /api/rules
-            var response = await _httpClient.PostAsJsonAsync("/api/rules", rule, _jsonOptions);
+            // POST /api/rules — send as RuleCreateDto to avoid ReferenceHandler.Preserve wrapping
+            var dto = new RuleCreateDto
+            {
+                Title = rule.Title,
+                MarkdownContent = rule.MarkdownContent,
+                Description = rule.Description,
+                Category = rule.Category,
+                DifficultyLevel = rule.DifficultyLevel,
+                CreatedAt = rule.CreatedAt,
+                Exercises = rule.Exercises?.Select(e => new GrammarExerciseDto
+                {
+                    Question = e.Question,
+                    Options = e.Options,
+                    CorrectIndex = e.CorrectIndex,
+                    Explanation = e.Explanation,
+                    OrderIndex = e.OrderIndex
+                }).ToList() ?? new()
+            };
+            var response = await _httpClient.PostAsJsonAsync("/api/rules", dto, _writeJsonOptions);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<Rule>(_jsonOptions);
         }
@@ -412,7 +436,7 @@ namespace LearningTrainer.Services
         {
             try
             {
-                var response = await _httpClient.PutAsJsonAsync($"api/rules/{rule.Id}", rule, _jsonOptions);
+                var response = await _httpClient.PutAsJsonAsync($"api/rules/{rule.Id}", rule, _writeJsonOptions);
                 return response.IsSuccessStatusCode;
             }
             catch (Exception ex)

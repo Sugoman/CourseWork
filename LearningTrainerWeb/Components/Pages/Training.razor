@@ -185,6 +185,38 @@
                         <i class="bi bi-keyboard"></i>
                         <span>Ввод</span>
                     </button>
+                    <button class="exercise-type @(ExerciseType == "listening" ? "active" : "")" 
+                            @onclick='() => SetExerciseType("listening")'>
+                        <i class="bi bi-headphones"></i>
+                        <span>Аудирование</span>
+                    </button>
+                    <button class="exercise-type @(ExerciseType == "mixed" ? "active" : "")" 
+                            @onclick='() => SetExerciseType("mixed")'>
+                        <i class="bi bi-shuffle"></i>
+                        <span>Смешанный</span>
+                    </button>
+                </div>
+
+                <!-- Word limit -->
+                <div class="training-settings mt-4">
+                    <div class="setting-group">
+                        <span class="setting-label">Слов:</span>
+                        <div class="setting-options">
+                            <button class="setting-pill @(WordLimit == 10 ? "active" : "")" @onclick="() => WordLimit = 10">10</button>
+                            <button class="setting-pill @(WordLimit == 20 ? "active" : "")" @onclick="() => WordLimit = 20">20</button>
+                            <button class="setting-pill @(WordLimit == 50 ? "active" : "")" @onclick="() => WordLimit = 50">50</button>
+                            <button class="setting-pill @(WordLimit == 0 ? "active" : "")" @onclick="() => WordLimit = 0">Все</button>
+                        </div>
+                    </div>
+
+                    <div class="setting-group">
+                        <span class="setting-label">Направление:</span>
+                        <div class="setting-options">
+                            <button class="setting-pill @(TranslationDirection == "direct" ? "active" : "")" @onclick='() => TranslationDirection = "direct"'>Прямой</button>
+                            <button class="setting-pill @(TranslationDirection == "reverse" ? "active" : "")" @onclick='() => TranslationDirection = "reverse"'>Обратный</button>
+                            <button class="setting-pill @(TranslationDirection == "random" ? "active" : "")" @onclick='() => TranslationDirection = "random"'>Случайный</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -215,7 +247,7 @@
                     </div>
                 </div>
 
-                @if (ExerciseType == "flashcard")
+                @if (ActiveExerciseType == "flashcard")
                 {
                     <!-- Режим карточек -->
                     <div class="flashcard @(IsAnswerRevealed ? "revealed" : "")">
@@ -223,8 +255,8 @@
                             <div class="word-dictionary">
                                 <i class="bi bi-book"></i> @CurrentWord.DictionaryName
                             </div>
-                            <div class="word-main">@CurrentWord.OriginalWord</div>
-                            @if (!string.IsNullOrEmpty(CurrentWord.Transcription))
+                            <div class="word-main">@DisplayedWord</div>
+                            @if (!IsReversed && !string.IsNullOrEmpty(CurrentWord.Transcription))
                             {
                                 <div class="word-transcription">@CurrentWord.Transcription</div>
                             }
@@ -261,7 +293,7 @@
                         @if (IsAnswerRevealed)
                         {
                             <div class="card-back">
-                                <div class="translation">@CurrentWord.Translation</div>
+                                <div class="translation">@ExpectedAnswer</div>
                                 @if (!string.IsNullOrEmpty(CurrentWord.Example))
                                 {
                                     <div class="example">
@@ -302,7 +334,7 @@
                         }
                     </div>
                 }
-                else if (ExerciseType == "mcq")
+                else if (ActiveExerciseType == "mcq")
                 {
                     <!-- Режим выбора ответа (MCQ) -->
                     <div class="mcq-card">
@@ -310,8 +342,8 @@
                             <div class="word-dictionary">
                                 <i class="bi bi-book"></i> @CurrentWord.DictionaryName
                             </div>
-                            <div class="word-main">@CurrentWord.OriginalWord</div>
-                            @if (!string.IsNullOrEmpty(CurrentWord.Transcription))
+                            <div class="word-main">@DisplayedWord</div>
+                            @if (!IsReversed && !string.IsNullOrEmpty(CurrentWord.Transcription))
                             {
                                 <div class="word-transcription">@CurrentWord.Transcription</div>
                             }
@@ -340,7 +372,7 @@
                             @foreach (var option in McqOptions)
                             {
                                 var isSelected = SelectedMcqOption == option;
-                                var isCorrect = option == CurrentWord.Translation;
+                                var isCorrect = option == ExpectedAnswer;
                                 var cssClass = "";
                                 
                                 if (McqAnswered)
@@ -382,7 +414,7 @@
                                 else
                                 {
                                     <i class="bi bi-x-circle"></i>
-                                    <span>Неверно. Правильный ответ: @CurrentWord.Translation</span>
+                                    <span>Неверно. Правильный ответ: @ExpectedAnswer</span>
                                 }
                             </div>
                             @if (!string.IsNullOrEmpty(CurrentWord.Example))
@@ -400,7 +432,7 @@
                         }
                     </div>
                 }
-                else if (ExerciseType == "typing")
+                else if (ActiveExerciseType == "typing")
                 {
                     <!-- Режим ввода ответа -->
                     <div class="typing-card">
@@ -408,8 +440,8 @@
                             <div class="word-dictionary">
                                 <i class="bi bi-book"></i> @CurrentWord.DictionaryName
                             </div>
-                            <div class="word-main">@CurrentWord.OriginalWord</div>
-                            @if (!string.IsNullOrEmpty(CurrentWord.Transcription))
+                            <div class="word-main">@DisplayedWord</div>
+                            @if (!IsReversed && !string.IsNullOrEmpty(CurrentWord.Transcription))
                             {
                                 <div class="word-transcription">@CurrentWord.Transcription</div>
                             }
@@ -435,13 +467,13 @@
                         </div>
 
                         <div class="typing-input">
-                            <input type="text" class="form-control form-control-lg @(TypingAnswered ? (TypingWasCorrect ? "is-valid" : "is-invalid") : "")" 
+                            <input type="text" class="form-control form-control-lg @(TypingAnswered ? (TypingWasCorrect ? "is-valid" : (TypingWasAlmostCorrect ? "is-almost" : "is-invalid")) : "")"
                                    placeholder="Введите перевод..."
                                    @bind="TypedAnswer"
                                    @bind:event="oninput"
                                    @onkeypress="HandleTypingKeyPress"
                                    disabled="@TypingAnswered" />
-                            
+
                             @if (!TypingAnswered)
                             {
                                 <button class="btn btn-primary btn-lg" @onclick="CheckTypingAnswer">
@@ -452,16 +484,21 @@
 
                         @if (TypingAnswered)
                         {
-                            <div class="typing-feedback @(TypingWasCorrect ? "success" : "error")">
+                            <div class="typing-feedback @(TypingWasCorrect ? "success" : (TypingWasAlmostCorrect ? "almost" : "error"))">
                                 @if (TypingWasCorrect)
                                 {
                                     <i class="bi bi-check-circle"></i>
                                     <span>Правильно!</span>
                                 }
+                                else if (TypingWasAlmostCorrect)
+                                {
+                                    <i class="bi bi-lightning-charge"></i>
+                                    <span>Почти правильно! Ответ: <strong>@ExpectedAnswer</strong></span>
+                                }
                                 else
                                 {
                                     <i class="bi bi-x-circle"></i>
-                                    <span>Правильный ответ: <strong>@CurrentWord.Translation</strong></span>
+                                    <span>Неверно. Правильный ответ: <strong>@ExpectedAnswer</strong></span>
                                 }
                             </div>
                             @if (!string.IsNullOrEmpty(CurrentWord.Example))
@@ -474,6 +511,95 @@
                                 </div>
                             }
                             <button class="btn btn-primary btn-lg mt-3" @onclick="NextTypingWord">
+                                <i class="bi bi-arrow-right me-2"></i>Далее
+                            </button>
+                        }
+                    </div>
+                }
+                else if (ActiveExerciseType == "listening")
+                {
+                    <!-- Режим аудирования -->
+                    <div class="typing-card">
+                        <div class="typing-question">
+                            <div class="word-dictionary">
+                                <i class="bi bi-book"></i> @CurrentWord.DictionaryName
+                            </div>
+                            <div class="listening-icon" style="font-size: 3rem; margin: 1rem 0;">
+                                <i class="bi bi-headphones" style="color: var(--bs-primary);"></i>
+                            </div>
+                            <p class="text-muted mb-3">Прослушайте слово и введите его</p>
+                            <div class="audio-group">
+                                <button class="btn btn-outline-primary btn-lg" @onclick="SpeakWord" title="Прослушать">
+                                    <i class="bi bi-play-fill me-2"></i>Прослушать
+                                </button>
+                                <div class="volume-wrapper ms-2">
+                                    <button class="btn-volume-toggle" @onclick="ToggleVolumeSlider" title="Громкость">
+                                        <i class="@VolumeIcon"></i>
+                                    </button>
+                                    @if (ShowVolumeSlider)
+                                    {
+                                        <div class="volume-popover">
+                                            <input type="range" min="0" max="1" step="0.01"
+                                                   value="@TtsVolumeFormatted"
+                                                   @oninput="OnVolumeChanged" />
+                                            <span class="volume-value">@TtsVolumePercent%</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="typing-input">
+                            <input type="text" class="form-control form-control-lg @(ListeningAnswered ? (ListeningWasCorrect ? "is-valid" : (ListeningWasAlmostCorrect ? "is-almost" : "is-invalid")) : "")"
+                                   placeholder="Введите услышанное слово..."
+                                   @bind="ListeningTypedAnswer"
+                                   @bind:event="oninput"
+                                   @onkeypress="HandleListeningKeyPress"
+                                   disabled="@ListeningAnswered" />
+
+                            @if (!ListeningAnswered)
+                            {
+                                <button class="btn btn-primary btn-lg" @onclick="CheckListeningAnswer">
+                                    <i class="bi bi-check-lg me-2"></i>Проверить
+                                </button>
+                            }
+                        </div>
+
+                        @if (ListeningAnswered)
+                        {
+                            <div class="typing-feedback @(ListeningWasCorrect ? "success" : (ListeningWasAlmostCorrect ? "almost" : "error"))">
+                                @if (ListeningWasCorrect)
+                                {
+                                    <i class="bi bi-check-circle"></i>
+                                    <span>Правильно!</span>
+                                }
+                                else if (ListeningWasAlmostCorrect)
+                                {
+                                    <i class="bi bi-lightning-charge"></i>
+                                    <span>Почти правильно! Ответ: <strong>@CurrentWord.OriginalWord</strong></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle"></i>
+                                    <span>Неверно. Правильный ответ: <strong>@CurrentWord.OriginalWord</strong></span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(CurrentWord.Translation))
+                            {
+                                <div class="mt-2 text-muted">
+                                    <i class="bi bi-translate me-1"></i> @CurrentWord.Translation
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(CurrentWord.Example))
+                            {
+                                <div class="example mt-2">
+                                    <i class="bi bi-chat-quote"></i> @CurrentWord.Example
+                                    <button class="btn-tts-sm" @onclick="SpeakExample" title="Прослушать пример">
+                                        <i class="bi bi-volume-up"></i>
+                                    </button>
+                                </div>
+                            }
+                            <button class="btn btn-primary btn-lg mt-3" @onclick="NextListeningWord">
                                 <i class="bi bi-arrow-right me-2"></i>Далее
                             </button>
                         }
@@ -578,6 +704,11 @@ private int CurrentIndex;
 private int CorrectCount;
 private string CurrentMode = "mixed";
 private string ExerciseType = "flashcard";
+private string _activeExerciseType = "flashcard";
+private bool _isMixedMode;
+private int WordLimit = 0;
+private string TranslationDirection = "direct";
+private bool IsReversed;
 
 // Session tracking
 private DateTime SessionStartedAt;
@@ -594,7 +725,14 @@ private bool McqWasCorrect;
 private string TypedAnswer = "";
 private bool TypingAnswered;
 private bool TypingWasCorrect;
+private bool TypingWasAlmostCorrect;
 private Random _random = new();
+
+// Listening state
+private string ListeningTypedAnswer = "";
+private bool ListeningAnswered;
+private bool ListeningWasCorrect;
+private bool ListeningWasAlmostCorrect;
 
 // TTS state
 private double TtsVolume = 0.8;
@@ -631,15 +769,15 @@ private async Task HandleKeyDown(KeyboardEventArgs e)
 {
     if (!IsTrainingActive || CurrentWord == null) return;
 
-    if (ExerciseType == "flashcard")
+    if (ActiveExerciseType == "flashcard")
     {
         await HandleFlashcardKeyDown(e);
     }
-    else if (ExerciseType == "mcq")
+    else if (ActiveExerciseType == "mcq")
     {
         await HandleMcqKeyDown(e);
     }
-    // Typing mode handles its own key events
+    // Typing and listening modes handle their own key events
 }
 
 private async Task HandleFlashcardKeyDown(KeyboardEventArgs e)
@@ -741,7 +879,11 @@ private async Task InstallStarterPack()
     private void SetExerciseType(string type)
     {
         ExerciseType = type;
+        _isMixedMode = type == "mixed";
     }
+
+    private string DisplayedWord => CurrentWord == null ? "" : (IsReversed ? CurrentWord.Translation : CurrentWord.OriginalWord);
+    private string ExpectedAnswer => CurrentWord == null ? "" : (IsReversed ? CurrentWord.OriginalWord : CurrentWord.Translation);
 
     private async Task StartTraining(string mode)
     {
@@ -749,10 +891,14 @@ private async Task InstallStarterPack()
         IsLoading = true;
         StateHasChanged();
 
-        TrainingWords = await TrainingService.GetTrainingWordsAsync(mode);
+        var limit = WordLimit > 0 ? WordLimit : 200;
+        TrainingWords = await TrainingService.GetTrainingWordsAsync(mode, limit: limit);
 
         if (TrainingWords.Count > 0)
         {
+            if (WordLimit > 0 && TrainingWords.Count > WordLimit)
+                TrainingWords = TrainingWords.Take(WordLimit).ToList();
+
             CurrentIndex = 0;
             CorrectCount = 0;
             SessionCorrectCount = 0;
@@ -762,12 +908,17 @@ private async Task InstallStarterPack()
             CurrentWord = TrainingWords[0];
             IsAnswerRevealed = false;
             IsTrainingActive = true;
+
+            if (_isMixedMode)
+                _activeExerciseType = PickRandomExerciseType();
+            else
+                _activeExerciseType = ExerciseType;
+
             PrepareCurrentWord();
             await FocusContainer();
         }
         else
         {
-            // No words available — return to the daily plan view
             IsTrainingActive = false;
             CurrentWord = null;
             CorrectCount = 0;
@@ -775,6 +926,14 @@ private async Task InstallStarterPack()
 
         IsLoading = false;
     }
+
+    private string PickRandomExerciseType()
+    {
+        var types = new[] { "flashcard", "mcq", "typing", "listening" };
+        return types[_random.Next(types.Length)];
+    }
+
+    private string ActiveExerciseType => _isMixedMode ? _activeExerciseType : ExerciseType;
 
     private void PrepareCurrentWord()
     {
@@ -785,32 +944,70 @@ private async Task InstallStarterPack()
         SelectedMcqOption = null;
         TypingAnswered = false;
         TypingWasCorrect = false;
+        TypingWasAlmostCorrect = false;
         TypedAnswer = "";
+        ListeningAnswered = false;
+        ListeningWasCorrect = false;
+        ListeningWasAlmostCorrect = false;
+        ListeningTypedAnswer = "";
+
+        // Apply translation direction
+        IsReversed = TranslationDirection switch
+        {
+            "reverse" => true,
+            "random" => _random.Next(2) == 0,
+            _ => false
+        };
+
+        // Pick exercise type for mixed mode
+        if (_isMixedMode)
+            _activeExerciseType = PickRandomExerciseType();
 
         // Generate MCQ options if needed
-        if (ExerciseType == "mcq" && CurrentWord != null)
+        var effectiveType = _isMixedMode ? _activeExerciseType : ExerciseType;
+        if (effectiveType == "mcq" && CurrentWord != null)
         {
             GenerateMcqOptions();
+        }
+
+        // Auto-play for listening mode
+        if (effectiveType == "listening" && CurrentWord != null)
+        {
+            _ = SpeakWord();
         }
     }
 
     private void GenerateMcqOptions()
     {
         McqOptions.Clear();
-        
+
         // Add correct answer
-        McqOptions.Add(CurrentWord!.Translation);
-        
-        // Add distractors from other words
-        var otherWords = TrainingWords
-            .Where(w => w.WordId != CurrentWord.WordId && !string.IsNullOrEmpty(w.Translation))
-            .Select(w => w.Translation)
-            .Distinct()
-            .OrderBy(_ => _random.Next())
-            .Take(3)
-            .ToList();
-        
-        McqOptions.AddRange(otherWords);
+        McqOptions.Add(ExpectedAnswer);
+
+        // Add distractors from other words based on direction
+        List<string> distractors;
+        if (IsReversed)
+        {
+            distractors = TrainingWords
+                .Where(w => w.WordId != CurrentWord!.WordId && !string.IsNullOrEmpty(w.OriginalWord))
+                .Select(w => w.OriginalWord)
+                .Distinct()
+                .OrderBy(_ => _random.Next())
+                .Take(3)
+                .ToList();
+        }
+        else
+        {
+            distractors = TrainingWords
+                .Where(w => w.WordId != CurrentWord!.WordId && !string.IsNullOrEmpty(w.Translation))
+                .Select(w => w.Translation)
+                .Distinct()
+                .OrderBy(_ => _random.Next())
+                .Take(3)
+                .ToList();
+        }
+
+        McqOptions.AddRange(distractors);
         
         // If we don't have enough options, add some generic ones
         var genericOptions = new[] { "слово", "ответ", "перевод", "значение" };
@@ -862,7 +1059,7 @@ private async Task InstallStarterPack()
         
         SelectedMcqOption = option;
         McqAnswered = true;
-        McqWasCorrect = option.Equals(CurrentWord.Translation, StringComparison.OrdinalIgnoreCase);
+        McqWasCorrect = option.Equals(ExpectedAnswer, StringComparison.OrdinalIgnoreCase);
         
         // Update progress
         var quality = McqWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
@@ -897,21 +1094,43 @@ private async Task InstallStarterPack()
     private async Task CheckTypingAnswer()
     {
         if (TypingAnswered || CurrentWord == null) return;
-        
+
         TypingAnswered = true;
-        
+
         // Normalize answers for comparison
         var userAnswer = TypedAnswer.Trim().ToLowerInvariant();
-        var correctAnswer = CurrentWord.Translation.Trim().ToLowerInvariant();
+        var correctAnswer = ExpectedAnswer.Trim().ToLowerInvariant();
 
-        // Strict comparison with normalization (whitespace, case)
-        TypingWasCorrect = userAnswer == correctAnswer;
-        
+        if (userAnswer == correctAnswer)
+        {
+            TypingWasCorrect = true;
+            TypingWasAlmostCorrect = false;
+        }
+        else
+        {
+            int distance = LevenshteinDistance(userAnswer, correctAnswer);
+            int threshold = Math.Max(1, correctAnswer.Length / 5);
+            bool isAlmostCorrect = distance > 0 && distance <= threshold && correctAnswer.Length >= 3;
+
+            if (isAlmostCorrect)
+            {
+                TypingWasCorrect = false;
+                TypingWasAlmostCorrect = true;
+            }
+            else
+            {
+                TypingWasCorrect = false;
+                TypingWasAlmostCorrect = false;
+            }
+        }
+
         // Update progress
-        var quality = TypingWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
+        var quality = TypingWasCorrect ? ResponseQuality.Good 
+                    : TypingWasAlmostCorrect ? ResponseQuality.Hard 
+                    : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality);
 
-        if (TypingWasCorrect)
+        if (TypingWasCorrect || TypingWasAlmostCorrect)
         {
             CorrectCount++;
             SessionCorrectCount++;
@@ -925,6 +1144,69 @@ private async Task InstallStarterPack()
     }
 
     private async Task NextTypingWord()
+    {
+        await MoveToNextWord();
+    }
+
+    private async Task HandleListeningKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !ListeningAnswered)
+        {
+            await CheckListeningAnswer();
+        }
+    }
+
+    private async Task CheckListeningAnswer()
+    {
+        if (ListeningAnswered || CurrentWord == null) return;
+
+        ListeningAnswered = true;
+
+        var userAnswer = ListeningTypedAnswer.Trim().ToLowerInvariant();
+        var correctAnswer = CurrentWord.OriginalWord.Trim().ToLowerInvariant();
+
+        if (userAnswer == correctAnswer)
+        {
+            ListeningWasCorrect = true;
+            ListeningWasAlmostCorrect = false;
+        }
+        else
+        {
+            int distance = LevenshteinDistance(userAnswer, correctAnswer);
+            int threshold = Math.Max(1, correctAnswer.Length / 5);
+            bool isAlmostCorrect = distance > 0 && distance <= threshold && correctAnswer.Length >= 3;
+
+            if (isAlmostCorrect)
+            {
+                ListeningWasCorrect = false;
+                ListeningWasAlmostCorrect = true;
+            }
+            else
+            {
+                ListeningWasCorrect = false;
+                ListeningWasAlmostCorrect = false;
+            }
+        }
+
+        var quality = ListeningWasCorrect ? ResponseQuality.Good
+                    : ListeningWasAlmostCorrect ? ResponseQuality.Hard
+                    : ResponseQuality.Again;
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality);
+
+        if (ListeningWasCorrect || ListeningWasAlmostCorrect)
+        {
+            CorrectCount++;
+            SessionCorrectCount++;
+        }
+        else
+        {
+            SessionWrongCount++;
+            if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
+                DifficultWordsList.Add(CurrentWord.OriginalWord);
+        }
+    }
+
+    private async Task NextListeningWord()
     {
         await MoveToNextWord();
     }
@@ -968,6 +1250,8 @@ private async Task InstallStarterPack()
                     "flashcard" => "Flashcards",
                     "mcq" => "MultipleChoice",
                     "typing" => "Typing",
+                    "listening" => "Listening",
+                    "mixed" => "Mixed",
                     _ => "Mixed"
                 },
                 DictionaryId = TrainingWords.FirstOrDefault()?.DictionaryId
@@ -1043,4 +1327,26 @@ private async Task InstallStarterPack()
     };
 
     private string SessionDurationFormatted => _sessionDurationSnapshot;
+
+    private static int LevenshteinDistance(string s, string t)
+    {
+        if (string.IsNullOrEmpty(s)) return t?.Length ?? 0;
+        if (string.IsNullOrEmpty(t)) return s.Length;
+
+        var d = new int[s.Length + 1, t.Length + 1];
+        for (int i = 0; i <= s.Length; i++) d[i, 0] = i;
+        for (int j = 0; j <= t.Length; j++) d[0, j] = j;
+
+        for (int i = 1; i <= s.Length; i++)
+        {
+            for (int j = 1; j <= t.Length; j++)
+            {
+                int cost = s[i - 1] == t[j - 1] ? 0 : 1;
+                d[i, j] = Math.Min(
+                    Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
+                    d[i - 1, j - 1] + cost);
+            }
+        }
+        return d[s.Length, t.Length];
+    }
 }

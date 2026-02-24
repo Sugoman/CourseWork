@@ -140,6 +140,7 @@
                            FontWeight="Medium" Margin="0,0,0,5"/>
                 <Border Style="{StaticResource InputContainerStyle}">
                     <TextBox Text="{Binding RuleTitle, UpdateSourceTrigger=PropertyChanged}" 
+                             Validation.ErrorTemplate="{StaticResource ValidationErrorTemplate}"
                              Foreground="{DynamicResource PrimaryTextBrush}"
                              CaretBrush="{DynamicResource PrimaryTextBrush}"
                              FontSize="{DynamicResource BaseFontSize}"
@@ -205,6 +206,7 @@
                            FontWeight="Medium" Margin="0,0,0,5"/>
                 <Border Style="{StaticResource InputContainerStyle}" Padding="0">
                     <TextBox Text="{Binding MarkdownContent, UpdateSourceTrigger=PropertyChanged}" 
+                             Validation.ErrorTemplate="{StaticResource ValidationErrorTemplate}"
                              Foreground="{DynamicResource PrimaryTextBrush}"
                              CaretBrush="{DynamicResource PrimaryTextBrush}"
                              FontSize="{DynamicResource BaseFontSize}" 

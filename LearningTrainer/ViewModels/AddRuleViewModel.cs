@@ -1,6 +1,7 @@
 ﻿using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using System.ComponentModel.DataAnnotations;
 using System.Net.Http;
 using System.Text.Json;
 using System.Windows;
@@ -21,6 +22,8 @@ namespace LearningTrainer.ViewModels
         private int _difficultyLevel = 1;
         private MarkdownConfig _config;
 
+        [Required(ErrorMessage = "Заголовок обязателен")]
+        [MaxLength(70, ErrorMessage = "Максимум 70 символов")]
         public string RuleTitle
         {
             get => _ruleTitle;
@@ -33,6 +36,7 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _description, value);
         }
 
+        [Required(ErrorMessage = "Содержание обязательно")]
         public string MarkdownContent
         {
             get => _markdownContent;
@@ -72,8 +76,16 @@ namespace LearningTrainer.ViewModels
             Config = _settingsService.CurrentMarkdownConfig;
             _settingsService.MarkdownConfigChanged += OnConfigChanged;
 
-            SaveCommand = new RelayCommand(async (param) => await SaveRuleAsync());
+            SaveCommand = new RelayCommand(
+                async (param) => await SaveRuleAsync(),
+                (param) => !HasErrors && !string.IsNullOrWhiteSpace(RuleTitle) && !string.IsNullOrWhiteSpace(MarkdownContent));
             CancelCommand = new RelayCommand((param) => Cancel());
+
+            PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(RuleTitle) or nameof(MarkdownContent) or nameof(HasErrors))
+                    (SaveCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            };
         }
 
         private void OnConfigChanged(MarkdownConfig newConfig)
@@ -83,14 +95,6 @@ namespace LearningTrainer.ViewModels
 
         private async Task SaveRuleAsync()
         {
-            if (string.IsNullOrWhiteSpace(RuleTitle) || string.IsNullOrWhiteSpace(MarkdownContent))
-            {
-                EventAggregator.Instance.Publish(ShowNotificationMessage.Error(
-                    "Ошибка валидации",
-                    "Заполните заголовок и содержание!"));
-                return;
-            }
-
             try
             {
                 var newRule = new Rule

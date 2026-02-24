@@ -90,6 +90,103 @@
                     </div>
                 </div>
 
+                <!-- Test Yourself -->
+                @if (Rule.Exercises != null && Rule.Exercises.Any())
+                {
+                    <div class="card mb-4" style="border-radius: var(--radius-lg);">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4" @onclick="ToggleQuiz" style="cursor: pointer;">
+                                <h5 class="d-flex align-items-center gap-2 mb-0">
+                                    <i class="bi bi-pencil-square" style="color: var(--primary-500);"></i>
+                                    Проверь себя
+                                    <span class="badge bg-secondary bg-opacity-25 text-secondary">@Rule.Exercises.Count</span>
+                                </h5>
+                                <i class="bi @(QuizExpanded ? "bi-chevron-up" : "bi-chevron-down") fs-5 text-muted"></i>
+                            </div>
+
+                            @if (QuizExpanded)
+                            {
+                                @for (int i = 0; i < Rule.Exercises.Count; i++)
+                                {
+                                    var exercise = Rule.Exercises[i];
+                                    var index = i;
+                                    <div class="card mb-3" style="border-radius: var(--radius); border: 1px solid var(--gray-200);">
+                                        <div class="card-body p-3">
+                                            <p class="fw-semibold mb-3">
+                                                <span class="text-muted me-2">@(index + 1).</span>
+                                                @exercise.Question
+                                            </p>
+
+                                            <div class="row g-2 mb-2">
+                                                @for (int j = 0; j < exercise.Options.Length; j++)
+                                                {
+                                                    var optionIndex = j;
+                                                    var option = exercise.Options[j];
+                                                    var answered = Answers.ContainsKey(index);
+                                                    var selected = answered && Answers[index] == optionIndex;
+                                                    var isCorrect = optionIndex == exercise.CorrectIndex;
+
+                                                    var btnClass = "btn btn-outline-secondary w-100 text-start";
+                                                    if (answered)
+                                                    {
+                                                        if (isCorrect)
+                                                            btnClass = "btn btn-success w-100 text-start";
+                                                        else if (selected)
+                                                            btnClass = "btn btn-danger w-100 text-start";
+                                                    }
+
+                                                    <div class="col-6">
+                                                        <button class="@btnClass" 
+                                                                disabled="@answered"
+                                                                @onclick="() => SelectAnswer(index, optionIndex)"
+                                                                style="border-radius: var(--radius);">
+                                                            @option
+                                                        </button>
+                                                    </div>
+                                                }
+                                            </div>
+
+                                            @if (Answers.ContainsKey(index))
+                                            {
+                                                var userCorrect = Answers[index] == exercise.CorrectIndex;
+                                                <div class="mt-2 p-2 rounded" style="background: @(userCorrect ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)");">
+                                                    <small>
+                                                        @if (userCorrect)
+                                                        {
+                                                            <span class="text-success fw-semibold"><i class="bi bi-check-circle me-1"></i> Верно!</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-danger fw-semibold"><i class="bi bi-x-circle me-1"></i> Неверно</span>
+                                                        }
+                                                        @if (!string.IsNullOrWhiteSpace(exercise.Explanation))
+                                                        {
+                                                            <span class="text-muted ms-2">— @exercise.Explanation</span>
+                                                        }
+                                                    </small>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+
+                                @if (Answers.Count == Rule.Exercises.Count)
+                                {
+                                    var correctCount = Rule.Exercises.Where((e, i) => Answers.ContainsKey(i) && Answers[i] == e.CorrectIndex).Count();
+                                    <div class="card mt-3" style="border-radius: var(--radius); background: var(--gray-50);">
+                                        <div class="card-body text-center p-3">
+                                            <h5 class="mb-2">Результат: @correctCount / @Rule.Exercises.Count</h5>
+                                            <button class="btn btn-primary btn-sm" @onclick="ResetQuiz">
+                                                <i class="bi bi-arrow-clockwise me-1"></i> Попробовать снова
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+
                 <!-- Comments -->
                 <LearningTrainerWeb.Components.Shared.CommentsSection 
                     EntityType="rule" 
@@ -170,6 +267,8 @@
     private bool IsAuthenticated;
     private string? DownloadMessage;
     private bool DownloadSuccess;
+    private bool QuizExpanded = true;
+    private Dictionary<int, int> Answers = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -238,4 +337,22 @@
         3 => "Продвинутый",
         _ => "Неизвестно"
     };
+
+    private void ToggleQuiz()
+    {
+        QuizExpanded = !QuizExpanded;
+    }
+
+    private void SelectAnswer(int exerciseIndex, int optionIndex)
+    {
+        if (!Answers.ContainsKey(exerciseIndex))
+        {
+            Answers[exerciseIndex] = optionIndex;
+        }
+    }
+
+    private void ResetQuiz()
+    {
+        Answers.Clear();
+    }
 }

@@ -44,6 +44,7 @@ namespace LearningAPI.Controllers
 
             var rules = await _context.Rules
                 .IgnoreQueryFilters()
+                .Include(r => r.Exercises.OrderBy(e => e.OrderIndex))
                 .Where(r => r.UserId == currentUserId || sharedRuleIds.Contains(r.Id))
                 .Select(r => new
                 {
@@ -55,7 +56,16 @@ namespace LearningAPI.Controllers
                     r.Category,
                     r.DifficultyLevel,
                     r.CreatedAt,
-                    IsReadOnly = r.UserId != currentUserId
+                    IsReadOnly = r.UserId != currentUserId,
+                    Exercises = r.Exercises.OrderBy(e => e.OrderIndex).Select(e => new
+                    {
+                        e.Id,
+                        e.Question,
+                        e.OptionsJson,
+                        e.CorrectIndex,
+                        e.Explanation,
+                        e.OrderIndex
+                    }).ToList()
                 })
                 .ToListAsync();
 
@@ -85,6 +95,7 @@ namespace LearningAPI.Controllers
 
             var rules = await _context.Rules
                 .IgnoreQueryFilters()
+                .Include(r => r.Exercises.OrderBy(e => e.OrderIndex))
                 .Where(r => r.UserId == userId || (teacherId != null && r.UserId == teacherId))
                 .Select(r => new
                 {
@@ -96,7 +107,16 @@ namespace LearningAPI.Controllers
                     r.Category,
                     r.DifficultyLevel,
                     r.CreatedAt,
-                    IsReadOnly = r.UserId != userId
+                    IsReadOnly = r.UserId != userId,
+                    Exercises = r.Exercises.OrderBy(e => e.OrderIndex).Select(e => new
+                    {
+                        e.Id,
+                        e.Question,
+                        e.OptionsJson,
+                        e.CorrectIndex,
+                        e.Explanation,
+                        e.OrderIndex
+                    }).ToList()
                 })
                 .ToListAsync();
 
@@ -133,8 +153,20 @@ namespace LearningAPI.Controllers
                 Category = ruleDto.Category ?? "Grammar",
                 DifficultyLevel = ruleDto.DifficultyLevel,
                 CreatedAt = ruleDto.CreatedAt,
-                UserId = userId  
+                UserId = userId
             };
+
+            if (ruleDto.Exercises != null && ruleDto.Exercises.Count > 0)
+            {
+                newRule.Exercises = ruleDto.Exercises.Select((e, idx) => new GrammarExercise
+                {
+                    Question = e.Question,
+                    Options = e.Options,
+                    CorrectIndex = e.CorrectIndex,
+                    Explanation = e.Explanation ?? "",
+                    OrderIndex = e.OrderIndex > 0 ? e.OrderIndex : idx
+                }).ToList();
+            }
 
             _context.Rules.Add(newRule);
             await _context.SaveChangesAsync();
@@ -174,15 +206,37 @@ namespace LearningAPI.Controllers
 
             var userId = GetUserId();
 
-            var existingRule = await _context.Rules.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+            var existingRule = await _context.Rules
+                .Include(r => r.Exercises)
+                .FirstOrDefaultAsync(r => r.Id == id);
             if (existingRule == null) return NotFound();
 
             if (existingRule.UserId != userId) return Forbid("Вы не можете редактировать чужое правило.");
 
-            rule.UserId = userId;
-            rule.CreatedAt = existingRule.CreatedAt;
+            existingRule.Title = rule.Title;
+            existingRule.MarkdownContent = rule.MarkdownContent;
+            existingRule.Description = rule.Description;
+            existingRule.Category = rule.Category;
+            existingRule.DifficultyLevel = rule.DifficultyLevel;
+            existingRule.IsPublished = rule.IsPublished;
+            existingRule.Rating = rule.Rating;
+            existingRule.RatingCount = rule.RatingCount;
+            existingRule.DownloadCount = rule.DownloadCount;
 
-            _context.Entry(rule).State = EntityState.Modified;
+            // Update exercises: remove old, add new
+            if (rule.Exercises != null)
+            {
+                _context.GrammarExercises.RemoveRange(existingRule.Exercises);
+                existingRule.Exercises = rule.Exercises.Select((e, idx) => new GrammarExercise
+                {
+                    RuleId = id,
+                    Question = e.Question,
+                    OptionsJson = e.OptionsJson,
+                    CorrectIndex = e.CorrectIndex,
+                    Explanation = e.Explanation ?? "",
+                    OrderIndex = e.OrderIndex > 0 ? e.OrderIndex : idx
+                }).ToList();
+            }
 
             try
             {

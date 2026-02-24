@@ -108,6 +108,17 @@
     <system:String x:Key="Loc.EditRule.DiscriptionLabel">Описание</system:String>
     <system:String x:Key="Loc.EditRule.LivePreviewLabel">Предпросмотр</system:String>
     <system:String x:Key="Loc.EditRule.MarkdownRenderedLabel">Markdown (Результат)</system:String>
+    <system:String x:Key="Loc.EditRule.ExercisesLabel">Упражнения</system:String>
+    <system:String x:Key="Loc.EditRule.QuestionLabel">Вопрос</system:String>
+    <system:String x:Key="Loc.EditRule.OptionsLabel">Варианты ответов</system:String>
+    <system:String x:Key="Loc.EditRule.CorrectAnswerLabel">Правильный ответ:</system:String>
+    <system:String x:Key="Loc.EditRule.ExplanationLabel">Объяснение</system:String>
+    <system:String x:Key="Loc.EditRule.AddExerciseButton">Добавить упражнение</system:String>
+    <system:String x:Key="Loc.EditRule.QuizSectionLabel">Проверь себя</system:String>
+    <system:String x:Key="Loc.EditRule.CorrectAnswer">Правильно!</system:String>
+    <system:String x:Key="Loc.EditRule.WrongAnswer">Неверно</system:String>
+    <system:String x:Key="Loc.EditRule.ResultLabel">Результат: </system:String>
+    <system:String x:Key="Loc.EditRule.RetryButton">Пройти заново</system:String>
                                 
                                 <!-- SETTINGS -->
     <system:String x:Key="Loc.Settings.GeneralRadio">Общие</system:String>

@@ -27,6 +27,7 @@ public interface IContentApiService
     // My Content
     Task<List<MyDictionaryItem>> GetMyDictionariesAsync();
     Task<List<MyRuleItem>> GetMyRulesAsync();
+    Task<MyRuleDetailItem?> GetMyRuleDetailsAsync(int id);
     Task<List<DownloadedItem>> GetDownloadedContentAsync();
     Task PublishDictionaryAsync(int id);
     Task UnpublishDictionaryAsync(int id);
@@ -198,6 +199,12 @@ public class ContentApiService : IContentApiService
         await ApplyAuthAsync();
         var result = await _httpClient.GetFromJsonAsync<List<MyRuleItem>>("api/marketplace/my/rules");
         return result ?? new List<MyRuleItem>();
+    }
+
+    public async Task<MyRuleDetailItem?> GetMyRuleDetailsAsync(int id)
+    {
+        await ApplyAuthAsync();
+        return await _httpClient.GetFromJsonAsync<MyRuleDetailItem>($"api/marketplace/my/rules/{id}");
     }
 
     public async Task<List<DownloadedItem>> GetDownloadedContentAsync()
@@ -400,6 +407,7 @@ public class RuleDetailDto : RuleListItem
     public string HtmlContent { get; set; } = "";
     public int RatingCount { get; set; }
     public int AuthorContentCount { get; set; }
+    public List<ExerciseItem> Exercises { get; set; } = new();
 }
 
 public class CommentItem
@@ -439,6 +447,31 @@ public class DownloadedItem
     public string Title { get; set; } = "";
     public string AuthorName { get; set; } = "";
     public DateTime DownloadedAt { get; set; }
+}
+
+public class MyRuleDetailItem
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string Category { get; set; } = "";
+    public int DifficultyLevel { get; set; }
+    public bool IsPublished { get; set; }
+    public double Rating { get; set; }
+    public int Downloads { get; set; }
+    public string HtmlContent { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
+    public List<ExerciseItem> Exercises { get; set; } = new();
+}
+
+public class ExerciseItem
+{
+    public int Id { get; set; }
+    public string Question { get; set; } = "";
+    public string[] Options { get; set; } = Array.Empty<string>();
+    public int CorrectIndex { get; set; }
+    public string Explanation { get; set; } = "";
+    public int OrderIndex { get; set; }
 }
 
 public class ExportResult

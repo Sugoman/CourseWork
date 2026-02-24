@@ -20,6 +20,17 @@
 
 
 
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!--              VALIDATION ERROR TEMPLATE                            -->
+            <!-- ═══════════════════════════════════════════════════════════════════ -->
+            <ControlTemplate x:Key="ValidationErrorTemplate">
+                <StackPanel>
+                    <AdornedElementPlaceholder x:Name="adorner"/>
+                    <TextBlock Text="{Binding ElementName=adorner, Path=AdornedElement.(Validation.Errors)/ErrorContent}" 
+                               Foreground="#EF4444" FontSize="11" Margin="4,4,0,0" FontWeight="Medium"/>
+                </StackPanel>
+            </ControlTemplate>
+
             <system:Double x:Key="BaseFontSize">14</system:Double>
             <system:Double x:Key="HeaderFontSize">22</system:Double>
             <system:Double x:Key="BiggerHeaderFontSize">27</system:Double>
@@ -753,6 +764,10 @@
                                             <DropShadowEffect ShadowDepth="0" BlurRadius="15" Color="#3FB950" Opacity="0.4"/>
                                         </Setter.Value>
                                     </Setter>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.5"/>
+                                    <Setter Property="Cursor" Value="Arrow"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
