@@ -40,6 +40,7 @@ namespace LearningTrainer.ViewModels
         public ICommand OpenStatisticsCommand { get; }
         public ICommand CreateDictionaryCommand { get; }
         public ICommand ImportDictionaryCommand { get; }
+        public ICommand GenerateAiDictionaryCommand { get; }
         public ICommand CreateRuleCommand { get; }
         public ICommand AddWordCommand { get; }
         public ICommand StartLearningCommand { get; }
@@ -861,6 +862,13 @@ namespace LearningTrainer.ViewModels
                 if (!NotificationViewModel.CheckPermissionAndNotify("Импортировать словарь", _permissionService?.CanCreateDictionary ?? true, "ImportDictionary"))
                     return;
                 await ImportDictionary();
+            });
+            GenerateAiDictionaryCommand = new RelayCommand((param) =>
+            {
+                if (!NotificationViewModel.CheckPermissionAndNotify("ИИ-генератор", _permissionService?.CanCreateDictionary ?? true, "CreateDictionary"))
+                    return;
+                var vm = new AiDictionaryGeneratorViewModel(_dataService);
+                EventAggregator.Instance.Publish(vm);
             });
             DisplayDictionaries = new ObservableCollection<DictionaryViewModel>();
             OpenSettingsCommand = new RelayCommand(OpenSettings);

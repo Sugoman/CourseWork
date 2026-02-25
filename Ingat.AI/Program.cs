@@ -94,6 +94,43 @@ app.MapPost("/api/ai/example", async (ExampleRequest req, IAiProvider ai, ILogge
     }
 });
 
+// POST /api/ai/generate-dictionary
+app.MapPost("/api/ai/generate-dictionary", async (GenerateDictionaryRequest req, IAiProvider ai, ILogger<Program> logger) =>
+{
+    if (string.IsNullOrWhiteSpace(req.Topic))
+        return Results.BadRequest(new { error = "Topic is required" });
+
+    if (req.Topic.Length > 300)
+        return Results.BadRequest(new { error = "Topic too long (max 300 chars)" });
+
+    req.WordCount = Math.Clamp(req.WordCount, 5, 30);
+
+    try
+    {
+        var prompt = PromptTemplates.GenerateDictionaryUser(
+            req.Topic.Trim(), req.SourceLanguage, req.TargetLanguage,
+            req.LanguageLevel, req.WordCount);
+        var raw = await ai.CompleteAsync(PromptTemplates.GenerateDictionarySystem, prompt);
+
+        logger.LogInformation("AI generate-dictionary raw for '{Topic}': {Raw}", req.Topic, raw[..Math.Min(500, raw.Length)]);
+
+        var parsed = TryParseJson<GenerateDictionaryResponse>(raw, logger);
+        if (parsed == null || parsed.Words.Count == 0)
+            return Results.Json(new { error = "AI returned invalid response", rawPreview = raw[..Math.Min(300, raw.Length)] }, statusCode: 502);
+
+        return Results.Ok(parsed);
+    }
+    catch (HttpRequestException ex)
+    {
+        logger.LogError(ex, "Ollama connection error");
+        return Results.Json(new { error = "AI service unavailable" }, statusCode: 503);
+    }
+    catch (TaskCanceledException)
+    {
+        return Results.Json(new { error = "AI request timed out" }, statusCode: 504);
+    }
+});
+
 app.Run();
 
 /// <summary>

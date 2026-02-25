@@ -99,23 +99,23 @@
                                     <div class="d-flex gap-2 flex-wrap">
                                         @if (!dict.IsPublished)
                                         {
-                                            <button class="btn btn-primary btn-sm" @onclick="() => PublishDictionary(dict.Id)">
+                                            <button class="btn btn-primary btn-sm gap-2" @onclick="() => PublishDictionary(dict.Id)">
                                                 <i class="bi bi-cloud-upload me-1"></i> Опубликовать
                                             </button>
                                         }
                                         else
                                         {
-                                            <button class="btn btn-outline-danger btn-sm" @onclick="() => UnpublishDictionary(dict.Id)">
+                                            <button class="btn btn-outline-danger btn-sm gap-2" @onclick="() => UnpublishDictionary(dict.Id)">
                                                 <i class="bi bi-x-circle me-1"></i> Снять
                                             </button>
                                         }
                                         <button class="btn btn-outline-secondary btn-sm" title="Экспорт JSON"
                                                 @onclick="() => ExportDictionaryAsJson(dict.Id, dict.Name)">
-                                            <i class="bi bi-filetype-json"></i>
+                                            <i class="bi bi-filetype-json " style="font-size: 1.2rem;"></i>
                                         </button>
                                         <button class="btn btn-outline-secondary btn-sm" title="Экспорт CSV"
                                                 @onclick="() => ExportDictionaryAsCsv(dict.Id, dict.Name)">
-                                            <i class="bi bi-filetype-csv"></i>
+                                            <i class="bi bi-filetype-csv" ></i>
                                         </button>
                                     </div>
                                 </div>
@@ -355,82 +355,121 @@
 
 @if (ShowImportModal)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: var(--radius-lg);">
-                <div class="modal-header">
-                    <h5 class="modal-title">
-                        <i class="bi bi-upload me-2"></i>Импорт словаря
-                    </h5>
-                    <button type="button" class="btn-close" @onclick="CloseImportDialog"></button>
+    <div class="import-modal-overlay" @onclick="CloseImportDialog">
+        <div class="import-modal" @onclick:stopPropagation="true">
+            <!-- Gradient accent bar -->
+            <div class="import-modal-accent"></div>
+
+            <!-- Header -->
+            <div class="import-modal-header">
+                <div class="import-modal-icon">
+                    <i class="bi bi-cloud-arrow-up"></i>
                 </div>
-                <div class="modal-body">
-                    <p class="text-muted small mb-3">
-                        Поддерживается JSON любой структуры. Система автоматически определит поля
-                        (Original/Word → слово, Translation/Meaning → перевод и т.д.).
-                    </p>
+                <div>
+                    <h4 class="import-modal-title">Импорт словаря</h4>
+                    <p class="import-modal-subtitle">Загрузите JSON или CSV файл — структура распознается автоматически</p>
+                </div>
+                <button type="button" class="import-modal-close" @onclick="CloseImportDialog">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Файл <span class="text-danger">*</span></label>
-                        <InputFile OnChange="OnImportFileSelected" accept=".json,.csv" class="form-control" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Название словаря</label>
-                        <input type="text" class="form-control" @bind="ImportDictionaryName"
-                               placeholder="Определится автоматически из имени файла" />
-                    </div>
-
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <label class="form-label">Язык оригинала</label>
-                            <select class="form-select" @bind="ImportLanguageFrom">
-                                <option value="">Авто (English)</option>
-                                <option value="English">English</option>
-                                <option value="Russian">Русский</option>
-                                <option value="German">Deutsch</option>
-                                <option value="Spanish">Español</option>
-                            </select>
+            <!-- Body -->
+            <div class="import-modal-body">
+                <!-- Drop zone -->
+                <div class="import-dropzone-wrap">
+                    <label class="import-field-label">Файл словаря</label>
+                    <div class="import-dropzone @(ImportFile != null ? "import-dropzone--filled" : "")">
+                        <div class="import-dropzone-content">
+                            @if (ImportFile == null)
+                            {
+                                <div class="import-dropzone-icon">
+                                    <i class="bi bi-file-earmark-arrow-up"></i>
+                                </div>
+                                <span class="import-dropzone-title">Выберите файл</span>
+                                <span class="import-dropzone-hint">или перетащите сюда · JSON, CSV</span>
+                            }
+                            else
+                            {
+                                <div class="import-dropzone-icon import-dropzone-icon--success">
+                                    <i class="bi bi-file-earmark-check-fill"></i>
+                                </div>
+                                <span class="import-dropzone-title">@ImportFile.Name</span>
+                                <span class="import-dropzone-hint">@((ImportFile.Size / 1024.0).ToString("F1")) KB</span>
+                            }
                         </div>
-                        <div class="col-6">
-                            <label class="form-label">Язык перевода</label>
-                            <select class="form-select" @bind="ImportLanguageTo">
-                                <option value="">Авто (Russian)</option>
-                                <option value="English">English</option>
-                                <option value="Russian">Русский</option>
-                                <option value="German">Deutsch</option>
-                                <option value="Spanish">Español</option>
-                            </select>
-                        </div>
+                        <InputFile OnChange="OnImportFileSelected" accept=".json,.csv"
+                                   class="import-dropzone-input" />
                     </div>
+                </div>
 
-                    @if (!string.IsNullOrEmpty(ImportError))
+                <!-- Name field -->
+                <div class="import-field">
+                    <label class="import-field-label">Название</label>
+                    <input type="text" class="form-control" @bind="ImportDictionaryName"
+                           placeholder="Название словаря (необязательно)" />
+                </div>
+
+                <!-- Language selectors -->
+                <div class="import-lang-row">
+                    <div class="import-field">
+                        <label class="import-field-label">
+                            <i class="bi bi-translate me-1"></i> Оригинал
+                        </label>
+                        <select class="form-select" @bind="ImportLanguageFrom">
+                            <option value="">Автоопределение</option>
+                            <option value="English">English</option>
+                            <option value="Russian">Русский</option>
+                            <option value="German">Deutsch</option>
+                            <option value="Spanish">Español</option>
+                        </select>
+                    </div>
+                    <div class="import-lang-arrow">
+                        <i class="bi bi-arrow-right"></i>
+                    </div>
+                    <div class="import-field">
+                        <label class="import-field-label">
+                            <i class="bi bi-translate me-1"></i> Перевод
+                        </label>
+                        <select class="form-select" @bind="ImportLanguageTo">
+                            <option value="">Автоопределение</option>
+                            <option value="English">English</option>
+                            <option value="Russian">Русский</option>
+                            <option value="German">Deutsch</option>
+                            <option value="Spanish">Español</option>
+                        </select>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(ImportError))
+                {
+                    <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <div>@ImportError</div>
+                    </div>
+                }
+            </div>
+
+            <!-- Footer -->
+            <div class="import-modal-footer">
+                <button class="btn import-btn-cancel" @onclick="CloseImportDialog">Отмена</button>
+                <button class="btn btn-primary import-btn-submit" @onclick="ImportDictionary"
+                        disabled="@(IsImporting || ImportFile == null)">
+                    @if (IsImporting)
                     {
-                        <div class="alert alert-danger mt-3 mb-0">
-                            <i class="bi bi-exclamation-triangle me-1"></i> @ImportError
-                        </div>
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        <span>Импорт...</span>
                     }
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CloseImportDialog">Отмена</button>
-                    <button class="btn btn-primary" @onclick="ImportDictionary" disabled="@(IsImporting || ImportFile == null)">
-                        @if (IsImporting)
-                        {
-                            <span class="spinner-border spinner-border-sm me-1"></span>
-                            <span>Импорт...</span>
-                        }
-                        else
-                        {
-                            <i class="bi bi-upload me-1"></i>
-                            <span>Импортировать</span>
-                        }
-                    </button>
-                </div>
+                    else
+                    {
+                        <i class="bi bi-upload me-2"></i>
+                        <span>Импортировать</span>
+                    }
+                </button>
             </div>
         </div>
     </div>
 }
-
 @if (!string.IsNullOrEmpty(ExportMessage))
 {
     <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050; margin-top: 80px;">

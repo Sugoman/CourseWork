@@ -82,6 +82,19 @@
                         Command="{Binding ImportDictionaryCommand}"
                         Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
+                        <Button Style="{StaticResource NavButtonStyle}" 
+                                Command="{Binding GenerateAiDictionaryCommand}"
+                                Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Button.ContentTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🤖" FontSize="16" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{DynamicResource Loc.AiGen.ButtonLabel}" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </Button.ContentTemplate>
+                        </Button>
+
                         <Button Style="{StaticResource NavButtonStyle}" Command="{Binding OpenMarketplaceCommand}" Margin="10,0,0,0">
                             <Button.ContentTemplate>
                                 <DataTemplate>

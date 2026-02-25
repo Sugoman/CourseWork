@@ -23,7 +23,7 @@
         <div class="stats-header">
             <h1><i class="bi bi-graph-up me-2"></i>Статистика</h1>
             <div class="period-selector">
-                <select class="form-select" @bind="SelectedPeriod" @bind:after="LoadStats">
+                <select class="form-select " @bind="SelectedPeriod" @bind:after="LoadStats">
                     <option value="week">Неделя</option>
                     <option value="month">Месяц</option>
                     <option value="3months">3 месяца</option>
@@ -53,7 +53,7 @@
                     <div class="stat-label">Дней подряд</div>
                 </div>
                 <div class="stat-badge">
-                    <i class="bi bi-trophy-fill me-1"></i>Лучший: @Stats.BestStreak
+                    <i class="bi bi-trophy-fill"></i> Лучший: @Stats.BestStreak
                 </div>
             </div>
 
@@ -64,8 +64,8 @@
                     <div class="stat-label">Точность</div>
                 </div>
                 <div class="stat-badge">
-                    <i class="bi bi-check-circle text-success me-1"></i>@Stats.TotalCorrectAnswers
-                    <i class="bi bi-x-circle text-danger ms-2 me-1"></i>@Stats.TotalWrongAnswers
+                    <i class="bi bi-check-circle text-success me-1"></i> @Stats.TotalCorrectAnswers
+                    <i class="bi bi-x-circle text-danger ms-2 me-1"></i> @Stats.TotalWrongAnswers
                 </div>
             </div>
 
@@ -176,7 +176,7 @@
         @if (Stats.DictionaryStatistics.Any())
         {
             <div class="section-card">
-                <div class="section-header">
+                <div class="section-header" >
                     <h3><i class="bi bi-collection me-2"></i>Прогресс по словарям</h3>
                 </div>
                 <div class="dictionaries-progress">

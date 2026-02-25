@@ -95,6 +95,19 @@
     <system:String x:Key="Loc.AddWord.AiTranslateAllToolTip">Перевести все слова через ИИ</system:String>
     <system:String x:Key="Loc.AddWord.PartOfSpeechLabel">Часть речи</system:String>
     <system:String x:Key="Loc.AddWord.LanguageLevelLabel">Уровень (CEFR)</system:String>
+
+                                <!-- AI DICTIONARY GENERATOR -->
+    <system:String x:Key="Loc.Tab.AiGenerator">🤖 ИИ-генератор</system:String>
+    <system:String x:Key="Loc.AiGen.ButtonLabel">ИИ-генератор</system:String>
+    <system:String x:Key="Loc.AiGen.Title">Генератор словарей</system:String>
+    <system:String x:Key="Loc.AiGen.Subtitle">Опишите тему, и ИИ сгенерирует словарь с переводами и примерами. Например: «Еда и рестораны», «IT термины», «Путешествия».</system:String>
+    <system:String x:Key="Loc.AiGen.TopicLabel">Тема словаря</system:String>
+    <system:String x:Key="Loc.AiGen.LangFromLabel">Язык оригинала</system:String>
+    <system:String x:Key="Loc.AiGen.LangToLabel">Язык перевода</system:String>
+    <system:String x:Key="Loc.AiGen.LevelLabel">Уровень (CEFR)</system:String>
+    <system:String x:Key="Loc.AiGen.WordCountLabel">Кол-во слов (5–30)</system:String>
+    <system:String x:Key="Loc.AiGen.DictNameLabel">Название словаря</system:String>
+    <system:String x:Key="Loc.AiGen.Disclaimer">⚠️ Сгенерировано с помощью ИИ. ИИ может ошибаться — проверьте переводы перед сохранением.</system:String>
                                 
                                 <!-- DICTIONARY MANAGER -->
     <system:String x:Key="Loc.DictManager.TotalWordsLabel">Всего слов:</system:String>

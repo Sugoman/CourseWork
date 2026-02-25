@@ -208,7 +208,10 @@
         IsDownloading = true;
         try
         {
-            await ContentApi.DownloadDictionaryAsync(Id);
+            var downloadTask = ContentApi.DownloadDictionaryAsync(Id);
+            var delayTask = Task.Delay(800);
+
+            await Task.WhenAll(downloadTask, delayTask);
             DownloadMessage = "Словарь успешно скачан!";
             DownloadSuccess = true;
         }

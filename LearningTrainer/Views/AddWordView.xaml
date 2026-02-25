@@ -97,7 +97,8 @@
                                       Foreground="{DynamicResource PrimaryTextBrush}"
                                       FontSize="{DynamicResource BaseFontSize}"
                                       Background="Transparent"
-                                      BorderThickness="0"/>
+                                      BorderThickness="0"
+                                      Style="{StaticResource SortComboBoxStyle}"/>
                         </Border>
                     </StackPanel>
                     <StackPanel Grid.Column="2">
@@ -110,7 +111,10 @@
                                       Foreground="{DynamicResource PrimaryTextBrush}"
                                       FontSize="{DynamicResource BaseFontSize}"
                                       Background="Transparent"
-                                      BorderThickness="0"/>
+                                      BorderThickness="0"
+                                      Style="{StaticResource SortComboBoxStyle}"
+                                      
+                                      />
                         </Border>
                     </StackPanel>
                 </Grid>

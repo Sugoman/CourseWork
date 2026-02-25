@@ -15,17 +15,22 @@
     </div>
 
     <!-- Filters -->
-    <div class="card mb-4" style="border-radius: var(--radius-lg);">
+    <div class="card mb-4 " style="border-radius: var(--radius-lg);">
         <div class="card-body p-4">
             <div class="row g-3 align-items-end">
                 <div class="col-md-5">
-                    <label class="form-label small text-muted">
-                        <i class="bi bi-search me-1"></i> Поиск
-                    </label>
+                    <label class="form-label small fw-bold text-muted">Поиск</label>
+    
                     <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control" placeholder="Название правила..." 
-                               @bind="SearchQuery" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+                        <span class="input-group-text bg-white border-end-0 text-muted">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text"
+                               class="form-control border-start-0 ps-0"
+                               placeholder="Название правила..."
+                               @bind="SearchQuery"
+                               @bind:event="oninput"
+                               @onkeyup="OnSearchKeyUp" />
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -39,7 +44,7 @@
                         <option value="Pronunciation">Произношение</option>
                     </select>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-3">
                     <label class="form-label small text-muted">
                         <i class="bi bi-bar-chart me-1"></i> Уровень
                     </label>
@@ -52,7 +57,7 @@
                 </div>
                 <div class="col-md-2" style="margin-top: 32px;">
                     <button class="btn btn-primary w-100 gap-2" @onclick="ApplyFilters">
-                        <i class="bi bi-funnel me-1"></i> Найти
+                        <i class="bi me-1"></i> Найти
                     </button>
                 </div>
             </div>

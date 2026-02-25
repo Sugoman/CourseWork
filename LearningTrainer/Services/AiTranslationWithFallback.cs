@@ -84,4 +84,13 @@ public sealed class AiTranslationWithFallback : IAiTranslationService
 
         return new List<AiExampleResult>();
     }
+
+    public async Task<List<AiGeneratedWordEntry>> GenerateDictionaryAsync(
+        string topic, string sourceLanguage, string targetLanguage,
+        string languageLevel, int wordCount,
+        CancellationToken ct = default)
+    {
+        // Генерация словаря — только через AI, fallback невозможен
+        return await _ai.GenerateDictionaryAsync(topic, sourceLanguage, targetLanguage, languageLevel, wordCount, ct);
+    }
 }

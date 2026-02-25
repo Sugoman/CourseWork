@@ -24,4 +24,12 @@ public interface IAiTranslationService
         string word, string language, string targetLanguage,
         string? partOfSpeech = null, string? languageLevel = null,
         int count = 1, CancellationToken ct = default);
+
+    /// <summary>
+    /// Генерация целого словаря по теме с помощью LLM.
+    /// </summary>
+    Task<List<AiGeneratedWordEntry>> GenerateDictionaryAsync(
+        string topic, string sourceLanguage, string targetLanguage,
+        string languageLevel, int wordCount,
+        CancellationToken ct = default);
 }

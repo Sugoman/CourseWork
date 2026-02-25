@@ -1,0 +1,242 @@
+<UserControl x:Class="LearningTrainer.Views.AiDictionaryGeneratorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:LearningTrainer.Converters"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="700"
+             Background="{DynamicResource MainBackgroundBrush}">
+
+    <UserControl.Resources>
+        <converters:StringNullOrEmptyToVisibilityConverter x:Key="StringNullOrEmptyToVisibilityConverter"/>
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:InvertedBooleanToVisibilityConverter x:Key="InvertedBooleanToVisibilityConverter"/>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+        <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" 
+                CornerRadius="12" 
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                Margin="20"
+                Padding="30"
+                MaxWidth="700"
+                VerticalAlignment="Top">
+
+            <Border.Effect>
+                <DropShadowEffect Color="Black" Opacity="0.15" BlurRadius="15" ShadowDepth="4"/>
+            </Border.Effect>
+
+            <StackPanel>
+                <!-- Заголовок -->
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Text="🤖" FontSize="24" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="{DynamicResource Loc.AiGen.Title}" 
+                               FontSize="{DynamicResource HeaderFontSize}"
+                               FontWeight="Bold" 
+                               Foreground="{DynamicResource PrimaryTextBrush}"/>
+                </StackPanel>
+
+                <TextBlock Text="{DynamicResource Loc.AiGen.Subtitle}" 
+                           Foreground="{DynamicResource TertiaryTextBrush}"
+                           FontSize="13" TextWrapping="Wrap" Margin="0,0,0,20"/>
+
+                <!-- Тема -->
+                <TextBlock Text="{DynamicResource Loc.AiGen.TopicLabel}" 
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontWeight="Medium" Margin="0,0,0,5"/>
+                <Border Style="{StaticResource InputContainerStyle}">
+                    <TextBox Text="{Binding Topic, UpdateSourceTrigger=PropertyChanged}" 
+                             Foreground="{DynamicResource PrimaryTextBrush}"
+                             CaretBrush="{DynamicResource PrimaryTextBrush}"
+                             FontSize="{DynamicResource BaseFontSize}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0,2"
+                             Height="50" 
+                             VerticalContentAlignment="Top"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="False"/>
+                </Border>
+
+                <!-- Настройки: 2x2 grid -->
+                <Grid Margin="0,15,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="12"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Язык оригинала -->
+                    <StackPanel Grid.Row="0" Grid.Column="0">
+                        <TextBlock Text="{DynamicResource Loc.AiGen.LangFromLabel}" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   FontWeight="Medium" Margin="0,0,0,5"/>
+                        <Border Style="{StaticResource InputContainerStyle}">
+                            <ComboBox ItemsSource="{Binding Languages}" 
+                                      SelectedItem="{Binding SelectedLanguageFrom}"
+                                      Foreground="{DynamicResource PrimaryTextBrush}"
+                                      FontSize="{DynamicResource BaseFontSize}"
+                                      Background="Transparent" BorderThickness="0"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Язык перевода -->
+                    <StackPanel Grid.Row="0" Grid.Column="2">
+                        <TextBlock Text="{DynamicResource Loc.AiGen.LangToLabel}" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   FontWeight="Medium" Margin="0,0,0,5"/>
+                        <Border Style="{StaticResource InputContainerStyle}">
+                            <ComboBox ItemsSource="{Binding Languages}" 
+                                      SelectedItem="{Binding SelectedLanguageTo}"
+                                      Foreground="{DynamicResource PrimaryTextBrush}"
+                                      FontSize="{DynamicResource BaseFontSize}"
+                                      Background="Transparent" BorderThickness="0"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Уровень CEFR -->
+                    <StackPanel Grid.Row="2" Grid.Column="0">
+                        <TextBlock Text="{DynamicResource Loc.AiGen.LevelLabel}" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   FontWeight="Medium" Margin="0,0,0,5"/>
+                        <Border Style="{StaticResource InputContainerStyle}">
+                            <ComboBox ItemsSource="{Binding LanguageLevels}" 
+                                      SelectedItem="{Binding SelectedLevel}"
+                                      Foreground="{DynamicResource PrimaryTextBrush}"
+                                      FontSize="{DynamicResource BaseFontSize}"
+                                      Background="Transparent" BorderThickness="0"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Кол-во слов -->
+                    <StackPanel Grid.Row="2" Grid.Column="2">
+                        <TextBlock Text="{DynamicResource Loc.AiGen.WordCountLabel}" 
+                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                   FontWeight="Medium" Margin="0,0,0,5"/>
+                        <Border Style="{StaticResource InputContainerStyle}">
+                            <TextBox Text="{Binding WordCount, UpdateSourceTrigger=PropertyChanged}" 
+                                     Foreground="{DynamicResource PrimaryTextBrush}"
+                                     CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                     FontSize="{DynamicResource BaseFontSize}"
+                                     Background="Transparent" BorderThickness="0"
+                                     Padding="0,2"/>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Кнопка генерации -->
+                <Button Command="{Binding GenerateCommand}" 
+                        Style="{StaticResource SuccessButton}" 
+                        HorizontalAlignment="Stretch"
+                        Margin="0,20,0,0" Height="42">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="🤖 Сгенерировать" FontSize="14" FontWeight="SemiBold"
+                                   Visibility="{Binding IsGenerating, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
+                        <TextBlock Text="⏳ Генерация..." FontSize="14"
+                                   Visibility="{Binding IsGenerating, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Дисклеймер -->
+                <Border Background="{DynamicResource InputBackgroundBrush}" 
+                        CornerRadius="6" Padding="10,6" Margin="0,12,0,0"
+                        Visibility="{Binding HasResults, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock Text="{DynamicResource Loc.AiGen.Disclaimer}" 
+                               Foreground="{DynamicResource TertiaryTextBrush}" 
+                               FontSize="12" FontStyle="Italic" TextWrapping="Wrap"/>
+                </Border>
+
+                <!-- Статус -->
+                <TextBlock Text="{Binding StatusMessage}" 
+                           Foreground="{DynamicResource SecondaryTextBrush}"
+                           FontWeight="Medium" FontSize="13" Margin="0,10,0,0"
+                           Visibility="{Binding StatusMessage, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}, ConverterParameter=invert}"/>
+
+                <!-- Результаты -->
+                <StackPanel Visibility="{Binding HasResults, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    
+                    <!-- Название словаря -->
+                    <TextBlock Text="{DynamicResource Loc.AiGen.DictNameLabel}" 
+                               Foreground="{DynamicResource SecondaryTextBrush}"
+                               FontWeight="Medium" Margin="0,15,0,5"/>
+                    <Border Style="{StaticResource InputContainerStyle}">
+                        <TextBox Text="{Binding DictionaryName, UpdateSourceTrigger=PropertyChanged}" 
+                                 Foreground="{DynamicResource PrimaryTextBrush}"
+                                 CaretBrush="{DynamicResource PrimaryTextBrush}"
+                                 FontSize="{DynamicResource BaseFontSize}"
+                                 Background="Transparent" BorderThickness="0"
+                                 Padding="0,2"/>
+                    </Border>
+
+                    <!-- Таблица слов -->
+                    <DataGrid ItemsSource="{Binding GeneratedWords}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              HeadersVisibility="Column"
+                              MaxHeight="350"
+                              Margin="0,10,0,0"
+                              Background="{DynamicResource SecondaryMainBackgroundBrush}"
+                              BorderThickness="1"
+                              BorderBrush="{DynamicResource BorderBrush}"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="{DynamicResource SeparatorBrush}"
+                              RowHeight="36" FontSize="13"
+                              IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Слово" Binding="{Binding Original}" Width="*"
+                                                Foreground="{DynamicResource PrimaryTextBrush}"/>
+                            <DataGridTextColumn Header="Перевод" Binding="{Binding Translation}" Width="*"
+                                                Foreground="{DynamicResource PrimaryTextBrush}"/>
+                            <DataGridTextColumn Header="Часть речи" Binding="{Binding PartOfSpeech}" Width="80"
+                                                Foreground="{DynamicResource TertiaryTextBrush}"/>
+                            <DataGridTemplateColumn Header="" Width="36">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="✕" FontSize="12" Cursor="Hand"
+                                                Background="Transparent" BorderThickness="0"
+                                                Foreground="#DC2626"
+                                                Command="{Binding DataContext.RemoveWordCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Кнопки: Сохранить / Очистить -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+                        <Button Content="Очистить" 
+                                Command="{Binding ClearCommand}"
+                                Style="{StaticResource BaseButton}" 
+                                Width="110" Margin="0,0,10,0"/>
+                        <Button Command="{Binding SaveCommand}"
+                                Style="{StaticResource SuccessButton}" 
+                                Width="180"
+                                IsEnabled="{Binding IsSaving, Converter={StaticResource InvertedBooleanToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="💾 Сохранить словарь" FontSize="13" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Кнопка Готово -->
+                <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" 
+                        Margin="0,20,0,0" Opacity="0.3"/>
+                <Button Content="Готово" 
+                        Command="{Binding DoneCommand}"
+                        Style="{StaticResource BaseButton}" 
+                        Width="110" HorizontalAlignment="Right"
+                        Margin="0,15,0,0"/>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
+</UserControl>

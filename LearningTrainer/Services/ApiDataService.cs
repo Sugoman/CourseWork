@@ -28,7 +28,7 @@ namespace LearningTrainer.Services
             _httpClient = new HttpClient();
 
             var apiBaseUrl = _configuration["Api:BaseUrl"] 
-                ?? "http://localhost:5077";
+                ?? "http://85.217.170.223:5077";
             _httpClient.BaseAddress = new Uri(apiBaseUrl);
 
             _jsonOptions = new JsonSerializerOptions

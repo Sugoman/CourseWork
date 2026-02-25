@@ -89,6 +89,39 @@ public sealed class AiTranslationHttpService : IAiTranslationService
             .ToList();
     }
 
+    public async Task<List<AiGeneratedWordEntry>> GenerateDictionaryAsync(
+        string topic, string sourceLanguage, string targetLanguage,
+        string languageLevel, int wordCount,
+        CancellationToken ct = default)
+    {
+        var payload = new
+        {
+            topic,
+            sourceLanguage,
+            targetLanguage,
+            languageLevel,
+            wordCount
+        };
+
+        var response = await _httpClient.PostAsJsonAsync("/api/ai/generate-dictionary", payload, ct);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync(ct);
+            Debug.WriteLine($"AI generate-dictionary failed: {response.StatusCode} — {body}");
+            return new List<AiGeneratedWordEntry>();
+        }
+
+        var dto = await response.Content.ReadFromJsonAsync<AiGeneratedDictDto>(JsonOptions, ct);
+        if (dto?.Words == null)
+            return new List<AiGeneratedWordEntry>();
+
+        return dto.Words
+            .Where(w => !string.IsNullOrWhiteSpace(w.Original) && !string.IsNullOrWhiteSpace(w.Translation))
+            .Select(w => new AiGeneratedWordEntry(w.Original, w.Translation, w.PartOfSpeech ?? "", w.Example ?? ""))
+            .ToList();
+    }
+
     #region Internal DTOs (для десериализации ответа AI-сервиса)
 
     private sealed class AiTranslateDto
@@ -106,6 +139,19 @@ public sealed class AiTranslationHttpService : IAiTranslationService
     {
         public string Sentence { get; set; } = string.Empty;
         public string Translation { get; set; } = string.Empty;
+    }
+
+    private sealed class AiGeneratedDictDto
+    {
+        public List<AiGeneratedWordDto>? Words { get; set; }
+    }
+
+    private sealed class AiGeneratedWordDto
+    {
+        public string Original { get; set; } = string.Empty;
+        public string Translation { get; set; } = string.Empty;
+        public string? PartOfSpeech { get; set; }
+        public string? Example { get; set; }
     }
 
     #endregion

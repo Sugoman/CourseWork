@@ -33,4 +33,23 @@ public static class PromptTemplates
         Return ONLY this exact JSON structure (always use an array even for 1 example):
         {"examples": [{"sentence": "example sentence here", "translation": "translation here"}]}
         """;
+
+    public const string GenerateDictionarySystem =
+        "You are an expert language tutor who creates vocabulary lists. You respond ONLY with a single valid JSON object. No markdown, no code blocks, no explanation.";
+
+    public static string GenerateDictionaryUser(string topic, string sourceLang, string targetLang,
+        string level, int wordCount) =>
+        $$"""
+        Generate a vocabulary list of {{wordCount}} {{sourceLang}} words related to the topic: "{{topic}}".
+        Target CEFR level: {{level}}.
+        For A1-A2: use common everyday words. For B1-B2: use intermediate vocabulary. For C1-C2: use advanced/academic words.
+        For each word provide:
+        - the word in {{sourceLang}}
+        - translation to {{targetLang}}
+        - part of speech (noun, verb, adjective, etc.)
+        - a short example sentence in {{sourceLang}} appropriate for level {{level}}
+        All words must be unique and directly related to the topic.
+        Return ONLY this JSON (always use an array):
+        {"words": [{"original": "word", "translation": "перевод", "partOfSpeech": "noun", "example": "example sentence"}]}
+        """;
 }
