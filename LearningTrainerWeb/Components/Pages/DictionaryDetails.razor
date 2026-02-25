@@ -44,19 +44,19 @@
             <div class="col-lg-8">
                 <!-- Main Info Card -->
                 <div class="card mb-4" style="border-radius: var(--radius-xl); overflow: hidden;">
-                    <div style="background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%); padding: 2rem; color: white;">
-                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                    <div style="background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%); padding: 1.5rem; color: white;">
+                        <div class="d-flex flex-column gap-3">
                             <div>
-                                <h1 style="color: white; margin-bottom: 0.5rem;">@Dictionary.Name</h1>
-                                <p style="opacity: 0.9; margin-bottom: 0;">@Dictionary.Description</p>
+                                <h1 style="color: white; margin-bottom: 0.5rem; font-size: clamp(1.25rem, 4vw, 2rem); word-break: break-word;">@Dictionary.Name</h1>
+                                <p style="opacity: 0.9; margin-bottom: 0; font-size: clamp(0.875rem, 2.5vw, 1rem);">@Dictionary.Description</p>
                             </div>
-                            <button class="btn btn-light btn-lg" style="color: var(--primary-700); font-weight: 600;" @onclick="DownloadDictionary" disabled="@IsDownloading">
+                            <button class="btn btn-light btn-lg align-self-start" style="color: var(--primary-700); font-weight: 600;" @onclick="DownloadDictionary" disabled="@IsDownloading">
                                 <i class="bi bi-download me-2"></i> @(IsDownloading ? "Скачивание..." : "Скачать")
                             </button>
                         </div>
                     </div>
                     <div class="card-body">
-                        <div class="d-flex flex-wrap gap-3">
+                        <div class="d-flex flex-wrap gap-2">
                             <div class="d-flex align-items-center gap-2 px-3 py-2" style="background: var(--accent-blue-light); border-radius: var(--radius-full);">
                                 <i class="bi bi-collection" style="color: var(--accent-blue);"></i>
                                 <span style="font-weight: 600; color: #1e40af;">@Dictionary.WordCount слов</span>

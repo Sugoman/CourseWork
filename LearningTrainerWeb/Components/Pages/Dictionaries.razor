@@ -20,9 +20,9 @@
     <div class="card mb-4" style="border-radius: var(--radius-lg);">
         <div class="card-body p-4">
             <div class="row g-3 align-items-end">
-                <div class="col-md-5">
+                <div class="col-12 col-md-5">
                     <label class="form-label small fw-bold text-muted">Поиск</label>
-    
+
                     <div class="input-group">
                         <span class="input-group-text bg-white border-end-0 text-muted">
                             <i class="bi bi-search"></i>
@@ -35,7 +35,7 @@
                                @onkeyup="OnSearchKeyUp" />
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-6 col-md-3">
                     <label class="form-label small text-muted">
                         <i class="bi bi-translate me-1"></i> Язык оригинала
                     </label>
@@ -47,7 +47,7 @@
                         <option value="Spanish">Español</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-6 col-md-3">
                     <label class="form-label small text-muted">
                         <i class="bi bi-arrow-right-circle me-1"></i> Язык перевода
                     </label>
@@ -59,7 +59,7 @@
                         <option value="Spanish">Español</option>
                     </select>
                 </div>
-                <div class="col-md-2" style="margin-top: 32px;">
+                <div class="col-12 col-md-2 d-flex align-items-end">
                     <button class="btn btn-primary w-100 gap-2" @onclick="ApplyFilters">
                         <i class="bi me-1"></i> Найти
                     </button>
@@ -158,7 +158,7 @@
         <div class="row g-4">
             @foreach (var dict in DictionaryItems)
             {
-                <div class="col-md-4">
+                <div class="col-sm-6 col-md-4">
                     <div class="card h-100">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">

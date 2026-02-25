@@ -18,7 +18,7 @@ public sealed class AiTranslationHttpService : IAiTranslationService
         PropertyNameCaseInsensitive = true
     };
 
-    public AiTranslationHttpService(string baseUrl = "http://85.217.170.223:5200")
+    public AiTranslationHttpService(string baseUrl = "http://localhost:5200")
     {
         _httpClient = new HttpClient
         {

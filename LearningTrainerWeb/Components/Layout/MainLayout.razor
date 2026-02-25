@@ -34,7 +34,7 @@
                 <AuthStatus />
             </div>
 
-            <button class="mobile-menu-toggle" @onclick="ToggleMobileMenu">
+            <button class="mobile-menu-toggle" @onclick="ToggleMobileMenu" aria-label="Открыть меню">
                 <i class="bi @(showMobileMenu ? "bi-x-lg" : "bi-list")"></i>
             </button>
         </div>
@@ -43,6 +43,7 @@
     <!-- Mobile Menu -->
     @if (showMobileMenu)
     {
+        <div class="mobile-menu-overlay" @onclick="CloseMobileMenu"></div>
         <div class="mobile-menu">
             <nav class="mobile-nav">
                 <NavLink class="mobile-nav-link" href="" Match="NavLinkMatch.All" @onclick="CloseMobileMenu">
@@ -93,9 +94,32 @@
     </footer>
 </div>
 
+@inject IJSRuntime JS
+
 @code {
     private bool showMobileMenu = false;
 
-    private void ToggleMobileMenu() => showMobileMenu = !showMobileMenu;
-    private void CloseMobileMenu() => showMobileMenu = false;
+    private async Task ToggleMobileMenu()
+    {
+        showMobileMenu = !showMobileMenu;
+        await SetBodyScrollLock(showMobileMenu);
+    }
+
+    private async Task CloseMobileMenu()
+    {
+        showMobileMenu = false;
+        await SetBodyScrollLock(false);
+    }
+
+    private async Task SetBodyScrollLock(bool locked)
+    {
+        try
+        {
+            if (locked)
+                await JS.InvokeVoidAsync("document.body.classList.add", "mobile-menu-open");
+            else
+                await JS.InvokeVoidAsync("document.body.classList.remove", "mobile-menu-open");
+        }
+        catch { }
+    }
 }
