@@ -16,6 +16,7 @@ namespace LearningTrainer.ViewModels
 
         public ICommand SaveCommand { get; }
         public ICommand CancelCommand { get; }
+        public ICommand GenerateAiDictionaryCommand { get; }
 
         public AddDictionaryViewModel(IDataService dataService)
         {
@@ -24,6 +25,11 @@ namespace LearningTrainer.ViewModels
 
             SaveCommand = new RelayCommand(async (param) => await SaveDictionaryAsync());
             CancelCommand = new RelayCommand((param) => Cancel());
+            GenerateAiDictionaryCommand = new RelayCommand((param) =>
+            {
+                var vm = new AiDictionaryGeneratorViewModel(_dataService);
+                EventAggregator.Instance.Publish(vm);
+            });
         }
 
         private async Task SaveDictionaryAsync()

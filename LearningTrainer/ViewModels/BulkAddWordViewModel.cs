@@ -283,7 +283,7 @@ namespace LearningTrainer.ViewModels
 
         private static IAiTranslationService CreateAiService()
         {
-            var baseUrl = "http://localhost:5200";
+            var baseUrl = "http://85.217.170.223:5200";
             try
             {
                 var config = new ConfigurationBuilder()

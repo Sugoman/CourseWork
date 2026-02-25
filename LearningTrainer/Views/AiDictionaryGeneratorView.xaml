@@ -83,6 +83,7 @@
                                       SelectedItem="{Binding SelectedLanguageFrom}"
                                       Foreground="{DynamicResource PrimaryTextBrush}"
                                       FontSize="{DynamicResource BaseFontSize}"
+                                      Style="{StaticResource SortComboBoxStyle}"
                                       Background="Transparent" BorderThickness="0"/>
                         </Border>
                     </StackPanel>
@@ -97,6 +98,7 @@
                                       SelectedItem="{Binding SelectedLanguageTo}"
                                       Foreground="{DynamicResource PrimaryTextBrush}"
                                       FontSize="{DynamicResource BaseFontSize}"
+                                      Style="{StaticResource SortComboBoxStyle}"
                                       Background="Transparent" BorderThickness="0"/>
                         </Border>
                     </StackPanel>
@@ -111,6 +113,7 @@
                                       SelectedItem="{Binding SelectedLevel}"
                                       Foreground="{DynamicResource PrimaryTextBrush}"
                                       FontSize="{DynamicResource BaseFontSize}"
+                                      Style="{StaticResource SortComboBoxStyle}"
                                       Background="Transparent" BorderThickness="0"/>
                         </Border>
                     </StackPanel>
@@ -120,13 +123,13 @@
                         <TextBlock Text="{DynamicResource Loc.AiGen.WordCountLabel}" 
                                    Foreground="{DynamicResource SecondaryTextBrush}"
                                    FontWeight="Medium" Margin="0,0,0,5"/>
-                        <Border Style="{StaticResource InputContainerStyle}">
+                        <Border Style="{StaticResource InputContainerStyle}" Height="56">
                             <TextBox Text="{Binding WordCount, UpdateSourceTrigger=PropertyChanged}" 
                                      Foreground="{DynamicResource PrimaryTextBrush}"
                                      CaretBrush="{DynamicResource PrimaryTextBrush}"
                                      FontSize="{DynamicResource BaseFontSize}"
                                      Background="Transparent" BorderThickness="0"
-                                     Padding="0,2"/>
+                                     Padding="0,7"/>
                         </Border>
                     </StackPanel>
                 </Grid>

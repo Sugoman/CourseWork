@@ -59,6 +59,9 @@ namespace LearningTrainer.ViewModels
             // Statistics subscription
             EventAggregator.Instance.Subscribe<StatisticsViewModel>(OpenTab);
 
+            // AI Dictionary Generator subscription
+            EventAggregator.Instance.Subscribe<AiDictionaryGeneratorViewModel>(OpenTab);
+
             // Subscribe to global notifications
             EventAggregator.Instance.Subscribe<ShowNotificationMessage>(OnShowNotification);
 

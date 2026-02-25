@@ -21,11 +21,15 @@
             </Border.Effect>
 
             <StackPanel>
+               
+
                 <TextBlock Text="{DynamicResource Loc.AddDict.CreateDict}" 
                            FontSize="{DynamicResource HeaderFontSize}" 
                            FontWeight="Bold" 
                            Foreground="{DynamicResource PrimaryTextBrush}"
                            Margin="0,0,0,25"/>
+                    
+                
                 <TextBlock Text="{DynamicResource Loc.AddDict.TitleDictLabel}" 
                            Foreground="{DynamicResource SecondaryTextBrush}" 
                            FontSize="14" FontWeight="Medium" Margin="0,0,0,5"/>
@@ -98,11 +102,20 @@
                 <Border BorderBrush="{DynamicResource SeparatorBrush}" BorderThickness="0,1,0,0" Margin="0,20,0,20" Opacity="0.3"/>
                 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="{DynamicResource Loc.Button.CancelButton}" 
-                            Command="{Binding CancelCommand}"
-                            Style="{StaticResource DangerButton}" 
-                            Width="100" 
-                            Margin="0,0,15,0"/>
+                    <Button Style="{StaticResource SocialButton}" 
+                            Command="{Binding GenerateAiDictionaryCommand}"
+                            Width="200" 
+                            Margin="0,0,15,0">
+                        <Button.ContentTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🤖" FontSize="16" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{DynamicResource Loc.AiGen.ButtonLabel}" Margin="5,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </Button.ContentTemplate>
+                    </Button>
+
                     <Button Content="{DynamicResource Loc.Button.CreateButton}" 
                             Command="{Binding SaveCommand}"
                             Style="{StaticResource SuccessButton}" 
