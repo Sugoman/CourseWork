@@ -22,7 +22,7 @@ public sealed class OllamaProvider : IAiProvider
     public OllamaProvider(HttpClient httpClient, IConfiguration config, ILogger<OllamaProvider> logger)
     {
         _httpClient = httpClient;
-        _model = config["Ollama:Model"] ?? "phi3.5:3.8b";
+        _model = config["Ollama:Model"] ?? "qwen2.5:7b";
         _logger = logger;
 
         var baseUrl = config["Ollama:BaseUrl"] ?? "http://localhost:11434";
@@ -30,7 +30,7 @@ public sealed class OllamaProvider : IAiProvider
         _httpClient.Timeout = TimeSpan.FromSeconds(120);
     }
 
-    public async Task<string> CompleteAsync(string systemPrompt, string userPrompt, CancellationToken ct = default)
+    public async Task<string> CompleteAsync(string systemPrompt, string userPrompt, CancellationToken ct = default, int? maxTokens = null)
     {
         var request = new OllamaChatRequest
         {
@@ -44,7 +44,7 @@ public sealed class OllamaProvider : IAiProvider
             Options = new OllamaOptions
             {
                 Temperature = 0.3,
-                NumPredict = 512
+                NumPredict = maxTokens ?? 512
             }
         };
 

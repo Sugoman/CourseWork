@@ -92,7 +92,7 @@ namespace LearningTrainerShared.Context
 
             modelBuilder.Entity<DictionarySharing>()
                 .HasOne(ds => ds.Dictionary)
-                .WithMany()
+                .WithMany(d => d.DictionarySharings)
                 .HasForeignKey(ds => ds.DictionaryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -203,6 +203,17 @@ namespace LearningTrainerShared.Context
 
             modelBuilder.Entity<Rule>()
                 .HasQueryFilter(r => TenantUserId == null || r.UserId == TenantUserId);
+
+            // Matching query filters for dependent entities (resolves EF Core warnings about
+            // required relationships with filtered principals)
+            modelBuilder.Entity<DictionarySharing>()
+                .HasQueryFilter(ds => TenantUserId == null || ds.Dictionary!.UserId == TenantUserId);
+
+            modelBuilder.Entity<RuleSharing>()
+                .HasQueryFilter(rs => TenantUserId == null || rs.Rule!.UserId == TenantUserId);
+
+            modelBuilder.Entity<GrammarExercise>()
+                .HasQueryFilter(ge => TenantUserId == null || ge.Rule!.UserId == TenantUserId);
         }
     }
 }

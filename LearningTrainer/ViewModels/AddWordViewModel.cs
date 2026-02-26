@@ -2,7 +2,6 @@ using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using LearningTrainerShared.Models.Features.Ai;
-using Microsoft.Extensions.Configuration;
 using System.Collections.ObjectModel;
 using System.Threading;
 using System.Windows.Input;
@@ -389,30 +388,6 @@ namespace LearningTrainer.ViewModels
                 : null;
         }
 
-        /// <summary>
-        /// Создаёт IAiTranslationService с fallback на MyMemory + dictionaryapi.dev.
-        /// BaseUrl читается из appsettings.json (AiService:BaseUrl).
-        /// </summary>
-        private static IAiTranslationService CreateAiService()
-        {
-            var baseUrl = "http://85.217.170.223:5200";
-            try
-            {
-                var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
-                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                    .AddJsonFile("appsettings.json", optional: true)
-                    .Build();
-
-                var configUrl = config["AiService:BaseUrl"];
-                if (!string.IsNullOrWhiteSpace(configUrl))
-                    baseUrl = configUrl;
-            }
-            catch { }
-
-            var ai = new AiTranslationHttpService(baseUrl);
-            var translationFallback = new TranslationService();
-            var exampleFallback = new ExternalDictionaryService(new System.Net.Http.HttpClient());
-            return new AiTranslationWithFallback(ai, translationFallback, exampleFallback);
-        }
+        private static IAiTranslationService CreateAiService() => AiServiceFactory.Create();
     }
 }

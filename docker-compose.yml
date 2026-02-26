@@ -36,9 +36,11 @@ services:
       - "8081:8080"
     depends_on:
       - learningapi
+      - ai-service
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - ApiBaseUrl=http://learningapi:8080
+      - AiService__BaseUrl=http://ai-service:8080
 
   # -------------------------------
   # 2. Migrations (runs once)
@@ -100,6 +102,13 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
       interval: 10s
@@ -117,7 +126,7 @@ services:
         condition: service_healthy
     environment:
       - OLLAMA_HOST=http://ollama:11434
-    entrypoint: ["sh", "-c", "ollama pull phi3.5:3.8b"]
+    entrypoint: ["sh", "-c", "ollama pull qwen2.5:7b"]
     restart: "no"
 
   # -------------------------------
@@ -136,7 +145,7 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - Ollama__BaseUrl=http://ollama:11434
-      - Ollama__Model=phi3.5:3.8b
+      - Ollama__Model=qwen2.5:7b
 
 volumes:
   sql_data:

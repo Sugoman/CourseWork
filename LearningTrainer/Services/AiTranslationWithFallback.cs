@@ -93,4 +93,58 @@ public sealed class AiTranslationWithFallback : IAiTranslationService
         // Генерация словаря — только через AI, fallback невозможен
         return await _ai.GenerateDictionaryAsync(topic, sourceLanguage, targetLanguage, languageLevel, wordCount, ct);
     }
+
+    public async Task<List<AiBatchTranslateItem>> TranslateBatchAsync(
+        List<string> words, string sourceLanguage, string targetLanguage,
+        CancellationToken ct = default)
+    {
+        try
+        {
+            var result = await _ai.TranslateBatchAsync(words, sourceLanguage, targetLanguage, ct);
+            if (result.Count > 0)
+                return result;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"AI batch translate unavailable, falling back to sequential: {ex.Message}");
+        }
+
+        // Fallback: последовательный перевод каждого слова
+        var items = new List<AiBatchTranslateItem>();
+        foreach (var word in words)
+        {
+            try
+            {
+                var single = await TranslateAsync(word, sourceLanguage, targetLanguage, ct: ct);
+                if (single != null)
+                    items.Add(new AiBatchTranslateItem(word, single.Translation, single.Alternatives));
+            }
+            catch { }
+        }
+        return items;
+    }
+
+    // === Phase 3: New AI Features (no fallback — AI only) ===
+
+    public Task<List<AiExerciseResult>> GenerateExercisesAsync(
+        string ruleTitle, string ruleContent, string language, string targetLanguage,
+        int count = 5, string? languageLevel = null, CancellationToken ct = default)
+        => _ai.GenerateExercisesAsync(ruleTitle, ruleContent, language, targetLanguage, count, languageLevel, ct);
+
+    public Task<AiMistakeExplanation?> ExplainMistakeAsync(
+        string word, string userAnswer, string correctAnswer,
+        string language, string targetLanguage, string? context = null, CancellationToken ct = default)
+        => _ai.ExplainMistakeAsync(word, userAnswer, correctAnswer, language, targetLanguage, context, ct);
+
+    public Task<AiMnemonicResult?> GenerateMnemonicAsync(
+        string word, string translation, string language, string targetLanguage, CancellationToken ct = default)
+        => _ai.GenerateMnemonicAsync(word, translation, language, targetLanguage, ct);
+
+    public Task<AiDetectedLanguage?> DetectLanguageAsync(string text, CancellationToken ct = default)
+        => _ai.DetectLanguageAsync(text, ct);
+
+    public Task<List<AiExtractedWord>> ExtractWordsFromTextAsync(
+        string text, string language, string targetLanguage,
+        int maxWords = 20, string? languageLevel = null, CancellationToken ct = default)
+        => _ai.ExtractWordsFromTextAsync(text, language, targetLanguage, maxWords, languageLevel, ct);
 }

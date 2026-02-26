@@ -2,7 +2,6 @@ using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
 using LearningTrainerShared.Models.Features.Ai;
-using Microsoft.Extensions.Configuration;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
@@ -228,6 +227,7 @@ namespace LearningTrainer.ViewModels
 
         /// <summary>
         /// Переводит через ИИ все слова, у которых пустой перевод.
+        /// Использует batch-перевод для скорости (один запрос на все слова).
         /// </summary>
         private async Task AutoTranslateAllAsync()
         {
@@ -249,20 +249,20 @@ namespace LearningTrainer.ViewModels
                 var langFrom = _selectedDictionary.LanguageFrom ?? "English";
                 var langTo = _selectedDictionary.LanguageTo ?? "Russian";
 
+                var words = untranslated.Select(e => e.OriginalWord.Trim()).ToList();
+                var batchResult = await _aiService.TranslateBatchAsync(words, langFrom, langTo);
+
+                // Сопоставляем результаты с записями
+                var resultMap = batchResult
+                    .Where(r => !string.IsNullOrWhiteSpace(r.Translation))
+                    .ToDictionary(r => r.Word.Trim(), r => r.Translation, StringComparer.OrdinalIgnoreCase);
+
                 foreach (var entry in untranslated)
                 {
-                    try
+                    if (resultMap.TryGetValue(entry.OriginalWord.Trim(), out var translation))
                     {
-                        var result = await _aiService.TranslateAsync(entry.OriginalWord.Trim(), langFrom, langTo);
-                        if (result != null && !string.IsNullOrWhiteSpace(result.Translation))
-                        {
-                            entry.Translation = result.Translation;
-                            translated++;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"AI translate failed for '{entry.OriginalWord}': {ex.Message}");
+                        entry.Translation = translation;
+                        translated++;
                     }
                 }
 
@@ -283,24 +283,7 @@ namespace LearningTrainer.ViewModels
 
         private static IAiTranslationService CreateAiService()
         {
-            var baseUrl = "http://85.217.170.223:5200";
-            try
-            {
-                var config = new ConfigurationBuilder()
-                    .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-                    .AddJsonFile("appsettings.json", optional: true)
-                    .Build();
-
-                var configUrl = config["AiService:BaseUrl"];
-                if (!string.IsNullOrWhiteSpace(configUrl))
-                    baseUrl = configUrl;
-            }
-            catch { }
-
-            var ai = new AiTranslationHttpService(baseUrl);
-            var translationFallback = new TranslationService();
-            var exampleFallback = new ExternalDictionaryService(new System.Net.Http.HttpClient());
-            return new AiTranslationWithFallback(ai, translationFallback, exampleFallback);
+            return AiServiceFactory.Create();
         }
     }
 }

@@ -32,4 +32,52 @@ public interface IAiTranslationService
         string topic, string sourceLanguage, string targetLanguage,
         string languageLevel, int wordCount,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Batch-перевод нескольких слов одним запросом к LLM.
+    /// Значительно быстрее последовательного перевода при N > 3.
+    /// </summary>
+    Task<List<AiBatchTranslateItem>> TranslateBatchAsync(
+        List<string> words, string sourceLanguage, string targetLanguage,
+        CancellationToken ct = default);
+
+    // === Phase 3: New AI Features ===
+
+    /// <summary>
+    /// Генерация грамматических упражнений (fill-in-the-blank) по правилу.
+    /// </summary>
+    Task<List<AiExerciseResult>> GenerateExercisesAsync(
+        string ruleTitle, string ruleContent, string language, string targetLanguage,
+        int count = 5, string? languageLevel = null,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Объяснение ошибки пользователя в тренировке (почему правильный ответ — именно этот).
+    /// </summary>
+    Task<AiMistakeExplanation?> ExplainMistakeAsync(
+        string word, string userAnswer, string correctAnswer,
+        string language, string targetLanguage,
+        string? context = null,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Генерация мнемоники для запоминания слова (ассоциация, этимология, визуальный образ).
+    /// </summary>
+    Task<AiMnemonicResult?> GenerateMnemonicAsync(
+        string word, string translation, string language, string targetLanguage,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Автоопределение языка текста.
+    /// </summary>
+    Task<AiDetectedLanguage?> DetectLanguageAsync(
+        string text, CancellationToken ct = default);
+
+    /// <summary>
+    /// Извлечение ключевых слов из текста с переводом. Пользователь вставляет текст → ИИ создаёт словарь.
+    /// </summary>
+    Task<List<AiExtractedWord>> ExtractWordsFromTextAsync(
+        string text, string language, string targetLanguage,
+        int maxWords = 20, string? languageLevel = null,
+        CancellationToken ct = default);
 }

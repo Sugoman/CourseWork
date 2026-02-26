@@ -1,0 +1,242 @@
+@page "/ai-dictionary"
+@using LearningTrainerShared.Models.Features.Ai
+@inject IAiApiService AiService
+@inject IContentApiService ContentApi
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>ИИ-генерация словаря - Ingat</PageTitle>
+
+<div class="container">
+    @if (!IsAuthenticated)
+    {
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-lock"></i></div>
+            <h2>Требуется авторизация</h2>
+            <p class="text-muted mb-4">Войдите, чтобы генерировать словари с помощью ИИ</p>
+            <a href="login" class="btn btn-primary btn-lg">
+                <i class="bi bi-box-arrow-in-right me-2"></i> Войти
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="section-heading mb-4">
+            <i class="bi bi-robot"></i>
+            <h1>ИИ-генерация словаря</h1>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="card" style="border-radius: var(--radius-lg);">
+                    <div class="card-body">
+                        <h5 class="mb-3"><i class="bi bi-gear me-2" style="color: var(--primary-500);"></i>Параметры</h5>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Тема словаря</label>
+                            <input type="text" class="form-control" @bind="Topic" placeholder="Например: Travel, IT, Medicine..."
+                                   disabled="@IsGenerating" />
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Язык слов</label>
+                                <select class="form-select" @bind="SourceLanguage" disabled="@IsGenerating">
+                                    <option value="English">English</option>
+                                    <option value="German">German</option>
+                                    <option value="French">French</option>
+                                    <option value="Spanish">Spanish</option>
+                                    <option value="Italian">Italian</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Язык перевода</label>
+                                <select class="form-select" @bind="TargetLanguage" disabled="@IsGenerating">
+                                    <option value="Russian">Russian</option>
+                                    <option value="English">English</option>
+                                    <option value="German">German</option>
+                                    <option value="French">French</option>
+                                    <option value="Spanish">Spanish</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Уровень CEFR</label>
+                                <select class="form-select" @bind="LanguageLevel" disabled="@IsGenerating">
+                                    <option value="A1">A1 — Начальный</option>
+                                    <option value="A2">A2 — Элементарный</option>
+                                    <option value="B1">B1 — Средний</option>
+                                    <option value="B2">B2 — Выше среднего</option>
+                                    <option value="C1">C1 — Продвинутый</option>
+                                    <option value="C2">C2 — Совершенный</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Кол-во слов</label>
+                                <input type="number" class="form-control" @bind="WordCount" min="5" max="30"
+                                       disabled="@IsGenerating" />
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary w-100" @onclick="GenerateAsync" disabled="@(IsGenerating || string.IsNullOrWhiteSpace(Topic))">
+                            @if (IsGenerating)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Генерация... (может занять до 60 сек)</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-stars me-2"></i>
+                                <span>Сгенерировать словарь</span>
+                            }
+                        </button>
+
+                        @if (!string.IsNullOrEmpty(ErrorMessage))
+                        {
+                            <div class="alert alert-danger mt-3 mb-0">
+                                <i class="bi bi-exclamation-triangle me-1"></i> @ErrorMessage
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @if (!AiAvailable.HasValue)
+                {
+                    <div class="text-muted small mt-2">
+                        <span class="spinner-border spinner-border-sm me-1"></span> Проверка ИИ-сервиса...
+                    </div>
+                }
+                else if (!AiAvailable.Value)
+                {
+                    <div class="alert alert-warning mt-2 mb-0">
+                        <i class="bi bi-exclamation-triangle me-1"></i> ИИ-сервис недоступен. Попробуйте позже.
+                    </div>
+                }
+            </div>
+
+            <div class="col-lg-7">
+                @if (GeneratedWords.Count > 0)
+                {
+                    <div class="card" style="border-radius: var(--radius-lg);">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-list-check me-2" style="color: var(--primary-500);"></i>
+                                    Результат: @GeneratedWords.Count слов
+                                </h5>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="color: var(--gray-500); font-weight: 600; font-size: 0.85rem;">Слово</th>
+                                            <th style="color: var(--gray-500); font-weight: 600; font-size: 0.85rem;">Перевод</th>
+                                            <th style="color: var(--gray-500); font-weight: 600; font-size: 0.85rem;">Часть речи</th>
+                                            <th style="color: var(--gray-500); font-weight: 600; font-size: 0.85rem;">Пример</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var word in GeneratedWords)
+                                        {
+                                            <tr>
+                                                <td class="fw-semibold">@word.Original</td>
+                                                <td style="color: var(--primary-600);">@word.Translation</td>
+                                                <td><span class="badge bg-light text-dark">@word.PartOfSpeech</span></td>
+                                                <td class="text-muted small" style="max-width: 250px;">@word.Example</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(SuccessMessage))
+                            {
+                                <div class="alert alert-success mt-3 mb-0">
+                                    <i class="bi bi-check-circle me-1"></i> @SuccessMessage
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else if (!IsGenerating)
+                {
+                    <div class="card" style="border-radius: var(--radius-lg);">
+                        <div class="card-body text-center py-5">
+                            <div style="font-size: 3rem; color: var(--gray-300);"><i class="bi bi-robot"></i></div>
+                            <p class="text-muted mt-2">Задайте параметры и нажмите «Сгенерировать»</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string Topic { get; set; } = "";
+    private string SourceLanguage { get; set; } = "English";
+    private string TargetLanguage { get; set; } = "Russian";
+    private string LanguageLevel { get; set; } = "A2";
+    private int WordCount { get; set; } = 10;
+    private bool IsGenerating { get; set; }
+    private bool IsAuthenticated { get; set; }
+    private bool? AiAvailable { get; set; }
+    private string? ErrorMessage { get; set; }
+    private string? SuccessMessage { get; set; }
+    private List<AiGeneratedWordEntry> GeneratedWords { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = await AuthService.GetCurrentSessionAsync();
+        IsAuthenticated = session != null;
+
+        if (IsAuthenticated)
+        {
+            _ = CheckAiHealth();
+        }
+    }
+
+    private async Task CheckAiHealth()
+    {
+        AiAvailable = await AiService.CheckHealthAsync();
+        StateHasChanged();
+    }
+
+    private async Task GenerateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Topic)) return;
+
+        IsGenerating = true;
+        ErrorMessage = null;
+        SuccessMessage = null;
+        GeneratedWords.Clear();
+        StateHasChanged();
+
+        try
+        {
+            var result = await AiService.GenerateDictionaryAsync(
+                Topic.Trim(), SourceLanguage, TargetLanguage, LanguageLevel, WordCount);
+
+            if (result.Count > 0)
+            {
+                GeneratedWords = result;
+                SuccessMessage = $"Сгенерировано {result.Count} слов по теме «{Topic}»";
+            }
+            else
+            {
+                ErrorMessage = "ИИ не смог сгенерировать словарь. Попробуйте изменить тему или параметры.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Ошибка: {ex.Message}";
+        }
+        finally
+        {
+            IsGenerating = false;
+        }
+    }
+}

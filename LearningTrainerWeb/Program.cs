@@ -11,6 +11,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5077";
+var aiBaseUrl = builder.Configuration["AiService:BaseUrl"] ?? "http://localhost:5200";
 
 // Централизованное управление токеном (scoped = один на Blazor circuit)
 builder.Services.AddScoped<AuthTokenProvider>();
@@ -24,6 +25,13 @@ builder.Services.AddHttpClient<IAuthService, AuthService>(c => c.BaseAddress = n
 builder.Services.AddHttpClient<ITrainingApiService, TrainingApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
 builder.Services.AddHttpClient<IStatisticsApiService, StatisticsApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
 builder.Services.AddSingleton<IHtmlSanitizerService, HtmlSanitizerService>();
+
+// AI-сервис — обращается напрямую к Ingat.AI
+builder.Services.AddHttpClient<IAiApiService, AiApiService>(c =>
+{
+    c.BaseAddress = new Uri(aiBaseUrl);
+    c.Timeout = TimeSpan.FromSeconds(120);
+});
 
 var app = builder.Build();
 

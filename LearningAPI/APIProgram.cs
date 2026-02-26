@@ -280,18 +280,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 var app = builder.Build();
 
 // Автоматическое применение pending-миграций при запуске
-using (var scope = app.Services.CreateScope())
+try
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<ApiDbContext>();
+    var migrationLogger = scope.ServiceProvider.GetRequiredService<ILogger<ApiDbContext>>();
+
     var pendingMigrations = db.Database.GetPendingMigrations().ToList();
     if (pendingMigrations.Count > 0)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<ApiDbContext>>();
-        logger.LogInformation("Applying {Count} pending migration(s): {Migrations}",
+        migrationLogger.LogInformation("Applying {Count} pending migration(s): {Migrations}",
             pendingMigrations.Count, string.Join(", ", pendingMigrations));
         db.Database.Migrate();
-        logger.LogInformation("All migrations applied successfully.");
+        migrationLogger.LogInformation("All migrations applied successfully.");
     }
+}
+catch (Exception ex)
+{
+    var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
+    startupLogger.LogError(ex, "Database is unavailable at startup. The API will start without applying migrations. " +
+        "Ensure SQL Server is running and the connection string is correct.");
 }
 
 // Инициализация логгера для кэш-расширений

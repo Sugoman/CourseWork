@@ -6,6 +6,7 @@
 @inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject IAiApiService AiService
 
 <PageTitle>Тренировка - Ingat</PageTitle>
 
@@ -417,6 +418,52 @@
                                     <span>Неверно. Правильный ответ: @ExpectedAnswer</span>
                                 }
                             </div>
+                            @if (!McqWasCorrect)
+                            {
+                                <div class="ai-explanation-block mt-2">
+                                    @if (IsLoadingAiExplanation)
+                                    {
+                                        <div class="text-muted small">
+                                            <span class="spinner-border spinner-border-sm me-1"></span>
+                                            ИИ объясняет ошибку...
+                                        </div>
+                                    }
+                                    else if (!string.IsNullOrEmpty(AiExplanation))
+                                    {
+                                        <div class="ai-hint">
+                                            <i class="bi bi-robot me-1"></i>
+                                            <span>@AiExplanation</span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(AiTip))
+                                        {
+                                            <div class="ai-tip mt-1">
+                                                <i class="bi bi-lightbulb me-1"></i>
+                                                <span>@AiTip</span>
+                                            </div>
+                                        }
+                                    }
+                                    @if (!IsLoadingMnemonic && string.IsNullOrEmpty(AiMnemonic))
+                                    {
+                                        <button class="btn btn-sm btn-outline-info mt-1" @onclick="LoadMnemonic">
+                                            <i class="bi bi-magic me-1"></i>Подсказка для запоминания
+                                        </button>
+                                    }
+                                    else if (IsLoadingMnemonic)
+                                    {
+                                        <div class="text-muted small mt-1">
+                                            <span class="spinner-border spinner-border-sm me-1"></span>
+                                            Генерация мнемоники...
+                                        </div>
+                                    }
+                                    else if (!string.IsNullOrEmpty(AiMnemonic))
+                                    {
+                                        <div class="ai-mnemonic mt-1">
+                                            <i class="bi bi-lightbulb-fill me-1 text-warning"></i>
+                                            <span>@AiMnemonic</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
                             @if (!string.IsNullOrEmpty(CurrentWord.Example))
                             {
                                 <div class="example mt-2">
@@ -501,6 +548,52 @@
                                     <span>Неверно. Правильный ответ: <strong>@ExpectedAnswer</strong></span>
                                 }
                             </div>
+                            @if (!TypingWasCorrect)
+                            {
+                                <div class="ai-explanation-block mt-2">
+                                    @if (IsLoadingAiExplanation)
+                                    {
+                                        <div class="text-muted small">
+                                            <span class="spinner-border spinner-border-sm me-1"></span>
+                                            ИИ объясняет ошибку...
+                                        </div>
+                                    }
+                                    else if (!string.IsNullOrEmpty(AiExplanation))
+                                    {
+                                        <div class="ai-hint">
+                                            <i class="bi bi-robot me-1"></i>
+                                            <span>@AiExplanation</span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(AiTip))
+                                        {
+                                            <div class="ai-tip mt-1">
+                                                <i class="bi bi-lightbulb me-1"></i>
+                                                <span>@AiTip</span>
+                                            </div>
+                                        }
+                                    }
+                                    @if (!IsLoadingMnemonic && string.IsNullOrEmpty(AiMnemonic))
+                                    {
+                                        <button class="btn btn-sm btn-outline-info mt-1" @onclick="LoadMnemonic">
+                                            <i class="bi bi-magic me-1"></i>Подсказка для запоминания
+                                        </button>
+                                    }
+                                    else if (IsLoadingMnemonic)
+                                    {
+                                        <div class="text-muted small mt-1">
+                                            <span class="spinner-border spinner-border-sm me-1"></span>
+                                            Генерация мнемоники...
+                                        </div>
+                                    }
+                                    else if (!string.IsNullOrEmpty(AiMnemonic))
+                                    {
+                                        <div class="ai-mnemonic mt-1">
+                                            <i class="bi bi-lightbulb-fill me-1 text-warning"></i>
+                                            <span>@AiMnemonic</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
                             @if (!string.IsNullOrEmpty(CurrentWord.Example))
                             {
                                 <div class="example mt-2">
@@ -742,6 +835,13 @@ private bool ShowVolumeSlider;
 private List<string> DifficultWordsList = new();
 private string _sessionDurationSnapshot = "";
 
+// AI explanation state (Phase 3)
+private string? AiExplanation;
+private string? AiTip;
+private string? AiMnemonic;
+private bool IsLoadingAiExplanation;
+private bool IsLoadingMnemonic;
+
 // Element reference for focus
 private ElementReference trainingContainer;
 
@@ -951,6 +1051,13 @@ private async Task InstallStarterPack()
         ListeningWasAlmostCorrect = false;
         ListeningTypedAnswer = "";
 
+        // Clear AI state
+        AiExplanation = null;
+        AiTip = null;
+        AiMnemonic = null;
+        IsLoadingAiExplanation = false;
+        IsLoadingMnemonic = false;
+
         // Apply translation direction
         IsReversed = TranslationDirection switch
         {
@@ -1075,6 +1182,7 @@ private async Task InstallStarterPack()
                 SessionWrongCount++;
                 if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
                     DifficultWordsList.Add(CurrentWord.OriginalWord);
+                _ = LoadAiExplanation(CurrentWord.OriginalWord, option, ExpectedAnswer);
             }
     }
 
@@ -1140,6 +1248,7 @@ private async Task InstallStarterPack()
             SessionWrongCount++;
             if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
                 DifficultWordsList.Add(CurrentWord.OriginalWord);
+            _ = LoadAiExplanation(CurrentWord.OriginalWord, TypedAnswer, ExpectedAnswer);
         }
     }
 
@@ -1327,6 +1436,66 @@ private async Task InstallStarterPack()
     };
 
     private string SessionDurationFormatted => _sessionDurationSnapshot;
+
+    // === Phase 3: AI-powered explanation & mnemonic ===
+
+    private async Task LoadAiExplanation(string word, string userAnswer, string correctAnswer)
+    {
+        IsLoadingAiExplanation = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await AiService.ExplainMistakeAsync(
+                word, userAnswer, correctAnswer,
+                "English", "Russian",
+                CurrentWord?.Example);
+
+            if (result != null)
+            {
+                AiExplanation = result.Explanation;
+                AiTip = result.Tip;
+            }
+        }
+        catch
+        {
+            // AI unavailable — no explanation, UI stays clean
+        }
+        finally
+        {
+            IsLoadingAiExplanation = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadMnemonic()
+    {
+        if (CurrentWord == null) return;
+
+        IsLoadingMnemonic = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await AiService.GenerateMnemonicAsync(
+                CurrentWord.OriginalWord, CurrentWord.Translation,
+                "English", "Russian");
+
+            if (result != null)
+            {
+                AiMnemonic = result.Mnemonic;
+            }
+        }
+        catch
+        {
+            // AI unavailable
+        }
+        finally
+        {
+            IsLoadingMnemonic = false;
+            StateHasChanged();
+        }
+    }
 
     private static int LevenshteinDistance(string s, string t)
     {

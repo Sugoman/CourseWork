@@ -88,7 +88,7 @@ namespace LearningTrainer.Services
                 LanguageTo = dictionary.LanguageTo
             };
 
-            var response = await _httpClient.PostAsJsonAsync("/api/dictionaries", requestDto, _jsonOptions);
+            var response = await _httpClient.PostAsJsonAsync("/api/dictionaries", requestDto, _writeJsonOptions);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<Dictionary>(_jsonOptions);
         }
@@ -150,7 +150,7 @@ namespace LearningTrainer.Services
                 DictionaryId = word.DictionaryId
             };
 
-            var response = await _httpClient.PostAsJsonAsync("/api/words", requestDto, _jsonOptions);
+            var response = await _httpClient.PostAsJsonAsync("/api/words", requestDto, _writeJsonOptions);
 
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<Word>(_jsonOptions);
@@ -173,7 +173,7 @@ namespace LearningTrainer.Services
                 Example = word.Example ?? ""
             };
 
-            var response = await _httpClient.PutAsJsonAsync($"/api/words/{word.Id}", requestDto, _jsonOptions);
+            var response = await _httpClient.PutAsJsonAsync($"/api/words/{word.Id}", requestDto, _writeJsonOptions);
             return response.IsSuccessStatusCode;
         }
 
@@ -190,7 +190,7 @@ namespace LearningTrainer.Services
                 DictionaryId = w.DictionaryId
             }).ToList();
 
-            var response = await _httpClient.PostAsJsonAsync("/api/words/batch", requestDtos, _jsonOptions);
+            var response = await _httpClient.PostAsJsonAsync("/api/words/batch", requestDtos, _writeJsonOptions);
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<BatchAddResult>(_jsonOptions);
@@ -222,7 +222,7 @@ namespace LearningTrainer.Services
                     LanguageTo = dictionary.LanguageTo
                 };
 
-                var response = await _httpClient.PutAsJsonAsync($"api/dictionaries/{dictionary.Id}", requestDto, _jsonOptions);
+                var response = await _httpClient.PutAsJsonAsync($"api/dictionaries/{dictionary.Id}", requestDto, _writeJsonOptions);
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -271,7 +271,7 @@ namespace LearningTrainer.Services
         {
             // POST /api/progress/update
             var response = await _httpClient.PostAsJsonAsync(
-                "/api/progress/update", progress, _jsonOptions);
+                "/api/progress/update", progress, _writeJsonOptions);
 
             response.EnsureSuccessStatusCode();
         }
@@ -279,7 +279,7 @@ namespace LearningTrainer.Services
         public async Task<string> ChangePasswordAsync(ChangePasswordRequest request)
         {
             var response = await _httpClient.PostAsJsonAsync(
-            "/api/auth/change-password", request, _jsonOptions);
+            "/api/auth/change-password", request, _writeJsonOptions);
 
             var responseDto = await response.Content.ReadFromJsonAsync<ApiResponseDto>();
 
@@ -293,7 +293,7 @@ namespace LearningTrainer.Services
 
         public async Task<string> RegisterAsync(RegisterRequest request)
         {
-            var response = await _httpClient.PostAsJsonAsync("/api/auth/register", request, _jsonOptions);
+            var response = await _httpClient.PostAsJsonAsync("/api/auth/register", request, _writeJsonOptions);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -321,7 +321,7 @@ namespace LearningTrainer.Services
         public async Task<UserSessionDto> LoginAsync(object loginRequest)
         {
             HttpResponseMessage response = await _httpClient.PostAsJsonAsync(
-                "/api/auth/login", loginRequest, _jsonOptions);
+                "/api/auth/login", loginRequest, _writeJsonOptions);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -394,7 +394,7 @@ namespace LearningTrainer.Services
         {
             var request = new { ContentId = dictionaryId, StudentId = studentId };
 
-            var response = await _httpClient.PostAsJsonAsync("/api/sharing/dictionary/toggle", request, _jsonOptions);
+            var response = await _httpClient.PostAsJsonAsync("/api/sharing/dictionary/toggle", request, _writeJsonOptions);
             response.EnsureSuccessStatusCode();
 
             return await response.Content.ReadFromJsonAsync<SharingResultDto>(_jsonOptions)
@@ -426,7 +426,7 @@ namespace LearningTrainer.Services
         public async Task<SharingResultDto> ToggleRuleSharingAsync(int ruleId, int studentId)
         {
             var request = new { ContentId = ruleId, StudentId = studentId };
-            var response = await _httpClient.PostAsJsonAsync("/api/sharing/rule/toggle", request, _jsonOptions);
+            var response = await _httpClient.PostAsJsonAsync("/api/sharing/rule/toggle", request, _writeJsonOptions);
 
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<SharingResultDto>(_jsonOptions)
