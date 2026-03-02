@@ -107,6 +107,41 @@ app.MapPost("/api/ai/translate", async (TranslateRequest req, IAiProvider ai, IM
             return Results.Json(new { error = "AI returned garbled translation" }, statusCode: 502);
         }
 
+        // Post-validation: перевод не должен содержать смешанные скрипты (напр. "грaveйный")
+        if (HasMixedScripts(translationTrimmed))
+        {
+            logger.LogWarning("AI returned mixed-script translation '{Translation}' for '{Word}', discarding", parsed.Translation, req.Word);
+            return Results.Json(new { error = "AI returned garbled translation" }, statusCode: 502);
+        }
+
+        // Post-validation: перевод должен быть на целевом языке
+        if (!IsInExpectedScript(translationTrimmed, req.TargetLanguage))
+        {
+            logger.LogWarning("AI returned translation in wrong language '{Translation}' for '{Word}' (expected {TargetLanguage}), discarding",
+                parsed.Translation, req.Word, req.TargetLanguage);
+            return Results.Json(new { error = "AI returned translation in wrong language" }, statusCode: 502);
+        }
+
+        // Post-validation: чистим альтернативы — убираем мусорные, не на целевом языке, дубли
+        parsed.Alternatives.RemoveAll(alt =>
+        {
+            var trimAlt = alt?.Trim();
+            if (string.IsNullOrWhiteSpace(trimAlt)) return true;
+            if (trimAlt.Length < 2) return true;
+            if (HasMixedScripts(trimAlt)) return true;
+            if (!IsInExpectedScript(trimAlt, req.TargetLanguage)) return true;
+            if (string.Equals(trimAlt, translationTrimmed, StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(trimAlt, req.Word.Trim(), StringComparison.OrdinalIgnoreCase)) return true;
+            // Убираем альтернативы со спецсимволами (мусор типа ":<? alternativnye tsveta?>")
+            if (trimAlt.Any(c => c is '<' or '>' or '?' or ':' or '{' or '}')) return true;
+            return false;
+        });
+        // Дедупликация
+        parsed.Alternatives = parsed.Alternatives
+            .Select(a => a.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
         cache.Set(cacheKey, parsed, TimeSpan.FromHours(24));
         return Results.Ok(parsed);
     }
@@ -150,8 +185,11 @@ app.MapPost("/api/ai/example", async (ExampleRequest req, IAiProvider ai, IMemor
         // Post-validation: примеры не должны быть пустыми или содержать мета-текст
         parsed.Examples.RemoveAll(e =>
             string.IsNullOrWhiteSpace(e.Sentence) ||
+            string.IsNullOrWhiteSpace(e.Translation) ||
             e.Sentence.StartsWith("Here is", StringComparison.OrdinalIgnoreCase) ||
-            e.Sentence.StartsWith("Sure", StringComparison.OrdinalIgnoreCase));
+            e.Sentence.StartsWith("Sure", StringComparison.OrdinalIgnoreCase) ||
+            // Переводы не должны содержать смешанные скрипты (напр. "увиделspring")
+            HasMixedScripts(e.Translation));
 
         if (parsed.Examples.Count == 0)
             return Results.Json(new { error = "AI returned invalid examples" }, statusCode: 502);
@@ -195,11 +233,13 @@ app.MapPost("/api/ai/generate-dictionary", async (GenerateDictionaryRequest req,
         if (parsed == null || parsed.Words.Count == 0)
             return Results.Json(new { error = "AI returned invalid response" }, statusCode: 502);
 
-        // Post-validation: убираем слова без перевода
+        // Post-validation: убираем слова без перевода, с мусорными переводами
         parsed.Words.RemoveAll(w =>
             string.IsNullOrWhiteSpace(w.Original) ||
             string.IsNullOrWhiteSpace(w.Translation) ||
-            string.Equals(w.Original.Trim(), w.Translation.Trim(), StringComparison.OrdinalIgnoreCase));
+            string.Equals(w.Original.Trim(), w.Translation.Trim(), StringComparison.OrdinalIgnoreCase) ||
+            HasMixedScripts(w.Translation.Trim()) ||
+            HasMixedScripts(w.Original.Trim()));
 
         if (parsed.Words.Count == 0)
             return Results.Json(new { error = "AI returned no valid words" }, statusCode: 502);
@@ -274,6 +314,17 @@ app.MapPost("/api/ai/translate-batch", async (BatchTranslateRequest req, IAiProv
                     continue;
                 if (string.Equals(item.Word.Trim(), item.Translation.Trim(), StringComparison.OrdinalIgnoreCase))
                     continue;
+                if (HasMixedScripts(item.Translation.Trim()))
+                    continue;
+                if (!IsInExpectedScript(item.Translation.Trim(), req.TargetLanguage))
+                    continue;
+
+                // Чистим альтернативы в батче
+                item.Alternatives?.RemoveAll(alt =>
+                    string.IsNullOrWhiteSpace(alt) ||
+                    HasMixedScripts(alt.Trim()) ||
+                    !IsInExpectedScript(alt.Trim(), req.TargetLanguage) ||
+                    string.Equals(alt.Trim(), item.Translation.Trim(), StringComparison.OrdinalIgnoreCase));
 
                 result.Translations.Add(item);
 
@@ -614,4 +665,76 @@ static T? TryDeserialize<T>(string json, ILogger logger) where T : class
         logger.LogWarning(ex, "Failed to parse AI JSON: {Json}", json[..Math.Min(200, json.Length)]);
         return null;
     }
+}
+
+/// <summary>
+/// Checks whether the text is written predominantly in the expected script for the given language.
+/// Returns false for mixed-script garbage, wrong-language alternatives, etc.
+/// </summary>
+static bool IsInExpectedScript(string text, string language)
+{
+    if (string.IsNullOrWhiteSpace(text)) return false;
+
+    var letters = text.Where(char.IsLetter).ToArray();
+    if (letters.Length == 0) return false;
+
+    var lang = language.Trim().ToLowerInvariant();
+
+    // For Cyrillic-based languages the majority of letters must be Cyrillic
+    if (lang is "russian" or "ukrainian" or "belarusian" or "bulgarian" or "serbian"
+        or "русский" or "украинский" or "белорусский")
+    {
+        var cyrillicCount = letters.Count(c => c is >= '\u0400' and <= '\u04FF');
+        return cyrillicCount > letters.Length / 2;
+    }
+
+    // For Latin-based languages the majority of letters must be Latin
+    if (lang is "english" or "german" or "french" or "spanish" or "italian" or "portuguese"
+        or "dutch" or "polish" or "czech" or "swedish" or "norwegian" or "danish" or "finnish"
+        or "turkish" or "romanian" or "hungarian" or "indonesian" or "malay" or "vietnamese"
+        or "английский" or "немецкий" or "французский" or "испанский" or "итальянский"
+        or "португальский" or "польский" or "турецкий")
+    {
+        var latinCount = letters.Count(c => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+                                            || (c >= '\u00C0' && c <= '\u024F'));
+        return latinCount > letters.Length / 2;
+    }
+
+    // For CJK languages
+    if (lang is "chinese" or "japanese" or "korean"
+        or "китайский" or "японский" or "корейский")
+    {
+        var cjkCount = letters.Count(c => c >= '\u4E00' && c <= '\u9FFF'
+                                          || c >= '\u3040' && c <= '\u30FF'
+                                          || c >= '\uAC00' && c <= '\uD7AF');
+        return cjkCount > letters.Length / 3;
+    }
+
+    // For Arabic/Hebrew
+    if (lang is "arabic" or "hebrew" or "арабский" or "иврит")
+    {
+        var count = letters.Count(c => (c >= '\u0600' && c <= '\u06FF')
+                                       || (c >= '\u0590' && c <= '\u05FF'));
+        return count > letters.Length / 2;
+    }
+
+    // Unknown language — accept anything that has at least some letters
+    return true;
+}
+
+/// <summary>
+/// Checks if text contains mixed scripts (e.g., Cyrillic + Latin in one word = garbled output like "грaveйный").
+/// </summary>
+static bool HasMixedScripts(string text)
+{
+    if (string.IsNullOrWhiteSpace(text)) return false;
+    var letters = text.Where(char.IsLetter).ToArray();
+    if (letters.Length < 2) return false;
+
+    bool hasCyrillic = letters.Any(c => c is >= '\u0400' and <= '\u04FF');
+    bool hasLatin = letters.Any(c => (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z'));
+    bool hasCjk = letters.Any(c => c >= '\u4E00' && c <= '\u9FFF');
+
+    int scriptCount = (hasCyrillic ? 1 : 0) + (hasLatin ? 1 : 0) + (hasCjk ? 1 : 0);
+    return scriptCount > 1;
 }

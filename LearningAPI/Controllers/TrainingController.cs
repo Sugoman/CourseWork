@@ -44,17 +44,18 @@ public class TrainingController : BaseApiController
 
         try
         {
-            // --- 1. Слова к повторению (проекция, без Include) ---
+            // --- 1. Слова к повторению — исключаем замороженные, сортируем по overdue factor (§2.3) ---
+            // OrderBy NextReview ASC = наиболее просроченные (старые даты) первыми
             var reviewWords = await _context.LearningProgresses
-                .Where(p => p.UserId == userId && p.NextReview <= now && p.Word != null)
+                .Where(p => p.UserId == userId && p.NextReview <= now && p.Word != null && !p.IsSuspended)
                 .OrderBy(p => p.NextReview)
                 .Take(reviewLimit)
                 .Select(p => MapToTrainingWordProjection(p))
                 .ToListAsync();
 
-            // --- 2. Сложные слова (проекция, без Include) ---
+            // --- 2. Сложные слова (проекция, без Include) — исключаем замороженные ---
             var difficultWords = await _context.LearningProgresses
-                .Where(p => p.UserId == userId && p.Word != null &&
+                .Where(p => p.UserId == userId && p.Word != null && !p.IsSuspended &&
                            (p.KnowledgeLevel == 0 ||
                             (p.TotalAttempts > 2 && p.CorrectAnswers < p.TotalAttempts / 2)))
                 .OrderBy(p => p.KnowledgeLevel)
@@ -69,8 +70,9 @@ public class TrainingController : BaseApiController
                 .Select(g => new
                 {
                     TotalProgress = g.Count(),
-                    TotalReviewCount = g.Count(p => p.NextReview <= now),
+                    TotalReviewCount = g.Count(p => p.NextReview <= now && !p.IsSuspended),
                     CompletedToday = g.Count(p => p.LastPracticed >= today),
+                    LeechCount = g.Count(p => p.IsSuspended),
                     LastPractice = g.Where(p => p.LastPracticed != default)
                                     .Max(p => (DateTime?)p.LastPracticed)
                 })
@@ -79,7 +81,22 @@ public class TrainingController : BaseApiController
             var totalWordCount = await _context.Words
                 .CountAsync(w => w.UserId == userId);
 
-            // --- 4. Новые слова (подзапрос вместо загрузки всех ID) ---
+            // --- 4. Новые слова — с адаптивным лимитом (§2.1 LEARNING_IMPROVEMENTS) ---
+            // Если точность за сегодня низкая — сокращаем поток новых слов
+            var completedToday = stats?.CompletedToday ?? 0;
+            var adaptiveNewLimit = newWordsLimit;
+            if (completedToday >= 5) // достаточно данных для оценки
+            {
+                // Считаем accuracy: слова без сброса / все сегодняшние
+                var todayResetCount = await _context.LearningProgresses
+                    .CountAsync(p => p.UserId == userId && p.LastPracticed >= today && p.KnowledgeLevel == 0 && p.TotalAttempts > 0);
+                var todayAccuracy = 1.0 - (double)todayResetCount / completedToday;
+                if (todayAccuracy < 0.6)
+                    adaptiveNewLimit = Math.Max(2, newWordsLimit / 3);
+                else if (todayAccuracy < 0.8)
+                    adaptiveNewLimit = Math.Max(3, newWordsLimit / 2);
+            }
+
             var newWords = await _context.Words
                 .Where(w => w.UserId == userId &&
                        !_context.LearningProgresses
@@ -87,7 +104,7 @@ public class TrainingController : BaseApiController
                             .Select(p => p.WordId)
                             .Contains(w.Id))
                 .OrderBy(w => w.AddedAt)
-                .Take(newWordsLimit)
+                .Take(adaptiveNewLimit)
                 .Select(w => new TrainingWordDto
                 {
                     WordId = w.Id,
@@ -108,6 +125,10 @@ public class TrainingController : BaseApiController
             // --- 5. Streak ---
             var streak = await CalculateStreakAsync(userId, today);
 
+            // --- 6. Daily Goal из UserStats ---
+            var userStats = await _context.UserStats.FindAsync(userId);
+            var dailyGoal = userStats?.DailyGoal ?? 20;
+
             var plan = new DailyPlanDto
             {
                 ReviewWords = reviewWords,
@@ -120,7 +141,9 @@ public class TrainingController : BaseApiController
                     TotalDifficultCount = difficultWords.Count,
                     CompletedToday = stats?.CompletedToday ?? 0,
                     CurrentStreak = streak,
-                    LastPracticeDate = stats?.LastPractice
+                    LastPracticeDate = stats?.LastPractice,
+                    LeechCount = stats?.LeechCount ?? 0,
+                    DailyGoal = dailyGoal
                 }
             };
 
@@ -153,7 +176,7 @@ public class TrainingController : BaseApiController
         try
         {
             IQueryable<LearningProgress> query = _context.LearningProgresses
-                .Where(p => p.UserId == userId)
+                .Where(p => p.UserId == userId && !p.IsSuspended)
                 .Include(p => p.Word)
                     .ThenInclude(w => w.Dictionary);
 
@@ -421,7 +444,9 @@ public class TrainingController : BaseApiController
             KnowledgeLevel = p.KnowledgeLevel,
             NextReview = p.NextReview,
             TotalAttempts = p.TotalAttempts,
-            CorrectAnswers = p.CorrectAnswers
+            CorrectAnswers = p.CorrectAnswers,
+            LapseCount = p.LapseCount,
+            IsLeech = p.IsSuspended
         };
     }
 
@@ -440,7 +465,9 @@ public class TrainingController : BaseApiController
             KnowledgeLevel = p.KnowledgeLevel,
             NextReview = p.NextReview,
             TotalAttempts = p.TotalAttempts,
-            CorrectAnswers = p.CorrectAnswers
+            CorrectAnswers = p.CorrectAnswers,
+            LapseCount = p.LapseCount,
+            IsLeech = p.IsSuspended
         };
     }
 }

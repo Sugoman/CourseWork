@@ -37,6 +37,24 @@ namespace LearningTrainerShared.Models
         public DateTime LastPracticed { get; set; }
         public DateTime NextReview { get; set; }
 
+        /// <summary>
+        /// Количество «сбросов» (ответ Again при KnowledgeLevel > 0).
+        /// Используется для leech detection — слова, которые постоянно забываются.
+        /// </summary>
+        public int LapseCount { get; set; }
+
+        /// <summary>
+        /// Слово заморожено как «leech» (пиявка) — исключено из обычной очереди повторения.
+        /// Пользователь должен вручную снять заморозку или отредактировать карточку.
+        /// </summary>
+        public bool IsSuspended { get; set; }
+
+        /// <summary>
+        /// Время последнего ответа в миллисекундах.
+        /// Используется для объективной оценки: быстрый ответ (&lt;2с) → Easy, медленный (&gt;10с) → Hard.
+        /// </summary>
+        public int? LastResponseTimeMs { get; set; }
+
         [NotMapped]
         public double SuccessRate => TotalAttempts > 0 ? (double)CorrectAnswers / TotalAttempts : 0;
     }

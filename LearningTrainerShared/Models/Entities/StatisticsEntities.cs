@@ -74,5 +74,10 @@ public class UserStats
     public long TotalLearningTimeSeconds { get; set; }
     public int TotalSessions { get; set; }
 
+    /// <summary>
+    /// Дневная цель пользователя (количество слов). По умолчанию 20.
+    /// </summary>
+    public int DailyGoal { get; set; } = 20;
+
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
 }

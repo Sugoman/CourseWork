@@ -1486,3 +1486,108 @@ kbd {
     from { transform: translateX(100%); opacity: 0; }
     to   { transform: translateX(0);    opacity: 1; }
 }
+
+/* === Daily Goal Section (P0 LEARNING_IMPROVEMENTS §1.2) === */
+
+.daily-goal-section {
+    background: var(--bs-light, #f8f9fa);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.daily-goal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.daily-goal-editor {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* === Leech Alert (P0 LEARNING_IMPROVEMENTS §1.1) === */
+
+.leech-alert {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+    border: 1px solid #ffc107;
+    border-radius: 12px;
+    padding: 0.85rem 1.25rem;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+}
+
+.leech-alert-content {
+    display: flex;
+    align-items: center;
+    color: #856404;
+    font-size: 0.9rem;
+}
+
+.leech-alert-content i {
+    font-size: 1.2rem;
+    color: #e0a800;
+}
+
+/* === Leech Manager === */
+
+.leech-manager {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.leech-manager h4 {
+    margin-bottom: 0.25rem;
+    font-size: 1.1rem;
+}
+
+.leech-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.leech-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+}
+
+.leech-word {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 576px) {
+    .leech-alert {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .leech-item {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+
+    .daily-goal-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}

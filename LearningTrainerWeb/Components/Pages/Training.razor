@@ -133,6 +133,86 @@
                 </div>
             </div>
 
+            @* === Дневная цель (P0 LEARNING_IMPROVEMENTS §1.2) === *@
+            @if (DailyPlan.Stats.DailyGoal > 0)
+            {
+                var goalPercent = Math.Min(100, DailyPlan.Stats.CompletedToday * 100.0 / DailyPlan.Stats.DailyGoal);
+                var goalMet = DailyPlan.Stats.CompletedToday >= DailyPlan.Stats.DailyGoal;
+                <div class="daily-goal-section">
+                    <div class="daily-goal-header">
+                        <span>
+                            <i class="bi bi-bullseye me-1"></i>
+                            Дневная цель: <strong>@DailyPlan.Stats.CompletedToday</strong> / @DailyPlan.Stats.DailyGoal слов
+                            @if (goalMet)
+                            {
+                                <span class="ms-2 text-success"><i class="bi bi-check-circle-fill"></i> Выполнено!</span>
+                            }
+                        </span>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleDailyGoalEditor" title="Изменить цель">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+                    <div class="progress" style="height: 8px; border-radius: 4px;">
+                        <div class="progress-bar @(goalMet ? "bg-success" : "bg-primary")" 
+                             style="width: @goalPercent%; transition: width 0.5s ease;"></div>
+                    </div>
+                    @if (ShowDailyGoalEditor)
+                    {
+                        <div class="daily-goal-editor mt-2">
+                            <div class="setting-options">
+                                @foreach (var g in new[] { 5, 10, 15, 20, 30, 50 })
+                                {
+                                    <button class="setting-pill @(DailyPlan.Stats.DailyGoal == g ? "active" : "")"
+                                            @onclick="() => UpdateDailyGoal(g)">@g</button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @* === Leech-предупреждение (P0 LEARNING_IMPROVEMENTS §1.1) === *@
+            @if (DailyPlan.Stats.LeechCount > 0)
+            {
+                <div class="leech-alert">
+                    <div class="leech-alert-content">
+                        <i class="bi bi-bug-fill me-2"></i>
+                        <span>
+                            <strong>@DailyPlan.Stats.LeechCount</strong> @(DailyPlan.Stats.LeechCount == 1 ? "слово заморожено" : "слов заморожено") 
+                            — @(DailyPlan.Stats.LeechCount == 1 ? "оно вызывает" : "они вызывают") постоянные трудности.
+                        </span>
+                    </div>
+                    <button class="btn btn-sm btn-outline-warning" @onclick="ShowLeechManager">
+                        <i class="bi bi-tools me-1"></i>Управление
+                    </button>
+                </div>
+            }
+
+            @* === Leech-менеджер === *@
+            @if (IsLeechManagerVisible && LeechWords.Count > 0)
+            {
+                <div class="leech-manager">
+                    <h4><i class="bi bi-bug me-2"></i>Замороженные слова</h4>
+                    <p class="text-muted small">Эти слова вызывают трудности. Попробуйте мнемонику, отредактируйте карточку или разморозьте для повторной попытки.</p>
+                    <div class="leech-list">
+                        @foreach (var leech in LeechWords)
+                        {
+                            <div class="leech-item">
+                                <div class="leech-word">
+                                    <strong>@leech.OriginalWord</strong>
+                                    <span class="text-muted mx-1">→</span>
+                                    <span>@leech.Translation</span>
+                                    <span class="badge bg-danger-subtle text-danger ms-2">@leech.LapseCount сбросов</span>
+                                </div>
+                                <button class="btn btn-sm btn-outline-success" @onclick="() => UnsuspendWord(leech.WordId)" title="Разморозить">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Разморозить
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
             <div class="training-modes">
                 <h3>Выберите режим тренировки</h3>
                 <div class="modes-grid">
@@ -971,6 +1051,19 @@ private const int MatchingGroupSize = 5;
 private List<string> AvailableTags = new();
 private string? SelectedTag;
 
+// Leech manager state (P0 LEARNING_IMPROVEMENTS §1.1)
+private bool IsLeechManagerVisible;
+private List<TrainingWordDto> LeechWords = new();
+
+// Daily goal editor state (P0 LEARNING_IMPROVEMENTS §1.2)
+private bool ShowDailyGoalEditor;
+
+// Response time tracking (§1.3 LEARNING_IMPROVEMENTS)
+private DateTime _wordShownAt;
+
+// Intra-session Again requeue (§10.4 LEARNING_IMPROVEMENTS)
+private Queue<TrainingWordDto> _againQueue = new();
+
 // TTS state
 private double TtsVolume = 0.8;
 private bool ShowVolumeSlider;
@@ -1159,6 +1252,7 @@ private async Task InstallStarterPack()
             SessionCorrectCount = 0;
             SessionWrongCount = 0;
             DifficultWordsList.Clear();
+            _againQueue.Clear();
             SessionStartedAt = DateTime.UtcNow;
             CurrentWord = TrainingWords[0];
             IsAnswerRevealed = false;
@@ -1192,6 +1286,9 @@ private async Task InstallStarterPack()
 
     private void PrepareCurrentWord()
     {
+        // Start response time tracking (§1.3 LEARNING_IMPROVEMENTS)
+        _wordShownAt = DateTime.UtcNow;
+
         // Reset states
         IsAnswerRevealed = false;
         McqAnswered = false;
@@ -1301,8 +1398,10 @@ private async Task InstallStarterPack()
     {
         if (CurrentWord == null) return;
 
-        // Отправляем результат на сервер
-        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality);
+        var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
+
+        // Отправляем результат на сервер с временем ответа
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs);
 
         // Считаем правильные ответы
         if (quality >= ResponseQuality.Good)
@@ -1315,6 +1414,10 @@ private async Task InstallStarterPack()
             SessionWrongCount++;
             if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
                 DifficultWordsList.Add(CurrentWord.OriginalWord);
+
+            // Intra-session Again: добавляем слово в конец очереди (§10.4 LEARNING_IMPROVEMENTS)
+            if (quality == ResponseQuality.Again)
+                _againQueue.Enqueue(CurrentWord);
         }
 
         // Переход к следующему слову
@@ -1324,14 +1427,15 @@ private async Task InstallStarterPack()
     private async Task SelectMcqOption(string option)
     {
         if (McqAnswered || CurrentWord == null) return;
-        
+
+        var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
         SelectedMcqOption = option;
         McqAnswered = true;
         McqWasCorrect = option.Equals(ExpectedAnswer, StringComparison.OrdinalIgnoreCase);
-        
+
         // Update progress
         var quality = McqWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
-        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality);
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs);
 
         if (McqWasCorrect)
             {
@@ -1343,6 +1447,7 @@ private async Task InstallStarterPack()
                 SessionWrongCount++;
                 if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
                     DifficultWordsList.Add(CurrentWord.OriginalWord);
+                _againQueue.Enqueue(CurrentWord);
                 _ = LoadAiExplanation(CurrentWord.OriginalWord, option, ExpectedAnswer);
             }
     }
@@ -1394,10 +1499,11 @@ private async Task InstallStarterPack()
         }
 
         // Update progress
+        var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
         var quality = TypingWasCorrect ? ResponseQuality.Good 
                     : TypingWasAlmostCorrect ? ResponseQuality.Hard 
                     : ResponseQuality.Again;
-        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality);
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs);
 
         if (TypingWasCorrect || TypingWasAlmostCorrect)
         {
@@ -1409,6 +1515,8 @@ private async Task InstallStarterPack()
             SessionWrongCount++;
             if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
                 DifficultWordsList.Add(CurrentWord.OriginalWord);
+            if (quality == ResponseQuality.Again)
+                _againQueue.Enqueue(CurrentWord);
             _ = LoadAiExplanation(CurrentWord.OriginalWord, TypedAnswer, ExpectedAnswer);
         }
     }
@@ -1458,10 +1566,11 @@ private async Task InstallStarterPack()
             }
         }
 
+        var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
         var quality = ListeningWasCorrect ? ResponseQuality.Good
                     : ListeningWasAlmostCorrect ? ResponseQuality.Hard
                     : ResponseQuality.Again;
-        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality);
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs);
 
         if (ListeningWasCorrect || ListeningWasAlmostCorrect)
         {
@@ -1473,6 +1582,8 @@ private async Task InstallStarterPack()
             SessionWrongCount++;
             if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
                 DifficultWordsList.Add(CurrentWord.OriginalWord);
+            if (quality == ResponseQuality.Again)
+                _againQueue.Enqueue(CurrentWord);
         }
     }
 
@@ -1496,6 +1607,12 @@ private async Task InstallStarterPack()
         if (CurrentIndex < TrainingWords.Count)
         {
             CurrentWord = TrainingWords[CurrentIndex];
+            PrepareCurrentWord();
+        }
+        else if (_againQueue.Count > 0)
+        {
+            // Intra-session Again: повторяем слова, на которые ответили Again (§10.4)
+            CurrentWord = _againQueue.Dequeue();
             PrepareCurrentWord();
         }
         else
@@ -1570,6 +1687,44 @@ private async Task InstallStarterPack()
         await LoadDailyPlan();
         IsTrainingActive = false;
         CurrentWord = null;
+    }
+
+    // === Leech management (P0 LEARNING_IMPROVEMENTS §1.1) ===
+
+    private async Task ShowLeechManager()
+    {
+        IsLeechManagerVisible = !IsLeechManagerVisible;
+        if (IsLeechManagerVisible && LeechWords.Count == 0)
+        {
+            LeechWords = await TrainingService.GetLeechesAsync();
+        }
+    }
+
+    private async Task UnsuspendWord(int wordId)
+    {
+        var success = await TrainingService.UnsuspendWordAsync(wordId);
+        if (success)
+        {
+            LeechWords.RemoveAll(w => w.WordId == wordId);
+            await LoadDailyPlan(); // Обновить счётчики
+        }
+    }
+
+    // === Daily goal (P0 LEARNING_IMPROVEMENTS §1.2) ===
+
+    private void ToggleDailyGoalEditor()
+    {
+        ShowDailyGoalEditor = !ShowDailyGoalEditor;
+    }
+
+    private async Task UpdateDailyGoal(int goal)
+    {
+        var success = await TrainingService.SetDailyGoalAsync(goal);
+        if (success && DailyPlan != null)
+        {
+            DailyPlan.Stats.DailyGoal = goal;
+            ShowDailyGoalEditor = false;
+        }
     }
 
     private async Task SpeakWord()

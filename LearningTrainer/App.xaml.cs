@@ -23,7 +23,7 @@ namespace LearningTrainer
         {
             // Загрузить конфигурацию
             var configBuilder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
+                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
 #if DEBUG
                 .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)

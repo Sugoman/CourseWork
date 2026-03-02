@@ -59,7 +59,7 @@ services:
       bash -c "
         dotnet tool install --global dotnet-ef --version 8.0.0 || true &&
         export PATH=\"$$PATH:/root/.dotnet/tools\" &&
-        dotnet ef database update --project LearningTrainerShared --startup-project LearningAPI
+        dotnet ef database update --project LearningTrainerShared --startup-project LearningAPI --context ApiDbContext
       "
 
   # -------------------------------
@@ -119,12 +119,12 @@ services:
       context: .
       dockerfile: Ingat.AI/Dockerfile
     ports:
-      - "5200:8080"
+      - "5200:5200"
     depends_on:
       ollama:
         condition: service_started
     environment:
-      - ASPNETCORE_URLS=http://+:8080
+      - ASPNETCORE_URLS=http://+:5200
       - Ollama__BaseUrl=http://ollama:11434
       - Ollama__Model=qwen2.5:7b
 

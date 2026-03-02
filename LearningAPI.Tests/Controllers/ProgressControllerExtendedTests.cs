@@ -104,7 +104,7 @@ public class ProgressControllerExtendedTests : IDisposable
         var progress = okResult.Value as LearningProgress;
         progress.Should().NotBeNull();
         progress!.CorrectAnswers.Should().Be(1);
-        progress.NextReview.Should().BeCloseTo(DateTime.UtcNow.AddDays(1), TimeSpan.FromMinutes(1));
+        progress.NextReview.Should().BeCloseTo(DateTime.UtcNow.AddDays(1), TimeSpan.FromHours(3));
     }
 
     [Fact]

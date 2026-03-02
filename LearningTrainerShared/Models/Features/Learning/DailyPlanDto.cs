@@ -37,6 +37,16 @@ public class DailyPlanStats
     public int CompletedToday { get; set; }
     public int CurrentStreak { get; set; }
     public DateTime? LastPracticeDate { get; set; }
+
+    /// <summary>
+    /// Количество слов-пиявок (leech), заблокированных из обычной очереди.
+    /// </summary>
+    public int LeechCount { get; set; }
+
+    /// <summary>
+    /// Дневная цель пользователя (количество слов). 0 = не задана.
+    /// </summary>
+    public int DailyGoal { get; set; }
 }
 
 /// <summary>
@@ -56,6 +66,16 @@ public class TrainingWordDto
     public DateTime? NextReview { get; set; }
     public int TotalAttempts { get; set; }
     public int CorrectAnswers { get; set; }
+
+    /// <summary>
+    /// Количество «сбросов» (leech indicator).
+    /// </summary>
+    public int LapseCount { get; set; }
+
+    /// <summary>
+    /// Слово помечено как leech и заморожено.
+    /// </summary>
+    public bool IsLeech { get; set; }
 
     /// <summary>
     /// Процент правильных ответов (0–100). Если попыток не было — null.

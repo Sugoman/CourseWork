@@ -21,13 +21,28 @@ public interface ITrainingApiService
     /// <summary>
     /// Обновить прогресс слова
     /// </summary>
-    Task<bool> UpdateProgressAsync(int wordId, ResponseQuality quality);
+    Task<bool> UpdateProgressAsync(int wordId, ResponseQuality quality, int? responseTimeMs = null);
     
     /// <summary>
     /// Установить стартовый набор
     /// </summary>
     Task<StarterPackResult?> InstallStarterPackAsync();
-    
+
+    /// <summary>
+    /// Получить список замороженных слов (leeches)
+    /// </summary>
+    Task<List<TrainingWordDto>> GetLeechesAsync();
+
+    /// <summary>
+    /// Снять заморозку (leech) со слова
+    /// </summary>
+    Task<bool> UnsuspendWordAsync(int wordId);
+
+    /// <summary>
+    /// Установить дневную цель
+    /// </summary>
+    Task<bool> SetDailyGoalAsync(int goal);
+
     /// <summary>
     /// Установить токен авторизации
     /// </summary>
@@ -91,12 +106,12 @@ public class TrainingApiService : ITrainingApiService
         }
     }
 
-    public async Task<bool> UpdateProgressAsync(int wordId, ResponseQuality quality)
+    public async Task<bool> UpdateProgressAsync(int wordId, ResponseQuality quality, int? responseTimeMs = null)
     {
         try
         {
             await ApplyAuthAsync();
-            var request = new UpdateProgressRequest { WordId = wordId, Quality = quality };
+            var request = new UpdateProgressRequest { WordId = wordId, Quality = quality, ResponseTimeMs = responseTimeMs };
             var response = await _httpClient.PostAsJsonAsync("api/progress/update", request);
             return response.IsSuccessStatusCode;
         }
@@ -123,6 +138,52 @@ public class TrainingApiService : ITrainingApiService
         {
             _logger.LogError(ex, "Error installing starter pack");
             return null;
+        }
+    }
+
+    public async Task<List<TrainingWordDto>> GetLeechesAsync()
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            var result = await _httpClient.GetFromJsonAsync<List<TrainingWordDto>>("api/progress/leeches");
+            return result ?? new List<TrainingWordDto>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching leeches");
+            return new List<TrainingWordDto>();
+        }
+    }
+
+    public async Task<bool> UnsuspendWordAsync(int wordId)
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            var response = await _httpClient.PostAsync($"api/progress/unsuspend/{wordId}", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error unsuspending word {WordId}", wordId);
+            return false;
+        }
+    }
+
+    public async Task<bool> SetDailyGoalAsync(int goal)
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            var request = new SetDailyGoalRequest { Goal = goal };
+            var response = await _httpClient.PutAsJsonAsync("api/progress/daily-goal", request);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting daily goal");
+            return false;
         }
     }
 }

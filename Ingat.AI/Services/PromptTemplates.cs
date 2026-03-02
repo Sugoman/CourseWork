@@ -7,16 +7,20 @@ namespace Ingat.AI.Services;
 public static class PromptTemplates
 {
     public const string TranslateSystem =
-        "You are a professional translator specializing in precise, context-aware translations. You ALWAYS respect the specified part of speech. You respond ONLY with valid JSON, no markdown, no explanation.";
+        "You are a professional translator specializing in precise, context-aware translations. You ALWAYS respect the specified part of speech. Every word in your response (translation and alternatives) MUST be in the target language ONLY. You respond ONLY with valid JSON, no markdown, no explanation.";
 
     public static string TranslateUser(string word, string from, string to, string? context, string? partOfSpeech) =>
         $$"""
         Translate the word from {{from}} to {{to}}.
         Word: "{{word}}"
-        {{(partOfSpeech != null ? $"IMPORTANT: The word is used as a {partOfSpeech}. Translate ONLY the {partOfSpeech} meaning. For example, \"run\" as a noun = \"забег/пробежка\", but as a verb = \"бежать\". \"phone\" as a verb = \"звонить\". Do NOT mix up parts of speech." : "")}}
+        {{(partOfSpeech != null ? $"CRITICAL: The word is used STRICTLY as a {partOfSpeech}. Translate ONLY the {partOfSpeech} meaning.\nExamples of part-of-speech disambiguation:\n- \"book\" as a noun = \"книга\", but as a verb = \"забронировать\" (NOT \"писать книгу\")\n- \"fly\" as a noun = \"муха\", but as a verb = \"летать\" (NOT \"самолёт\")\n- \"train\" as a noun = \"поезд\", but as a verb = \"тренировать\" (NOT \"ездить на поезде\")\n- \"run\" as a noun = \"забег/пробежка\", but as a verb = \"бежать\"\n- \"present\" as a noun = \"подарок\", but as an adjective = \"присутствующий/нынешний\"\n- \"duck\" as a noun = \"утка\", but as a verb = \"пригнуться/уклониться\"\nDo NOT confuse meanings from other parts of speech." : "")}}
         {{(context != null ? $"Context: \"{context}\"" : "")}}
 
-        The "translation" field must contain ONLY the translated word or phrase in {{to}}. Do NOT include numbers, indices, abbreviations, or explanations in the translation field.
+        RULES:
+        1. The "translation" field must contain ONLY the translated word or phrase in {{to}}. No numbers, indices, abbreviations, or explanations.
+        2. The "alternatives" field must contain 1-3 SYNONYMS of the translation, also in {{to}} only.
+        3. Alternatives must NOT be antonyms, must NOT be in {{from}} or any other language, and must NOT repeat the main translation.
+        4. ALL text in "translation" and "alternatives" must be written ENTIRELY in {{to}}. Do not mix scripts or languages.
         Respond with JSON:
         {"translation": "main translation", "alternatives": ["alt1", "alt2"]}
         """;
@@ -27,10 +31,11 @@ public static class PromptTemplates
     public static string ExampleUser(string word, string language, string targetLanguage, int count,
         string? partOfSpeech, string? languageLevel) =>
         $$"""
-        Create {{count}} short example sentence(s) using the word "{{word}}" in {{language}}.
-        {{(partOfSpeech != null ? $"IMPORTANT: Use the word ONLY as a {partOfSpeech} (not any other part of speech)." : "")}}
+        Create exactly {{count}} short example sentence(s) using the word "{{word}}" in {{language}}.
+        {{(partOfSpeech != null ? $"CRITICAL: The word \"{{word}}\" must be used ONLY as a {partOfSpeech} in every sentence.\nFor example, if the word is \"run\" and the part of speech is \"noun\", use it as \"a run\" (забег), NOT as a verb \"to run\".\nIf the word is \"book\" and the part of speech is \"verb\", use it as \"to book\" (забронировать), NOT as a noun.\nMake sure the word is grammatically used as a {partOfSpeech} in the sentence." : "")}}
         {{CefrInstruction(languageLevel)}}
-        Translate each sentence to {{targetLanguage}}.
+        Translate each sentence to {{targetLanguage}}. The translation must be a complete, natural sentence — do not leave any words untranslated.
+        You MUST return exactly {{count}} examples.
         Return ONLY this exact JSON structure (always use an array even for 1 example):
         {"examples": [{"sentence": "example sentence here", "translation": "translation here"}]}
         """;

@@ -73,7 +73,7 @@ namespace LearningAPI.Controllers
                     _logger.LogInformation("Progress found for update: {@Progress}", progress);
                 }
 
-                _spacedRepetition.ApplyAnswer(progress, request.Quality);
+                _spacedRepetition.ApplyAnswer(progress, request.Quality, request.ResponseTimeMs);
 
                 _logger.LogInformation("Progress updated to '{Quality}' for User={UserId}, Word={WordId}",
                     request.Quality, userId, request.WordId);
@@ -99,7 +99,7 @@ namespace LearningAPI.Controllers
 
                     if (progress != null)
                     {
-                        _spacedRepetition.ApplyAnswer(progress, request.Quality);
+                        _spacedRepetition.ApplyAnswer(progress, request.Quality, request.ResponseTimeMs);
                         await _context.SaveChangesAsync(ct);
                         await InvalidateUserStatsCacheAsync(GetUserId());
                         return Ok(progress);
@@ -215,6 +215,95 @@ namespace LearningAPI.Controllers
             });
 
             return Ok(stats);
+        }
+
+        // PUT /api/progress/daily-goal
+        /// <summary>
+        /// Установить дневную цель (количество слов)
+        /// </summary>
+        [HttpPut("daily-goal")]
+        public async Task<IActionResult> SetDailyGoal([FromBody] SetDailyGoalRequest request, CancellationToken ct = default)
+        {
+            if (request.Goal < 1 || request.Goal > 500)
+                return BadRequest(new { message = "Дневная цель должна быть от 1 до 500 слов." });
+
+            var userId = GetUserId();
+
+            var userStats = await _context.UserStats.FindAsync(userId);
+            if (userStats == null)
+            {
+                userStats = new UserStats { UserId = userId, DailyGoal = request.Goal };
+                _context.UserStats.Add(userStats);
+            }
+            else
+            {
+                userStats.DailyGoal = request.Goal;
+            }
+
+            await _context.SaveChangesAsync(ct);
+            await InvalidateUserStatsCacheAsync(userId);
+
+            return Ok(new { dailyGoal = userStats.DailyGoal });
+        }
+
+        // POST /api/progress/unsuspend/{wordId}
+        /// <summary>
+        /// Снять заморозку (leech) со слова и вернуть его в очередь повторения
+        /// </summary>
+        [HttpPost("unsuspend/{wordId:int}")]
+        public async Task<IActionResult> UnsuspendWord(int wordId, CancellationToken ct = default)
+        {
+            var userId = GetUserId();
+
+            var progress = await _context.LearningProgresses
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.WordId == wordId, ct);
+
+            if (progress == null)
+                return NotFound(new { message = "Прогресс для этого слова не найден." });
+
+            if (!progress.IsSuspended)
+                return Ok(new { message = "Слово не заморожено." });
+
+            progress.IsSuspended = false;
+            progress.LapseCount = 0; // Сброс счётчика, чтобы дать новый шанс
+            progress.NextReview = DateTime.UtcNow; // Поставить на немедленное повторение
+            await _context.SaveChangesAsync(ct);
+            await InvalidateUserStatsCacheAsync(userId);
+
+            return Ok(new { message = "Слово разморожено и возвращено в очередь повторения." });
+        }
+
+        // GET /api/progress/leeches
+        /// <summary>
+        /// Получить список замороженных слов (leeches)
+        /// </summary>
+        [HttpGet("leeches")]
+        public async Task<IActionResult> GetLeeches(CancellationToken ct = default)
+        {
+            var userId = GetUserId();
+
+            var leeches = await _context.LearningProgresses
+                .Where(p => p.UserId == userId && p.IsSuspended && p.Word != null)
+                .Select(p => new TrainingWordDto
+                {
+                    WordId = p.WordId,
+                    OriginalWord = p.Word!.OriginalWord,
+                    Translation = p.Word.Translation,
+                    Transcription = p.Word.Transcription,
+                    Example = p.Word.Example,
+                    DictionaryName = p.Word.Dictionary != null ? p.Word.Dictionary.Name : "",
+                    DictionaryId = p.Word.DictionaryId,
+                    DictionaryTags = p.Word.Dictionary != null ? p.Word.Dictionary.Tags : null,
+                    KnowledgeLevel = p.KnowledgeLevel,
+                    NextReview = p.NextReview,
+                    TotalAttempts = p.TotalAttempts,
+                    CorrectAnswers = p.CorrectAnswers,
+                    LapseCount = p.LapseCount,
+                    IsLeech = true
+                })
+                .ToListAsync(ct);
+
+            return Ok(leeches);
         }
 
         private async Task InvalidateUserStatsCacheAsync(int userId)
