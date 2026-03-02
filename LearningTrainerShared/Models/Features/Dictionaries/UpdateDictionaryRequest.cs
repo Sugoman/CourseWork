@@ -21,5 +21,11 @@ namespace LearningTrainerShared.Models
         [Required]
         [StringLength(50)]
         public string LanguageTo { get; set; } = "Russian";
+
+        /// <summary>
+        /// Теги словаря (через запятую) (#9 LEARNING_IMPROVEMENTS)
+        /// </summary>
+        [StringLength(500)]
+        public string? Tags { get; set; }
     }
 }

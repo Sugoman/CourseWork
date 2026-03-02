@@ -1,0 +1,109 @@
+@using LearningTrainerWeb.Services
+@inject ITrainingReminderService ReminderService
+@inject ITrainingApiService TrainingService
+@inject IAuthService AuthService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@implements IDisposable
+
+@* In-app reminder toast (#7 LEARNING_IMPROVEMENTS) *@
+@if (ShowReminder && CurrentReminder != null)
+{
+    <div class="reminder-toast">
+        <div class="toast show border-0 shadow-lg" role="alert">
+            <div class="toast-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+                <span class="me-2">@CurrentReminder.Icon</span>
+                <strong class="me-auto">@CurrentReminder.Title</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="DismissReminder"></button>
+            </div>
+            <div class="toast-body d-flex align-items-center gap-2" style="font-size: 0.95rem;">
+                <span>@CurrentReminder.Text</span>
+                <button class="btn btn-sm btn-primary ms-auto flex-shrink-0" @onclick="GoToTraining">
+                    <i class="bi bi-play-fill me-1"></i>Тренировка
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool ShowReminder;
+    private ReminderMessage? CurrentReminder;
+    private System.Threading.Timer? _timer;
+    private bool _notificationPermissionRequested;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var session = await AuthService.GetCurrentSessionAsync();
+            if (session != null)
+            {
+                // Request notification permission on first load
+                try
+                {
+                    await JS.InvokeVoidAsync("requestNotificationPermission");
+                }
+                catch { /* Browser may not support notifications */ }
+
+                // Check reminder every 5 minutes
+                _timer = new System.Threading.Timer(
+                    async _ => await CheckReminder(),
+                    null,
+                    TimeSpan.FromMinutes(2), // first check after 2 min
+                    TimeSpan.FromMinutes(5));
+            }
+        }
+    }
+
+    private async Task CheckReminder()
+    {
+        try
+        {
+            var plan = await TrainingService.GetDailyPlanAsync();
+            if (plan == null) return;
+
+            var reminder = await ReminderService.GetReminderAsync(
+                plan.Stats.TotalReviewCount,
+                plan.Stats.CurrentStreak,
+                10, // dailyGoal default
+                plan.Stats.CompletedToday);
+
+            if (reminder != null)
+            {
+                CurrentReminder = reminder;
+                ShowReminder = true;
+
+                // Also try browser notification
+                try
+                {
+                    await JS.InvokeVoidAsync("showBrowserNotification",
+                        reminder.Title, reminder.Text, null);
+                }
+                catch { /* JS interop may fail if circuit disposed */ }
+
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch
+        {
+            // Silently fail — don't break the app for a reminder
+        }
+    }
+
+    private void DismissReminder()
+    {
+        ShowReminder = false;
+    }
+
+    private void GoToTraining()
+    {
+        ShowReminder = false;
+        Navigation.NavigateTo("/training");
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+}

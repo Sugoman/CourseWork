@@ -32,28 +32,14 @@ namespace LearningAPI.Controllers
             if (page < 1) page = 1;
 
             var userId = GetUserId();
-            var (data, total) = await _dictionaryService.GetDictionariesPagedAsync(userId, page, pageSize, orderBy, descending);
+            var (data, total) = await _dictionaryService.GetDictionariesPagedAsync(userId, page, pageSize, orderBy, descending, ct);
 
             Response.Headers.Append("X-Total-Count", total.ToString());
             Response.Headers.Append("X-Page-Size", pageSize.ToString());
 
             return Ok(new
             {
-                data = data.Select(d => new
-                {
-                    d.Id,
-                    d.UserId,
-                    d.Name,
-                    d.Description,
-                    d.LanguageFrom,
-                    d.LanguageTo,
-                    d.IsPublished,
-                    d.Rating,
-                    d.RatingCount,
-                    d.DownloadCount,
-                    d.SourceDictionaryId,
-                    d.WordCount
-                }),
+                data,
                 pagination = new
                 {
                     page,
@@ -67,7 +53,7 @@ namespace LearningAPI.Controllers
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetDictionaryById(int id, CancellationToken ct = default)
         {
-            var dictionary = await _dictionaryService.GetByIdAsync(GetUserId(), id);
+            var dictionary = await _dictionaryService.GetByIdAsync(GetUserId(), id, ct);
             if (dictionary == null) return NotFound();
             return Ok(dictionary);
         }
@@ -75,7 +61,7 @@ namespace LearningAPI.Controllers
         [HttpGet("list/available")]
         public async Task<IActionResult> GetAvailableDictionaries(CancellationToken ct = default)
         {
-            var dictionaries = await _dictionaryService.GetAvailableAsync(GetUserId());
+            var dictionaries = await _dictionaryService.GetAvailableAsync(GetUserId(), ct);
             return Ok(dictionaries);
         }
 
@@ -91,7 +77,7 @@ namespace LearningAPI.Controllers
             _logger.LogInformation("Creating dictionary: Name={DictionaryName}, LanguageFrom={From}, LanguageTo={To}, UserId={UserId}",
                 requestDto.Name, requestDto.LanguageFrom, requestDto.LanguageTo, userId);
 
-            var newDictionary = await _dictionaryService.CreateAsync(userId, requestDto);
+            var newDictionary = await _dictionaryService.CreateAsync(userId, requestDto, ct);
 
             _logger.LogInformation("Dictionary created successfully with ID {DictionaryId}", newDictionary.Id);
 
@@ -102,7 +88,7 @@ namespace LearningAPI.Controllers
         public async Task<IActionResult> DeleteDictionary(int id, CancellationToken ct = default)
         {
             var userId = GetUserId();
-            var deleted = await _dictionaryService.DeleteAsync(userId, id);
+            var deleted = await _dictionaryService.DeleteAsync(userId, id, ct);
             if (!deleted) return NotFound();
             return NoContent();
         }
@@ -110,7 +96,7 @@ namespace LearningAPI.Controllers
         [HttpGet("{id:int}/review")]
         public async Task<IActionResult> GetReviewSession(int id, CancellationToken ct = default)
         {
-            var words = await _dictionaryService.GetReviewSessionAsync(GetUserId(), id);
+            var words = await _dictionaryService.GetReviewSessionAsync(GetUserId(), id, ct);
             return Ok(words);
         }
 
@@ -119,9 +105,20 @@ namespace LearningAPI.Controllers
         {
             if (id != request.Id) return BadRequest("ID mismatch");
 
-            var updated = await _dictionaryService.UpdateAsync(GetUserId(), id, request);
+            var updated = await _dictionaryService.UpdateAsync(GetUserId(), id, request, ct);
             if (!updated) return NotFound();
             return NoContent();
+        }
+
+        /// <summary>
+        /// Получить все уникальные теги из словарей пользователя (#9 LEARNING_IMPROVEMENTS)
+        /// </summary>
+        [HttpGet("tags")]
+        public async Task<IActionResult> GetAllTags(CancellationToken ct = default)
+        {
+            var userId = GetUserId();
+            var tags = await _dictionaryService.GetAllTagsAsync(userId, ct);
+            return Ok(tags);
         }
     }
 }

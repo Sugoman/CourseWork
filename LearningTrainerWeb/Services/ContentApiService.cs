@@ -33,6 +33,7 @@ public interface IContentApiService
     Task UnpublishDictionaryAsync(int id);
     Task PublishRuleAsync(int id);
     Task UnpublishRuleAsync(int id);
+    Task<List<string>> GetDictionaryTagsAsync();
 
     // Import
     Task<ImportResult> ImportDictionaryFromFileAsync(Stream fileStream, string fileName,
@@ -238,6 +239,20 @@ public class ContentApiService : IContentApiService
         await _httpClient.PostAsync($"api/marketplace/rules/{id}/unpublish", null);
     }
 
+    public async Task<List<string>> GetDictionaryTagsAsync()
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            var result = await _httpClient.GetFromJsonAsync<List<string>>("api/dictionaries/tags");
+            return result ?? new List<string>();
+        }
+        catch
+        {
+            return new List<string>();
+        }
+    }
+
     #endregion
 
     #region Import
@@ -428,6 +443,7 @@ public class MyDictionaryItem
     public bool IsPublished { get; set; }
     public double Rating { get; set; }
     public int Downloads { get; set; }
+    public string? Tags { get; set; }
 }
 
 public class MyRuleItem

@@ -46,7 +46,7 @@ namespace LearningAPI.Controllers
 
                 _logger.LogInformation("Updating progress for User={UserId}, Word={WordId}", userId, request.WordId);
 
-                var wordExists = await _context.Words.AnyAsync(w => w.Id == request.WordId);
+                var wordExists = await _context.Words.AnyAsync(w => w.Id == request.WordId, ct);
                 if (!wordExists)
                 {
                     _logger.LogWarning("Word not found: {WordId}", request.WordId);
@@ -54,7 +54,7 @@ namespace LearningAPI.Controllers
                     return NotFound(new { message = $"Слово с ID {request.WordId} не найдено." });
                 }
                 var progress = await _context.LearningProgresses
-                    .FirstOrDefaultAsync(p => p.UserId == userId && p.WordId == request.WordId);
+                    .FirstOrDefaultAsync(p => p.UserId == userId && p.WordId == request.WordId, ct);
 
                 if (progress == null)
                 {
@@ -78,7 +78,7 @@ namespace LearningAPI.Controllers
                 _logger.LogInformation("Progress updated to '{Quality}' for User={UserId}, Word={WordId}",
                     request.Quality, userId, request.WordId);
 
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(ct);
                 _logger.LogInformation("Progress successfully updated for User={UserId}, Word={WordId}", userId, request.WordId);
 
                 await InvalidateUserStatsCacheAsync(userId);
@@ -95,12 +95,12 @@ namespace LearningAPI.Controllers
                 {
                     var userId = GetUserId();
                     var progress = await _context.LearningProgresses
-                        .FirstOrDefaultAsync(p => p.UserId == userId && p.WordId == request.WordId);
+                        .FirstOrDefaultAsync(p => p.UserId == userId && p.WordId == request.WordId, ct);
 
                     if (progress != null)
                     {
                         _spacedRepetition.ApplyAnswer(progress, request.Quality);
-                        await _context.SaveChangesAsync();
+                        await _context.SaveChangesAsync(ct);
                         await InvalidateUserStatsCacheAsync(GetUserId());
                         return Ok(progress);
                     }

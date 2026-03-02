@@ -37,8 +37,14 @@ namespace LearningTrainerShared.Models
         /// </summary>
         public int? SourceDictionaryId { get; set; }
 
+        /// <summary>
+        /// Теги словаря (через запятую) для тематической группировки (#9 LEARNING_IMPROVEMENTS)
+        /// </summary>
+        [MaxLength(500)]
+        public string? Tags { get; set; }
+
         public virtual ICollection<Word> Words { get; set; }
-            = new System.Collections.ObjectModel.ObservableCollection<Word>();
+            = new List<Word>();
 
         [JsonIgnore]
         public virtual User? User { get; set; }

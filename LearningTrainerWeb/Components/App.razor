@@ -40,6 +40,29 @@
                 window.speechSynthesis.speak(utterance);
             }
         }
+
+        // Training reminders (#7 LEARNING_IMPROVEMENTS)
+        function requestNotificationPermission() {
+            if ('Notification' in window) {
+                return Notification.requestPermission();
+            }
+            return Promise.resolve('denied');
+        }
+
+        function showBrowserNotification(title, body, icon) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                var n = new Notification(title, { body: body, icon: icon || '/favicon.png' });
+                n.onclick = function () { window.focus(); n.close(); };
+                setTimeout(function () { n.close(); }, 10000);
+                return true;
+            }
+            return false;
+        }
+
+        function getNotificationPermission() {
+            if ('Notification' in window) return Notification.permission;
+            return 'denied';
+        }
     </script>
 </body>
 

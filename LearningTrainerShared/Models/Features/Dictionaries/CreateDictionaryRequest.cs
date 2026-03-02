@@ -19,5 +19,11 @@ namespace LearningTrainerShared.Models
         [Required(ErrorMessage = "Целевой язык обязателен")]
         [StringLength(50)]
         public string LanguageTo { get; set; } = "Russian";
+
+        /// <summary>
+        /// Теги словаря (через запятую) для тематической группировки (#9 LEARNING_IMPROVEMENTS)
+        /// </summary>
+        [StringLength(500, ErrorMessage = "Теги не должны превышать 500 символов")]
+        public string? Tags { get; set; }
     }
 }

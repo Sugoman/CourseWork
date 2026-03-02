@@ -6,14 +6,12 @@ using LearningAPI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
-using System.Collections.Generic;
-using System.Security.Claims;
 
 namespace LearningAPI.Controllers
 {
     [ApiController]
     [Route("api/words")]
-    public class WordsController : ControllerBase
+    public class WordsController : BaseApiController
     {
         private readonly ApiDbContext _context;
         private readonly TranscriptionChannel _transcriptionChannel;
@@ -25,14 +23,11 @@ namespace LearningAPI.Controllers
             _transcriptionChannel = transcriptionChannel;
             _cache = cache;
         }
+
         [HttpPost]
         public async Task<IActionResult> AddWord([FromBody] CreateWordRequest requestDto, CancellationToken ct = default)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
+            var userId = GetUserId();
 
             if (requestDto == null || requestDto.DictionaryId == 0)
             {
@@ -60,14 +55,14 @@ namespace LearningAPI.Controllers
 
             // Сохраняем слово мгновенно БЕЗ транскрипции
             _context.Words.Add(newWord);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(ct);
 
             // Инвалидируем кэш словаря (он кэшируется вместе со словами)
             await _cache.TryRemoveAsync($"dict:{userId}:{requestDto.DictionaryId}");
 
             // Отправляем задачу на получение транскрипции в фоновый воркер
             await _transcriptionChannel.Writer.WriteAsync(
-                new TranscriptionRequest(newWord.Id, newWord.OriginalWord));
+                new TranscriptionRequest(newWord.Id, newWord.OriginalWord), ct);
 
             return Ok(newWord);
         }
@@ -76,13 +71,9 @@ namespace LearningAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteWord(int id, CancellationToken ct = default)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
+            var userId = GetUserId();
 
-            var word = await _context.Words.FindAsync(id);
+            var word = await _context.Words.FindAsync(new object[] { id }, ct);
             if (word == null) return NotFound();
 
             if (word.UserId != userId)
@@ -92,7 +83,7 @@ namespace LearningAPI.Controllers
 
             var dictionaryId = word.DictionaryId;
             _context.Words.Remove(word);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(ct);
 
             // Инвалидируем кэш словаря
             await _cache.TryRemoveAsync($"dict:{userId}:{dictionaryId}");
@@ -104,13 +95,9 @@ namespace LearningAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateWord(int id, [FromBody] UpdateWordRequest requestDto, CancellationToken ct = default)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
+            var userId = GetUserId();
 
-            var word = await _context.Words.FindAsync(id);
+            var word = await _context.Words.FindAsync(new object[] { id }, ct);
             if (word == null) return NotFound();
 
             if (word.UserId != userId)
@@ -156,11 +143,7 @@ namespace LearningAPI.Controllers
         [HttpPost("batch")]
         public async Task<IActionResult> AddWordsBatch([FromBody] List<CreateWordRequest> requestDtos, CancellationToken ct = default)
         {
-            var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!int.TryParse(userIdString, out var userId))
-            {
-                return Unauthorized();
-            }
+            var userId = GetUserId();
 
             if (requestDtos == null || requestDtos.Count == 0)
             {

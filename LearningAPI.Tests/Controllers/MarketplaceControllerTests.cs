@@ -597,8 +597,9 @@ public class MarketplaceControllerTests : IDisposable
 
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
-        var comments = okResult.Value as List<CommentItemDto>;
-        comments.Should().HaveCount(1);
+        var pagedResult = okResult.Value as PagedResultDto<CommentItemDto>;
+        pagedResult.Should().NotBeNull();
+        pagedResult!.Items.Should().HaveCount(1);
     }
 
     #endregion

@@ -298,23 +298,7 @@
                                    FontSize="{DynamicResource BiggerHeaderFontSize}" 
                                    Foreground="{DynamicResource PrimaryTextBrush}" 
                                    FontWeight="Bold" 
-                                   Margin="0,0,0,20"/>
-
-                        <!-- Daily Goal -->
-                        <TextBlock Text="{DynamicResource Loc.SettingsGen.DailyGoalLabel}" 
-                                   Foreground="{DynamicResource PrimaryTextBrush}" 
-                                   FontWeight="SemiBold" 
-                                   Margin="0,0,0,10"/>
-                        <Border Style="{StaticResource InputContainerStyle}">
-                            <StackPanel Margin="5">
-                                <Grid>
-                                    <TextBlock Text="{DynamicResource Loc.SettingsGen.NewWordsPerDayLabel}" Foreground="{DynamicResource SecondaryTextBrush}"/>
-                                    <TextBlock Text="{Binding ElementName=GoalSlider, Path=Value}" HorizontalAlignment="Right" FontWeight="Bold" Foreground="#3B82F6"/>
-                                </Grid>
-                                <Slider x:Name="GoalSlider" Minimum="5" Maximum="50" Value="{Binding DailyGoal}" 
-                                        TickFrequency="5" IsSnapToTickEnabled="True" Margin="0,10,0,0"/>
-                            </StackPanel>
-                        </Border>
+                                   Margin="0,0,0,20"/>                      
 
                         <!-- Sound Effects -->
                         <CheckBox Content="{DynamicResource Loc.SettingsGen.SoundEffectsLabel}"

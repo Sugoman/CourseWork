@@ -7,6 +7,7 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @inject IAiApiService AiService
+@inject IContentApiService ContentApi
 
 <PageTitle>Тренировка - Ingat</PageTitle>
 
@@ -191,6 +192,11 @@
                         <i class="bi bi-headphones"></i>
                         <span>Аудирование</span>
                     </button>
+                    <button class="exercise-type @(ExerciseType == "matching" ? "active" : "")" 
+                            @onclick='() => SetExerciseType("matching")'>
+                        <i class="bi bi-link-45deg"></i>
+                        <span>Сопоставление</span>
+                    </button>
                     <button class="exercise-type @(ExerciseType == "mixed" ? "active" : "")" 
                             @onclick='() => SetExerciseType("mixed")'>
                         <i class="bi bi-shuffle"></i>
@@ -218,6 +224,20 @@
                             <button class="setting-pill @(TranslationDirection == "random" ? "active" : "")" @onclick='() => TranslationDirection = "random"'>Случайный</button>
                         </div>
                     </div>
+
+                    @if (AvailableTags.Count > 0)
+                    {
+                        <div class="setting-group">
+                            <span class="setting-label"><i class="bi bi-tags me-1"></i>Тег:</span>
+                            <div class="setting-options">
+                                <button class="setting-pill @(SelectedTag == null ? "active" : "")" @onclick="() => SelectedTag = null">Все</button>
+                                @foreach (var tag in AvailableTags)
+                                {
+                                    <button class="setting-pill @(SelectedTag == tag ? "active" : "")" @onclick="() => SelectedTag = tag">@tag</button>
+                                }
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -234,7 +254,28 @@
     {
         <!-- Активная тренировка -->
         <div class="training-session">
-            @if (CurrentWord != null)
+            @if (ShowPomodoroBreak)
+            {
+                <!-- Помодоро-напоминание (#19 LEARNING_IMPROVEMENTS) -->
+                <div class="pomodoro-break">
+                    <div class="pomodoro-icon">🧘</div>
+                    <h2>Время для перерыва!</h2>
+                    <p>Вы занимаетесь уже 25 минут. Короткий отдых улучшит запоминание.</p>
+                    <div class="pomodoro-stats">
+                        <span><i class="bi bi-check-circle text-success"></i> @CorrectCount правильно</span>
+                        <span><i class="bi bi-journal-text"></i> @(CurrentIndex) из @TrainingWords.Count слов</span>
+                    </div>
+                    <div class="pomodoro-actions">
+                        <button class="btn btn-primary btn-lg" @onclick="DismissPomodoroBreak">
+                            <i class="bi bi-play-fill me-2"></i>Продолжить
+                        </button>
+                        <button class="btn btn-outline-secondary btn-lg" @onclick="BackToPlan">
+                            <i class="bi bi-house me-2"></i>Завершить
+                        </button>
+                    </div>
+                </div>
+            }
+            else if (CurrentWord != null)
             {
                 <div class="session-progress">
                     <div class="progress-info">
@@ -245,6 +286,30 @@
                     </div>
                     <div class="progress">
                         <div class="progress-bar" style="width: @((CurrentIndex + 1) * 100.0 / TrainingWords.Count)%"></div>
+                    </div>
+                    <!-- Индикатор мастерства текущего слова (#10 LEARNING_IMPROVEMENTS) -->
+                    <div class="word-mastery-indicator">
+                        <span class="mastery-stars" title="Уровень знания: @CurrentWord.KnowledgeLevel">
+                            @for (int i = 0; i < 5; i++)
+                            {
+                                if (i < CurrentWord.MasteryStars)
+                                {
+                                    <i class="bi bi-circle-fill mastery-star-@GetMasteryColor(CurrentWord.MasteryStars)"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-circle mastery-star-empty"></i>
+                                }
+                            }
+                        </span>
+                        @if (CurrentWord.SuccessRate.HasValue)
+                        {
+                            <span class="mastery-rate" title="Точность ответов">@CurrentWord.SuccessRate.Value.ToString("F0")%</span>
+                        }
+                        else
+                        {
+                            <span class="mastery-rate new-word">новое</span>
+                        }
                     </div>
                 </div>
 
@@ -698,6 +763,66 @@
                         }
                     </div>
                 }
+                else if (ActiveExerciseType == "matching")
+                {
+                    <!-- Режим сопоставления (#6 LEARNING_IMPROVEMENTS) -->
+                    <div class="matching-card">
+                        <div class="matching-header">
+                            <h3><i class="bi bi-link-45deg me-2"></i>Соедините пары</h3>
+                            <p class="text-muted">Нажмите на слово слева, затем на его перевод справа</p>
+                        </div>
+
+                        <div class="matching-grid">
+                            <div class="matching-column">
+                                @foreach (var pair in MatchingPairs)
+                                {
+                                    var isMatched = MatchedPairIds.Contains(pair.WordId);
+                                    var isSelected = MatchingSelectedLeft == pair.WordId;
+                                    var isWrong = MatchingWrongLeft == pair.WordId;
+                                    <button class="matching-item matching-left @(isMatched ? "matched" : "") @(isSelected ? "selected" : "") @(isWrong ? "wrong" : "")"
+                                            @onclick="() => SelectMatchingLeft(pair.WordId)"
+                                            disabled="@isMatched">
+                                        @pair.OriginalWord
+                                    </button>
+                                }
+                            </div>
+                            <div class="matching-column">
+                                @foreach (var item in ShuffledMatchingTranslations)
+                                {
+                                    var isMatched = MatchedTranslations.Contains(item.Translation);
+                                    var isSelected = MatchingSelectedRight == item.Translation;
+                                    var isWrong = MatchingWrongRight == item.Translation;
+                                    <button class="matching-item matching-right @(isMatched ? "matched" : "") @(isSelected ? "selected" : "") @(isWrong ? "wrong" : "")"
+                                            @onclick="() => SelectMatchingRight(item.Translation)"
+                                            disabled="@isMatched">
+                                        @item.Translation
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                        @if (MatchingCompleted)
+                        {
+                            <div class="matching-result mt-3">
+                                <div class="mcq-feedback @(MatchingErrors == 0 ? "success" : "error")">
+                                    @if (MatchingErrors == 0)
+                                    {
+                                        <i class="bi bi-check-circle"></i>
+                                        <span>Отлично! Все пары верны!</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-x-circle"></i>
+                                        <span>Ошибок: @MatchingErrors</span>
+                                    }
+                                </div>
+                                <button class="btn btn-primary btn-lg mt-3" @onclick="NextMatchingRound">
+                                    <i class="bi bi-arrow-right me-2"></i>Далее
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
             }
             else
             {
@@ -807,6 +932,7 @@ private bool IsReversed;
 private DateTime SessionStartedAt;
 private int SessionCorrectCount;
 private int SessionWrongCount;
+private bool ShowPomodoroBreak;
 
 // MCQ state
 private List<string> McqOptions = new();
@@ -826,6 +952,24 @@ private string ListeningTypedAnswer = "";
 private bool ListeningAnswered;
 private bool ListeningWasCorrect;
 private bool ListeningWasAlmostCorrect;
+
+// Matching state (#6 LEARNING_IMPROVEMENTS)
+private List<TrainingWordDto> MatchingPairs = new();
+private List<TrainingWordDto> ShuffledMatchingTranslations = new();
+private HashSet<int> MatchedPairIds = new();
+private HashSet<string> MatchedTranslations = new();
+private int? MatchingSelectedLeft;
+private string? MatchingSelectedRight;
+private int? MatchingWrongLeft;
+private string? MatchingWrongRight;
+private bool MatchingCompleted;
+private int MatchingErrors;
+private int MatchingRoundIndex;
+private const int MatchingGroupSize = 5;
+
+// Tags state (#9 LEARNING_IMPROVEMENTS)
+private List<string> AvailableTags = new();
+private string? SelectedTag;
 
 // TTS state
 private double TtsVolume = 0.8;
@@ -943,6 +1087,7 @@ protected override async Task OnInitializedAsync()
     if (IsAuthenticated)
     {
         await LoadDailyPlan();
+        AvailableTags = await ContentApi.GetDictionaryTagsAsync();
     }
 
     IsLoading = false;
@@ -994,6 +1139,16 @@ private async Task InstallStarterPack()
         var limit = WordLimit > 0 ? WordLimit : 200;
         TrainingWords = await TrainingService.GetTrainingWordsAsync(mode, limit: limit);
 
+        // Фильтрация по тегу (#9 LEARNING_IMPROVEMENTS)
+        if (!string.IsNullOrEmpty(SelectedTag) && TrainingWords.Count > 0)
+        {
+            TrainingWords = TrainingWords
+                .Where(w => !string.IsNullOrEmpty(w.DictionaryTags) &&
+                    w.DictionaryTags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .Any(t => t.Equals(SelectedTag, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+        }
+
         if (TrainingWords.Count > 0)
         {
             if (WordLimit > 0 && TrainingWords.Count > WordLimit)
@@ -1029,7 +1184,7 @@ private async Task InstallStarterPack()
 
     private string PickRandomExerciseType()
     {
-        var types = new[] { "flashcard", "mcq", "typing", "listening" };
+        var types = new[] { "flashcard", "mcq", "typing", "listening", "matching" };
         return types[_random.Next(types.Length)];
     }
 
@@ -1081,6 +1236,12 @@ private async Task InstallStarterPack()
         if (effectiveType == "listening" && CurrentWord != null)
         {
             _ = SpeakWord();
+        }
+
+        // Prepare matching mode (#6 LEARNING_IMPROVEMENTS)
+        if (effectiveType == "matching")
+        {
+            PrepareMatchingRound();
         }
     }
 
@@ -1323,6 +1484,15 @@ private async Task InstallStarterPack()
     private async Task MoveToNextWord()
     {
         CurrentIndex++;
+
+        // Помодоро: предложить перерыв каждые 25 минут (#19 LEARNING_IMPROVEMENTS)
+        var elapsed = DateTime.UtcNow - SessionStartedAt;
+        if (!ShowPomodoroBreak && elapsed.TotalMinutes >= 25 && CurrentIndex < TrainingWords.Count)
+        {
+            ShowPomodoroBreak = true;
+            return; // Покажем уведомление, не переключая слово
+        }
+
         if (CurrentIndex < TrainingWords.Count)
         {
             CurrentWord = TrainingWords[CurrentIndex];
@@ -1332,14 +1502,27 @@ private async Task InstallStarterPack()
         {
             // Тренировка завершена — фиксируем время и сохраняем сессию
             CurrentWord = null;
-            var elapsed = DateTime.UtcNow - SessionStartedAt;
-            if (elapsed.TotalHours >= 1)
-                _sessionDurationSnapshot = $"{(int)elapsed.TotalHours}ч {elapsed.Minutes}мин";
-            else if (elapsed.TotalMinutes >= 1)
-                _sessionDurationSnapshot = $"{elapsed.Minutes}мин {elapsed.Seconds}с";
+            var finalElapsed = DateTime.UtcNow - SessionStartedAt;
+            if (finalElapsed.TotalHours >= 1)
+                _sessionDurationSnapshot = $"{(int)finalElapsed.TotalHours}ч {finalElapsed.Minutes}мин";
+            else if (finalElapsed.TotalMinutes >= 1)
+                _sessionDurationSnapshot = $"{finalElapsed.Minutes}мин {finalElapsed.Seconds}с";
             else
-                _sessionDurationSnapshot = $"{elapsed.Seconds}с";
+                _sessionDurationSnapshot = $"{finalElapsed.Seconds}с";
             await SaveTrainingSessionAsync();
+        }
+    }
+
+    private void DismissPomodoroBreak()
+    {
+        ShowPomodoroBreak = false;
+        // Сбрасываем таймер, чтобы следующее напоминание было через 25 минут
+        SessionStartedAt = DateTime.UtcNow;
+
+        if (CurrentIndex < TrainingWords.Count)
+        {
+            CurrentWord = TrainingWords[CurrentIndex];
+            PrepareCurrentWord();
         }
     }
 
@@ -1360,6 +1543,7 @@ private async Task InstallStarterPack()
                     "mcq" => "MultipleChoice",
                     "typing" => "Typing",
                     "listening" => "Listening",
+                    "matching" => "Matching",
                     "mixed" => "Mixed",
                     _ => "Mixed"
                 },
@@ -1436,6 +1620,120 @@ private async Task InstallStarterPack()
     };
 
     private string SessionDurationFormatted => _sessionDurationSnapshot;
+
+    // === Matching Mode (#6 LEARNING_IMPROVEMENTS) ===
+
+    private void PrepareMatchingRound()
+    {
+        MatchedPairIds.Clear();
+        MatchedTranslations.Clear();
+        MatchingSelectedLeft = null;
+        MatchingSelectedRight = null;
+        MatchingWrongLeft = null;
+        MatchingWrongRight = null;
+        MatchingCompleted = false;
+        MatchingErrors = 0;
+
+        // Take a group of words starting from CurrentIndex
+        var startIdx = CurrentIndex;
+        var endIdx = Math.Min(startIdx + MatchingGroupSize, TrainingWords.Count);
+        MatchingPairs = TrainingWords.GetRange(startIdx, endIdx - startIdx);
+
+        // Shuffle translations
+        ShuffledMatchingTranslations = MatchingPairs
+            .OrderBy(_ => _random.Next())
+            .ToList();
+    }
+
+    private void SelectMatchingLeft(int wordId)
+    {
+        if (MatchingCompleted) return;
+        MatchingWrongLeft = null;
+        MatchingWrongRight = null;
+        MatchingSelectedLeft = wordId;
+
+        if (MatchingSelectedRight != null)
+        {
+            _ = TryMatchPairAsync();
+        }
+    }
+
+    private void SelectMatchingRight(string translation)
+    {
+        if (MatchingCompleted) return;
+        MatchingWrongLeft = null;
+        MatchingWrongRight = null;
+        MatchingSelectedRight = translation;
+
+        if (MatchingSelectedLeft != null)
+        {
+            _ = TryMatchPairAsync();
+        }
+    }
+
+    private async Task TryMatchPairAsync()
+    {
+        if (MatchingSelectedLeft == null || MatchingSelectedRight == null) return;
+
+        var leftWord = MatchingPairs.FirstOrDefault(p => p.WordId == MatchingSelectedLeft.Value);
+        if (leftWord == null) return;
+
+        var isCorrect = leftWord.Translation.Equals(MatchingSelectedRight, StringComparison.OrdinalIgnoreCase);
+
+        if (isCorrect)
+        {
+            MatchedPairIds.Add(leftWord.WordId);
+            MatchedTranslations.Add(MatchingSelectedRight);
+            await TrainingService.UpdateProgressAsync(leftWord.WordId, ResponseQuality.Good);
+            CorrectCount++;
+            SessionCorrectCount++;
+        }
+        else
+        {
+            MatchingErrors++;
+            MatchingWrongLeft = MatchingSelectedLeft;
+            MatchingWrongRight = MatchingSelectedRight;
+            await TrainingService.UpdateProgressAsync(leftWord.WordId, ResponseQuality.Again);
+            SessionWrongCount++;
+            if (!DifficultWordsList.Contains(leftWord.OriginalWord))
+                DifficultWordsList.Add(leftWord.OriginalWord);
+        }
+
+        MatchingSelectedLeft = null;
+        MatchingSelectedRight = null;
+
+        // Check if all pairs are matched
+        if (MatchedPairIds.Count == MatchingPairs.Count)
+        {
+            MatchingCompleted = true;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task NextMatchingRound()
+    {
+        // Advance CurrentIndex past the matching group
+        CurrentIndex += MatchingPairs.Count;
+
+        if (CurrentIndex < TrainingWords.Count)
+        {
+            CurrentWord = TrainingWords[CurrentIndex];
+            PrepareCurrentWord();
+        }
+        else
+        {
+            CurrentWord = null;
+            var finalElapsed = DateTime.UtcNow - SessionStartedAt;
+            if (finalElapsed.TotalHours >= 1)
+                _sessionDurationSnapshot = $"{(int)finalElapsed.TotalHours}ч {finalElapsed.Minutes}мин";
+            else if (finalElapsed.TotalMinutes >= 1)
+                _sessionDurationSnapshot = $"{finalElapsed.Minutes}мин {finalElapsed.Seconds}с";
+            else
+                _sessionDurationSnapshot = $"{finalElapsed.Seconds}с";
+            await SaveTrainingSessionAsync();
+        }
+    }
 
     // === Phase 3: AI-powered explanation & mnemonic ===
 
@@ -1518,4 +1816,17 @@ private async Task InstallStarterPack()
         }
         return d[s.Length, t.Length];
     }
+
+    /// <summary>
+    /// Возвращает CSS-цвет для уровня мастерства (используется в mastery-star-{color}).
+    /// </summary>
+    private static string GetMasteryColor(int masteryStars) => masteryStars switch
+    {
+        0 => "gray",
+        1 => "red",
+        2 => "orange",
+        3 => "yellow",
+        4 => "green",
+        _ => "emerald"
+    };
 }

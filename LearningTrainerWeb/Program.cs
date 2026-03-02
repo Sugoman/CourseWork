@@ -25,6 +25,7 @@ builder.Services.AddHttpClient<IAuthService, AuthService>(c => c.BaseAddress = n
 builder.Services.AddHttpClient<ITrainingApiService, TrainingApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
 builder.Services.AddHttpClient<IStatisticsApiService, StatisticsApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
 builder.Services.AddSingleton<IHtmlSanitizerService, HtmlSanitizerService>();
+builder.Services.AddScoped<ITrainingReminderService, TrainingReminderService>();
 
 // AI-сервис — обращается напрямую к Ingat.AI
 builder.Services.AddHttpClient<IAiApiService, AiApiService>(c =>

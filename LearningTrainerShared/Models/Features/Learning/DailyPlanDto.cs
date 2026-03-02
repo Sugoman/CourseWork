@@ -51,10 +51,24 @@ public class TrainingWordDto
     public string? Example { get; set; }
     public string DictionaryName { get; set; } = string.Empty;
     public int DictionaryId { get; set; }
+    public string? DictionaryTags { get; set; }
     public int KnowledgeLevel { get; set; }
     public DateTime? NextReview { get; set; }
     public int TotalAttempts { get; set; }
     public int CorrectAnswers { get; set; }
+
+    /// <summary>
+    /// Процент правильных ответов (0–100). Если попыток не было — null.
+    /// Используется для визуализации прогресса слова в тренировке (#10 LEARNING_IMPROVEMENTS).
+    /// </summary>
+    public double? SuccessRate => TotalAttempts > 0
+        ? Math.Round((double)CorrectAnswers / TotalAttempts * 100, 1)
+        : null;
+
+    /// <summary>
+    /// Уровень мастерства для отображения (●●●○○). Максимум 5.
+    /// </summary>
+    public int MasteryStars => Math.Min(KnowledgeLevel, 5);
 }
 
 /// <summary>

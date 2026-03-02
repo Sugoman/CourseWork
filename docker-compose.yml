@@ -13,9 +13,9 @@ services:
       - "5077:8080" 
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_started
       migrations:
-        condition: service_completed_successfully
+        condition: service_started
       redis:
         condition: service_started
     environment:
@@ -23,6 +23,8 @@ services:
       - ConnectionStrings__Redis=redis:6379
       - Jwt__Key=4d9b4ec83f469d8b02e1cdb17745350b15cb532c5441be4ea1ca5d4f54881678
       - ASPNETCORE_URLS=http://+:8080
+    volumes:
+      - ./keys:/root/.aspnet/DataProtection-Keys
 
   # -------------------------------
   # 1b. Web (Blazor)
@@ -52,7 +54,7 @@ services:
       - .:/src
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_started
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True;Max Pool Size=2000;Min Pool Size=100;
     command: >
@@ -76,12 +78,6 @@ services:
       - "14333:1433" 
     volumes:
       - sql_data:/var/opt/mssql/data
-    healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P MySuperStrong!Pass123 -C -Q 'SELECT 1' || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
 
   # -------------------------------
   # 4. Redis Cache
@@ -102,19 +98,6 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:11434/api/tags || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 15s
 
   # -------------------------------
   # 5b. Ollama Init (pull model once)
@@ -123,7 +106,7 @@ services:
     image: ollama/ollama:latest
     depends_on:
       ollama:
-        condition: service_healthy
+        condition: service_started  
     environment:
       - OLLAMA_HOST=http://ollama:11434
     entrypoint: ["sh", "-c", "ollama pull qwen2.5:7b"]
@@ -141,7 +124,7 @@ services:
       - "5200:8080"
     depends_on:
       ollama:
-        condition: service_healthy
+        condition: service_started
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - Ollama__BaseUrl=http://ollama:11434
