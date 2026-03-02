@@ -96,6 +96,17 @@ app.MapPost("/api/ai/translate", async (TranslateRequest req, IAiProvider ai, IM
             return Results.Json(new { error = "AI returned translation identical to input" }, statusCode: 502);
         }
 
+        // Post-validation: перевод не должен быть мусорным (начинаться с цифры, содержать мало букв)
+        var translationTrimmed = parsed.Translation.Trim();
+        var letterCount = translationTrimmed.Count(c => char.IsLetter(c));
+        if (translationTrimmed.Length < 2 ||
+            char.IsDigit(translationTrimmed[0]) ||
+            (translationTrimmed.Length > 2 && letterCount < translationTrimmed.Length / 3))
+        {
+            logger.LogWarning("AI returned garbled translation '{Translation}' for '{Word}', discarding", parsed.Translation, req.Word);
+            return Results.Json(new { error = "AI returned garbled translation" }, statusCode: 502);
+        }
+
         cache.Set(cacheKey, parsed, TimeSpan.FromHours(24));
         return Results.Ok(parsed);
     }

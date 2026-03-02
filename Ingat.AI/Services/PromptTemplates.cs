@@ -13,9 +13,10 @@ public static class PromptTemplates
         $$"""
         Translate the word from {{from}} to {{to}}.
         Word: "{{word}}"
-        {{(partOfSpeech != null ? $"IMPORTANT: The word is used as a {partOfSpeech}. Translate ONLY the {partOfSpeech} meaning. For example, \"run\" as a noun = \"забег/пробежка\", but as a verb = \"бежать\". Do NOT mix up parts of speech." : "")}}
+        {{(partOfSpeech != null ? $"IMPORTANT: The word is used as a {partOfSpeech}. Translate ONLY the {partOfSpeech} meaning. For example, \"run\" as a noun = \"забег/пробежка\", but as a verb = \"бежать\". \"phone\" as a verb = \"звонить\". Do NOT mix up parts of speech." : "")}}
         {{(context != null ? $"Context: \"{context}\"" : "")}}
 
+        The "translation" field must contain ONLY the translated word or phrase in {{to}}. Do NOT include numbers, indices, abbreviations, or explanations in the translation field.
         Respond with JSON:
         {"translation": "main translation", "alternatives": ["alt1", "alt2"]}
         """;

@@ -41,6 +41,14 @@ public sealed class AiTranslationWithFallback : IAiTranslationService
             Debug.WriteLine($"AI translate unavailable, falling back to MyMemory: {ex.Message}");
         }
 
+        // MyMemory не поддерживает partOfSpeech — при указанной части речи
+        // fallback даст неверный перевод (например, "phone" как noun вместо verb).
+        if (!string.IsNullOrEmpty(partOfSpeech))
+        {
+            Debug.WriteLine($"Skipping MyMemory fallback: partOfSpeech '{partOfSpeech}' specified but MyMemory cannot disambiguate");
+            return null;
+        }
+
         // Fallback на MyMemory (без partOfSpeech — MyMemory не поддерживает)
         var fallbackResult = await _translationFallback.TranslateAsync(word, sourceLanguage, targetLanguage);
         return fallbackResult != null
