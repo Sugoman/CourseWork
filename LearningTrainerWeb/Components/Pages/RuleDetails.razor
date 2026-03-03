@@ -250,17 +250,10 @@
     }
 </div>
 
-@if (!string.IsNullOrEmpty(DownloadMessage))
-{
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
-        <div class="d-flex align-items-center gap-2 px-4 py-3 text-white" 
-             style="background: @(DownloadSuccess ? "var(--accent-green)" : "var(--accent-red)"); border-radius: var(--radius); box-shadow: var(--shadow-lg);">
-            <i class="bi @(DownloadSuccess ? "bi-check-circle" : "bi-exclamation-circle")"></i>
-            @DownloadMessage
-            <button type="button" class="btn-close btn-close-white ms-2" @onclick="() => DownloadMessage = null" style="font-size: 0.75rem;"></button>
-        </div>
-    </div>
-}
+<LearningTrainerWeb.Components.Shared.AppToast
+    Message="@DownloadMessage"
+    IsSuccess="@DownloadSuccess"
+    OnDismiss="() => DownloadMessage = null" />
 
 @code {
     [Parameter]

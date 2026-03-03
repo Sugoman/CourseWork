@@ -121,32 +121,8 @@ namespace LearningAPI.Controllers
                 return BadRequest(new { message = "Этот Email уже зарегистрирован" });
             }
 
-            Role roleToAssign;
-            int? teacherId = null;
-
-            if (!string.IsNullOrWhiteSpace(request.InviteCode))
-            {
-                var teacher = await _context.Users
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.InviteCode == request.InviteCode, ct);
-
-                if (teacher != null)
-                {
-                    roleToAssign = await _context.Roles.AsNoTracking()
-                        .FirstOrDefaultAsync(r => r.Name == "Student", ct);
-                    teacherId = teacher.Id;
-
-                }
-                else
-                {
-                    return BadRequest(new { message = "Неверный код приглашения" });
-                }
-            }
-            else
-            {
-                roleToAssign = await _context.Roles.AsNoTracking()
-                    .FirstOrDefaultAsync(r => r.Name == "User", ct);
-            }
+            var roleToAssign = await _context.Roles.AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Name == "User", ct);
 
             if (roleToAssign == null)
             {
@@ -162,7 +138,6 @@ namespace LearningAPI.Controllers
                 Email = request.Email,
                 PasswordHash = passwordHash,
                 RoleId = roleToAssign.Id,
-                UserId = teacherId,
                 CreatedAt = DateTime.UtcNow
             };
 

@@ -103,15 +103,6 @@
                             <ValidationMessage For="() => RegisterModel.ConfirmPassword" class="text-danger small mt-1" />
                         </div>
 
-                        <div class="mb-4">
-                            <label class="form-label">
-                                <i class="bi bi-ticket-perforated me-1"></i> Код приглашения
-                                <span class="text-muted fw-normal">(необязательно)</span>
-                            </label>
-                            <InputText @bind-Value="RegisterModel.InviteCode" class="form-control" placeholder="XXXXXX" />
-                            <small class="text-muted">Если у вас есть код от учителя</small>
-                        </div>
-
                         <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@IsLoading">
                             @if (IsLoading)
                             {
@@ -180,8 +171,7 @@
             var success = await AuthService.RegisterAsync(
                 RegisterModel.Username, 
                 RegisterModel.Email, 
-                RegisterModel.Password,
-                RegisterModel.InviteCode);
+                RegisterModel.Password);
 
             if (success)
             {
@@ -254,7 +244,5 @@
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Подтвердите пароль")]
         [System.ComponentModel.DataAnnotations.Compare(nameof(Password), ErrorMessage = "Пароли не совпадают")]
         public string ConfirmPassword { get; set; } = "";
-
-        public string? InviteCode { get; set; }
     }
 }

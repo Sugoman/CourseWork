@@ -298,3 +298,55 @@
         display: none;
     }
 }
+
+/* ===== MY CONTENT CARD ACTIONS ===== */
+
+.mc-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.mc-icon-group {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
+}
+
+.mc-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--gray-100);
+    color: var(--gray-500);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 150ms ease;
+    flex-shrink: 0;
+}
+
+.mc-icon-btn:hover {
+    background: var(--gray-200);
+    color: var(--gray-700);
+    transform: translateY(-1px);
+}
+
+.mc-icon-btn:active {
+    transform: translateY(0);
+}
+
+.mc-icon-btn--share {
+    background: var(--primary-50);
+    color: var(--primary-500);
+}
+
+.mc-icon-btn--share:hover {
+    background: var(--primary-100);
+    color: var(--primary-600);
+}

@@ -1,0 +1,457 @@
+@inject IClassroomApiService ClassroomApi
+
+@if (IsVisible)
+{
+    <div class="share-overlay" @onclick="Close">
+        <div class="share-modal" @onclick:stopPropagation="true">
+            <div class="share-modal-accent"></div>
+
+            <!-- Header -->
+            <div class="share-modal-header">
+                <div class="share-modal-icon">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div>
+                    <h3 class="share-modal-title">Поделиться с учениками</h3>
+                    <p class="share-modal-subtitle">
+                        @ContentTypeName: <strong>@ContentName</strong>
+                    </p>
+                </div>
+                <button class="share-modal-close" @onclick="Close" aria-label="Закрыть">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="share-modal-body">
+                @if (IsLoadingStudents)
+                {
+                    <div class="share-empty">
+                        <div class="spinner-border spinner-border-sm" style="color: var(--primary-400);"></div>
+                        <p>Загрузка учеников...</p>
+                    </div>
+                }
+                else if (!Students.Any())
+                {
+                    <div class="share-empty">
+                        <div class="share-empty-icon">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <p class="share-empty-title">У вас нет учеников</p>
+                        <p class="share-empty-hint">Пригласите учеников, чтобы делиться контентом</p>
+                        <a href="/classroom" class="btn btn-primary btn-sm" @onclick="Close">
+                            <i class="bi bi-arrow-right me-1"></i> Перейти в Класс
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="share-student-list">
+                        @foreach (var student in Students)
+                        {
+                            var isShared = SharedStudentIds.Contains(student.Id);
+                            var isToggling = TogglingStudentId == student.Id;
+                            <div class="share-student-row @(isShared ? "shared" : "")" @onclick="() => ToggleSharing(student.Id)">
+                                <div class="share-student-avatar">
+                                    @(student.Username.FirstOrDefault())
+                                </div>
+                                <div class="share-student-info">
+                                    <span class="share-student-name">@student.Username</span>
+                                    @if (isShared)
+                                    {
+                                        <span class="share-student-badge">Доступ открыт</span>
+                                    }
+                                </div>
+                                <div class="share-toggle">
+                                    @if (isToggling)
+                                    {
+                                        <div class="spinner-border spinner-border-sm" style="width: 18px; height: 18px; color: var(--primary-400);"></div>
+                                    }
+                                    else
+                                    {
+                                        <div class="share-toggle-track @(isShared ? "active" : "")">
+                                            <div class="share-toggle-thumb"></div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Footer -->
+            <div class="share-modal-footer">
+                <button class="share-btn-close" @onclick="Close">Готово</button>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .share-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1050;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(17, 24, 39, 0.45);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        animation: shareOverlayIn 200ms ease-out;
+        padding: 1rem;
+    }
+
+    .share-modal {
+        width: 100%;
+        max-width: 440px;
+        background: white;
+        border-radius: var(--radius-2xl);
+        box-shadow: var(--shadow-2xl);
+        overflow: hidden;
+        animation: shareModalIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .share-modal-accent {
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-500), var(--accent-purple));
+    }
+
+    /* Header */
+    .share-modal-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.875rem;
+        padding: 1.5rem 1.75rem 0;
+    }
+
+    .share-modal-icon {
+        flex-shrink: 0;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--primary-100), var(--primary-200));
+        color: var(--primary-600);
+        border-radius: var(--radius);
+        font-size: 1.2rem;
+    }
+
+    .share-modal-title {
+        font-family: 'Poppins', sans-serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--gray-900);
+        margin: 0 0 0.125rem;
+        line-height: 1.3;
+    }
+
+    .share-modal-subtitle {
+        color: var(--gray-500);
+        font-size: 0.8rem;
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    .share-modal-close {
+        flex-shrink: 0;
+        margin-left: auto;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: var(--gray-100);
+        color: var(--gray-500);
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        font-size: 0.8rem;
+    }
+
+    .share-modal-close:hover {
+        background: var(--gray-200);
+        color: var(--gray-700);
+    }
+
+    /* Body */
+    .share-modal-body {
+        padding: 1.25rem 1.75rem;
+    }
+
+    /* Empty state */
+    .share-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 1.5rem 0;
+        gap: 0.25rem;
+    }
+
+    .share-empty-icon {
+        width: 56px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--gray-100);
+        color: var(--gray-400);
+        border-radius: 50%;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .share-empty-title {
+        font-weight: 600;
+        color: var(--gray-700);
+        font-size: 0.95rem;
+        margin: 0;
+    }
+
+    .share-empty-hint {
+        color: var(--gray-400);
+        font-size: 0.8rem;
+        margin: 0 0 0.75rem;
+    }
+
+    /* Student list */
+    .share-student-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.375rem;
+    }
+
+    .share-student-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.625rem 0.875rem;
+        background: var(--gray-50);
+        border-radius: var(--radius);
+        border: 1.5px solid transparent;
+        transition: all 150ms ease;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .share-student-row:hover {
+        background: var(--gray-100);
+    }
+
+    .share-student-row.shared {
+        background: #ecfdf5;
+        border-color: #a7f3d0;
+    }
+
+    .share-student-row.shared:hover {
+        background: #d1fae5;
+    }
+
+    .share-student-avatar {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, var(--primary-400), var(--accent-purple));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+        text-transform: uppercase;
+    }
+
+    .share-student-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .share-student-name {
+        font-weight: 600;
+        color: var(--gray-800);
+        font-size: 0.9rem;
+    }
+
+    .share-student-badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--accent-green);
+        background: var(--accent-green-light);
+        padding: 0.15rem 0.5rem;
+        border-radius: var(--radius-full);
+    }
+
+    /* Custom toggle */
+    .share-toggle {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+    }
+
+    .share-toggle-track {
+        width: 38px;
+        height: 22px;
+        background: var(--gray-300);
+        border-radius: 11px;
+        position: relative;
+        transition: background 200ms ease;
+    }
+
+    .share-toggle-track.active {
+        background: var(--accent-green);
+    }
+
+    .share-toggle-thumb {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 16px;
+        height: 16px;
+        background: white;
+        border-radius: 50%;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        transition: transform 200ms ease;
+    }
+
+    .share-toggle-track.active .share-toggle-thumb {
+        transform: translateX(16px);
+    }
+
+    /* Footer */
+    .share-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        padding: 0 1.75rem 1.5rem;
+    }
+
+    .share-btn-close {
+        background: var(--gray-100);
+        color: var(--gray-700);
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 0.5rem 1.25rem;
+        border-radius: var(--radius);
+        border: none;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .share-btn-close:hover {
+        background: var(--gray-200);
+        color: var(--gray-800);
+    }
+
+    /* Animations */
+    @@keyframes shareOverlayIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @@keyframes shareModalIn {
+        from {
+            opacity: 0;
+            transform: translateY(24px) scale(0.96);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    /* Responsive */
+    @@media (max-width: 480px) {
+        .share-modal-header {
+            padding: 1.25rem 1.25rem 0;
+        }
+
+        .share-modal-body {
+            padding: 1rem 1.25rem;
+        }
+
+        .share-modal-footer {
+            padding: 0 1.25rem 1.25rem;
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public int ContentId { get; set; }
+    [Parameter] public string ContentName { get; set; } = "";
+    [Parameter] public string ContentType { get; set; } = "dictionary"; // "dictionary" or "rule"
+
+    private List<StudentInfo> Students = new();
+    private HashSet<int> SharedStudentIds = new();
+    private bool IsLoadingStudents;
+    private int? TogglingStudentId;
+
+    private string ContentTypeName => ContentType == "dictionary" ? "Словарь" : "Правило";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsVisible && ContentId > 0)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        IsLoadingStudents = true;
+        try
+        {
+            Students = await ClassroomApi.GetMyStudentsAsync();
+
+            var sharedIds = ContentType == "dictionary"
+                ? await ClassroomApi.GetDictionarySharingStatusAsync(ContentId)
+                : await ClassroomApi.GetRuleSharingStatusAsync(ContentId);
+
+            SharedStudentIds = new HashSet<int>(sharedIds);
+        }
+        catch { }
+        finally
+        {
+            IsLoadingStudents = false;
+        }
+    }
+
+    private async Task ToggleSharing(int studentId)
+    {
+        TogglingStudentId = studentId;
+        try
+        {
+            var result = ContentType == "dictionary"
+                ? await ClassroomApi.ToggleDictionarySharingAsync(ContentId, studentId)
+                : await ClassroomApi.ToggleRuleSharingAsync(ContentId, studentId);
+
+            if (result.Success)
+            {
+                if (result.Status == "Shared")
+                    SharedStudentIds.Add(studentId);
+                else
+                    SharedStudentIds.Remove(studentId);
+            }
+        }
+        catch { }
+        finally
+        {
+            TogglingStudentId = null;
+        }
+    }
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+}

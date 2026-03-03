@@ -1,0 +1,144 @@
+@if (Visible)
+{
+    <div class="app-toast-overlay">
+        <div class="app-toast-card">
+            <div class="app-toast-accent" style="background: @AccentColor;"></div>
+            <div class="app-toast-content">
+                <div class="app-toast-header">
+                    <div class="app-toast-icon">@Icon</div>
+                    <div class="app-toast-title">@Title</div>
+                    <button class="app-toast-close" @onclick="Dismiss" aria-label="Закрыть">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="app-toast-body">
+                    <p class="app-toast-text">@Message</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .app-toast-overlay {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        z-index: 1060;
+        animation: appToastIn 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .app-toast-card {
+        display: flex;
+        width: 360px;
+        max-width: calc(100vw - 2rem);
+        background: white;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-xl), 0 0 0 1px rgb(0 0 0 / 0.04);
+        overflow: hidden;
+    }
+
+    .app-toast-accent {
+        width: 4px;
+        flex-shrink: 0;
+    }
+
+    .app-toast-content {
+        flex: 1;
+        padding: 1rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .app-toast-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .app-toast-icon {
+        font-size: 1.15rem;
+        line-height: 1;
+    }
+
+    .app-toast-title {
+        flex: 1;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--gray-800);
+    }
+
+    .app-toast-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: var(--gray-100);
+        border-radius: var(--radius-sm);
+        color: var(--gray-500);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        flex-shrink: 0;
+        font-size: 0.75rem;
+    }
+
+    .app-toast-close:hover {
+        background: var(--gray-200);
+        color: var(--gray-700);
+    }
+
+    .app-toast-body {
+        display: flex;
+        align-items: center;
+    }
+
+    .app-toast-text {
+        flex: 1;
+        margin: 0;
+        font-size: 0.875rem;
+        color: var(--gray-600);
+        line-height: 1.4;
+    }
+
+    @@keyframes appToastIn {
+        from {
+            opacity: 0;
+            transform: translateY(16px) scale(0.96);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .app-toast-overlay {
+            bottom: 1rem;
+            right: 1rem;
+            left: 1rem;
+        }
+
+        .app-toast-card {
+            width: 100%;
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public bool IsSuccess { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private bool Visible => !string.IsNullOrEmpty(Message);
+    private string Icon => IsSuccess ? "✅" : "⚠️";
+    private string Title => IsSuccess ? "Успешно" : "Ошибка";
+    private string AccentColor => IsSuccess ? "var(--accent-green)" : "var(--accent-red)";
+
+    private async Task Dismiss()
+    {
+        await OnDismiss.InvokeAsync();
+    }
+}

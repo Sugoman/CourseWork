@@ -10,7 +10,7 @@ namespace LearningTrainerWeb.Services;
 public interface IAuthService
 {
     Task<bool> LoginAsync(string username, string password, bool rememberMe);
-    Task<bool> RegisterAsync(string username, string email, string password, string? inviteCode);
+    Task<bool> RegisterAsync(string username, string email, string password);
     Task LogoutAsync();
     Task<UserSession?> GetCurrentSessionAsync();
     Task InitializeAsync();
@@ -20,6 +20,10 @@ public interface IAuthService
     /// Returns true if the token was refreshed successfully.
     /// </summary>
     Task<bool> RefreshAccessTokenAsync();
+    /// <summary>
+    /// Updates the current session's access token and role without requiring re-login.
+    /// </summary>
+    Task UpdateSessionAsync(string newAccessToken, string newRole);
 }
 
 public class AuthService : IAuthService
@@ -114,7 +118,7 @@ public class AuthService : IAuthService
                         Email = result.Email ?? "",
                         Token = result.AccessToken,
                         RefreshToken = result.RefreshToken,
-                        Role = result.Role ?? "",
+                        Role = result.UserRole ?? "",
                         ExpiresAtUtc = DateTime.UtcNow.AddSeconds(result.ExpiresIn > 0 ? result.ExpiresIn : 7200)
                     };
                 
@@ -142,14 +146,13 @@ public class AuthService : IAuthService
         return false;
     }
 
-    public async Task<bool> RegisterAsync(string username, string email, string password, string? inviteCode)
+    public async Task<bool> RegisterAsync(string username, string email, string password)
     {
         var request = new 
         { 
             Username = username,
             Email = email,
-            Password = password,
-            InviteCode = inviteCode
+            Password = password
         };
         var response = await _httpClient.PostAsJsonAsync("api/auth/register", request);
         return response.IsSuccessStatusCode;
@@ -226,11 +229,37 @@ public class AuthService : IAuthService
     {
         _currentSession = null;
         SetAuthHeaders(null);
-        
+
         try
         {
             await _sessionStorage.DeleteAsync(SessionKey);
             await _localStorage.DeleteAsync(PersistentSessionKey);
+        }
+        catch
+        {
+            // Ignore during prerendering
+        }
+    }
+
+    public async Task UpdateSessionAsync(string newAccessToken, string newRole)
+    {
+        if (_currentSession == null) return;
+
+        _currentSession.Token = newAccessToken;
+        _currentSession.Role = newRole;
+        _currentSession.ExpiresAtUtc = DateTime.UtcNow.AddHours(2);
+
+        SetAuthHeaders(_currentSession.Token, _currentSession.ExpiresAtUtc);
+
+        try
+        {
+            await _sessionStorage.SetAsync(SessionKey, _currentSession);
+
+            var persistentResult = await _localStorage.GetAsync<UserSession>(PersistentSessionKey);
+            if (persistentResult.Success && persistentResult.Value != null)
+            {
+                await _localStorage.SetAsync(PersistentSessionKey, _currentSession);
+            }
         }
         catch
         {
@@ -255,7 +284,7 @@ public class AuthService : IAuthService
         public string AccessToken { get; set; } = "";
         public string RefreshToken { get; set; } = "";
         public int ExpiresIn { get; set; }
-        public string? Role { get; set; }
+        public string? UserRole { get; set; }
     }
 
     private class RefreshTokenResponse

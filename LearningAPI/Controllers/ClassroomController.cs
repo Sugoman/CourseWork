@@ -1,5 +1,6 @@
 using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,10 +15,12 @@ namespace LearningAPI.Controllers
     public class ClassroomController : ControllerBase
     {
         private readonly ApiDbContext _context;
+        private readonly TokenService _tokenService;
 
-        public ClassroomController(ApiDbContext context)
+        public ClassroomController(ApiDbContext context, TokenService tokenService)
         {
             _context = context;
+            _tokenService = tokenService;
         }
 
         // GET /api/classroom/my-code (Только для Учителя)
@@ -41,7 +44,7 @@ namespace LearningAPI.Controllers
         public async Task<IActionResult> JoinClass([FromBody] JoinClassRequest request)
         {
             var studentId = GetUserId();
-            var student = await _context.Users.FindAsync(studentId);
+            var student = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == studentId);
 
             var teacher = await _context.Users.FirstOrDefaultAsync(u => u.InviteCode == request.Code);
 
@@ -51,10 +54,31 @@ namespace LearningAPI.Controllers
             if (teacher.Id == studentId)
                 return BadRequest("You cannot join your own class.");
 
+            // Link student to teacher
             student.UserId = teacher.Id;
+
+            // Change role to Student if currently User
+            if (student.Role?.Name == "User")
+            {
+                var studentRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Student");
+                if (studentRole != null)
+                {
+                    student.RoleId = studentRole.Id;
+                    student.Role = studentRole;
+                }
+            }
+
             await _context.SaveChangesAsync();
 
-            return Ok(new { Message = $"Successfully joined {teacher.Username}'s class!" });
+            // Generate new access token with updated role
+            var newAccessToken = _tokenService.GenerateAccessToken(student);
+
+            return Ok(new
+            {
+                Message = $"Вы присоединились к классу {teacher.Username}!",
+                AccessToken = newAccessToken,
+                UserRole = student.Role?.Name ?? "Student"
+            });
         }
 
         // GET /api/classroom/students (Для Учителя)
@@ -76,6 +100,89 @@ namespace LearningAPI.Controllers
                 .ToListAsync();
 
             return Ok(students);
+        }
+
+        // POST /api/classroom/leave (Ученик выходит из класса)
+        [HttpPost("leave")]
+        public async Task<IActionResult> LeaveClass()
+        {
+            var userId = GetUserId();
+            var student = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == userId);
+            if (student == null) return NotFound();
+
+            if (student.UserId == null)
+                return BadRequest(new { Message = "Вы не состоите в классе." });
+
+            student.UserId = null;
+
+            // Revert role from Student back to User
+            if (student.Role?.Name == "Student")
+            {
+                var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "User");
+                if (userRole != null)
+                {
+                    student.RoleId = userRole.Id;
+                    student.Role = userRole;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            var newAccessToken = _tokenService.GenerateAccessToken(student);
+
+            return Ok(new
+            {
+                Message = "Вы вышли из класса.",
+                AccessToken = newAccessToken,
+                UserRole = student.Role?.Name ?? "User"
+            });
+        }
+
+        // POST /api/classroom/kick/{studentId} (Учитель удаляет ученика)
+        [HttpPost("kick/{studentId}")]
+        public async Task<IActionResult> KickStudent(int studentId)
+        {
+            var teacherId = GetUserId();
+            var student = await _context.Users.Include(u => u.Role).FirstOrDefaultAsync(u => u.Id == studentId);
+
+            if (student == null)
+                return NotFound(new { Message = "Ученик не найден." });
+
+            if (student.UserId != teacherId)
+                return BadRequest(new { Message = "Этот ученик не в вашем классе." });
+
+            student.UserId = null;
+
+            if (student.Role?.Name == "Student")
+            {
+                var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "User");
+                if (userRole != null)
+                {
+                    student.RoleId = userRole.Id;
+                    student.Role = userRole;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Message = $"Ученик {student.Username} удалён из класса." });
+        }
+
+        // GET /api/classroom/my-teacher (Ученик получает информацию об учителе)
+        [HttpGet("my-teacher")]
+        public async Task<IActionResult> GetMyTeacher()
+        {
+            var userId = GetUserId();
+            var student = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (student?.UserId == null)
+                return Ok(new { TeacherName = (string?)null });
+
+            var teacher = await _context.Users.FirstOrDefaultAsync(u => u.Id == student.UserId);
+            return Ok(new
+            {
+                TeacherId = teacher?.Id,
+                TeacherName = teacher?.Username
+            });
         }
 
         private int GetUserId() => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);

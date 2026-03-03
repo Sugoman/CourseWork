@@ -1,6 +1,7 @@
 ﻿@page "/my-content"
 @inject IContentApiService ContentApi
 @inject IAuthService AuthService
+@inject IClassroomApiService ClassroomApi
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
 @using Microsoft.AspNetCore.Components.Forms
@@ -96,27 +97,36 @@
                                         <i class="bi bi-collection me-1"></i> @dict.WordCount слов
                                     </p>
 
-                                    <div class="d-flex gap-2 flex-wrap">
+                                    <div class="mc-actions">
                                         @if (!dict.IsPublished)
                                         {
-                                            <button class="btn btn-primary btn-sm gap-2" @onclick="() => PublishDictionary(dict.Id)">
+                                            <button class="btn btn-primary btn-sm" @onclick="() => PublishDictionary(dict.Id)">
                                                 <i class="bi bi-cloud-upload me-1"></i> Опубликовать
                                             </button>
                                         }
                                         else
                                         {
-                                            <button class="btn btn-outline-danger btn-sm gap-2" @onclick="() => UnpublishDictionary(dict.Id)">
+                                            <button class="btn btn-outline-danger btn-sm" @onclick="() => UnpublishDictionary(dict.Id)">
                                                 <i class="bi bi-x-circle me-1"></i> Снять
                                             </button>
                                         }
-                                        <button class="btn btn-outline-secondary btn-sm" title="Экспорт JSON"
-                                                @onclick="() => ExportDictionaryAsJson(dict.Id, dict.Name)">
-                                            <i class="bi bi-filetype-json " style="font-size: 1.2rem;"></i>
-                                        </button>
-                                        <button class="btn btn-outline-secondary btn-sm" title="Экспорт CSV"
-                                                @onclick="() => ExportDictionaryAsCsv(dict.Id, dict.Name)">
-                                            <i class="bi bi-filetype-csv" ></i>
-                                        </button>
+                                        <div class="mc-icon-group">
+                                            <button class="mc-icon-btn" title="Экспорт JSON"
+                                                    @onclick="() => ExportDictionaryAsJson(dict.Id, dict.Name)">
+                                                <i class="bi bi-filetype-json"></i>
+                                            </button>
+                                            <button class="mc-icon-btn" title="Экспорт CSV"
+                                                    @onclick="() => ExportDictionaryAsCsv(dict.Id, dict.Name)">
+                                                <i class="bi bi-filetype-csv"></i>
+                                            </button>
+                                            @if (IsTeacher)
+                                            {
+                                                <button class="mc-icon-btn mc-icon-btn--share" title="Поделиться с учениками"
+                                                        @onclick="() => OpenShareDictionary(dict.Id, dict.Name)">
+                                                    <i class="bi bi-people-fill"></i>
+                                                </button>
+                                            }
+                                        </div>
                                     </div>
                                 </div>
 
@@ -199,21 +209,30 @@
                                         </span>
                                     </div>
                                     <span class="badge bg-info mb-3">@rule.Category</span>
-                                    <div class="d-flex gap-2">
-                                        <a href="my-content/rule/@rule.Id" class="btn btn-sm btn-outline-primary gap-2">
+                                    <div class="mc-actions">
+                                        <a href="my-content/rule/@rule.Id" class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-eye me-1"></i> Просмотр
                                         </a>
                                         @if (!rule.IsPublished)
                                         {
-                                            <button class="btn btn-sm btn-primary gap-2" @onclick="() => PublishRule(rule.Id)">
-                                                <i class="bi bi-cloud-upload me-1 "></i> Опубликовать
+                                            <button class="btn btn-sm btn-primary" @onclick="() => PublishRule(rule.Id)">
+                                                <i class="bi bi-cloud-upload me-1"></i> Опубликовать
                                             </button>
                                         }
                                         else
                                         {
-                                            <button class="btn btn-sm btn-outline-danger gap-2" @onclick="() => UnpublishRule(rule.Id)">
-                                                <i class="bi bi-x-circle gap-2"></i> Снять
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => UnpublishRule(rule.Id)">
+                                                <i class="bi bi-x-circle me-1"></i> Снять
                                             </button>
+                                        }
+                                        @if (IsTeacher)
+                                        {
+                                            <div class="mc-icon-group">
+                                                <button class="mc-icon-btn mc-icon-btn--share" title="Поделиться с учениками"
+                                                        @onclick="() => OpenShareRule(rule.Id, rule.Title)">
+                                                    <i class="bi bi-people-fill"></i>
+                                                </button>
+                                            </div>
                                         }
                                     </div>
                                 </div>
@@ -470,20 +489,21 @@
         </div>
     </div>
 }
-@if (!string.IsNullOrEmpty(ExportMessage))
-{
-    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050; margin-top: 80px;">
-        <div class="d-flex align-items-center gap-2 px-4 py-3 text-white" 
-             style="background: @(ExportSuccess ? "var(--accent-green)" : "var(--accent-red)"); border-radius: var(--radius); box-shadow: var(--shadow-lg);">
-            <i class="bi @(ExportSuccess ? "bi-check-circle" : "bi-exclamation-circle")"></i>
-            @ExportMessage
-            <button type="button" class="btn-close btn-close-white ms-2" @onclick="() => ExportMessage = null" style="font-size: 0.75rem;"></button>
-        </div>
-    </div>
-}
+<LearningTrainerWeb.Components.Shared.AppToast
+    Message="@ExportMessage"
+    IsSuccess="@ExportSuccess"
+    OnDismiss="() => ExportMessage = null" />
+
+<LearningTrainerWeb.Components.Shared.ShareDialog
+    IsVisible="ShareDialogVisible"
+    ContentId="ShareContentId"
+    ContentName="@ShareContentName"
+    ContentType="@ShareContentType"
+    OnClose="CloseShareDialog" />
 
 @code {
     private bool IsAuthenticated = false;
+    private bool IsTeacher = false;
     private bool IsExporting = false;
     private string ActiveTab = "dictionaries";
     private string? ExportMessage;
@@ -497,6 +517,12 @@
     private string? ImportLanguageFrom;
     private string? ImportLanguageTo;
     private string? ImportError;
+
+    // Share dialog state
+    private bool ShareDialogVisible;
+    private int ShareContentId;
+    private string ShareContentName = "";
+    private string ShareContentType = "dictionary";
 
     private List<MyDictionaryItem>? MyDictionaries;
     private List<MyRuleItem>? MyRules;
@@ -543,6 +569,7 @@
     {
         var session = await AuthService.GetCurrentSessionAsync();
         IsAuthenticated = session != null;
+        IsTeacher = session?.Role == "Teacher";
 
         if (IsAuthenticated)
         {
@@ -764,5 +791,26 @@
     {
         var base64 = Convert.ToBase64String(data);
         await JS.InvokeVoidAsync("downloadFile", fileName, contentType, base64);
+    }
+
+    private void OpenShareDictionary(int contentId, string contentName)
+    {
+        ShareContentId = contentId;
+        ShareContentName = contentName;
+        ShareContentType = "dictionary";
+        ShareDialogVisible = true;
+    }
+
+    private void OpenShareRule(int contentId, string contentName)
+    {
+        ShareContentId = contentId;
+        ShareContentName = contentName;
+        ShareContentType = "rule";
+        ShareDialogVisible = true;
+    }
+
+    private void CloseShareDialog()
+    {
+        ShareDialogVisible = false;
     }
 }

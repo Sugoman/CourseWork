@@ -3,8 +3,12 @@ using LearningAPI.Controllers;
 using LearningAPI.Tests.Helpers;
 using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Moq;
 using System.Security.Claims;
 using Xunit;
 
@@ -20,7 +24,15 @@ public class ClassroomControllerTests : IDisposable
     public ClassroomControllerTests()
     {
         _context = TestDbContextFactory.CreateInMemoryContext();
-        _controller = new ClassroomController(_context);
+
+        var configMock = new Mock<IConfiguration>();
+        configMock.Setup(c => c["Jwt:Key"]).Returns("SuperSecretKeyForTestingPurposesOnly123456");
+        configMock.Setup(c => c["Jwt:Issuer"]).Returns("TestIssuer");
+        configMock.Setup(c => c["Jwt:Audience"]).Returns("TestAudience");
+        configMock.Setup(c => c["Jwt:RefreshTokenExpiryDays"]).Returns("7");
+        var tokenService = new TokenService(configMock.Object);
+
+        _controller = new ClassroomController(_context, tokenService);
         SetupUserContext(_teacherId, "Teacher");
     }
 
@@ -146,9 +158,53 @@ public class ClassroomControllerTests : IDisposable
 
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
-        
+
         var student = await _context.Users.FindAsync(_studentId);
         student!.UserId.Should().Be(_teacherId);
+    }
+
+    [Fact]
+    public async Task JoinClass_WithUserRole_ChangesRoleToStudent()
+    {
+        // Arrange
+        var teacherRole = TestDataSeeder.CreateTeacherRole();
+        var userRole = TestDataSeeder.CreateUserRole();
+        var studentRole = TestDataSeeder.CreateStudentRole();
+        _context.Roles.AddRange(teacherRole, userRole, studentRole);
+
+        var teacher = new User
+        {
+            Id = _teacherId,
+            Login = "teacher",
+            PasswordHash = "hash",
+            Role = teacherRole,
+            InviteCode = "TR-ABC123"
+        };
+
+        var user = new User
+        {
+            Id = _studentId,
+            Login = "regularuser",
+            PasswordHash = "hash",
+            Role = userRole
+        };
+
+        _context.Users.AddRange(teacher, user);
+        await _context.SaveChangesAsync();
+
+        SetupUserContext(_studentId, "User");
+
+        var request = new JoinClassRequest { Code = "TR-ABC123" };
+
+        // Act
+        var result = await _controller.JoinClass(request);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+
+        var updatedUser = await _context.Users.Include(u => u.Role).FirstAsync(u => u.Id == _studentId);
+        updatedUser.UserId.Should().Be(_teacherId);
+        updatedUser.Role!.Name.Should().Be("Student");
     }
 
     [Fact]
@@ -324,6 +380,131 @@ public class ClassroomControllerTests : IDisposable
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.Value.Should().NotBeNull();
+    }
+
+    #endregion
+
+    #region LeaveClass Tests
+
+    [Fact]
+    public async Task LeaveClass_WithStudentInClass_LeavesSuccessfully()
+    {
+        // Arrange
+        var teacherRole = TestDataSeeder.CreateTeacherRole();
+        var studentRole = TestDataSeeder.CreateStudentRole();
+        var userRole = TestDataSeeder.CreateUserRole();
+        _context.Roles.AddRange(teacherRole, studentRole, userRole);
+
+        var teacher = new User { Id = _teacherId, Login = "teacher", PasswordHash = "hash", Role = teacherRole, InviteCode = "TR-ABC123" };
+        var student = new User { Id = _studentId, Login = "student", PasswordHash = "hash", Role = studentRole, UserId = _teacherId };
+        _context.Users.AddRange(teacher, student);
+        await _context.SaveChangesAsync();
+
+        SetupUserContext(_studentId, "Student");
+
+        // Act
+        var result = await _controller.LeaveClass();
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+
+        var updated = await _context.Users.Include(u => u.Role).FirstAsync(u => u.Id == _studentId);
+        updated.UserId.Should().BeNull();
+        updated.Role!.Name.Should().Be("User");
+    }
+
+    [Fact]
+    public async Task LeaveClass_WhenNotInClass_ReturnsBadRequest()
+    {
+        // Arrange
+        var userRole = TestDataSeeder.CreateUserRole();
+        _context.Roles.Add(userRole);
+
+        var user = new User { Id = _studentId, Login = "student", PasswordHash = "hash", Role = userRole, UserId = null };
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+
+        SetupUserContext(_studentId, "User");
+
+        // Act
+        var result = await _controller.LeaveClass();
+
+        // Assert
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    #endregion
+
+    #region KickStudent Tests
+
+    [Fact]
+    public async Task KickStudent_WithOwnStudent_KicksSuccessfully()
+    {
+        // Arrange
+        var teacherRole = TestDataSeeder.CreateTeacherRole();
+        var studentRole = TestDataSeeder.CreateStudentRole();
+        var userRole = TestDataSeeder.CreateUserRole();
+        _context.Roles.AddRange(teacherRole, studentRole, userRole);
+
+        var teacher = new User { Id = _teacherId, Login = "teacher", PasswordHash = "hash", Role = teacherRole };
+        var student = new User { Id = _studentId, Login = "student", PasswordHash = "hash", Role = studentRole, UserId = _teacherId };
+        _context.Users.AddRange(teacher, student);
+        await _context.SaveChangesAsync();
+
+        SetupUserContext(_teacherId, "Teacher");
+
+        // Act
+        var result = await _controller.KickStudent(_studentId);
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+
+        var updated = await _context.Users.Include(u => u.Role).FirstAsync(u => u.Id == _studentId);
+        updated.UserId.Should().BeNull();
+        updated.Role!.Name.Should().Be("User");
+    }
+
+    [Fact]
+    public async Task KickStudent_WithOtherTeachersStudent_ReturnsBadRequest()
+    {
+        // Arrange
+        var teacherRole = TestDataSeeder.CreateTeacherRole();
+        var studentRole = TestDataSeeder.CreateStudentRole();
+        _context.Roles.AddRange(teacherRole, studentRole);
+
+        var teacher = new User { Id = _teacherId, Login = "teacher", PasswordHash = "hash", Role = teacherRole };
+        var otherTeacher = new User { Id = 99, Login = "other", PasswordHash = "hash", Role = teacherRole };
+        var student = new User { Id = _studentId, Login = "student", PasswordHash = "hash", Role = studentRole, UserId = 99 };
+        _context.Users.AddRange(teacher, otherTeacher, student);
+        await _context.SaveChangesAsync();
+
+        SetupUserContext(_teacherId, "Teacher");
+
+        // Act
+        var result = await _controller.KickStudent(_studentId);
+
+        // Assert
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task KickStudent_WithNonExistentStudent_ReturnsNotFound()
+    {
+        // Arrange
+        var teacherRole = TestDataSeeder.CreateTeacherRole();
+        _context.Roles.Add(teacherRole);
+
+        var teacher = new User { Id = _teacherId, Login = "teacher", PasswordHash = "hash", Role = teacherRole };
+        _context.Users.Add(teacher);
+        await _context.SaveChangesAsync();
+
+        SetupUserContext(_teacherId, "Teacher");
+
+        // Act
+        var result = await _controller.KickStudent(999);
+
+        // Assert
+        result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     #endregion

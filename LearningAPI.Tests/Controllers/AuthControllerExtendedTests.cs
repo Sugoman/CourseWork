@@ -6,6 +6,7 @@ using LearningTrainerShared.Models;
 using LearningTrainerShared.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -135,13 +136,13 @@ public class AuthControllerExtendedTests : IDisposable
     #region Register Extended Tests
 
     [Fact]
-    public async Task Register_WithTeacherInviteCode_AssignsStudentRole()
+    public async Task Register_WithInviteCode_IgnoresCodeAndAssignsUserRole()
     {
         // Arrange
         var teacherRole = TestDataSeeder.CreateTeacherRole();
-        var studentRole = TestDataSeeder.CreateStudentRole();
-        _context.Roles.AddRange(teacherRole, studentRole);
-        
+        var userRole = TestDataSeeder.CreateUserRole();
+        _context.Roles.AddRange(teacherRole, userRole);
+
         var teacher = new User
         {
             Id = 1,
@@ -165,15 +166,16 @@ public class AuthControllerExtendedTests : IDisposable
         // Act
         var result = await _controller.Register(request);
 
-        // Assert
+        // Assert — always assigns User role, invite code is ignored
         result.Should().BeOfType<CreatedAtActionResult>();
-        
-        var newUser = await _context.Users.FirstAsync(u => u.Username == "newstudent");
-        newUser.UserId.Should().Be(1); // Linked to teacher
+
+        var newUser = await _context.Users.Include(u => u.Role).FirstAsync(u => u.Username == "newstudent");
+        newUser.Role!.Name.Should().Be("User");
+        newUser.UserId.Should().BeNull();
     }
 
     [Fact]
-    public async Task Register_WithInvalidInviteCode_ReturnsBadRequest()
+    public async Task Register_WithInvalidInviteCode_StillRegistersAsUser()
     {
         // Arrange
         var userRole = TestDataSeeder.CreateUserRole();
@@ -191,8 +193,11 @@ public class AuthControllerExtendedTests : IDisposable
         // Act
         var result = await _controller.Register(request);
 
-        // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        // Assert — invalid invite code is ignored, user is still registered
+        result.Should().BeOfType<CreatedAtActionResult>();
+
+        var newUser = await _context.Users.Include(u => u.Role).FirstAsync(u => u.Username == "newuser");
+        newUser.Role!.Name.Should().Be("User");
     }
 
     [Fact]
