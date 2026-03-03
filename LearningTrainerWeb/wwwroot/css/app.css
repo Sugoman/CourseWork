@@ -1936,6 +1936,17 @@ a:hover {
     }
 }
 
+/* ===== AUTHOR CARD (shared by DictionaryDetails & RuleDetails) ===== */
+.author-card {
+    cursor: pointer;
+}
+
+.author-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-300);
+}
+
 /* ===== UTILITY CLASSES ===== */
 .text-gradient {
     background: linear-gradient(135deg, var(--primary-500) 0%, var(--accent-purple) 100%);

@@ -135,6 +135,7 @@ public class MarketplaceController : BaseApiController
                 LanguageFrom = d.LanguageFrom ?? "",
                 LanguageTo = d.LanguageTo ?? "",
                 WordCount = d.Words.Count,
+                AuthorId = d.UserId,
                 AuthorName = d.User != null ? d.User.Username : "Unknown",
                 Rating = d.Rating,
                 Downloads = d.DownloadCount
@@ -204,6 +205,7 @@ public class MarketplaceController : BaseApiController
             LanguageFrom = dictionary.LanguageFrom ?? "",
             LanguageTo = dictionary.LanguageTo ?? "",
             WordCount = dictionary.Words.Count,
+            AuthorId = dictionary.UserId,
             AuthorName = dictionary.User?.Username ?? "Unknown",
             Rating = dictionary.Rating,
             RatingCount = dictionary.RatingCount,
@@ -356,6 +358,7 @@ public class MarketplaceController : BaseApiController
                 Description = r.Description ?? "",
                 Category = r.Category ?? "",
                 DifficultyLevel = r.DifficultyLevel,
+                AuthorId = r.UserId,
                 AuthorName = r.User != null ? r.User.Username : "Unknown",
                 Rating = r.Rating,
                 Downloads = r.DownloadCount,
@@ -418,6 +421,7 @@ public class MarketplaceController : BaseApiController
             Description = rule.Description ?? "",
             Category = rule.Category ?? "",
             DifficultyLevel = rule.DifficultyLevel,
+            AuthorId = rule.UserId,
             AuthorName = rule.User?.Username ?? "Unknown",
             Rating = rule.Rating,
             RatingCount = rule.RatingCount,
@@ -551,6 +555,7 @@ public class MarketplaceController : BaseApiController
             .Select(c => new CommentItemDto
             {
                 Id = c.Id,
+                AuthorId = c.UserId,
                 AuthorName = c.User != null ? c.User.Username : "Anonymous",
                 Rating = c.Rating,
                 Text = c.Text,
@@ -636,6 +641,7 @@ public class MarketplaceController : BaseApiController
             .Select(c => new CommentItemDto
             {
                 Id = c.Id,
+                AuthorId = c.UserId,
                 AuthorName = c.User != null ? c.User.Username : "Anonymous",
                 Rating = c.Rating,
                 Text = c.Text,
@@ -1102,6 +1108,7 @@ public class DictionaryListItemDto
     public string LanguageFrom { get; set; } = "";
     public string LanguageTo { get; set; } = "";
     public int WordCount { get; set; }
+    public int AuthorId { get; set; }
     public string AuthorName { get; set; } = "";
     public double Rating { get; set; }
     public int Downloads { get; set; }
@@ -1127,6 +1134,7 @@ public class RuleListItemDto
     public string Description { get; set; } = "";
     public string Category { get; set; } = "";
     public int DifficultyLevel { get; set; }
+    public int AuthorId { get; set; }
     public string AuthorName { get; set; } = "";
     public double Rating { get; set; }
     public int Downloads { get; set; }
@@ -1144,6 +1152,7 @@ public class RuleDetailsDto : RuleListItemDto
 public class CommentItemDto
 {
     public int Id { get; set; }
+    public int AuthorId { get; set; }
     public string AuthorName { get; set; } = "";
     public int Rating { get; set; }
     public string Text { get; set; } = "";

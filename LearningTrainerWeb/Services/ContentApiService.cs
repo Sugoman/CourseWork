@@ -50,6 +50,9 @@ public interface IContentApiService
 
     // Platform stats
     Task<PlatformStatsResponse> GetPlatformStatsAsync();
+
+    // User profiles
+    Task<UserPublicProfile?> GetUserProfileAsync(int userId);
 }
 
 public class ContentApiService : IContentApiService
@@ -366,6 +369,22 @@ public class ContentApiService : IContentApiService
     }
 
     #endregion
+
+    #region User Profiles
+
+    public async Task<UserPublicProfile?> GetUserProfileAsync(int userId)
+    {
+        try
+        {
+            return await _httpClient.GetFromJsonAsync<UserPublicProfile>($"api/users/{userId}/profile");
+        }
+        catch (HttpRequestException)
+        {
+            return null;
+        }
+    }
+
+    #endregion
 }
 
 #region DTOs
@@ -386,6 +405,7 @@ public class DictionaryListItem
     public string LanguageFrom { get; set; } = "";
     public string LanguageTo { get; set; } = "";
     public int WordCount { get; set; }
+    public int AuthorId { get; set; }
     public string AuthorName { get; set; } = "";
     public double Rating { get; set; }
     public int Downloads { get; set; }
@@ -411,6 +431,7 @@ public class RuleListItem
     public string Description { get; set; } = "";
     public string Category { get; set; } = "";
     public int DifficultyLevel { get; set; }
+    public int AuthorId { get; set; }
     public string AuthorName { get; set; } = "";
     public double Rating { get; set; }
     public int Downloads { get; set; }
@@ -428,6 +449,7 @@ public class RuleDetailDto : RuleListItem
 public class CommentItem
 {
     public int Id { get; set; }
+    public int AuthorId { get; set; }
     public string AuthorName { get; set; } = "";
     public int Rating { get; set; }
     public string Text { get; set; } = "";
@@ -519,6 +541,30 @@ public class PlatformStatsResponse
     public int DictionaryCount { get; set; }
     public int RuleCount { get; set; }
     public int UserCount { get; set; }
+}
+
+public class UserPublicProfile
+{
+    public int Id { get; set; }
+    public string Username { get; set; } = "";
+    public string Role { get; set; } = "";
+    public DateTime MemberSince { get; set; }
+    public int CurrentStreak { get; set; }
+    public int BestStreak { get; set; }
+    public int TotalSessions { get; set; }
+    public int PublishedDictionariesCount { get; set; }
+    public int PublishedRulesCount { get; set; }
+    public List<string> Achievements { get; set; } = new();
+    public List<PublishedContentItem> PublishedDictionaries { get; set; } = new();
+    public List<PublishedContentItem> PublishedRules { get; set; } = new();
+}
+
+public class PublishedContentItem
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public double Rating { get; set; }
+    public int DownloadCount { get; set; }
 }
 
 #endregion

@@ -5,12 +5,12 @@
 @if (IsAuthenticated)
 {
     <div class="auth-status-logged">
-        <div class="user-info">
+        <a href="/profile/@UserId" class="user-info" style="text-decoration: none;">
             <div class="user-avatar">
                 <i class="bi bi-person-fill"></i>
             </div>
             <span class="user-name">@UserName</span>
-        </div>
+        </a>
         <button class="btn btn-auth-logout" @onclick="Logout">
             <i class="bi bi-box-arrow-right"></i>
         </button>
@@ -60,6 +60,14 @@ else
         font-weight: 500;
         color: var(--gray-700);
         font-size: 0.9rem;
+    }
+
+    .user-info:hover .user-name {
+        color: var(--primary-600);
+    }
+
+    .user-info:hover {
+        background: var(--gray-200);
     }
 
     .btn-auth-logout {
@@ -127,12 +135,14 @@ else
 @code {
     private bool IsAuthenticated { get; set; }
     private string UserName { get; set; } = "";
+    private int UserId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         var session = await AuthService.GetCurrentSessionAsync();
         IsAuthenticated = session != null;
         UserName = session?.UserName ?? "";
+        UserId = session?.UserId ?? 0;
     }
 
     private async Task Logout()
@@ -140,6 +150,7 @@ else
         await AuthService.LogoutAsync();
         IsAuthenticated = false;
         UserName = "";
+        UserId = 0;
         Navigation.NavigateTo("/", forceLoad: true);
     }
 }

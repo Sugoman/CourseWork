@@ -1,0 +1,714 @@
+@page "/profile/{UserId:int}"
+@using LearningTrainerShared.Models.Statistics
+@inject IContentApiService ContentApi
+@inject IAuthService AuthService
+@rendermode InteractiveServer
+
+<PageTitle>@(UserProfile?.Username ?? "Профиль") - Ingat</PageTitle>
+
+<div class="container py-4">
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="text-muted mt-3">Загрузка профиля...</p>
+        </div>
+    }
+    else if (UserProfile == null)
+    {
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--gray-400);">
+                <i class="bi bi-person-x"></i>
+            </div>
+            <h2>Пользователь не найден</h2>
+            <p class="text-muted mb-4">Возможно, профиль был удалён или вы перешли по неверной ссылке</p>
+            <a href="/" class="btn btn-primary">
+                <i class="bi bi-arrow-left me-2"></i> На главную
+            </a>
+        </div>
+    }
+    else
+    {
+        <!-- Profile Header -->
+        <div class="profile-header card mb-4">
+            <div class="card-body profile-header-body">
+                <div class="profile-header-layout">
+                    <div class="profile-avatar">
+                        @(UserProfile.Username.FirstOrDefault())
+                    </div>
+                    <div class="profile-info">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <h2 class="mb-0 fw-bold profile-username">@UserProfile.Username</h2>
+                            <span class="badge role-badge">@GetRoleDisplay(UserProfile.Role)</span>
+                            @if (IsOwnProfile)
+                            {
+                                <span class="badge bg-light text-muted border">Это вы</span>
+                            }
+                        </div>
+                        <p class="text-muted mb-3">
+                            <i class="bi bi-calendar3 me-1"></i> Участник с @UserProfile.MemberSince.ToString("dd.MM.yyyy")
+                        </p>
+                        <div class="profile-stats-row">
+                            <div class="streak-block">
+                                <div class="streak-current">
+                                    <i class="bi bi-fire"></i>
+                                    <span><strong>@UserProfile.CurrentStreak</strong> дн.</span>
+                                </div>
+                                <div class="streak-best">
+                                    рекорд: @UserProfile.BestStreak
+                                </div>
+                            </div>
+                            <div class="profile-stat">
+                                <i class="bi bi-mortarboard"></i>
+                                <span><strong>@UserProfile.TotalSessions</strong> сессий</span>
+                            </div>
+                            <div class="profile-stat">
+                                <i class="bi bi-book text-primary"></i>
+                                <span><strong>@UserProfile.PublishedDictionariesCount</strong> словарей</span>
+                            </div>
+                            <div class="profile-stat">
+                                <i class="bi bi-journal-text text-success"></i>
+                                <span><strong>@UserProfile.PublishedRulesCount</strong> правил</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Achievements -->
+        @if (UserProfile.Achievements.Any())
+        {
+            <div class="card mb-4" style="border-radius: var(--radius-lg);">
+                <div class="card-body p-4">
+                    <h5 class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-award" style="color: var(--accent-yellow);"></i>
+                        Достижения (@UserProfile.Achievements.Count)
+                    </h5>
+                    <div class="achievements-container @(AchievementsExpanded ? "expanded" : "")">
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var achievementId in UserProfile.Achievements)
+                            {
+                                var def = AchievementDefinitions.GetById(achievementId);
+                                @if (def != null)
+                                {
+                                    <div class="achievement-chip rarity-@def.Rarity.ToString().ToLower()" title="@def.Description">
+                                        <span class="achievement-chip-icon">@def.Icon</span>
+                                        <span class="achievement-chip-title">@def.Title</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="achievement-chip" title="@achievementId">
+                                        <span class="achievement-chip-icon">🏅</span>
+                                        <span class="achievement-chip-title">@achievementId</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                    @if (UserProfile.Achievements.Count > AchievementVisibleThreshold)
+                    {
+                        <button class="btn btn-sm btn-link text-muted p-0 mt-2" @onclick="() => AchievementsExpanded = !AchievementsExpanded">
+                            @if (AchievementsExpanded)
+                            {
+                                <i class="bi bi-chevron-up me-1"></i><span>Свернуть</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-chevron-down me-1"></i><span>Показать все (@UserProfile.Achievements.Count)</span>
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Published Dictionaries -->
+        @if (UserProfile.PublishedDictionaries.Any())
+        {
+            <div class="card mb-4" style="border-radius: var(--radius-lg);">
+                <div class="card-body p-4">
+                    <h5 class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-book" style="color: var(--primary-500);"></i>
+                        Опубликованные словари
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.75rem;">@UserProfile.PublishedDictionaries.Count</span>
+                    </h5>
+                    <div class="row g-3">
+                        @foreach (var dict in PagedDictionaries)
+                        {
+                            <div class="col-6 col-md-4">
+                                <a href="/dictionary/@dict.Id" class="text-decoration-none">
+                                    <div class="published-card published-card--dict">
+                                        <div class="published-card-icon">
+                                            <i class="bi bi-book"></i>
+                                        </div>
+                                        <div class="published-card-name">@dict.Name</div>
+                                        <div class="published-card-meta">
+                                            <span class="published-card-rating">
+                                                <i class="bi bi-star-fill"></i>
+                                                @dict.Rating.ToString("F1")
+                                            </span>
+                                            <span class="published-card-downloads">
+                                                <i class="bi bi-download"></i>
+                                                @dict.DownloadCount
+                                            </span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                    @if (DictTotalPages > 1)
+                    {
+                        <nav class="d-flex justify-content-center mt-3">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item @(DictPage <= 1 ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => DictPage--" disabled="@(DictPage <= 1)">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </button>
+                                </li>
+                                @foreach (var p in GetPageWindow(DictPage, DictTotalPages))
+                                {
+                                    @if (p == -1)
+                                    {
+                                        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                                    }
+                                    else
+                                    {
+                                        var pageNum = p;
+                                        <li class="page-item @(pageNum == DictPage ? "active" : "")">
+                                            <button class="page-link" @onclick="() => DictPage = pageNum">@pageNum</button>
+                                        </li>
+                                    }
+                                }
+                                <li class="page-item @(DictPage >= DictTotalPages ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => DictPage++" disabled="@(DictPage >= DictTotalPages)">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </li>
+                            </ul>
+                        </nav>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Published Rules -->
+        @if (UserProfile.PublishedRules.Any())
+        {
+            <div class="card mb-4" style="border-radius: var(--radius-lg);">
+                <div class="card-body p-4">
+                    <h5 class="d-flex align-items-center gap-2 mb-3">
+                        <i class="bi bi-journal-text" style="color: var(--accent-green);"></i>
+                        Опубликованные правила
+                        <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.75rem;">@UserProfile.PublishedRules.Count</span>
+                    </h5>
+                    <div class="row g-3">
+                        @foreach (var rule in PagedRules)
+                        {
+                            <div class="col-6 col-md-4">
+                                <a href="/rule/@rule.Id" class="text-decoration-none">
+                                    <div class="published-card published-card--rule">
+                                        <div class="published-card-icon">
+                                            <i class="bi bi-journal-text"></i>
+                                        </div>
+                                        <div class="published-card-name">@rule.Name</div>
+                                        <div class="published-card-meta">
+                                            <span class="published-card-rating">
+                                                <i class="bi bi-star-fill"></i>
+                                                @rule.Rating.ToString("F1")
+                                            </span>
+                                            <span class="published-card-downloads">
+                                                <i class="bi bi-download"></i>
+                                                @rule.DownloadCount
+                                            </span>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                    @if (RuleTotalPages > 1)
+                    {
+                        <nav class="d-flex justify-content-center mt-3">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item @(RulePage <= 1 ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => RulePage--" disabled="@(RulePage <= 1)">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </button>
+                                </li>
+                                @foreach (var p in GetPageWindow(RulePage, RuleTotalPages))
+                                {
+                                    @if (p == -1)
+                                    {
+                                        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                                    }
+                                    else
+                                    {
+                                        var pageNum = p;
+                                        <li class="page-item @(pageNum == RulePage ? "active" : "")">
+                                            <button class="page-link" @onclick="() => RulePage = pageNum">@pageNum</button>
+                                        </li>
+                                    }
+                                }
+                                <li class="page-item @(RulePage >= RuleTotalPages ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => RulePage++" disabled="@(RulePage >= RuleTotalPages)">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </li>
+                            </ul>
+                        </nav>
+                    }
+                </div>
+            </div>
+        }
+
+        <!-- Empty state for no published content -->
+        @if (!UserProfile.PublishedDictionaries.Any() && !UserProfile.PublishedRules.Any())
+        {
+            <div class="card mb-4" style="border-radius: var(--radius-lg);">
+                <div class="card-body text-center py-4 text-muted">
+                    <i class="bi bi-folder2-open" style="font-size: 2rem; opacity: 0.5;"></i>
+                    <p class="mt-2 mb-0">Пользователь пока не опубликовал контент</p>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<style>
+    /* === Profile Header === */
+    .profile-header {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+    }
+
+    .profile-header-body {
+        padding: 1.5rem;
+    }
+
+    .profile-header-layout {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--primary-500), var(--accent-purple));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .profile-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .profile-username {
+        font-size: 1.5rem;
+        word-break: break-word;
+    }
+
+    .role-badge {
+        background: linear-gradient(135deg, var(--primary-500), var(--accent-purple));
+        color: white;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+    }
+
+    .profile-stats-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.625rem;
+    }
+
+    .profile-stat {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.9rem;
+        color: var(--gray-600);
+    }
+
+    /* === Streak Block === */
+    .streak-block {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--accent-red-light);
+        border: 1px solid #fca5a5;
+        border-radius: var(--radius);
+        padding: 0.35rem 0.75rem;
+    }
+
+    .streak-current {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.9rem;
+        color: var(--accent-red);
+        font-weight: 600;
+    }
+
+    .streak-current i {
+        font-size: 1rem;
+    }
+
+    .streak-best {
+        font-size: 0.75rem;
+        color: var(--gray-500);
+        border-left: 1px solid #fca5a5;
+        padding-left: 0.5rem;
+    }
+
+    /* === Achievements === */
+    .achievements-container {
+        max-height: 5.5rem;
+        overflow: hidden;
+        position: relative;
+        transition: max-height 0.3s ease;
+    }
+
+    .achievements-container.expanded {
+        max-height: none;
+    }
+
+    .achievements-container:not(.expanded)::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1.5rem;
+        background: linear-gradient(transparent, white);
+        pointer-events: none;
+    }
+
+    .achievement-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.4rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.85rem;
+        font-weight: 500;
+        background: var(--gray-100);
+        color: var(--gray-700);
+        border: 1px solid var(--gray-200);
+        transition: transform var(--transition-fast);
+    }
+
+    .achievement-chip:hover {
+        transform: translateY(-1px);
+    }
+
+    .achievement-chip-icon {
+        font-size: 1rem;
+        line-height: 1;
+    }
+
+    .achievement-chip.rarity-common {
+        background: var(--gray-100);
+        border-color: var(--gray-300);
+        color: var(--gray-700);
+    }
+
+    .achievement-chip.rarity-uncommon {
+        background: var(--accent-green-light);
+        border-color: #6ee7b7;
+        color: #065f46;
+    }
+
+    .achievement-chip.rarity-rare {
+        background: var(--accent-blue-light);
+        border-color: #93c5fd;
+        color: #1e40af;
+    }
+
+    .achievement-chip.rarity-epic {
+        background: var(--accent-purple-light);
+        border-color: #c4b5fd;
+        color: #5b21b6;
+    }
+
+    .achievement-chip.rarity-legendary {
+        background: var(--accent-yellow-light);
+        border-color: #fcd34d;
+        color: #92400e;
+    }
+
+    /* === Published Content Cards === */
+    .published-card {
+        padding: 1rem 1.25rem;
+        border-radius: var(--radius);
+        border: 1px solid var(--gray-200);
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        height: 100%;
+    }
+
+    .published-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .published-card--dict {
+        background: linear-gradient(135deg, var(--primary-50) 0%, #f5f3ff 100%);
+        border-color: var(--primary-200);
+    }
+
+    .published-card--dict:hover {
+        border-color: var(--primary-400);
+        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.15);
+    }
+
+    .published-card--rule {
+        background: linear-gradient(135deg, #ecfdf5 0%, var(--accent-green-light) 100%);
+        border-color: #a7f3d0;
+    }
+
+    .published-card--rule:hover {
+        border-color: var(--accent-green);
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);
+    }
+
+    .published-card-icon {
+        font-size: 1.25rem;
+        opacity: 0.5;
+    }
+
+    .published-card--dict .published-card-icon {
+        color: var(--primary-500);
+    }
+
+    .published-card--rule .published-card-icon {
+        color: var(--accent-green);
+    }
+
+    .published-card-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--gray-800);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .published-card-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.8rem;
+        color: var(--gray-500);
+    }
+
+    .published-card-rating i {
+        color: var(--accent-yellow);
+        margin-right: 0.15rem;
+    }
+
+    .published-card-downloads i {
+        margin-right: 0.15rem;
+    }
+
+    /* === Mobile Adaptation === */
+    @@media (max-width: 575px) {
+        .profile-header-body {
+            padding: 1rem;
+        }
+
+        .profile-header-layout {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 1rem;
+        }
+
+        .profile-avatar {
+            width: 64px;
+            height: 64px;
+            font-size: 1.5rem;
+        }
+
+        .profile-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .profile-info > .d-flex {
+            justify-content: center;
+        }
+
+        .profile-info > p {
+            text-align: center;
+        }
+
+        .profile-username {
+            font-size: 1.25rem;
+        }
+
+        .profile-stats-row {
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .profile-stat {
+            font-size: 0.8rem;
+        }
+
+        .streak-block {
+            padding: 0.3rem 0.6rem;
+        }
+
+        .streak-current {
+            font-size: 0.8rem;
+        }
+
+        .streak-best {
+            font-size: 0.7rem;
+        }
+
+        .achievement-chip {
+            font-size: 0.78rem;
+            padding: 0.3rem 0.6rem;
+        }
+
+        .achievement-chip-icon {
+            font-size: 0.9rem;
+        }
+
+        .published-card {
+            padding: 0.75rem 1rem;
+        }
+
+        .published-card-icon {
+            font-size: 1rem;
+        }
+
+        .published-card-name {
+            font-size: 0.85rem;
+        }
+
+        .published-card-meta {
+            font-size: 0.75rem;
+            gap: 0.5rem;
+        }
+    }
+
+    @@media (min-width: 576px) and (max-width: 767px) {
+        .profile-avatar {
+            width: 70px;
+            height: 70px;
+            font-size: 1.75rem;
+        }
+
+        .profile-username {
+            font-size: 1.35rem;
+        }
+    }
+</style>
+
+@code {
+    [Parameter]
+    public int UserId { get; set; }
+
+    private UserPublicProfile? UserProfile;
+    private bool IsLoading = true;
+    private bool IsOwnProfile;
+
+    // Achievements
+    private bool AchievementsExpanded;
+    private const int AchievementVisibleThreshold = 8;
+
+    // Pagination
+    private const int ContentPageSize = 6;
+    private int DictPage = 1;
+    private int RulePage = 1;
+
+    private int DictTotalPages => UserProfile == null ? 1 :
+        (int)Math.Ceiling(UserProfile.PublishedDictionaries.Count / (double)ContentPageSize);
+
+    private int RuleTotalPages => UserProfile == null ? 1 :
+        (int)Math.Ceiling(UserProfile.PublishedRules.Count / (double)ContentPageSize);
+
+    private List<PublishedContentItem> PagedDictionaries =>
+        UserProfile?.PublishedDictionaries
+            .Skip((DictPage - 1) * ContentPageSize)
+            .Take(ContentPageSize)
+            .ToList() ?? new();
+
+    private List<PublishedContentItem> PagedRules =>
+        UserProfile?.PublishedRules
+            .Skip((RulePage - 1) * ContentPageSize)
+            .Take(ContentPageSize)
+            .ToList() ?? new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        IsLoading = true;
+        DictPage = 1;
+        RulePage = 1;
+        AchievementsExpanded = false;
+        try
+        {
+            UserProfile = await ContentApi.GetUserProfileAsync(UserId);
+
+            var session = await AuthService.GetCurrentSessionAsync();
+            IsOwnProfile = session != null && session.UserId == UserId;
+        }
+        catch
+        {
+            UserProfile = null;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private string GetRoleDisplay(string role) => role switch
+    {
+        "Teacher" => "👨‍🏫 Учитель",
+        "Student" => "🎓 Ученик",
+        "Admin" => "⚙️ Админ",
+        _ => "👤 Пользователь"
+    };
+
+    private IEnumerable<int> GetPageWindow(int current, int total)
+    {
+        const int wing = 2;
+        var pages = new List<int> { 1 };
+
+        var rangeStart = Math.Max(2, current - wing);
+        var rangeEnd = Math.Min(total - 1, current + wing);
+
+        if (rangeStart > 2)
+            pages.Add(-1);
+
+        for (int p = rangeStart; p <= rangeEnd; p++)
+            pages.Add(p);
+
+        if (rangeEnd < total - 1)
+            pages.Add(-1);
+
+        if (total > 1)
+            pages.Add(total);
+
+        return pages;
+    }
+}
