@@ -119,6 +119,13 @@ namespace LearningTrainerShared.Context
             modelBuilder.Entity<GrammarExercise>()
                 .HasIndex(ge => ge.RuleId);
 
+            // Word → Rule (§4.1 LEARNING_IMPROVEMENTS)
+            modelBuilder.Entity<Word>()
+                .HasOne(w => w.RelatedRule)
+                .WithMany()
+                .HasForeignKey(w => w.RelatedRuleId)
+                .OnDelete(DeleteBehavior.NoAction);
+
             // === STATISTICS ENTITIES ===
 
             // TrainingSession

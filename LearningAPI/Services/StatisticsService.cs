@@ -95,14 +95,20 @@ public class StatisticsService : IStatisticsService
             LearnedWords = progresses.Count(p => p.KnowledgeLevel >= 4),
             InProgressWords = progresses.Count(p => p.KnowledgeLevel > 0 && p.KnowledgeLevel < 4),
             TotalDictionaries = progresses.Select(p => p.Word?.DictionaryId).Distinct().Count(),
-            
+
             CurrentStreak = userStats?.CurrentStreak ?? await CalculateStreakAsync(userId, today, ct),
             BestStreak = userStats?.BestStreak ?? 0,
             LastPracticeDate = userStats?.LastPracticeDate,
-            
+
             TotalSessions = sessions.Count,
             TotalLearningTime = TimeSpan.FromSeconds(userStats?.TotalLearningTimeSeconds ?? 
                 sessions.Sum(s => (s.CompletedAt - s.StartedAt).TotalSeconds)),
+
+            // §5.1 XP and levels
+            TotalXp = userStats?.TotalXp ?? 0,
+            Level = userStats?.Level ?? 1,
+            XpForCurrentLevel = userStats?.XpForCurrentLevel ?? 0,
+            XpForNextLevel = userStats?.XpForNextLevel ?? 50,
         };
 
         // Ответы за период
@@ -141,6 +147,7 @@ public class StatisticsService : IStatisticsService
 
         // Детализированные данные
         stats.DailyActivity = await GetDailyActivityAsync(userId, Math.Min(days, 30), ct);
+        stats.HeatmapActivity = await GetDailyActivityAsync(userId, 365, ct);
         stats.WeeklyActivity = GetWeeklyActivity(sessions, days);
         stats.MonthlyProgress = GetMonthlyProgress(progresses, sessions, days);
         stats.DictionaryStatistics = await GetDictionaryStatsAsync(userId, ct);
@@ -149,6 +156,14 @@ public class StatisticsService : IStatisticsService
         stats.DifficultWords = await GetDifficultWordsAsync(userId, 10, ct);
         stats.Achievements = await GetAchievementsAsync(userId, ct);
         stats.LeaderboardPosition = await GetLeaderboardPositionAsync(userId, ct);
+
+        // §9.4 Retention rate per dictionary
+        ComputeRetentionRates(stats.DictionaryStatistics, progresses);
+
+        // Аналитика (§9 LEARNING_IMPROVEMENTS)
+        stats.DictionaryForecasts = BuildDictionaryForecasts(stats.DictionaryStatistics, stats.WordsLearnedThisWeek);
+        stats.OptimalTime = BuildOptimalTimeRecommendation(stats.HourlyActivity);
+        stats.WeekOverWeek = BuildWeekComparison(sessions, progresses, today);
 
         return stats;
     }
@@ -808,5 +823,128 @@ public class StatisticsService : IStatisticsService
             WeeklyRank = userPosition + 1, // Упрощённо - то же что и общий
             WeeklyPoints = allUserStats[userPosition].LearnedCount
         };
+    }
+
+    // === Аналитика (§9 LEARNING_IMPROVEMENTS) ===
+
+    /// <summary>
+    /// §9.1 Прогноз завершения словаря по текущему темпу.
+    /// </summary>
+    private static List<DictionaryForecast> BuildDictionaryForecasts(
+        List<DictionaryStats> dictionaryStats, int wordsLearnedThisWeek)
+    {
+        var wordsPerDay = wordsLearnedThisWeek / 7.0;
+        if (wordsPerDay <= 0) wordsPerDay = 0;
+
+        return dictionaryStats
+            .Where(d => d.TotalWords > 0 && d.CompletionPercent < 100)
+            .Select(d =>
+            {
+                var remaining = d.TotalWords - d.LearnedWords;
+                int? estimatedDays = wordsPerDay > 0 ? (int)Math.Ceiling(remaining / wordsPerDay) : null;
+                return new DictionaryForecast
+                {
+                    DictionaryId = d.DictionaryId,
+                    DictionaryName = d.DictionaryName,
+                    TotalWords = d.TotalWords,
+                    LearnedWords = d.LearnedWords,
+                    RemainingWords = remaining,
+                    WordsPerDay = Math.Round(wordsPerDay, 1),
+                    EstimatedDaysToComplete = estimatedDays,
+                    EstimatedCompletionDate = estimatedDays.HasValue
+                        ? DateTime.UtcNow.Date.AddDays(estimatedDays.Value)
+                        : null
+                };
+            })
+            .OrderBy(f => f.EstimatedDaysToComplete ?? int.MaxValue)
+            .ToList();
+    }
+
+    /// <summary>
+    /// §9.2 Рекомендация оптимального времени для занятий.
+    /// </summary>
+    private static OptimalTimeRecommendation? BuildOptimalTimeRecommendation(
+        List<HourlyActivityStats> hourlyActivity)
+    {
+        var activeHours = hourlyActivity.Where(h => h.WordsReviewed >= 3).ToList();
+        if (activeHours.Count < 2) return null;
+
+        var best = activeHours.OrderByDescending(h => h.AverageAccuracy).First();
+        var worst = activeHours.OrderBy(h => h.AverageAccuracy).First();
+
+        return new OptimalTimeRecommendation
+        {
+            BestHour = best.Hour,
+            BestAccuracy = Math.Round(best.AverageAccuracy * 100, 1),
+            WorstHour = worst.Hour,
+            WorstAccuracy = Math.Round(worst.AverageAccuracy * 100, 1),
+            Recommendation = $"Ваша точность максимальна в {best.Hour}:00–{best.Hour + 1}:00 ({Math.Round(best.AverageAccuracy * 100)}%). " +
+                             $"Рекомендуем заниматься в это время."
+        };
+    }
+
+    /// <summary>
+    /// §9.3 Сравнение текущей и предыдущей недели.
+    /// </summary>
+    private static WeekComparison BuildWeekComparison(
+        List<TrainingSession> sessions, List<LearningProgress> progresses, DateTime today)
+    {
+        var currentWeekStart = today.AddDays(-6);
+        var previousWeekStart = today.AddDays(-13);
+
+        var currentSessions = sessions.Where(s => s.StartedAt.Date >= currentWeekStart).ToList();
+        var previousSessions = sessions.Where(s => s.StartedAt.Date >= previousWeekStart && s.StartedAt.Date < currentWeekStart).ToList();
+
+        var currentWords = progresses.Count(p => p.LastPracticed.Date >= currentWeekStart);
+        var previousWords = progresses.Count(p => p.LastPracticed.Date >= previousWeekStart && p.LastPracticed.Date < currentWeekStart);
+
+        var diff = currentWords - previousWords;
+        var pctChange = previousWords > 0 ? (double)diff / previousWords * 100 : (currentWords > 0 ? 100 : 0);
+
+        var currentCorrect = currentSessions.Sum(s => s.CorrectAnswers);
+        var currentTotal = currentCorrect + currentSessions.Sum(s => s.WrongAnswers);
+        var previousCorrect = previousSessions.Sum(s => s.CorrectAnswers);
+        var previousTotal = previousCorrect + previousSessions.Sum(s => s.WrongAnswers);
+
+        return new WeekComparison
+        {
+            CurrentWeekWords = currentWords,
+            PreviousWeekWords = previousWords,
+            WordsDifference = diff,
+            PercentChange = Math.Round(pctChange, 1),
+            CurrentWeekDaysActive = currentSessions.Select(s => s.StartedAt.Date).Distinct().Count(),
+            PreviousWeekDaysActive = previousSessions.Select(s => s.StartedAt.Date).Distinct().Count(),
+            CurrentWeekAccuracy = currentTotal > 0 ? Math.Round((double)currentCorrect / currentTotal * 100, 1) : 0,
+            PreviousWeekAccuracy = previousTotal > 0 ? Math.Round((double)previousCorrect / previousTotal * 100, 1) : 0,
+            IsImproving = diff > 0
+        };
+    }
+
+    /// <summary>
+    /// §9.4 Retention rate per dictionary.
+    /// Доля слов с KnowledgeLevel >= 3 среди тех, что начали учить > 30 дней назад.
+    /// </summary>
+    private static void ComputeRetentionRates(
+        List<DictionaryStats> dictionaryStats, List<LearningProgress> progresses)
+    {
+        var threshold = DateTime.UtcNow.AddDays(-30);
+
+        // Group progresses by DictionaryId (via Word)
+        var progressByDict = progresses
+            .Where(p => p.Word?.DictionaryId != null && p.TotalAttempts > 0)
+            .GroupBy(p => p.Word!.DictionaryId);
+
+        foreach (var group in progressByDict)
+        {
+            var dict = dictionaryStats.FirstOrDefault(d => d.DictionaryId == group.Key);
+            if (dict == null) continue;
+
+            // Only consider words started > 30 days ago
+            var matureWords = group.Where(p => p.LastPracticed < threshold && p.TotalAttempts >= 2).ToList();
+            if (matureWords.Count < 3) continue; // Need at least 3 words for meaningful rate
+
+            var retained = matureWords.Count(p => p.KnowledgeLevel >= 3);
+            dict.RetentionRate = Math.Round((double)retained / matureWords.Count * 100, 1);
+        }
     }
 }

@@ -55,6 +55,13 @@ namespace LearningTrainerShared.Models
         /// </summary>
         public int? LastResponseTimeMs { get; set; }
 
+        /// <summary>
+        /// Персональная заметка пользователя к слову (мнемоника, ассоциация, контекст).
+        /// Отображается при повторении слова в тренировке (§8.3 LEARNING_IMPROVEMENTS).
+        /// </summary>
+        [MaxLength(500)]
+        public string? UserNote { get; set; }
+
         [NotMapped]
         public double SuccessRate => TotalAttempts > 0 ? (double)CorrectAnswers / TotalAttempts : 0;
     }

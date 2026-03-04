@@ -33,8 +33,15 @@ public class UserStatistics
     public int WordsLearnedThisMonth { get; set; }
     public int WordsReviewedToday { get; set; }
 
+    // === XP и уровни (§5.1 LEARNING_IMPROVEMENTS) ===
+    public long TotalXp { get; set; }
+    public int Level { get; set; }
+    public long XpForCurrentLevel { get; set; }
+    public long XpForNextLevel { get; set; }
+
     // === ДЕТАЛИЗИРОВАННЫЕ ДАННЫЕ ===
     public List<DailyActivityStats> DailyActivity { get; set; } = new();
+    public List<DailyActivityStats> HeatmapActivity { get; set; } = new();
     public List<WeeklyActivityStats> WeeklyActivity { get; set; } = new();
     public List<MonthlyProgressStats> MonthlyProgress { get; set; } = new();
     public List<DictionaryStats> DictionaryStatistics { get; set; } = new();
@@ -42,6 +49,23 @@ public class UserStatistics
     public List<HourlyActivityStats> HourlyActivity { get; set; } = new();
     public List<DifficultWord> DifficultWords { get; set; } = new();
     public List<Achievement> Achievements { get; set; } = new();
+
+    // === АНАЛИТИКА (§9 LEARNING_IMPROVEMENTS) ===
+
+    /// <summary>
+    /// Прогноз завершения по словарям (§9.1): дней до окончания при текущем темпе.
+    /// </summary>
+    public List<DictionaryForecast> DictionaryForecasts { get; set; } = new();
+
+    /// <summary>
+    /// Рекомендованное оптимальное время занятий (§9.2).
+    /// </summary>
+    public OptimalTimeRecommendation? OptimalTime { get; set; }
+
+    /// <summary>
+    /// Сравнение текущей и предыдущей недели (§9.3).
+    /// </summary>
+    public WeekComparison? WeekOverWeek { get; set; }
 
     // === РЕЙТИНГ ===
     public LeaderboardPosition? LeaderboardPosition { get; set; }
@@ -109,6 +133,13 @@ public class DictionaryStats
     public double CompletionPercent { get; set; }
     public double Accuracy { get; set; }
     public DateTime? LastPracticed { get; set; }
+
+    /// <summary>
+    /// Retention rate (§9.4 LEARNING_IMPROVEMENTS):
+    /// доля слов с KnowledgeLevel >= 3 среди тех, что начали учить > 30 дней назад.
+    /// null если данных недостаточно.
+    /// </summary>
+    public double? RetentionRate { get; set; }
 }
 
 /// <summary>
@@ -158,4 +189,47 @@ public class LeaderboardPosition
     public int WeeklyRank { get; set; }
     public int WeeklyPoints { get; set; }
     public double Percentile { get; set; }
+}
+
+/// <summary>
+/// Прогноз завершения словаря (§9.1 LEARNING_IMPROVEMENTS)
+/// </summary>
+public class DictionaryForecast
+{
+    public int DictionaryId { get; set; }
+    public string DictionaryName { get; set; } = string.Empty;
+    public int TotalWords { get; set; }
+    public int LearnedWords { get; set; }
+    public int RemainingWords { get; set; }
+    public double WordsPerDay { get; set; }
+    public int? EstimatedDaysToComplete { get; set; }
+    public DateTime? EstimatedCompletionDate { get; set; }
+}
+
+/// <summary>
+/// Рекомендация оптимального времени (§9.2 LEARNING_IMPROVEMENTS)
+/// </summary>
+public class OptimalTimeRecommendation
+{
+    public int BestHour { get; set; }
+    public double BestAccuracy { get; set; }
+    public int WorstHour { get; set; }
+    public double WorstAccuracy { get; set; }
+    public string Recommendation { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Сравнение текущей и предыдущей недели (§9.3 LEARNING_IMPROVEMENTS)
+/// </summary>
+public class WeekComparison
+{
+    public int CurrentWeekWords { get; set; }
+    public int PreviousWeekWords { get; set; }
+    public int WordsDifference { get; set; }
+    public double PercentChange { get; set; }
+    public int CurrentWeekDaysActive { get; set; }
+    public int PreviousWeekDaysActive { get; set; }
+    public double CurrentWeekAccuracy { get; set; }
+    public double PreviousWeekAccuracy { get; set; }
+    public bool IsImproving { get; set; }
 }

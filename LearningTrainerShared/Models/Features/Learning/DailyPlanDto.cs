@@ -78,6 +78,21 @@ public class TrainingWordDto
     public bool IsLeech { get; set; }
 
     /// <summary>
+    /// Персональная заметка пользователя к слову.
+    /// </summary>
+    public string? UserNote { get; set; }
+
+    /// <summary>
+    /// ID связанного грамматического правила (§4.1 LEARNING_IMPROVEMENTS).
+    /// </summary>
+    public int? RelatedRuleId { get; set; }
+
+    /// <summary>
+    /// Название связанного правила (для быстрого отображения кнопки).
+    /// </summary>
+    public string? RelatedRuleTitle { get; set; }
+
+    /// <summary>
     /// Процент правильных ответов (0–100). Если попыток не было — null.
     /// Используется для визуализации прогресса слова в тренировке (#10 LEARNING_IMPROVEMENTS).
     /// </summary>

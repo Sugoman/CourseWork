@@ -16,11 +16,22 @@ namespace LearningTrainerShared.Models
         /// Если передано — используется для автокоррекции качества (§1.3 LEARNING_IMPROVEMENTS).
         /// </summary>
         public int? ResponseTimeMs { get; set; }
+
+        /// <summary>
+        /// Режим упражнения (§5.1 LEARNING_IMPROVEMENTS). Используется для расчёта XP.
+        /// flashcard=10, mcq=10, typing=15, listening=20, matching=10, cloze=15.
+        /// </summary>
+        public string? ExerciseMode { get; set; }
     }
 
     public class SetDailyGoalRequest
     {
         public int Goal { get; set; }
+    }
+
+    public class SaveNoteRequest
+    {
+        public string? Note { get; set; }
     }
 
     public enum ResponseQuality

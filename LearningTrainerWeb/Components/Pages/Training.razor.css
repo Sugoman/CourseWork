@@ -254,6 +254,33 @@
     background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%);
 }
 
+.mode-speed .mode-icon {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+}
+
+/* Speed Round UI */
+.speed-timer {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--bs-primary);
+    animation: pulse 1s infinite;
+}
+
+.speed-timer-danger {
+    color: var(--bs-danger) !important;
+    animation: pulse 0.5s infinite;
+}
+
+.speed-score {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
 .mode-card h4 {
     margin: 0 0 0.5rem;
     font-size: 1rem;
@@ -312,6 +339,57 @@
     background: var(--bs-primary);
     border-color: var(--bs-primary);
     color: white;
+}
+
+/* Daily Challenge (§5.2 LEARNING_IMPROVEMENTS) */
+.daily-challenge-card {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.daily-challenge-card.challenge-completed {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-color: #bbf7d0;
+}
+
+.challenge-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.challenge-icon {
+    font-size: 1.5rem;
+}
+
+.challenge-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.challenge-reward {
+    font-weight: 600;
+    color: #D97706;
+    font-size: 0.85rem;
+}
+
+.challenge-status {
+    margin-top: 0.25rem;
+}
+
+/* Quick Session (§7.3 LEARNING_IMPROVEMENTS) */
+.btn-quick-session {
+    width: 100%;
+    padding: 0.6rem;
+    border-radius: 10px;
+    font-weight: 500;
+    margin-bottom: 1rem;
+    border-style: dashed;
 }
 
 /* Quick Start */
@@ -1590,4 +1668,100 @@ kbd {
         flex-direction: column;
         gap: 0.5rem;
     }
+}
+
+/* === User Notes (§8.3 LEARNING_IMPROVEMENTS) === */
+
+.user-note-section {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--gray-200, #e5e7eb);
+}
+
+.user-note-display {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.25rem;
+    padding: 0.6rem 0.85rem;
+    background: var(--accent-yellow-light, #fef3c7);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--gray-700, #374151);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    line-height: 1.4;
+}
+
+.user-note-display:hover {
+    background: #fde68a;
+}
+
+.user-note-display i:first-child {
+    color: var(--accent-yellow, #f59e0b);
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.user-note-display span {
+    flex: 1;
+    word-break: break-word;
+}
+
+.btn-note-edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--gray-400, #9ca3af);
+    cursor: pointer;
+    border-radius: 4px;
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    transition: all 0.15s ease;
+}
+
+.btn-note-edit:hover {
+    color: var(--gray-700, #374151);
+    background: rgba(0,0,0,0.06);
+}
+
+.btn-add-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border: 1px dashed var(--gray-300, #d1d5db);
+    background: transparent;
+    color: var(--gray-500, #6b7280);
+    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-add-note:hover {
+    border-color: var(--accent-yellow, #f59e0b);
+    color: var(--accent-yellow, #f59e0b);
+    background: var(--accent-yellow-light, #fef3c7);
+}
+
+.user-note-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.user-note-editor textarea {
+    font-size: 0.85rem;
+    border-radius: 8px;
+    resize: none;
+}
+
+.user-note-editor-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
 }

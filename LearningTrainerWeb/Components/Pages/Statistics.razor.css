@@ -64,6 +64,7 @@
 .stat-card-primary { border-left-color: #3B82F6; }
 .stat-card-purple { border-left-color: #8B5CF6; }
 .stat-card-pink { border-left-color: #EC4899; }
+.stat-card-xp { border-left-color: #F59E0B; }
 
 .stat-icon {
     font-size: 1.5rem;
@@ -75,6 +76,7 @@
 .stat-card-primary .stat-icon { color: #3B82F6; }
 .stat-card-purple .stat-icon { color: #8B5CF6; }
 .stat-card-pink .stat-icon { color: #EC4899; }
+.stat-card-xp .stat-icon { color: #F59E0B; }
 
 .stat-content {
     flex: 1;
@@ -361,6 +363,15 @@
     text-align: right;
 }
 
+.dictionary-retention {
+    font-size: 0.8rem;
+    text-align: right;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--bs-secondary-color);
+}
+
 /* Difficult Words */
 .difficult-words-list {
     display: flex;
@@ -560,6 +571,73 @@
     text-align: center;
 }
 
+/* Heatmap — GitHub-style (§5.3 LEARNING_IMPROVEMENTS) */
+.heatmap-container {
+    overflow-x: auto;
+    padding: 0.5rem 0;
+}
+
+.heatmap-graph {
+    display: grid;
+    grid-template-rows: auto repeat(7, 1fr);
+    gap: 3px;
+    width: 100%;
+}
+
+.heatmap-corner {
+    /* empty top-left cell */
+}
+
+.heatmap-month-label {
+    font-size: 0.7rem;
+    color: var(--bs-secondary-color);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    line-height: 1;
+    padding-bottom: 2px;
+}
+
+.heatmap-day-label {
+    font-size: 0.7rem;
+    color: var(--bs-secondary-color);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 4px;
+    white-space: nowrap;
+}
+
+.heatmap-cell {
+    aspect-ratio: 1;
+    border-radius: 2px;
+    min-width: 0;
+}
+
+.heatmap-empty {
+    background: transparent;
+}
+
+.heatmap-level-0 { background: var(--bs-tertiary-bg, #ebedf0); }
+.heatmap-level-1 { background: #9be9a8; }
+.heatmap-level-2 { background: #40c463; }
+.heatmap-level-3 { background: #30a14e; }
+.heatmap-level-4 { background: #216e39; }
+
+.heatmap-legend {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+}
+
+.heatmap-legend .heatmap-cell {
+    width: 12px;
+    height: 12px;
+    aspect-ratio: auto;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
     .stats-cards {
@@ -571,11 +649,7 @@
     .charts-grid {
         grid-template-columns: 1fr;
     }
-    
-    .chart-card-wide {
-        grid-column: span 1;
-    }
-    
+
     .dictionary-row {
         grid-template-columns: 1fr;
         gap: 0.5rem;
@@ -621,12 +695,147 @@
     .stats-cards {
         grid-template-columns: 1fr;
     }
-    
+
     .achievements-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .hourly-heatmap {
         grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+/* === Аналитика §9 LEARNING_IMPROVEMENTS === */
+
+/* §9.3 Week comparison */
+.week-comparison-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+
+.week-metric {
+    text-align: center;
+    padding: 0.75rem;
+    background: var(--gray-50, #f8fafc);
+    border-radius: 12px;
+}
+
+.week-metric-label {
+    font-size: 0.75rem;
+    color: var(--gray-500, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.week-metric-values {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.week-current {
+    font-weight: 700;
+    color: var(--primary-600, #4f46e5);
+}
+
+.week-vs {
+    color: var(--gray-400, #9ca3af);
+    font-size: 0.75rem;
+}
+
+.week-previous {
+    color: var(--gray-500, #6b7280);
+}
+
+.week-diff {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+.week-diff.positive {
+    color: var(--accent-green, #10b981);
+}
+
+.week-diff.negative {
+    color: var(--accent-red, #ef4444);
+}
+
+/* §9.2 Optimal time */
+.optimal-time-content {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.optimal-best,
+.optimal-worst {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 200px;
+    padding: 0.85rem 1rem;
+    border-radius: 10px;
+}
+
+.optimal-best {
+    background: rgba(16, 185, 129, 0.08);
+}
+
+.optimal-worst {
+    background: rgba(245, 158, 11, 0.08);
+}
+
+.optimal-best i,
+.optimal-worst i {
+    font-size: 1.25rem;
+    margin-top: 2px;
+}
+
+/* §9.1 Forecast */
+.forecast-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.forecast-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 0.85rem;
+    border-radius: 8px;
+    background: var(--gray-50, #f8fafc);
+}
+
+.forecast-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.forecast-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.forecast-note {
+    padding: 0.5rem 0.85rem;
+    background: var(--gray-50, #f8fafc);
+    border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+    .week-comparison-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .optimal-time-content {
+        flex-direction: column;
     }
 }

@@ -16,12 +16,12 @@ public interface ITrainingApiService
     /// <summary>
     /// Получить слова для тренировки
     /// </summary>
-    Task<List<TrainingWordDto>> GetTrainingWordsAsync(string mode = "mixed", int? dictionaryId = null, int limit = 20);
+    Task<List<TrainingWordDto>> GetTrainingWordsAsync(string mode = "mixed", int? dictionaryId = null, int limit = 20, string? tag = null);
     
     /// <summary>
     /// Обновить прогресс слова
     /// </summary>
-    Task<bool> UpdateProgressAsync(int wordId, ResponseQuality quality, int? responseTimeMs = null);
+    Task<bool> UpdateProgressAsync(int wordId, ResponseQuality quality, int? responseTimeMs = null, string? exerciseMode = null);
     
     /// <summary>
     /// Установить стартовый набор
@@ -42,6 +42,16 @@ public interface ITrainingApiService
     /// Установить дневную цель
     /// </summary>
     Task<bool> SetDailyGoalAsync(int goal);
+
+    /// <summary>
+    /// Сохранить персональную заметку к слову
+    /// </summary>
+    Task<bool> SaveUserNoteAsync(int wordId, string? note);
+
+    /// <summary>
+    /// Получить ежедневный челлендж (§5.2 LEARNING_IMPROVEMENTS)
+    /// </summary>
+    Task<DailyChallengeDto?> GetDailyChallengeAsync();
 
     /// <summary>
     /// Установить токен авторизации
@@ -85,7 +95,7 @@ public class TrainingApiService : ITrainingApiService
         }
     }
 
-    public async Task<List<TrainingWordDto>> GetTrainingWordsAsync(string mode = "mixed", int? dictionaryId = null, int limit = 20)
+    public async Task<List<TrainingWordDto>> GetTrainingWordsAsync(string mode = "mixed", int? dictionaryId = null, int limit = 20, string? tag = null)
     {
         try
         {
@@ -94,6 +104,10 @@ public class TrainingApiService : ITrainingApiService
             if (dictionaryId.HasValue)
             {
                 url += $"&dictionaryId={dictionaryId.Value}";
+            }
+            if (!string.IsNullOrEmpty(tag))
+            {
+                url += $"&tag={Uri.EscapeDataString(tag)}";
             }
 
             var result = await _httpClient.GetFromJsonAsync<List<TrainingWordDto>>(url);
@@ -106,12 +120,12 @@ public class TrainingApiService : ITrainingApiService
         }
     }
 
-    public async Task<bool> UpdateProgressAsync(int wordId, ResponseQuality quality, int? responseTimeMs = null)
+    public async Task<bool> UpdateProgressAsync(int wordId, ResponseQuality quality, int? responseTimeMs = null, string? exerciseMode = null)
     {
         try
         {
             await ApplyAuthAsync();
-            var request = new UpdateProgressRequest { WordId = wordId, Quality = quality, ResponseTimeMs = responseTimeMs };
+            var request = new UpdateProgressRequest { WordId = wordId, Quality = quality, ResponseTimeMs = responseTimeMs, ExerciseMode = exerciseMode };
             var response = await _httpClient.PostAsJsonAsync("api/progress/update", request);
             return response.IsSuccessStatusCode;
         }
@@ -184,6 +198,36 @@ public class TrainingApiService : ITrainingApiService
         {
             _logger.LogError(ex, "Error setting daily goal");
             return false;
+        }
+    }
+
+    public async Task<bool> SaveUserNoteAsync(int wordId, string? note)
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            var request = new SaveNoteRequest { Note = note };
+            var response = await _httpClient.PutAsJsonAsync($"api/progress/note/{wordId}", request);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving note for word {WordId}", wordId);
+            return false;
+        }
+    }
+
+    public async Task<DailyChallengeDto?> GetDailyChallengeAsync()
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            return await _httpClient.GetFromJsonAsync<DailyChallengeDto>("api/training/daily-challenge");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching daily challenge");
+            return null;
         }
     }
 }

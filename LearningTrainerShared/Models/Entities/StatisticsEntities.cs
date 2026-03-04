@@ -79,5 +79,29 @@ public class UserStats
     /// </summary>
     public int DailyGoal { get; set; } = 20;
 
+    /// <summary>
+    /// Общее количество очков опыта (§5.1 LEARNING_IMPROVEMENTS).
+    /// </summary>
+    public long TotalXp { get; set; }
+
     public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Вычисляемый уровень пользователя по формуле: level = floor(sqrt(TotalXp / 50)) + 1.
+    /// Уровень 1 = 0 XP, Уровень 2 = 50 XP, Уровень 3 = 200 XP, Уровень 5 = 800 XP...
+    /// </summary>
+    [NotMapped]
+    public int Level => (int)Math.Floor(Math.Sqrt(TotalXp / 50.0)) + 1;
+
+    /// <summary>
+    /// XP, необходимые для следующего уровня.
+    /// </summary>
+    [NotMapped]
+    public long XpForNextLevel => (long)(Level * Level) * 50;
+
+    /// <summary>
+    /// XP, необходимые для текущего уровня (нижняя граница).
+    /// </summary>
+    [NotMapped]
+    public long XpForCurrentLevel => (long)((Level - 1) * (Level - 1)) * 50;
 }

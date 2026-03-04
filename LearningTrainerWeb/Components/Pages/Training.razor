@@ -8,6 +8,7 @@
 @inject IJSRuntime JS
 @inject IAiApiService AiService
 @inject IContentApiService ContentApi
+@implements IDisposable
 
 <PageTitle>Тренировка - Ingat</PageTitle>
 
@@ -171,6 +172,43 @@
                 </div>
             }
 
+            @* === Ежедневный челлендж (§5.2 LEARNING_IMPROVEMENTS) === *@
+            @if (DailyChallenge != null)
+            {
+                <div class="daily-challenge-card @(DailyChallenge.IsCompleted ? "challenge-completed" : "")">
+                    <div class="challenge-header">
+                        <span class="challenge-icon">@DailyChallenge.Icon</span>
+                        <div class="challenge-info">
+                            <strong>@DailyChallenge.Title</strong>
+                            <span class="text-muted small">@DailyChallenge.Description</span>
+                        </div>
+                        <span class="challenge-reward">+@DailyChallenge.XpReward XP</span>
+                    </div>
+                    <div class="progress" style="height: 6px; border-radius: 3px;">
+                        <div class="progress-bar @(DailyChallenge.IsCompleted ? "bg-success" : "bg-info")" 
+                             style="width: @DailyChallenge.Progress%"></div>
+                    </div>
+                    <div class="challenge-status small">
+                        @if (DailyChallenge.IsCompleted)
+                        {
+                            <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Челлендж выполнен!</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">@DailyChallenge.CurrentValue / @DailyChallenge.TargetValue</span>
+                        }
+                    </div>
+                </div>
+            }
+
+            @* === Кнопка быстрой тренировки (§7.3 LEARNING_IMPROVEMENTS) === *@
+            @if (DailyPlan.Stats.TotalReviewCount > 0 || DailyPlan.Stats.TotalNewCount > 0)
+            {
+                <button class="btn btn-outline-primary btn-quick-session" @onclick="StartQuickSession">
+                    <i class="bi bi-lightning-charge me-1"></i>Быстрая тренировка (1 мин)
+                </button>
+            }
+
             @* === Leech-предупреждение (P0 LEARNING_IMPROVEMENTS §1.1) === *@
             @if (DailyPlan.Stats.LeechCount > 0)
             {
@@ -248,6 +286,14 @@
                         <h4>Сложные</h4>
                         <p>Слова с ошибками</p>
                     </button>
+                    <button class="mode-card mode-speed" @onclick='() => StartSpeedRound()'
+                            disabled="@(DailyPlan.Stats.TotalReviewCount == 0 && DailyPlan.Stats.TotalNewCount == 0)">
+                        <div class="mode-icon">
+                            <i class="bi bi-stopwatch"></i>
+                        </div>
+                        <h4>Скорость</h4>
+                        <p>60 секунд — максимум слов!</p>
+                    </button>
                 </div>
                 
                 <h3 class="mt-4">Тип упражнений</h3>
@@ -277,6 +323,11 @@
                         <i class="bi bi-link-45deg"></i>
                         <span>Сопоставление</span>
                     </button>
+                    <button class="exercise-type @(ExerciseType == "cloze" ? "active" : "")" 
+                            @onclick='() => SetExerciseType("cloze")'>
+                        <i class="bi bi-input-cursor-text"></i>
+                        <span>Пропуск</span>
+                    </button>
                     <button class="exercise-type @(ExerciseType == "mixed" ? "active" : "")" 
                             @onclick='() => SetExerciseType("mixed")'>
                         <i class="bi bi-shuffle"></i>
@@ -302,6 +353,7 @@
                             <button class="setting-pill @(TranslationDirection == "direct" ? "active" : "")" @onclick='() => TranslationDirection = "direct"'>Прямой</button>
                             <button class="setting-pill @(TranslationDirection == "reverse" ? "active" : "")" @onclick='() => TranslationDirection = "reverse"'>Обратный</button>
                             <button class="setting-pill @(TranslationDirection == "random" ? "active" : "")" @onclick='() => TranslationDirection = "random"'>Случайный</button>
+                            <button class="setting-pill @(TranslationDirection == "auto" ? "active" : "")" @onclick='() => TranslationDirection = "auto"' title="Слова с высоким уровнем автоматически переключаются на обратный перевод">Авто ↑</button>
                         </div>
                     </div>
 
@@ -318,6 +370,14 @@
                             </div>
                         </div>
                     }
+
+                    <div class="setting-group">
+                        <span class="setting-label"><i class="bi bi-eye-slash me-1"></i>Режим:</span>
+                        <div class="setting-options">
+                            <button class="setting-pill @(!IsExamMode ? "active" : "")" @onclick="() => IsExamMode = false">Обычный</button>
+                            <button class="setting-pill @(IsExamMode ? "active" : "")" @onclick="() => IsExamMode = true" title="Без подсказок: скрывает транскрипцию, словарь и TTS до ответа">Экзамен</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -359,14 +419,35 @@
             {
                 <div class="session-progress">
                     <div class="progress-info">
-                        <span>Слово @(CurrentIndex + 1) из @TrainingWords.Count</span>
+                        @if (IsSpeedRound)
+                        {
+                            <span class="speed-timer @(SpeedRoundTimeLeft <= 10 ? "speed-timer-danger" : "")">
+                                <i class="bi bi-stopwatch me-1"></i>@SpeedRoundTimeLeft с
+                            </span>
+                            <span class="speed-score">
+                                <i class="bi bi-lightning-fill text-warning"></i> @SpeedRoundScore очков
+                            </span>
+                        }
+                        else
+                        {
+                            <span>Слово @(CurrentIndex + 1) из @TrainingWords.Count</span>
+                        }
                         <span class="correct-count">
                             <i class="bi bi-check-circle text-success"></i> @CorrectCount
                         </span>
                     </div>
-                    <div class="progress">
-                        <div class="progress-bar" style="width: @((CurrentIndex + 1) * 100.0 / TrainingWords.Count)%"></div>
-                    </div>
+                    @if (!IsSpeedRound)
+                    {
+                        <div class="progress">
+                            <div class="progress-bar" style="width: @((CurrentIndex + 1) * 100.0 / TrainingWords.Count)%"></div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" style="width: @(SpeedRoundTimeLeft * 100.0 / 60)%"></div>
+                        </div>
+                    }
                     <!-- Индикатор мастерства текущего слова (#10 LEARNING_IMPROVEMENTS) -->
                     <div class="word-mastery-indicator">
                         <span class="mastery-stars" title="Уровень знания: @CurrentWord.KnowledgeLevel">
@@ -398,14 +479,19 @@
                     <!-- Режим карточек -->
                     <div class="flashcard @(IsAnswerRevealed ? "revealed" : "")">
                         <div class="card-front">
-                            <div class="word-dictionary">
-                                <i class="bi bi-book"></i> @CurrentWord.DictionaryName
-                            </div>
+                            @if (!IsExamMode)
+                            {
+                                <div class="word-dictionary">
+                                    <i class="bi bi-book"></i> @CurrentWord.DictionaryName
+                                </div>
+                            }
                             <div class="word-main">@DisplayedWord</div>
-                            @if (!IsReversed && !string.IsNullOrEmpty(CurrentWord.Transcription))
+                            @if (!IsExamMode && !IsReversed && !string.IsNullOrEmpty(CurrentWord.Transcription))
                             {
                                 <div class="word-transcription">@CurrentWord.Transcription</div>
                             }
+                            @if (!IsExamMode || IsAnswerRevealed)
+                            {
                             <div class="audio-group">
                                 <button class="btn-tts" @onclick="SpeakWord" title="Прослушать">
                                     <i class="bi bi-volume-up-fill"></i>
@@ -428,6 +514,7 @@
                                     }
                                 </div>
                             </div>
+                            }
                             @if (!IsAnswerRevealed)
                             {
                                 <button class="btn btn-outline-primary btn-lg mt-4" @onclick="RevealAnswer">
@@ -449,9 +536,66 @@
                                         </button>
                                     </div>
                                 }
+
+                                @* === Персональная заметка (§8.3 LEARNING_IMPROVEMENTS) === *@
+                                <div class="user-note-section">
+                                    @if (IsEditingNote)
+                                    {
+                                        <div class="user-note-editor">
+                                            <textarea class="form-control form-control-sm" rows="2" maxlength="500"
+                                                      placeholder="Мнемоника, ассоциация, заметка..."
+                                                      @bind="EditingNoteText"></textarea>
+                                            <div class="user-note-editor-actions">
+                                                <button class="btn btn-sm btn-primary" @onclick="SaveNote" disabled="@IsSavingNote">
+                                                    @if (IsSavingNote) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                                    <i class="bi bi-check-lg me-1"></i>Сохранить
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary" @onclick="CancelNoteEdit">Отмена</button>
+                                            </div>
+                                        </div>
+                                    }
+                                    else if (!string.IsNullOrEmpty(CurrentWord.UserNote))
+                                    {
+                                        <div class="user-note-display" @onclick="StartNoteEdit">
+                                            <i class="bi bi-sticky me-1"></i>
+                                            <span>@CurrentWord.UserNote</span>
+                                            <button class="btn-note-edit" title="Редактировать заметку">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn-add-note" @onclick="StartNoteEdit" title="Добавить заметку">
+                                            <i class="bi bi-sticky me-1"></i>Добавить заметку
+                                        </button>
+                                    }
+                                </div>
+
+                                @if (CurrentWord.RelatedRuleId.HasValue)
+                                {
+                                    <a href="rules/@CurrentWord.RelatedRuleId" class="btn btn-sm btn-outline-info mt-1" target="_blank" title="Связанное грамматическое правило">
+                                        <i class="bi bi-journal-bookmark me-1"></i>@(CurrentWord.RelatedRuleTitle ?? "Правило")
+                                    </a>
+                                }
                             </div>
 
                             <div class="answer-buttons">
+                                @if (IsSpeedRound)
+                                {
+                                    <button class="btn btn-answer btn-again btn-lg" @onclick="() => SpeedRoundAnswer(false)" title="Клавиша 1">
+                                        <i class="bi bi-x-lg"></i>
+                                        <span>Не знаю</span>
+                                        <small>1</small>
+                                    </button>
+                                    <button class="btn btn-answer btn-good btn-lg" @onclick="() => SpeedRoundAnswer(true)" title="Клавиша 2">
+                                        <i class="bi bi-check-lg"></i>
+                                        <span>Знаю</span>
+                                        <small>2</small>
+                                    </button>
+                                }
+                                else
+                                {
                                 <button class="btn btn-answer btn-again" @onclick="() => SubmitAnswer(ResponseQuality.Again)" title="Клавиша 1">
                                     <i class="bi bi-x-lg"></i>
                                     <span>Не знаю</span>
@@ -472,6 +616,7 @@
                                     <span>Легко</span>
                                     <small>4</small>
                                 </button>
+                                }
                             </div>
                             <div class="keyboard-hints">
                                 <span><kbd>Space</kbd> показать ответ</span>
@@ -618,6 +763,42 @@
                                     </button>
                                 </div>
                             }
+
+                            @* === Персональная заметка (§8.3) — MCQ === *@
+                            <div class="user-note-section">
+                                @if (IsEditingNote)
+                                {
+                                    <div class="user-note-editor">
+                                        <textarea class="form-control form-control-sm" rows="2" maxlength="500"
+                                                  placeholder="Мнемоника, ассоциация, заметка..."
+                                                  @bind="EditingNoteText"></textarea>
+                                        <div class="user-note-editor-actions">
+                                            <button class="btn btn-sm btn-primary" @onclick="SaveNote" disabled="@IsSavingNote">
+                                                @if (IsSavingNote) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                                <i class="bi bi-check-lg me-1"></i>Сохранить
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-secondary" @onclick="CancelNoteEdit">Отмена</button>
+                                        </div>
+                                    </div>
+                                }
+                                else if (!string.IsNullOrEmpty(CurrentWord.UserNote))
+                                {
+                                    <div class="user-note-display" @onclick="StartNoteEdit">
+                                        <i class="bi bi-sticky me-1"></i>
+                                        <span>@CurrentWord.UserNote</span>
+                                        <button class="btn-note-edit" title="Редактировать заметку">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <button class="btn-add-note" @onclick="StartNoteEdit" title="Добавить заметку">
+                                        <i class="bi bi-sticky me-1"></i>Добавить заметку
+                                    </button>
+                                }
+                            </div>
+
                             <button class="btn btn-primary btn-lg mt-3" @onclick="NextMcqWord">
                                 <i class="bi bi-arrow-right me-2"></i>Далее
                             </button>
@@ -903,6 +1084,70 @@
                         }
                     </div>
                 }
+                else if (ActiveExerciseType == "cloze")
+                {
+                    <!-- Режим пропуска (§3.1 LEARNING_IMPROVEMENTS) -->
+                    <div class="typing-card">
+                        <div class="typing-question">
+                            <div class="word-dictionary">
+                                <i class="bi bi-book"></i> @CurrentWord.DictionaryName
+                            </div>
+                            <p class="text-muted mb-2"><i class="bi bi-input-cursor-text me-1"></i>Заполните пропуск в предложении</p>
+                            @if (!string.IsNullOrEmpty(CurrentWord.Translation))
+                            {
+                                <div class="cloze-hint mb-3">
+                                    <span class="badge bg-primary-subtle text-primary px-3 py-2" style="font-size: 1rem;">
+                                        <i class="bi bi-translate me-1"></i> @CurrentWord.Translation
+                                    </span>
+                                </div>
+                            }
+                            <div class="cloze-sentence" style="font-size: 1.15rem; line-height: 1.8; margin-bottom: 1rem;">
+                                @((MarkupString)ClozeSentenceHtml)
+                            </div>
+                        </div>
+
+                        <div class="typing-input">
+                            <input type="text" class="form-control form-control-lg @(ClozeAnswered ? (ClozeWasCorrect ? "is-valid" : "is-invalid") : "")"
+                                   placeholder="Введите пропущенное слово..."
+                                   @bind="ClozeTypedAnswer"
+                                   @bind:event="oninput"
+                                   @onkeypress="HandleClozeKeyPress"
+                                   disabled="@ClozeAnswered" />
+
+                            @if (!ClozeAnswered)
+                            {
+                                <button class="btn btn-primary btn-lg" @onclick="CheckClozeAnswer">
+                                    <i class="bi bi-check-lg me-2"></i>Проверить
+                                </button>
+                            }
+                        </div>
+
+                        @if (ClozeAnswered)
+                        {
+                            <div class="typing-feedback @(ClozeWasCorrect ? "success" : "error")">
+                                @if (ClozeWasCorrect)
+                                {
+                                    <i class="bi bi-check-circle"></i>
+                                    <span>Правильно! <strong>@ClozeCorrectWord</strong></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle"></i>
+                                    <span>Неверно. Правильный ответ: <strong>@ClozeCorrectWord</strong></span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(CurrentWord.Example))
+                            {
+                                <div class="example mt-2">
+                                    <i class="bi bi-chat-quote"></i> @CurrentWord.Example
+                                </div>
+                            }
+                            <button class="btn btn-primary btn-lg mt-3" @onclick="NextClozeWord">
+                                <i class="bi bi-arrow-right me-2"></i>Далее
+                            </button>
+                        }
+                    </div>
+                }
             }
             else
             {
@@ -1047,6 +1292,13 @@ private int MatchingErrors;
 private int MatchingRoundIndex;
 private const int MatchingGroupSize = 5;
 
+// Cloze state (§3.1 LEARNING_IMPROVEMENTS)
+private string ClozeTypedAnswer = "";
+private bool ClozeAnswered;
+private bool ClozeWasCorrect;
+private string ClozeSentenceHtml = "";
+private string ClozeCorrectWord = "";
+
 // Tags state (#9 LEARNING_IMPROVEMENTS)
 private List<string> AvailableTags = new();
 private string? SelectedTag;
@@ -1064,9 +1316,26 @@ private DateTime _wordShownAt;
 // Intra-session Again requeue (§10.4 LEARNING_IMPROVEMENTS)
 private Queue<TrainingWordDto> _againQueue = new();
 
+// User note state (§8.3 LEARNING_IMPROVEMENTS)
+private bool IsEditingNote;
+private bool IsSavingNote;
+private string EditingNoteText = "";
+
 // TTS state
 private double TtsVolume = 0.8;
 private bool ShowVolumeSlider;
+
+// Speed Round state (§3.3 LEARNING_IMPROVEMENTS)
+private bool IsSpeedRound;
+private int SpeedRoundTimeLeft = 60;
+private int SpeedRoundScore;
+private System.Timers.Timer? _speedTimer;
+
+// Exam mode state (§10.1 LEARNING_IMPROVEMENTS)
+private bool IsExamMode;
+
+// Daily challenge state (§5.2 LEARNING_IMPROVEMENTS)
+private DailyChallengeDto? DailyChallenge;
 
 // Results tracking
 private List<string> DifficultWordsList = new();
@@ -1189,6 +1458,7 @@ protected override async Task OnInitializedAsync()
 private async Task LoadDailyPlan()
 {
     DailyPlan = await TrainingService.GetDailyPlanAsync();
+    DailyChallenge = await TrainingService.GetDailyChallengeAsync();
 }
 
 private async Task InstallStarterPack()
@@ -1230,17 +1500,7 @@ private async Task InstallStarterPack()
         StateHasChanged();
 
         var limit = WordLimit > 0 ? WordLimit : 200;
-        TrainingWords = await TrainingService.GetTrainingWordsAsync(mode, limit: limit);
-
-        // Фильтрация по тегу (#9 LEARNING_IMPROVEMENTS)
-        if (!string.IsNullOrEmpty(SelectedTag) && TrainingWords.Count > 0)
-        {
-            TrainingWords = TrainingWords
-                .Where(w => !string.IsNullOrEmpty(w.DictionaryTags) &&
-                    w.DictionaryTags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                        .Any(t => t.Equals(SelectedTag, StringComparison.OrdinalIgnoreCase)))
-                .ToList();
-        }
+        TrainingWords = await TrainingService.GetTrainingWordsAsync(mode, limit: limit, tag: SelectedTag);
 
         if (TrainingWords.Count > 0)
         {
@@ -1265,6 +1525,9 @@ private async Task InstallStarterPack()
 
             PrepareCurrentWord();
             await FocusContainer();
+
+            // §6.4 Proactive mnemonic for new complex words
+            _ = TryLoadProactiveMnemonic();
         }
         else
         {
@@ -1278,8 +1541,12 @@ private async Task InstallStarterPack()
 
     private string PickRandomExerciseType()
     {
-        var types = new[] { "flashcard", "mcq", "typing", "listening", "matching" };
-        return types[_random.Next(types.Length)];
+        var types = new[] { "flashcard", "mcq", "typing", "listening", "matching", "cloze" };
+        // For cloze, need example — fallback if not available
+        var picked = types[_random.Next(types.Length)];
+        if (picked == "cloze" && (CurrentWord == null || string.IsNullOrWhiteSpace(CurrentWord.Example)))
+            picked = "typing"; // fallback
+        return picked;
     }
 
     private string ActiveExerciseType => _isMixedMode ? _activeExerciseType : ExerciseType;
@@ -1303,6 +1570,17 @@ private async Task InstallStarterPack()
         ListeningWasAlmostCorrect = false;
         ListeningTypedAnswer = "";
 
+        // Reset cloze state (§3.1)
+        ClozeAnswered = false;
+        ClozeWasCorrect = false;
+        ClozeTypedAnswer = "";
+        ClozeSentenceHtml = "";
+        ClozeCorrectWord = "";
+
+        // Reset note editor state (§8.3)
+        IsEditingNote = false;
+        EditingNoteText = "";
+
         // Clear AI state
         AiExplanation = null;
         AiTip = null;
@@ -1310,11 +1588,12 @@ private async Task InstallStarterPack()
         IsLoadingAiExplanation = false;
         IsLoadingMnemonic = false;
 
-        // Apply translation direction
+        // Apply translation direction (§3.4 LEARNING_IMPROVEMENTS: auto-raise)
         IsReversed = TranslationDirection switch
         {
             "reverse" => true,
             "random" => _random.Next(2) == 0,
+            "auto" => CurrentWord != null && CurrentWord.KnowledgeLevel >= 3,
             _ => false
         };
 
@@ -1339,6 +1618,24 @@ private async Task InstallStarterPack()
         if (effectiveType == "matching")
         {
             PrepareMatchingRound();
+        }
+
+        // Prepare cloze mode (§3.1 LEARNING_IMPROVEMENTS)
+        if (effectiveType == "cloze" && CurrentWord != null)
+        {
+            PrepareCloze();
+            // If no example available, fall back to typing
+            if (string.IsNullOrEmpty(ClozeSentenceHtml))
+            {
+                if (_isMixedMode)
+                    _activeExerciseType = "typing";
+            }
+        }
+
+        // Speed Round: auto-reveal flashcard (§3.3 LEARNING_IMPROVEMENTS)
+        if (IsSpeedRound)
+        {
+            IsAnswerRevealed = true;
         }
     }
 
@@ -1400,8 +1697,8 @@ private async Task InstallStarterPack()
 
         var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
 
-        // Отправляем результат на сервер с временем ответа
-        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs);
+        // Отправляем результат на сервер с временем ответа и режимом упражнения
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, ActiveExerciseType);
 
         // Считаем правильные ответы
         if (quality >= ResponseQuality.Good)
@@ -1435,7 +1732,7 @@ private async Task InstallStarterPack()
 
         // Update progress
         var quality = McqWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
-        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs);
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "mcq");
 
         if (McqWasCorrect)
             {
@@ -1503,7 +1800,7 @@ private async Task InstallStarterPack()
         var quality = TypingWasCorrect ? ResponseQuality.Good 
                     : TypingWasAlmostCorrect ? ResponseQuality.Hard 
                     : ResponseQuality.Again;
-        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs);
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "typing");
 
         if (TypingWasCorrect || TypingWasAlmostCorrect)
         {
@@ -1570,7 +1867,7 @@ private async Task InstallStarterPack()
         var quality = ListeningWasCorrect ? ResponseQuality.Good
                     : ListeningWasAlmostCorrect ? ResponseQuality.Hard
                     : ResponseQuality.Again;
-        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs);
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "listening");
 
         if (ListeningWasCorrect || ListeningWasAlmostCorrect)
         {
@@ -1608,6 +1905,7 @@ private async Task InstallStarterPack()
         {
             CurrentWord = TrainingWords[CurrentIndex];
             PrepareCurrentWord();
+            _ = TryLoadProactiveMnemonic();
         }
         else if (_againQueue.Count > 0)
         {
@@ -1684,6 +1982,12 @@ private async Task InstallStarterPack()
 
     private async Task BackToPlan()
     {
+        // Stop speed timer if active
+        _speedTimer?.Stop();
+        _speedTimer?.Dispose();
+        _speedTimer = null;
+        IsSpeedRound = false;
+
         await LoadDailyPlan();
         IsTrainingActive = false;
         CurrentWord = null;
@@ -1727,12 +2031,128 @@ private async Task InstallStarterPack()
         }
     }
 
+    // === User notes (§8.3 LEARNING_IMPROVEMENTS) ===
+
+    private void StartNoteEdit()
+    {
+        EditingNoteText = CurrentWord?.UserNote ?? "";
+        IsEditingNote = true;
+    }
+
+    private void CancelNoteEdit()
+    {
+        IsEditingNote = false;
+        EditingNoteText = "";
+    }
+
+    private async Task SaveNote()
+    {
+        if (CurrentWord == null) return;
+        IsSavingNote = true;
+        try
+        {
+            var note = string.IsNullOrWhiteSpace(EditingNoteText) ? null : EditingNoteText.Trim();
+            var success = await TrainingService.SaveUserNoteAsync(CurrentWord.WordId, note);
+            if (success)
+            {
+                CurrentWord.UserNote = note;
+                IsEditingNote = false;
+            }
+        }
+        finally
+        {
+            IsSavingNote = false;
+        }
+    }
+
     private async Task SpeakWord()
     {
         if (CurrentWord != null)
         {
             await JS.InvokeVoidAsync("speakText", CurrentWord.OriginalWord, "en-US", TtsVolume);
         }
+    }
+
+    // === Cloze mode (§3.1 LEARNING_IMPROVEMENTS) ===
+
+    private void PrepareCloze()
+    {
+        if (CurrentWord == null || string.IsNullOrWhiteSpace(CurrentWord.Example))
+        {
+            ClozeSentenceHtml = "";
+            return;
+        }
+
+        var example = CurrentWord.Example;
+        var word = CurrentWord.OriginalWord;
+
+        // Find the target word in the example (case-insensitive)
+        var idx = example.IndexOf(word, StringComparison.OrdinalIgnoreCase);
+        if (idx >= 0)
+        {
+            ClozeCorrectWord = example.Substring(idx, word.Length);
+            var blank = new string('_', Math.Max(word.Length, 3));
+            ClozeSentenceHtml = System.Net.WebUtility.HtmlEncode(example[..idx])
+                + $"<strong style=\"color: var(--bs-primary); border-bottom: 2px dashed var(--bs-primary); padding: 0 4px;\">{blank}</strong>"
+                + System.Net.WebUtility.HtmlEncode(example[(idx + word.Length)..]);
+        }
+        else
+        {
+            // Word not found in example — show example with blank at end
+            ClozeCorrectWord = word;
+            var blank = new string('_', Math.Max(word.Length, 3));
+            ClozeSentenceHtml = System.Net.WebUtility.HtmlEncode(example) 
+                + $" (<strong style=\"color: var(--bs-primary); border-bottom: 2px dashed var(--bs-primary); padding: 0 4px;\">{blank}</strong>)";
+        }
+    }
+
+    private async Task HandleClozeKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !ClozeAnswered)
+        {
+            await CheckClozeAnswer();
+        }
+    }
+
+    private async Task CheckClozeAnswer()
+    {
+        if (ClozeAnswered || CurrentWord == null) return;
+
+        ClozeAnswered = true;
+
+        var userAnswer = ClozeTypedAnswer.Trim().ToLowerInvariant();
+        var correctAnswer = ClozeCorrectWord.Trim().ToLowerInvariant();
+
+        ClozeWasCorrect = userAnswer == correctAnswer;
+
+        // Also accept base form if the example uses conjugation
+        if (!ClozeWasCorrect)
+        {
+            var baseWord = CurrentWord.OriginalWord.Trim().ToLowerInvariant();
+            ClozeWasCorrect = userAnswer == baseWord;
+        }
+
+        var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
+        var quality = ClozeWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "cloze");
+
+        if (ClozeWasCorrect)
+        {
+            CorrectCount++;
+            SessionCorrectCount++;
+        }
+        else
+        {
+            SessionWrongCount++;
+            if (!DifficultWordsList.Contains(CurrentWord.OriginalWord))
+                DifficultWordsList.Add(CurrentWord.OriginalWord);
+            _againQueue.Enqueue(CurrentWord);
+        }
+    }
+
+    private async Task NextClozeWord()
+    {
+        await MoveToNextWord();
     }
 
     private async Task SpeakExample()
@@ -1839,7 +2259,7 @@ private async Task InstallStarterPack()
         {
             MatchedPairIds.Add(leftWord.WordId);
             MatchedTranslations.Add(MatchingSelectedRight);
-            await TrainingService.UpdateProgressAsync(leftWord.WordId, ResponseQuality.Good);
+            await TrainingService.UpdateProgressAsync(leftWord.WordId, ResponseQuality.Good, exerciseMode: "matching");
             CorrectCount++;
             SessionCorrectCount++;
         }
@@ -1848,7 +2268,7 @@ private async Task InstallStarterPack()
             MatchingErrors++;
             MatchingWrongLeft = MatchingSelectedLeft;
             MatchingWrongRight = MatchingSelectedRight;
-            await TrainingService.UpdateProgressAsync(leftWord.WordId, ResponseQuality.Again);
+            await TrainingService.UpdateProgressAsync(leftWord.WordId, ResponseQuality.Again, exerciseMode: "matching");
             SessionWrongCount++;
             if (!DifficultWordsList.Contains(leftWord.OriginalWord))
                 DifficultWordsList.Add(leftWord.OriginalWord);
@@ -1984,4 +2404,105 @@ private async Task InstallStarterPack()
         4 => "green",
         _ => "emerald"
     };
+
+    // === Speed Round (§3.3 LEARNING_IMPROVEMENTS) ===
+
+    private async Task StartSpeedRound()
+    {
+        IsSpeedRound = true;
+        SpeedRoundScore = 0;
+        SpeedRoundTimeLeft = 60;
+        ExerciseType = "flashcard";
+        _isMixedMode = false;
+        _activeExerciseType = "flashcard";
+
+        await StartTraining("mixed");
+
+        _speedTimer = new System.Timers.Timer(1000);
+        _speedTimer.Elapsed += async (_, _) =>
+        {
+            SpeedRoundTimeLeft--;
+            if (SpeedRoundTimeLeft <= 0)
+            {
+                _speedTimer?.Stop();
+                _speedTimer?.Dispose();
+                _speedTimer = null;
+                await InvokeAsync(() => EndSpeedRound());
+            }
+            else
+            {
+                await InvokeAsync(StateHasChanged);
+            }
+        };
+        _speedTimer.Start();
+    }
+
+    private async Task SpeedRoundAnswer(bool known)
+    {
+        if (CurrentWord == null) return;
+
+        var quality = known ? ResponseQuality.Good : ResponseQuality.Again;
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, exerciseMode: "flashcard");
+
+        if (known)
+        {
+            SpeedRoundScore += 10;
+            CorrectCount++;
+            SessionCorrectCount++;
+        }
+        else
+        {
+            SessionWrongCount++;
+        }
+
+        // Auto-reveal and advance immediately
+        IsAnswerRevealed = false;
+        await MoveToNextWord();
+    }
+
+    private async Task EndSpeedRound()
+    {
+        _speedTimer?.Stop();
+        _speedTimer?.Dispose();
+        _speedTimer = null;
+
+        // Force finish the session
+        CurrentWord = null;
+        var finalElapsed = DateTime.UtcNow - SessionStartedAt;
+        _sessionDurationSnapshot = "60с";
+        await SaveTrainingSessionAsync();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _speedTimer?.Stop();
+        _speedTimer?.Dispose();
+    }
+
+    // === Quick Session (§7.3 LEARNING_IMPROVEMENTS) ===
+
+    private async Task StartQuickSession()
+    {
+        WordLimit = 5;
+        ExerciseType = "flashcard";
+        _isMixedMode = false;
+        _activeExerciseType = "flashcard";
+        await StartTraining("mixed");
+    }
+
+    // === Proactive Mnemonic (§6.4 LEARNING_IMPROVEMENTS) ===
+
+    private async Task TryLoadProactiveMnemonic()
+    {
+        if (CurrentWord == null || IsExamMode || IsSpeedRound) return;
+
+        // Проактивная мнемоника: при первом показе слова (TotalAttempts == 0)
+        // и если слово сложное (>= 7 букв или есть транскрипция)
+        if (CurrentWord.TotalAttempts == 0 &&
+            (CurrentWord.OriginalWord.Length >= 7 || !string.IsNullOrEmpty(CurrentWord.Transcription)))
+        {
+            await LoadMnemonic();
+        }
+    }
 }

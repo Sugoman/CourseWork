@@ -93,35 +93,129 @@
                     </div>
                 </div>
             }
+
+            @if (Stats.TotalXp > 0)
+            {
+                <div class="stat-card stat-card-xp">
+                    <div class="stat-icon"><i class="bi bi-star-fill"></i></div>
+                    <div class="stat-content">
+                        <div class="stat-value">Ур. @Stats.Level</div>
+                        <div class="stat-label">@Stats.TotalXp XP</div>
+                    </div>
+                    <div class="stat-badge">
+                        <div class="progress" style="height: 6px; width: 80px;">
+                            @{
+                                var xpProgress = Stats.XpForNextLevel > Stats.XpForCurrentLevel
+                                    ? (double)(Stats.TotalXp - Stats.XpForCurrentLevel) / (Stats.XpForNextLevel - Stats.XpForCurrentLevel) * 100
+                                    : 0;
+                            }
+                            <div class="progress-bar bg-warning" style="width: @xpProgress.ToString("F0")%"></div>
+                        </div>
+                        <small class="text-muted">@(Stats.XpForNextLevel - Stats.TotalXp) до Ур.@(Stats.Level + 1)</small>
+                    </div>
+                </div>
+            }
         </div>
 
         <!-- Графики -->
         <div class="charts-grid">
-            <!-- График активности -->
-            <div class="chart-card chart-card-wide">
-                <div class="chart-header">
-                    <h3><i class="bi bi-bar-chart-fill me-2"></i>Активность за период</h3>
-                </div>
-                <div class="chart-body">
-                    <div class="activity-bars">
-                        @foreach (var day in Stats.DailyActivity.TakeLast(14))
-                        {
-                            var maxReviewed = Stats.DailyActivity.Max(d => d.WordsReviewed);
-                            var heightPercent = maxReviewed > 0 ? (day.WordsReviewed * 100.0 / maxReviewed) : 0;
-                            <div class="activity-bar-container">
-                                <div class="activity-bar" style="height: @heightPercent%" 
-                                     title="@day.Date.ToString("dd.MM"): @day.WordsReviewed слов">
-                                    @if (day.WordsReviewed > 0)
+            <!-- Календарь активности (GitHub-style heatmap) -->
+            @if (Stats.HeatmapActivity.Any())
+            {
+                <div class="chart-card chart-card-wide">
+                    <div class="chart-header">
+                        <h3><i class="bi bi-calendar3 me-2"></i>Календарь активности</h3>
+                    </div>
+                    <div class="chart-body">
+                        <div class="heatmap-container">
+                            @{
+                                var totalWeeks = 52;
+                                var today = DateTime.UtcNow.Date;
+                                var todayWeekDay = ((int)today.DayOfWeek + 6) % 7; // Mon=0
+                                var startDate = today.AddDays(-(totalWeeks - 1) * 7 - todayWeekDay);
+                                var heatmapDays = Enumerable.Range(0, totalWeeks * 7 + todayWeekDay + 1)
+                                    .Select(i => startDate.AddDays(i))
+                                    .Where(d => d <= today)
+                                    .ToList();
+                                var activityLookup = Stats.HeatmapActivity.ToDictionary(d => d.Date.Date, d => d.WordsReviewed);
+                                var maxActivity = Stats.HeatmapActivity.Where(d => d.WordsReviewed > 0).Select(d => d.WordsReviewed).DefaultIfEmpty(1).Max();
+
+                                // Group days into weeks (columns)
+                                var weeks = new List<List<(DateTime date, int weekDay)>>();
+                                var currentWeek = new List<(DateTime date, int weekDay)>();
+                                foreach (var day in heatmapDays)
+                                {
+                                    var wd = ((int)day.DayOfWeek + 6) % 7;
+                                    if (wd == 0 && currentWeek.Count > 0)
                                     {
-                                        <span class="bar-value">@day.WordsReviewed</span>
+                                        weeks.Add(currentWeek);
+                                        currentWeek = new List<(DateTime, int)>();
                                     }
-                                </div>
-                                <span class="bar-label">@day.Date.ToString("dd.MM")</span>
+                                    currentWeek.Add((day, wd));
+                                }
+                                if (currentWeek.Count > 0) weeks.Add(currentWeek);
+
+                                // Month labels: find the first week where each month starts
+                                var monthLabels = new Dictionary<int, string>();
+                                var monthNames = new[] { "", "Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек" };
+                                var lastMonth = -1;
+                                for (var wi = 0; wi < weeks.Count; wi++)
+                                {
+                                    var firstDay = weeks[wi].First().date;
+                                    if (firstDay.Month != lastMonth)
+                                    {
+                                        monthLabels[wi] = monthNames[firstDay.Month];
+                                        lastMonth = firstDay.Month;
+                                    }
+                                }
+                            }
+                            <div class="heatmap-graph" style="grid-template-columns: 28px repeat(@weeks.Count, 1fr);">
+                                <!-- Month headers -->
+                                <div class="heatmap-corner"></div>
+                                @for (var wi = 0; wi < weeks.Count; wi++)
+                                {
+                                    <div class="heatmap-month-label">
+                                        @if (monthLabels.ContainsKey(wi))
+                                        {
+                                            @monthLabels[wi]
+                                        }
+                                    </div>
+                                }
+                                <!-- Rows = weekdays -->
+                                @for (int wd = 0; wd < 7; wd++)
+                                {
+                                    <div class="heatmap-day-label">@(wd switch { 0 => "Пн", 1 => "", 2 => "Ср", 3 => "", 4 => "Пт", 5 => "", _ => "Вс" })</div>
+                                    @for (var wi = 0; wi < weeks.Count; wi++)
+                                    {
+                                        var cell = weeks[wi].FirstOrDefault(d => d.weekDay == wd);
+                                        if (cell.date != default)
+                                        {
+                                            activityLookup.TryGetValue(cell.date, out var count);
+                                            var level = maxActivity > 0 ? (int)Math.Ceiling((double)count / maxActivity * 4) : 0;
+                                            if (count == 0) level = 0;
+                                            <div class="heatmap-cell heatmap-level-@level"
+                                                 title="@cell.date.ToString("dd.MM.yyyy"): @count слов"></div>
+                                        }
+                                        else
+                                        {
+                                            <div class="heatmap-cell heatmap-empty"></div>
+                                        }
+                                    }
+                                }
                             </div>
-                        }
+                            <div class="heatmap-legend">
+                                <span class="text-muted small">Меньше</span>
+                                <div class="heatmap-cell heatmap-level-0"></div>
+                                <div class="heatmap-cell heatmap-level-1"></div>
+                                <div class="heatmap-cell heatmap-level-2"></div>
+                                <div class="heatmap-cell heatmap-level-3"></div>
+                                <div class="heatmap-cell heatmap-level-4"></div>
+                                <span class="text-muted small">Больше</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
 
             <!-- Распределение знаний -->
             <div class="chart-card">
@@ -172,6 +266,139 @@
             </div>
         </div>
 
+        @* === Аналитика (§9 LEARNING_IMPROVEMENTS) === *@
+
+        @* §9.3 Сравнение недель *@
+        @if (Stats.WeekOverWeek != null && (Stats.WeekOverWeek.CurrentWeekWords > 0 || Stats.WeekOverWeek.PreviousWeekWords > 0))
+        {
+            <div class="section-card week-comparison-card">
+                <div class="section-header">
+                    <h3><i class="bi bi-arrow-left-right me-2"></i>Эта неделя vs прошлая</h3>
+                    @if (Stats.WeekOverWeek.IsImproving)
+                    {
+                        <span class="badge bg-success-subtle text-success"><i class="bi bi-graph-up-arrow me-1"></i>Рост</span>
+                    }
+                    else if (Stats.WeekOverWeek.WordsDifference < 0)
+                    {
+                        <span class="badge bg-danger-subtle text-danger"><i class="bi bi-graph-down-arrow me-1"></i>Спад</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary-subtle text-secondary"><i class="bi bi-dash me-1"></i>Стабильно</span>
+                    }
+                </div>
+                <div class="week-comparison-grid">
+                    <div class="week-metric">
+                        <div class="week-metric-label">Слов повторено</div>
+                        <div class="week-metric-values">
+                            <span class="week-current">@Stats.WeekOverWeek.CurrentWeekWords</span>
+                            <span class="week-vs">vs</span>
+                            <span class="week-previous">@Stats.WeekOverWeek.PreviousWeekWords</span>
+                        </div>
+                        <div class="week-diff @(Stats.WeekOverWeek.WordsDifference >= 0 ? "positive" : "negative")">
+                            @(Stats.WeekOverWeek.WordsDifference >= 0 ? "+" : "")@Stats.WeekOverWeek.WordsDifference
+                            (@(Stats.WeekOverWeek.PercentChange >= 0 ? "+" : "")@Stats.WeekOverWeek.PercentChange.ToString("F0")%)
+                        </div>
+                    </div>
+                    <div class="week-metric">
+                        <div class="week-metric-label">Дней активности</div>
+                        <div class="week-metric-values">
+                            <span class="week-current">@Stats.WeekOverWeek.CurrentWeekDaysActive</span>
+                            <span class="week-vs">vs</span>
+                            <span class="week-previous">@Stats.WeekOverWeek.PreviousWeekDaysActive</span>
+                        </div>
+                    </div>
+                    <div class="week-metric">
+                        <div class="week-metric-label">Точность</div>
+                        <div class="week-metric-values">
+                            <span class="week-current">@Stats.WeekOverWeek.CurrentWeekAccuracy.ToString("F0")%</span>
+                            <span class="week-vs">vs</span>
+                            <span class="week-previous">@Stats.WeekOverWeek.PreviousWeekAccuracy.ToString("F0")%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* §9.2 Оптимальное время *@
+        @if (Stats.OptimalTime != null)
+        {
+            <div class="section-card optimal-time-card">
+                <div class="section-header">
+                    <h3><i class="bi bi-clock-fill me-2"></i>Оптимальное время</h3>
+                </div>
+                <div class="optimal-time-content">
+                    <div class="optimal-best">
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        <div>
+                            <strong>Лучшее время:</strong> @Stats.OptimalTime.BestHour:00–@(Stats.OptimalTime.BestHour + 1):00
+                            <div class="text-muted small">Точность @Stats.OptimalTime.BestAccuracy%</div>
+                        </div>
+                    </div>
+                    <div class="optimal-worst">
+                        <i class="bi bi-exclamation-circle-fill text-warning"></i>
+                        <div>
+                            <strong>Худшее время:</strong> @Stats.OptimalTime.WorstHour:00–@(Stats.OptimalTime.WorstHour + 1):00
+                            <div class="text-muted small">Точность @Stats.OptimalTime.WorstAccuracy%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* §9.1 Прогноз завершения *@
+        @if (Stats.DictionaryForecasts.Any())
+        {
+            <div class="section-card forecast-card">
+                <div class="section-header">
+                    <h3><i class="bi bi-calendar-event me-2"></i>Прогноз завершения</h3>
+                </div>
+                <div class="forecast-list">
+                    @foreach (var forecast in Stats.DictionaryForecasts.Take(5))
+                    {
+                        <div class="forecast-row">
+                            <div class="forecast-info">
+                                <span class="forecast-name">@forecast.DictionaryName</span>
+                                <span class="forecast-progress text-muted small">
+                                    @forecast.LearnedWords / @forecast.TotalWords слов
+                                </span>
+                            </div>
+                            <div class="forecast-estimate">
+                                @if (forecast.EstimatedDaysToComplete.HasValue)
+                                {
+                                    <span class="forecast-days">
+                                        @if (forecast.EstimatedDaysToComplete.Value <= 7)
+                                        {
+                                            <span class="text-success fw-semibold">~@forecast.EstimatedDaysToComplete дн.</span>
+                                        }
+                                        else if (forecast.EstimatedDaysToComplete.Value <= 30)
+                                        {
+                                            <span class="text-primary fw-semibold">~@forecast.EstimatedDaysToComplete дн.</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-warning fw-semibold">~@forecast.EstimatedDaysToComplete дн.</span>
+                                        }
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Нет данных о темпе</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                    @if (Stats.DictionaryForecasts.All(f => f.WordsPerDay > 0))
+                    {
+                        <div class="forecast-note text-muted small mt-2">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Темп: ~@Stats.DictionaryForecasts.First().WordsPerDay слов/день (на основе последней недели)
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
         <!-- Прогресс по словарям -->
         @if (Stats.DictionaryStatistics.Any())
         {
@@ -201,6 +428,15 @@
                                 <i class="bi bi-bullseye"></i>
                                 @dict.Accuracy.ToString("P0")
                             </div>
+                            @if (dict.RetentionRate.HasValue)
+                            {
+                                <div class="dictionary-retention" title="Retention rate: доля запомненных слов спустя 30+ дней">
+                                    <i class="bi bi-memory"></i>
+                                    <span class="@(dict.RetentionRate >= 80 ? "text-success" : dict.RetentionRate >= 60 ? "text-warning" : "text-danger")">
+                                        @dict.RetentionRate.Value.ToString("F0")%
+                                    </span>
+                                </div>
+                            }
                         </div>
                     }
                 </div>

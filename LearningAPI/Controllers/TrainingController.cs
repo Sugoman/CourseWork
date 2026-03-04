@@ -45,13 +45,17 @@ public class TrainingController : BaseApiController
         try
         {
             // --- 1. Слова к повторению — исключаем замороженные, сортируем по overdue factor (§2.3) ---
-            // OrderBy NextReview ASC = наиболее просроченные (старые даты) первыми
-            var reviewWords = await _context.LearningProgresses
+            // Overdue factor = (now - NextReview) / max(IntervalDays, 1) — чем выше, тем срочнее
+            var reviewCandidates = await _context.LearningProgresses
+                .Include(p => p.Word).ThenInclude(w => w.Dictionary)
                 .Where(p => p.UserId == userId && p.NextReview <= now && p.Word != null && !p.IsSuspended)
-                .OrderBy(p => p.NextReview)
+                .ToListAsync();
+
+            var reviewWords = reviewCandidates
+                .OrderByDescending(p => (now - p.NextReview).TotalDays / Math.Max(p.IntervalDays, 1.0))
                 .Take(reviewLimit)
                 .Select(p => MapToTrainingWordProjection(p))
-                .ToListAsync();
+                .ToList();
 
             // --- 2. Сложные слова (проекция, без Include) — исключаем замороженные ---
             var difficultWords = await _context.LearningProgresses
@@ -167,6 +171,7 @@ public class TrainingController : BaseApiController
     public async Task<ActionResult<List<TrainingWordDto>>> GetTrainingWords(
         [FromQuery] string mode = "mixed",
         [FromQuery] int? dictionaryId = null,
+        [FromQuery] string? tag = null,
         [FromQuery] int limit = 20,
         CancellationToken ct = default)
     {
@@ -178,11 +183,19 @@ public class TrainingController : BaseApiController
             IQueryable<LearningProgress> query = _context.LearningProgresses
                 .Where(p => p.UserId == userId && !p.IsSuspended)
                 .Include(p => p.Word)
-                    .ThenInclude(w => w.Dictionary);
+                    .ThenInclude(w => w.Dictionary)
+                .Include(p => p.Word)
+                    .ThenInclude(w => w.RelatedRule);
 
             if (dictionaryId.HasValue)
             {
                 query = query.Where(p => p.Word.DictionaryId == dictionaryId.Value);
+            }
+
+            // §4.2 Серверная фильтрация по тегам — кросс-словарные тематические сессии
+            if (!string.IsNullOrWhiteSpace(tag))
+            {
+                query = query.Where(p => p.Word.Dictionary != null && p.Word.Dictionary.Tags != null && p.Word.Dictionary.Tags.Contains(tag));
             }
 
             List<TrainingWordDto> result;
@@ -226,6 +239,11 @@ public class TrainingController : BaseApiController
                         newWordsQuery = newWordsQuery.Where(w => w.DictionaryId == dictionaryId.Value);
                     }
 
+                    if (!string.IsNullOrWhiteSpace(tag))
+                    {
+                        newWordsQuery = newWordsQuery.Where(w => w.Dictionary != null && w.Dictionary.Tags != null && w.Dictionary.Tags.Contains(tag));
+                    }
+
                     result = await newWordsQuery
                         .Take(limit)
                         .Select(w => new TrainingWordDto
@@ -240,7 +258,9 @@ public class TrainingController : BaseApiController
                             DictionaryTags = w.Dictionary != null ? w.Dictionary.Tags : null,
                             KnowledgeLevel = 0,
                             TotalAttempts = 0,
-                            CorrectAnswers = 0
+                            CorrectAnswers = 0,
+                            RelatedRuleId = w.RelatedRuleId,
+                            RelatedRuleTitle = w.RelatedRule != null ? w.RelatedRule.Title : null
                         })
                         .ToListAsync();
                     break;
@@ -270,6 +290,11 @@ public class TrainingController : BaseApiController
                     if (dictionaryId.HasValue)
                     {
                         newWordsForMixed = newWordsForMixed.Where(w => w.DictionaryId == dictionaryId.Value);
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(tag))
+                    {
+                        newWordsForMixed = newWordsForMixed.Where(w => w.Dictionary != null && w.Dictionary.Tags != null && w.Dictionary.Tags.Contains(tag));
                     }
 
                     var newItems = await newWordsForMixed
@@ -304,6 +329,88 @@ public class TrainingController : BaseApiController
         {
             _logger.LogError(ex, "Error getting training words for User={UserId}", userId);
             return StatusCode(500, "Произошла ошибка при получении слов для тренировки.");
+        }
+    }
+
+    /// <summary>
+    /// Получить ежедневный челлендж пользователя (§5.2 LEARNING_IMPROVEMENTS)
+    /// </summary>
+    [HttpGet("daily-challenge")]
+    public async Task<ActionResult<DailyChallengeDto>> GetDailyChallenge(CancellationToken ct = default)
+    {
+        var userId = GetUserId();
+        var today = DateTime.UtcNow.Date;
+
+        try
+        {
+            // Детерминированный выбор челленджа из seed = дата
+            var seed = today.Year * 10000 + today.Month * 100 + today.Day;
+            var rng = new Random(seed);
+
+            var challenges = new (string id, string title, string desc, string icon, int target, int xp)[]
+            {
+                ("words_5_new", "Первопроходец", "Изучите 5 новых слов", "🆕", 5, 30),
+                ("streak_correct_10", "Безупречность", "Ответьте на 10 слов подряд без ошибок", "🎯", 10, 50),
+                ("review_20", "Повторение — мать учения", "Повторите 20 слов", "🔄", 20, 25),
+                ("time_5min", "Пятиминутка", "Занимайтесь хотя бы 5 минут", "⏱️", 5, 20),
+                ("words_today_15", "Марафонец", "Пройдите 15 слов за сегодня", "🏃", 15, 35),
+                ("accuracy_80", "Снайпер", "Достигните точности 80%+ за сессию", "🎯", 80, 40),
+            };
+
+            var challenge = challenges[rng.Next(challenges.Length)];
+
+            // Подсчёт текущего прогресса
+            int currentValue = 0;
+            switch (challenge.id)
+            {
+                case "words_5_new":
+                    // Новые слова сегодня = прогрессы созданные сегодня с KnowledgeLevel == 0 или 1
+                    currentValue = await _context.LearningProgresses
+                        .CountAsync(p => p.UserId == userId && p.LastPracticed >= today && p.TotalAttempts <= 1, ct);
+                    break;
+                case "review_20":
+                case "words_today_15":
+                    currentValue = await _context.LearningProgresses
+                        .CountAsync(p => p.UserId == userId && p.LastPracticed >= today, ct);
+                    break;
+                case "streak_correct_10":
+                    // Approximation: correct answers today from sessions
+                    var todaySessions = await _context.TrainingSessions
+                        .Where(s => s.UserId == userId && s.StartedAt >= today)
+                        .ToListAsync(ct);
+                    currentValue = todaySessions.Sum(s => s.CorrectAnswers);
+                    break;
+                case "time_5min":
+                    var todayTimeSessions = await _context.TrainingSessions
+                        .Where(s => s.UserId == userId && s.StartedAt >= today)
+                        .ToListAsync(ct);
+                    var todayTimeSeconds = todayTimeSessions.Sum(s => (int)(s.CompletedAt - s.StartedAt).TotalSeconds);
+                    currentValue = todayTimeSeconds / 60; // minutes
+                    break;
+                case "accuracy_80":
+                    var sessionsToday = await _context.TrainingSessions
+                        .Where(s => s.UserId == userId && s.StartedAt >= today)
+                        .ToListAsync(ct);
+                    var totalAns = sessionsToday.Sum(s => s.CorrectAnswers + s.WrongAnswers);
+                    currentValue = totalAns > 0 ? (int)Math.Round((double)sessionsToday.Sum(s => s.CorrectAnswers) / totalAns * 100) : 0;
+                    break;
+            }
+
+            return Ok(new DailyChallengeDto
+            {
+                Id = challenge.id,
+                Title = challenge.title,
+                Description = challenge.desc,
+                Icon = challenge.icon,
+                TargetValue = challenge.target,
+                CurrentValue = Math.Min(currentValue, challenge.target),
+                XpReward = challenge.xp
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting daily challenge for User={UserId}", userId);
+            return StatusCode(500, "Ошибка при получении ежедневного челленджа.");
         }
     }
 
@@ -446,7 +553,10 @@ public class TrainingController : BaseApiController
             TotalAttempts = p.TotalAttempts,
             CorrectAnswers = p.CorrectAnswers,
             LapseCount = p.LapseCount,
-            IsLeech = p.IsSuspended
+            IsLeech = p.IsSuspended,
+            UserNote = p.UserNote,
+            RelatedRuleId = p.Word?.RelatedRuleId,
+            RelatedRuleTitle = p.Word?.RelatedRule?.Title
         };
     }
 
@@ -467,7 +577,10 @@ public class TrainingController : BaseApiController
             TotalAttempts = p.TotalAttempts,
             CorrectAnswers = p.CorrectAnswers,
             LapseCount = p.LapseCount,
-            IsLeech = p.IsSuspended
+            IsLeech = p.IsSuspended,
+            UserNote = p.UserNote,
+            RelatedRuleId = p.Word?.RelatedRuleId,
+            RelatedRuleTitle = p.Word?.RelatedRule?.Title
         };
     }
 }

@@ -249,6 +249,10 @@ namespace LearningTrainerShared.Migrations
                     b.Property<int>("TotalAttempts")
                         .HasColumnType("int");
 
+                    b.Property<string>("UserNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
@@ -577,6 +581,9 @@ namespace LearningTrainerShared.Migrations
                     b.Property<int>("TotalSessions")
                         .HasColumnType("int");
 
+                    b.Property<long>("TotalXp")
+                        .HasColumnType("bigint");
+
                     b.HasKey("UserId");
 
                     b.ToTable("UserStats");
@@ -606,6 +613,9 @@ namespace LearningTrainerShared.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int?>("RelatedRuleId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Transcription")
                         .HasColumnType("nvarchar(max)");
 
@@ -620,6 +630,8 @@ namespace LearningTrainerShared.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DictionaryId");
+
+                    b.HasIndex("RelatedRuleId");
 
                     b.HasIndex("UserId");
 
@@ -803,6 +815,11 @@ namespace LearningTrainerShared.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("LearningTrainerShared.Models.Rule", "RelatedRule")
+                        .WithMany()
+                        .HasForeignKey("RelatedRuleId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("LearningTrainerShared.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -810,6 +827,8 @@ namespace LearningTrainerShared.Migrations
                         .IsRequired();
 
                     b.Navigation("Dictionary");
+
+                    b.Navigation("RelatedRule");
 
                     b.Navigation("User");
                 });

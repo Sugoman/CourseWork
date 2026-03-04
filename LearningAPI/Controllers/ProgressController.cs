@@ -78,6 +78,13 @@ namespace LearningAPI.Controllers
                 _logger.LogInformation("Progress updated to '{Quality}' for User={UserId}, Word={WordId}",
                     request.Quality, userId, request.WordId);
 
+                // §5.1 LEARNING_IMPROVEMENTS: XP grant for correct answers
+                if (request.Quality >= ResponseQuality.Hard)
+                {
+                    var xp = CalculateXp(request.Quality, request.ExerciseMode);
+                    await GrantXpAsync(userId, xp, ct);
+                }
+
                 await _context.SaveChangesAsync(ct);
                 _logger.LogInformation("Progress successfully updated for User={UserId}, Word={WordId}", userId, request.WordId);
 
@@ -299,17 +306,129 @@ namespace LearningAPI.Controllers
                     TotalAttempts = p.TotalAttempts,
                     CorrectAnswers = p.CorrectAnswers,
                     LapseCount = p.LapseCount,
-                    IsLeech = true
+                    IsLeech = true,
+                    UserNote = p.UserNote
                 })
                 .ToListAsync(ct);
 
             return Ok(leeches);
         }
 
+        // PUT /api/progress/note/{wordId}
+        /// <summary>
+        /// Сохранить или обновить персональную заметку к слову (§8.3 LEARNING_IMPROVEMENTS)
+        /// </summary>
+        [HttpPut("note/{wordId:int}")]
+        public async Task<IActionResult> SaveUserNote(int wordId, [FromBody] SaveNoteRequest request, CancellationToken ct = default)
+        {
+            var userId = GetUserId();
+
+            var progress = await _context.LearningProgresses
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.WordId == wordId, ct);
+
+            if (progress == null)
+            {
+                // Создаём запись прогресса, если её нет
+                var wordExists = await _context.Words.AnyAsync(w => w.Id == wordId, ct);
+                if (!wordExists)
+                    return NotFound(new { message = "Слово не найдено." });
+
+                progress = new LearningProgress
+                {
+                    UserId = userId,
+                    WordId = wordId,
+                    KnowledgeLevel = 0,
+                    NextReview = DateTime.UtcNow,
+                    UserNote = request.Note?.Trim()
+                };
+                _context.LearningProgresses.Add(progress);
+            }
+            else
+            {
+                progress.UserNote = request.Note?.Trim();
+            }
+
+            await _context.SaveChangesAsync(ct);
+            return Ok(new { userNote = progress.UserNote });
+        }
+
         private async Task InvalidateUserStatsCacheAsync(int userId)
         {
             await _cache.TryRemoveAsync($"stats:{userId}");
             await _cache.TryRemoveByPrefixAsync($"stats:full:{userId}:", _redis);
+        }
+
+        // === XP system (§5.1 LEARNING_IMPROVEMENTS) ===
+
+        /// <summary>
+        /// Рассчитать XP за ответ на основе качества и типа упражнения.
+        /// </summary>
+        private static int CalculateXp(ResponseQuality quality, string? exerciseMode)
+        {
+            var baseXp = exerciseMode?.ToLowerInvariant() switch
+            {
+                "typing" or "cloze" => 15,
+                "listening" => 20,
+                _ => 10 // flashcard, mcq, matching
+            };
+
+            return quality switch
+            {
+                ResponseQuality.Easy => (int)(baseXp * 1.5),
+                ResponseQuality.Good => baseXp,
+                ResponseQuality.Hard => (int)(baseXp * 0.5),
+                _ => 0
+            };
+        }
+
+        /// <summary>
+        /// Начислить XP пользователю (с учётом streak-множителя).
+        /// </summary>
+        private async Task GrantXpAsync(int userId, int xp, CancellationToken ct)
+        {
+            if (xp <= 0) return;
+
+            var userStats = await _context.UserStats.FindAsync(new object[] { userId }, ct);
+            if (userStats == null)
+            {
+                userStats = new UserStats { UserId = userId, TotalXp = 0 };
+                _context.UserStats.Add(userStats);
+            }
+
+            // Streak multiplier: +10% за каждый день подряд (макс ×2.0)
+            var streakMultiplier = Math.Min(2.0, 1.0 + userStats.CurrentStreak * 0.1);
+            var finalXp = (int)(xp * streakMultiplier);
+
+            userStats.TotalXp += finalXp;
+        }
+
+        // GET /api/progress/xp
+        /// <summary>
+        /// Получить текущий XP и уровень пользователя.
+        /// </summary>
+        [HttpGet("xp")]
+        public async Task<IActionResult> GetXp(CancellationToken ct = default)
+        {
+            var userId = GetUserId();
+            var userStats = await _context.UserStats.FindAsync(new object[] { userId }, ct);
+
+            var totalXp = userStats?.TotalXp ?? 0;
+            var level = (int)Math.Floor(Math.Sqrt(totalXp / 50.0)) + 1;
+            var xpForCurrentLevel = (long)((level - 1) * (level - 1)) * 50;
+            var xpForNextLevel = (long)(level * level) * 50;
+
+            return Ok(new
+            {
+                totalXp,
+                level,
+                xpForCurrentLevel,
+                xpForNextLevel,
+                xpInCurrentLevel = totalXp - xpForCurrentLevel,
+                xpNeededForNext = xpForNextLevel - totalXp,
+                streakMultiplier = userStats != null
+                    ? Math.Min(2.0, 1.0 + userStats.CurrentStreak * 0.1)
+                    : 1.0
+            });
         }
     }
 }
