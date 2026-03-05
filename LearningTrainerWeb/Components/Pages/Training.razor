@@ -297,58 +297,74 @@
                 </div>
                 
                 <h3 class="mt-4">Тип упражнений</h3>
-                <div class="exercise-types">
-                    <button class="exercise-type @(ExerciseType == "flashcard" ? "active" : "")" 
+                <div class="exercise-types-grid">
+                    <button class="ex-card @(ExerciseType == "flashcard" ? "ex-card--active" : "")"
                             @onclick='() => SetExerciseType("flashcard")'>
-                        <i class="bi bi-card-text"></i>
-                        <span>Карточки</span>
+                        <span class="ex-card__emoji">🃏</span>
+                        <span class="ex-card__name">Карточки</span>
+                        <span class="ex-card__desc">Показал — вспомнил</span>
+                        <span class="ex-card__accent ex-card__accent--blue"></span>
                     </button>
-                    <button class="exercise-type @(ExerciseType == "mcq" ? "active" : "")" 
+                    <button class="ex-card @(ExerciseType == "mcq" ? "ex-card--active" : "")"
                             @onclick='() => SetExerciseType("mcq")'>
-                        <i class="bi bi-ui-radios"></i>
-                        <span>Выбор ответа</span>
+                        <span class="ex-card__emoji">🎯</span>
+                        <span class="ex-card__name">Тест</span>
+                        <span class="ex-card__desc">Выбери верный вариант</span>
+                        <span class="ex-card__accent ex-card__accent--green"></span>
                     </button>
-                    <button class="exercise-type @(ExerciseType == "typing" ? "active" : "")" 
+                    <button class="ex-card @(ExerciseType == "typing" ? "ex-card--active" : "")"
                             @onclick='() => SetExerciseType("typing")'>
-                        <i class="bi bi-keyboard"></i>
-                        <span>Ввод</span>
+                        <span class="ex-card__emoji">⌨️</span>
+                        <span class="ex-card__name">Ввод</span>
+                        <span class="ex-card__desc">Напиши перевод сам</span>
+                        <span class="ex-card__accent ex-card__accent--purple"></span>
                     </button>
-                    <button class="exercise-type @(ExerciseType == "listening" ? "active" : "")" 
+                    <button class="ex-card @(ExerciseType == "listening" ? "ex-card--active" : "")"
                             @onclick='() => SetExerciseType("listening")'>
-                        <i class="bi bi-headphones"></i>
-                        <span>Аудирование</span>
+                        <span class="ex-card__emoji">🎧</span>
+                        <span class="ex-card__name">Аудирование</span>
+                        <span class="ex-card__desc">Распознай на слух</span>
+                        <span class="ex-card__accent ex-card__accent--orange"></span>
                     </button>
-                    <button class="exercise-type @(ExerciseType == "matching" ? "active" : "")" 
+                    <button class="ex-card @(ExerciseType == "matching" ? "ex-card--active" : "")"
                             @onclick='() => SetExerciseType("matching")'>
-                        <i class="bi bi-link-45deg"></i>
-                        <span>Сопоставление</span>
+                        <span class="ex-card__emoji">🔗</span>
+                        <span class="ex-card__name">Пары</span>
+                        <span class="ex-card__desc">Свяжи слово с переводом</span>
+                        <span class="ex-card__accent ex-card__accent--pink"></span>
                     </button>
-                    <button class="exercise-type @(ExerciseType == "cloze" ? "active" : "")" 
+                    <button class="ex-card @(ExerciseType == "cloze" ? "ex-card--active" : "")"
                             @onclick='() => SetExerciseType("cloze")'>
-                        <i class="bi bi-input-cursor-text"></i>
-                        <span>Пропуск</span>
+                        <span class="ex-card__emoji">🧩</span>
+                        <span class="ex-card__name">Пропуск</span>
+                        <span class="ex-card__desc">Заполни пробел в контексте</span>
+                        <span class="ex-card__accent ex-card__accent--teal"></span>
                     </button>
-                    <button class="exercise-type @(ExerciseType == "mixed" ? "active" : "")" 
+                    <button class="ex-card ex-card--rainbow @(ExerciseType == "mixed" ? "ex-card--active" : "")"
                             @onclick='() => SetExerciseType("mixed")'>
-                        <i class="bi bi-shuffle"></i>
-                        <span>Смешанный</span>
+                        <span class="ex-card__emoji">🎲</span>
+                        <span class="ex-card__name">Микс</span>
+                        <span class="ex-card__desc">Всё и сразу — рандом!</span>
+                        <span class="ex-card__accent ex-card__accent--rainbow"></span>
                     </button>
                 </div>
 
-                <!-- Word limit -->
-                <div class="training-settings mt-4">
+                <!-- Settings -->
+                <h3 class="mt-4"><i class="bi bi-sliders me-2"></i>Настройки</h3>
+                <div class="training-settings-panel">
                     <div class="setting-group">
-                        <span class="setting-label">Слов:</span>
+                        <span class="setting-label"><i class="bi bi-hash me-1"></i>Количество слов</span>
                         <div class="setting-options">
                             <button class="setting-pill @(WordLimit == 10 ? "active" : "")" @onclick="() => WordLimit = 10">10</button>
                             <button class="setting-pill @(WordLimit == 20 ? "active" : "")" @onclick="() => WordLimit = 20">20</button>
                             <button class="setting-pill @(WordLimit == 50 ? "active" : "")" @onclick="() => WordLimit = 50">50</button>
+                            <button class="setting-pill @(WordLimit == 100 ? "active" : "")" @onclick="() => WordLimit = 100">100</button>
                             <button class="setting-pill @(WordLimit == 0 ? "active" : "")" @onclick="() => WordLimit = 0">Все</button>
                         </div>
                     </div>
 
                     <div class="setting-group">
-                        <span class="setting-label">Направление:</span>
+                        <span class="setting-label"><i class="bi bi-arrow-left-right me-1"></i>Направление</span>
                         <div class="setting-options">
                             <button class="setting-pill @(TranslationDirection == "direct" ? "active" : "")" @onclick='() => TranslationDirection = "direct"'>Прямой</button>
                             <button class="setting-pill @(TranslationDirection == "reverse" ? "active" : "")" @onclick='() => TranslationDirection = "reverse"'>Обратный</button>
@@ -360,7 +376,7 @@
                     @if (AvailableTags.Count > 0)
                     {
                         <div class="setting-group">
-                            <span class="setting-label"><i class="bi bi-tags me-1"></i>Тег:</span>
+                            <span class="setting-label"><i class="bi bi-tags me-1"></i>Тег</span>
                             <div class="setting-options">
                                 <button class="setting-pill @(SelectedTag == null ? "active" : "")" @onclick="() => SelectedTag = null">Все</button>
                                 @foreach (var tag in AvailableTags)
@@ -372,10 +388,10 @@
                     }
 
                     <div class="setting-group">
-                        <span class="setting-label"><i class="bi bi-eye-slash me-1"></i>Режим:</span>
+                        <span class="setting-label"><i class="bi bi-shield me-1"></i>Режим</span>
                         <div class="setting-options">
                             <button class="setting-pill @(!IsExamMode ? "active" : "")" @onclick="() => IsExamMode = false">Обычный</button>
-                            <button class="setting-pill @(IsExamMode ? "active" : "")" @onclick="() => IsExamMode = true" title="Без подсказок: скрывает транскрипцию, словарь и TTS до ответа">Экзамен</button>
+                            <button class="setting-pill @(IsExamMode ? "active" : "")" @onclick="() => IsExamMode = true" title="Без подсказок: скрывает транскрипцию, словарь и TTS до ответа">🔒 Экзамен</button>
                         </div>
                     </div>
                 </div>
@@ -1249,7 +1265,7 @@ private string CurrentMode = "mixed";
 private string ExerciseType = "flashcard";
 private string _activeExerciseType = "flashcard";
 private bool _isMixedMode;
-private int WordLimit = 0;
+private int WordLimit = 50;
 private string TranslationDirection = "direct";
 private bool IsReversed;
 
