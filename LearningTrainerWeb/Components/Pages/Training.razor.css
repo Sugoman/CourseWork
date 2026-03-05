@@ -1814,12 +1814,14 @@ kbd {
 
 .spelling-input-area {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     gap: 0.75rem;
     align-items: center;
 }
 
-.spelling-hidden-input {
+/* Desktop: input hidden offscreen, focus still works */
+.spelling-visible-input {
     position: absolute;
     left: -9999px;
     opacity: 0;
@@ -1829,6 +1831,42 @@ kbd {
 
 .ex-card__accent--amber {
     background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+/* Mobile: input becomes visible and styled */
+@media (max-width: 768px) {
+    .spelling-visible-input {
+        position: static;
+        opacity: 1;
+        width: 100%;
+        height: auto;
+        max-width: 320px;
+        text-align: center;
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        font-family: 'Courier New', monospace;
+        padding: 0.75rem 1rem;
+        border: 2px solid #f59e0b;
+        border-radius: 12px;
+        background: #fffbeb;
+        color: var(--bs-dark);
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .spelling-visible-input:focus {
+        border-color: #d97706;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    }
+
+    .spelling-visible-input::placeholder {
+        font-weight: 400;
+        letter-spacing: normal;
+        font-family: inherit;
+        font-size: 0.95rem;
+        color: #d1d5db;
+    }
 }
 
 @media (max-width: 575px) {
@@ -1851,6 +1889,20 @@ kbd {
 
     .spelling-letters {
         gap: 0.25rem;
+    }
+
+    .spelling-visible-input {
+        max-width: 100%;
+        font-size: 1.1rem;
+        padding: 0.65rem 0.75rem;
+    }
+
+    .spelling-input-area {
+        width: 100%;
+    }
+
+    .spelling-input-area .btn {
+        width: 100%;
     }
 }
 

@@ -1,5 +1,6 @@
 ﻿using LearningTrainerWeb.Components;
 using LearningTrainerWeb.Services;
+using Microsoft.AspNetCore.DataProtection;
 using System.Text;
 
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -9,6 +10,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Data Protection: persist keys so encrypted sessions survive container restarts
+var keysPath = builder.Configuration["DataProtection:KeysPath"] ?? "/app/keys";
+builder.Services.AddDataProtection()
+    .SetApplicationName("LearningTrainerWeb")
+    .PersistKeysToFileSystem(new DirectoryInfo(keysPath));
 
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:5077";
 var aiBaseUrl = builder.Configuration["AiService:BaseUrl"] ?? "http://localhost:5200";

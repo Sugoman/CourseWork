@@ -39,6 +39,8 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - ApiBaseUrl=http://learningapi:8080
+    volumes:
+      - web_dataprotection_keys:/app/keys
 
   # -------------------------------
   # 2. Migrations (runs once)
@@ -92,3 +94,4 @@ services:
 
 volumes:
   sql_data:
+  web_dataprotection_keys:

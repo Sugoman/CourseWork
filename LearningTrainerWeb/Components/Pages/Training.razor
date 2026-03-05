@@ -1182,13 +1182,13 @@
                         </div>
 
                         <div class="spelling-tts-area">
-                            <button class="btn-tts-big" tabindex="-1" @onclick="SpellingSpeakWord" @onclick:stopPropagation="true" title="Прослушать слово">
+                            <button class="btn-tts-big" tabindex="-1" @onclick="SpeakWord" @onclick:stopPropagation="true" title="Прослушать слово">
                                 <i class="bi bi-volume-up-fill"></i>
                             </button>
                             <div class="spelling-tts-controls">
                                 <span class="text-muted small">Нажмите, чтобы прослушать</span>
                                 <div class="volume-wrapper">
-                                    <button class="btn-volume-toggle" tabindex="-1" @onclick="SpellingToggleVolume" @onclick:stopPropagation="true" title="Громкость">
+                                    <button class="btn-volume-toggle" tabindex="-1" @onclick="ToggleVolumeSlider" @onclick:stopPropagation="true" title="Громкость">
                                         <i class="@VolumeIcon"></i>
                                     </button>
                                     @if (ShowVolumeSlider)
@@ -1250,9 +1250,9 @@
                         @if (!SpellingAnswered)
                         {
                             <div class="spelling-input-area">
-                                <input type="text" class="spelling-hidden-input"
-                                       @bind="SpellingTyped"
-                                       @bind:event="oninput"
+                                <input type="text" class="spelling-visible-input"
+                                       placeholder="Введите слово..."
+                                       @oninput="OnSpellingInput"
                                        @onkeydown="HandleSpellingKeyDown"
                                        maxlength="@CurrentWord.OriginalWord.Length"
                                        autocomplete="off"
@@ -1260,7 +1260,7 @@
                                        spellcheck="false"
                                        @ref="spellingInput" />
                                 <button class="btn btn-primary btn-lg" tabindex="-1"
-                                        @onclick="SpellingCheckAndRefocus" @onclick:stopPropagation="true"
+                                        @onclick="CheckSpellingAnswer" @onclick:stopPropagation="true"
                                         disabled="@(SpellingTyped.Length == 0)">
                                     <i class="bi bi-check-lg me-2"></i>Проверить
                                 </button>
@@ -2351,23 +2351,9 @@ private async Task InstallStarterPack()
             await FocusSpellingInput();
     }
 
-    private async Task SpellingSpeakWord()
+    private void OnSpellingInput(ChangeEventArgs e)
     {
-        await SpeakWord();
-        if (!SpellingAnswered)
-            await FocusSpellingInput();
-    }
-
-    private async Task SpellingToggleVolume()
-    {
-        ToggleVolumeSlider();
-        if (!SpellingAnswered)
-            await FocusSpellingInput();
-    }
-
-    private async Task SpellingCheckAndRefocus()
-    {
-        await CheckSpellingAnswer();
+        SpellingTyped = e.Value?.ToString() ?? "";
     }
 
     private async Task HandleSpellingKeyDown(KeyboardEventArgs e)

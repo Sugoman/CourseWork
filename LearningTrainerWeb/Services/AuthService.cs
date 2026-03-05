@@ -87,9 +87,29 @@ public class AuthService : IAuthService
             // Expected during Blazor prerendering — JS interop not available.
             // Do NOT set _isInitialized = true so InitializeAsync retries on interactive render.
         }
+        catch (System.Security.Cryptography.CryptographicException ex)
+        {
+            // Data Protection keys changed (container restart without persisted keys).
+            // Clear corrupted entries so the user can log in again cleanly.
+            _logger.LogWarning(ex, "Data Protection keys changed — clearing corrupted auth session");
+            try
+            {
+                await _sessionStorage.DeleteAsync(SessionKey);
+                await _localStorage.DeleteAsync(PersistentSessionKey);
+            }
+            catch { /* best effort cleanup */ }
+            _isInitialized = true;
+        }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error restoring auth session during initialization");
+            // Attempt to clean up potentially corrupted storage
+            try
+            {
+                await _sessionStorage.DeleteAsync(SessionKey);
+                await _localStorage.DeleteAsync(PersistentSessionKey);
+            }
+            catch { /* best effort cleanup */ }
             _isInitialized = true;
         }
     }

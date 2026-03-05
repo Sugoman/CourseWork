@@ -31,7 +31,8 @@ RUN sed -i 's/^# *\(ru_RU.UTF-8\)/\1/' /etc/locale.gen \
 
 COPY --from=build /app/publish .
 
-
+# Ensure Data Protection keys directory exists
+RUN mkdir -p /app/keys
 
 EXPOSE 8080
 
