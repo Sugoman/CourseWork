@@ -74,15 +74,44 @@
                         <div class="student-list">
                             @foreach (var student in Students)
                             {
+                                var activityClass = student.DaysSinceLastPractice switch
+                                {
+                                    0 => "activity-active",
+                                    >= 1 and <= 3 => "activity-recent",
+                                    _ => "activity-inactive"
+                                };
                                 <div class="student-row">
                                     <a href="/profile/@student.Id" class="d-flex align-items-center gap-3 flex-grow-1 text-decoration-none" style="min-width: 0;">
-                                        <div class="student-avatar">
+                                        <div class="student-avatar @activityClass">
                                             @(student.Username.FirstOrDefault())
                                         </div>
                                         <div class="student-info">
                                             <div class="student-name">@student.Username</div>
                                             <div class="student-meta">
-                                                <span><i class="bi bi-book me-1"></i>@student.WordsLearned слов выучено</span>
+                                                <span><i class="bi bi-book me-1"></i>@student.WordsLearned / @student.TotalWords слов</span>
+                                                @if (student.CurrentStreak > 0)
+                                                {
+                                                    <span class="ms-2"><i class="bi bi-fire me-1" style="color: var(--accent-orange, #f59e0b);"></i>@student.CurrentStreak дн.</span>
+                                                }
+                                                @if (student.TotalAttempts > 0)
+                                                {
+                                                    <span class="ms-2"><i class="bi bi-bullseye me-1"></i>@student.AccuracyPercent.ToString("F0")%</span>
+                                                }
+                                            </div>
+                                            <div class="student-shared-info">
+                                                @if (student.SharedDictionariesCount > 0 || student.SharedRulesCount > 0)
+                                                {
+                                                    <span class="text-muted" style="font-size: 0.7rem;">
+                                                        Расшарено: @student.SharedDictionariesCount сл. · @student.SharedRulesCount пр.
+                                                    </span>
+                                                }
+                                                @if (student.DaysSinceLastPractice >= 0)
+                                                {
+                                                    <span class="@(student.DaysSinceLastPractice == 0 ? "text-success" : student.DaysSinceLastPractice <= 3 ? "text-warning" : "text-danger")"
+                                                          style="font-size: 0.7rem;">
+                                                        @(student.DaysSinceLastPractice == 0 ? "Сегодня" : student.DaysSinceLastPractice == 1 ? "Вчера" : $"{student.DaysSinceLastPractice} дн. назад")
+                                                    </span>
+                                                }
                                             </div>
                                         </div>
                                     </a>
@@ -300,6 +329,26 @@
     .student-meta {
         font-size: 0.8rem;
         color: var(--gray-500);
+    }
+
+    .student-shared-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 2px;
+    }
+
+    .student-avatar.activity-active {
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.4);
+    }
+
+    .student-avatar.activity-recent {
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35);
+    }
+
+    .student-avatar.activity-inactive {
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+        opacity: 0.8;
     }
 
     @@media (max-width: 575px) {

@@ -94,8 +94,26 @@ namespace LearningAPI.Controllers
                     s.Id,
                     s.Username,
                     s.Email,
-                    // Можно добавить статистику: сколько слов выучил и т.д.
-                    WordsLearned = _context.LearningProgresses.Count(p => p.UserId == s.Id && p.KnowledgeLevel > 3)
+                    WordsLearned = _context.LearningProgresses.Count(p => p.UserId == s.Id && p.KnowledgeLevel > 3),
+                    TotalWords = _context.LearningProgresses.Count(p => p.UserId == s.Id),
+                    CurrentStreak = _context.UserStats
+                        .Where(us => us.UserId == s.Id)
+                        .Select(us => us.CurrentStreak)
+                        .FirstOrDefault(),
+                    LastPracticeDate = _context.UserStats
+                        .Where(us => us.UserId == s.Id)
+                        .Select(us => us.LastPracticeDate)
+                        .FirstOrDefault(),
+                    CorrectAnswers = _context.LearningProgresses
+                        .Where(p => p.UserId == s.Id)
+                        .Sum(p => p.CorrectAnswers),
+                    TotalAttempts = _context.LearningProgresses
+                        .Where(p => p.UserId == s.Id)
+                        .Sum(p => p.TotalAttempts),
+                    SharedDictionariesCount = _context.DictionarySharings
+                        .Count(ds => ds.StudentId == s.Id && ds.Dictionary.UserId == teacherId),
+                    SharedRulesCount = _context.RuleSharings
+                        .Count(rs => rs.StudentId == s.Id && rs.Rule.UserId == teacherId)
                 })
                 .ToListAsync();
 

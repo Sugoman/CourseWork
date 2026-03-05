@@ -350,3 +350,25 @@
     background: var(--primary-100);
     color: var(--primary-600);
 }
+
+/* Shared card styling */
+::deep .card-shared {
+    border-left: 4px solid var(--primary-500, #3b82f6);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.03), transparent);
+}
+
+.mc-icon-btn--shared-active {
+    background: var(--primary-500);
+    color: white;
+}
+
+.mc-icon-btn--shared-active:hover {
+    background: var(--primary-600);
+    color: white;
+}
+
+/* Teacher-shared card styling */
+::deep .card-from-teacher {
+    border-left: 4px solid var(--accent-orange, #f59e0b);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.04), transparent);
+}

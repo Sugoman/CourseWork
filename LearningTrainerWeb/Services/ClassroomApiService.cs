@@ -206,6 +206,18 @@ public class StudentInfo
     public string Username { get; set; } = "";
     public string Email { get; set; } = "";
     public int WordsLearned { get; set; }
+    public int TotalWords { get; set; }
+    public int CurrentStreak { get; set; }
+    public DateTime? LastPracticeDate { get; set; }
+    public int CorrectAnswers { get; set; }
+    public int TotalAttempts { get; set; }
+    public int SharedDictionariesCount { get; set; }
+    public int SharedRulesCount { get; set; }
+
+    public double AccuracyPercent => TotalAttempts > 0 ? (double)CorrectAnswers / TotalAttempts * 100 : 0;
+    public int DaysSinceLastPractice => LastPracticeDate.HasValue
+        ? (int)(DateTime.UtcNow.Date - LastPracticeDate.Value.Date).TotalDays
+        : -1;
 }
 
 public class SharingResult

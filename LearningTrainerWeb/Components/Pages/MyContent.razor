@@ -77,14 +77,39 @@
                     @foreach (var dict in PagedDictionaries)
                     {
                         <div class="col-sm-6 col-md-4">
-                            <div class="card h-100">
+                            <div class="card h-100 @(dict.IsFromTeacher ? "card-from-teacher" : dict.IsSharedWithStudents ? "card-shared" : "")">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="card-title mb-0">@dict.Name</h5>
-                                        <span class="badge rounded-pill @(dict.IsPublished ? "bg-success bg-opacity-10 text-success" : "bg-secondary bg-opacity-10 text-secondary")" style="font-size: 0.75rem;">
-                                            @(dict.IsPublished ? "✔ Опубликован" : "Черновик")
-                                        </span>
+                                        <div class="d-flex gap-1 flex-wrap justify-content-end">
+                                            @if (dict.IsFromTeacher)
+                                            {
+                                                <span class="badge rounded-pill bg-warning bg-opacity-15 text-warning" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-mortarboard-fill me-1"></i>От учителя
+                                                </span>
+                                            }
+                                            else if (dict.IsSharedWithStudents)
+                                            {
+                                                <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary" style="font-size: 0.7rem;"
+                                                      title="Расшарено @dict.SharedStudentCount уч.">
+                                                    <i class="bi bi-people-fill me-1"></i>@dict.SharedStudentCount
+                                                </span>
+                                            }
+                                            @if (!dict.IsFromTeacher)
+                                            {
+                                                <span class="badge rounded-pill @(dict.IsPublished ? "bg-success bg-opacity-10 text-success" : "bg-secondary bg-opacity-10 text-secondary")" style="font-size: 0.75rem;">
+                                                    @(dict.IsPublished ? "✔ Опубликован" : "Черновик")
+                                                </span>
+                                            }
+                                        </div>
                                     </div>
+
+                                    @if (dict.IsFromTeacher)
+                                    {
+                                        <p class="text-muted small mb-2">
+                                            <i class="bi bi-person-circle me-1"></i> @dict.TeacherName
+                                        </p>
+                                    }
 
                                     @if (!string.IsNullOrWhiteSpace(dict.Description))
                                     {
@@ -97,37 +122,54 @@
                                         <i class="bi bi-collection me-1"></i> @dict.WordCount слов
                                     </p>
 
-                                    <div class="mc-actions">
-                                        @if (!dict.IsPublished)
-                                        {
-                                            <button class="btn btn-primary btn-sm" @onclick="() => PublishDictionary(dict.Id)">
-                                                <i class="bi bi-cloud-upload me-1"></i> Опубликовать
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <button class="btn btn-outline-danger btn-sm" @onclick="() => UnpublishDictionary(dict.Id)">
-                                                <i class="bi bi-x-circle me-1"></i> Снять
-                                            </button>
-                                        }
-                                        <div class="mc-icon-group">
-                                            <button class="mc-icon-btn" title="Экспорт JSON"
-                                                    @onclick="() => ExportDictionaryAsJson(dict.Id, dict.Name)">
-                                                <i class="bi bi-filetype-json"></i>
-                                            </button>
-                                            <button class="mc-icon-btn" title="Экспорт CSV"
-                                                    @onclick="() => ExportDictionaryAsCsv(dict.Id, dict.Name)">
-                                                <i class="bi bi-filetype-csv"></i>
-                                            </button>
-                                            @if (IsTeacher)
+                                    @if (dict.IsFromTeacher)
+                                    {
+                                        <div class="mc-actions">
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.75rem;">
+                                                <i class="bi bi-eye me-1"></i>Только чтение
+                                            </span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="mc-actions">
+                                            @if (dict.IsSharedWithStudents)
                                             {
-                                                <button class="mc-icon-btn mc-icon-btn--share" title="Поделиться с учениками"
-                                                        @onclick="() => OpenShareDictionary(dict.Id, dict.Name)">
-                                                    <i class="bi bi-people-fill"></i>
+                                                <span class="btn btn-outline-secondary btn-sm disabled" title="Снимите доступ учеников, чтобы опубликовать">
+                                                    <i class="bi bi-lock me-1"></i> Расшарено
+                                                </span>
+                                            }
+                                            else if (!dict.IsPublished)
+                                            {
+                                                <button class="btn btn-primary btn-sm" @onclick="() => PublishDictionary(dict.Id)">
+                                                    <i class="bi bi-cloud-upload me-1"></i> Опубликовать
                                                 </button>
                                             }
+                                            else
+                                            {
+                                                <button class="btn btn-outline-danger btn-sm" @onclick="() => UnpublishDictionary(dict.Id)">
+                                                    <i class="bi bi-x-circle me-1"></i> Снять
+                                                </button>
+                                            }
+                                            <div class="mc-icon-group">
+                                                <button class="mc-icon-btn" title="Экспорт JSON"
+                                                        @onclick="() => ExportDictionaryAsJson(dict.Id, dict.Name)">
+                                                    <i class="bi bi-filetype-json"></i>
+                                                </button>
+                                                <button class="mc-icon-btn" title="Экспорт CSV"
+                                                        @onclick="() => ExportDictionaryAsCsv(dict.Id, dict.Name)">
+                                                    <i class="bi bi-filetype-csv"></i>
+                                                </button>
+                                                @if (IsTeacher)
+                                                {
+                                                    <button class="mc-icon-btn mc-icon-btn--share @(dict.IsSharedWithStudents ? "mc-icon-btn--shared-active" : "")" title="Поделиться с учениками"
+                                                            @onclick="() => OpenShareDictionary(dict.Id, dict.Name)">
+                                                        <i class="bi bi-people-fill"></i>
+                                                    </button>
+                                                }
+                                            </div>
                                         </div>
-                                    </div>
+                                    }
                                 </div>
 
                                 <div class="card-footer">
@@ -200,41 +242,85 @@
                     @foreach (var rule in PagedRules)
                     {
                         <div class="col-md-4">
-                            <div class="card h-100">
+                            <div class="card h-100 @(rule.IsFromTeacher ? "card-from-teacher" : rule.IsSharedWithStudents ? "card-shared" : "")">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h5 class="card-title mb-0">@rule.Title</h5>
-                                        <span class="badge @(rule.IsPublished ? "bg-success" : "bg-secondary")">
-                                            @(rule.IsPublished ? "✔ Опубликовано" : "Черновик")
-                                        </span>
+                                        <div class="d-flex gap-1 flex-wrap justify-content-end">
+                                            @if (rule.IsFromTeacher)
+                                            {
+                                                <span class="badge rounded-pill bg-warning bg-opacity-15 text-warning" style="font-size: 0.7rem;">
+                                                    <i class="bi bi-mortarboard-fill me-1"></i>От учителя
+                                                </span>
+                                            }
+                                            else if (rule.IsSharedWithStudents)
+                                            {
+                                                <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary" style="font-size: 0.7rem;"
+                                                      title="Расшарено @rule.SharedStudentCount уч.">
+                                                    <i class="bi bi-people-fill me-1"></i>@rule.SharedStudentCount
+                                                </span>
+                                            }
+                                            @if (!rule.IsFromTeacher)
+                                            {
+                                                <span class="badge @(rule.IsPublished ? "bg-success" : "bg-secondary")">
+                                                    @(rule.IsPublished ? "✔ Опубликовано" : "Черновик")
+                                                </span>
+                                            }
+                                        </div>
                                     </div>
+                                    @if (rule.IsFromTeacher)
+                                    {
+                                        <p class="text-muted small mb-2">
+                                            <i class="bi bi-person-circle me-1"></i> @rule.TeacherName
+                                        </p>
+                                    }
                                     <span class="badge bg-info mb-3">@rule.Category</span>
-                                    <div class="mc-actions">
-                                        <a href="my-content/rule/@rule.Id" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-eye me-1"></i> Просмотр
-                                        </a>
-                                        @if (!rule.IsPublished)
-                                        {
-                                            <button class="btn btn-sm btn-primary" @onclick="() => PublishRule(rule.Id)">
-                                                <i class="bi bi-cloud-upload me-1"></i> Опубликовать
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => UnpublishRule(rule.Id)">
-                                                <i class="bi bi-x-circle me-1"></i> Снять
-                                            </button>
-                                        }
-                                        @if (IsTeacher)
-                                        {
-                                            <div class="mc-icon-group">
-                                                <button class="mc-icon-btn mc-icon-btn--share" title="Поделиться с учениками"
-                                                        @onclick="() => OpenShareRule(rule.Id, rule.Title)">
-                                                    <i class="bi bi-people-fill"></i>
+                                    @if (rule.IsFromTeacher)
+                                    {
+                                        <div class="mc-actions">
+                                            <a href="my-content/rule/@rule.Id" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye me-1"></i> Просмотр
+                                            </a>
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary" style="font-size: 0.75rem;">
+                                                <i class="bi bi-eye me-1"></i>Только чтение
+                                            </span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="mc-actions">
+                                            <a href="my-content/rule/@rule.Id" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye me-1"></i> Просмотр
+                                            </a>
+                                            @if (rule.IsSharedWithStudents)
+                                            {
+                                                <span class="btn btn-outline-secondary btn-sm disabled" title="Снимите доступ учеников, чтобы опубликовать">
+                                                    <i class="bi bi-lock me-1"></i> Расшарено
+                                                </span>
+                                            }
+                                            else if (!rule.IsPublished)
+                                            {
+                                                <button class="btn btn-sm btn-primary" @onclick="() => PublishRule(rule.Id)">
+                                                    <i class="bi bi-cloud-upload me-1"></i> Опубликовать
                                                 </button>
-                                            </div>
-                                        }
-                                    </div>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => UnpublishRule(rule.Id)">
+                                                    <i class="bi bi-x-circle me-1"></i> Снять
+                                                </button>
+                                            }
+                                            @if (IsTeacher)
+                                            {
+                                                <div class="mc-icon-group">
+                                                    <button class="mc-icon-btn mc-icon-btn--share @(rule.IsSharedWithStudents ? "mc-icon-btn--shared-active" : "")" title="Поделиться с учениками"
+                                                            @onclick="() => OpenShareRule(rule.Id, rule.Title)">
+                                                        <i class="bi bi-people-fill"></i>
+                                                    </button>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
                                 </div>
                                 <div class="card-footer">
                                     <div class="d-flex justify-content-between align-items-center text-muted small">
@@ -809,8 +895,10 @@
         ShareDialogVisible = true;
     }
 
-    private void CloseShareDialog()
+    private async Task CloseShareDialog()
     {
         ShareDialogVisible = false;
+        await LoadMyContent();
+        StateHasChanged();
     }
 }

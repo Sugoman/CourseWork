@@ -716,7 +716,7 @@ public class MarketplaceController : BaseApiController
     {
         var userId = GetUserId();
 
-        var dictionaries = await _context.Dictionaries
+        var ownDictionaries = await _context.Dictionaries
             .Include(d => d.Words)
             .Where(d => d.UserId == userId)
             .Select(d => new MyDictionaryItemDto
@@ -727,11 +727,31 @@ public class MarketplaceController : BaseApiController
                 WordCount = d.Words.Count,
                 IsPublished = d.IsPublished,
                 Rating = d.Rating,
-                Downloads = d.DownloadCount
+                Downloads = d.DownloadCount,
+                IsSharedWithStudents = _context.DictionarySharings.Any(ds => ds.DictionaryId == d.Id),
+                SharedStudentCount = _context.DictionarySharings.Count(ds => ds.DictionaryId == d.Id)
             })
             .ToListAsync();
 
-        return Ok(dictionaries);
+        // Shared by teacher (IgnoreQueryFilters: dictionary belongs to teacher, not student)
+        var sharedDictionaries = await _context.DictionarySharings
+            .IgnoreQueryFilters()
+            .Where(ds => ds.StudentId == userId)
+            .Select(ds => new MyDictionaryItemDto
+            {
+                Id = ds.Dictionary.Id,
+                Name = ds.Dictionary.Name,
+                Description = ds.Dictionary.Description ?? "",
+                WordCount = ds.Dictionary.Words.Count,
+                IsPublished = ds.Dictionary.IsPublished,
+                Rating = ds.Dictionary.Rating,
+                Downloads = ds.Dictionary.DownloadCount,
+                IsFromTeacher = true,
+                TeacherName = ds.Dictionary.User.Username
+            })
+            .ToListAsync();
+
+        return Ok(ownDictionaries.Concat(sharedDictionaries).ToList());
     }
 
     [HttpGet("my/rules")]
@@ -740,7 +760,7 @@ public class MarketplaceController : BaseApiController
     {
         var userId = GetUserId();
 
-        var rules = await _context.Rules
+        var ownRules = await _context.Rules
             .Where(r => r.UserId == userId)
             .Select(r => new MyRuleItemDto
             {
@@ -749,11 +769,30 @@ public class MarketplaceController : BaseApiController
                 Category = r.Category ?? "",
                 IsPublished = r.IsPublished,
                 Rating = r.Rating,
-                Downloads = r.DownloadCount
+                Downloads = r.DownloadCount,
+                IsSharedWithStudents = _context.RuleSharings.Any(rs => rs.RuleId == r.Id),
+                SharedStudentCount = _context.RuleSharings.Count(rs => rs.RuleId == r.Id)
             })
             .ToListAsync();
 
-        return Ok(rules);
+        // Shared by teacher (IgnoreQueryFilters: rule belongs to teacher, not student)
+        var sharedRules = await _context.RuleSharings
+            .IgnoreQueryFilters()
+            .Where(rs => rs.StudentId == userId)
+            .Select(rs => new MyRuleItemDto
+            {
+                Id = rs.Rule.Id,
+                Title = rs.Rule.Title,
+                Category = rs.Rule.Category ?? "",
+                IsPublished = rs.Rule.IsPublished,
+                Rating = rs.Rule.Rating,
+                Downloads = rs.Rule.DownloadCount,
+                IsFromTeacher = true,
+                TeacherName = rs.Rule.User.Username
+            })
+            .ToListAsync();
+
+        return Ok(ownRules.Concat(sharedRules).ToList());
     }
 
     /// <summary>
@@ -863,6 +902,10 @@ public class MarketplaceController : BaseApiController
         if (dictionary == null)
             return NotFound();
 
+        var isShared = await _context.DictionarySharings.AnyAsync(ds => ds.DictionaryId == id);
+        if (isShared)
+            return BadRequest(new { Message = "Словарь расшарен ученикам. Сначала отзовите доступ, чтобы опубликовать на маркетплейсе." });
+
         dictionary.IsPublished = true;
         await _context.SaveChangesAsync();
 
@@ -902,6 +945,10 @@ public class MarketplaceController : BaseApiController
 
         if (rule == null)
             return NotFound();
+
+        var isShared = await _context.RuleSharings.AnyAsync(rs => rs.RuleId == id);
+        if (isShared)
+            return BadRequest(new { Message = "Правило расшарено ученикам. Сначала отзовите доступ, чтобы опубликовать на маркетплейсе." });
 
         rule.IsPublished = true;
         await _context.SaveChangesAsync();
@@ -1174,6 +1221,10 @@ public class MyDictionaryItemDto
     public bool IsPublished { get; set; }
     public double Rating { get; set; }
     public int Downloads { get; set; }
+    public bool IsSharedWithStudents { get; set; }
+    public int SharedStudentCount { get; set; }
+    public bool IsFromTeacher { get; set; }
+    public string? TeacherName { get; set; }
 }
 
 public class MyRuleItemDto
@@ -1184,6 +1235,10 @@ public class MyRuleItemDto
     public bool IsPublished { get; set; }
     public double Rating { get; set; }
     public int Downloads { get; set; }
+    public bool IsSharedWithStudents { get; set; }
+    public int SharedStudentCount { get; set; }
+    public bool IsFromTeacher { get; set; }
+    public string? TeacherName { get; set; }
 }
 
 public class DownloadedItemDto

@@ -466,6 +466,10 @@ public class MyDictionaryItem
     public double Rating { get; set; }
     public int Downloads { get; set; }
     public string? Tags { get; set; }
+    public bool IsSharedWithStudents { get; set; }
+    public int SharedStudentCount { get; set; }
+    public bool IsFromTeacher { get; set; }
+    public string? TeacherName { get; set; }
 }
 
 public class MyRuleItem
@@ -476,6 +480,10 @@ public class MyRuleItem
     public bool IsPublished { get; set; }
     public double Rating { get; set; }
     public int Downloads { get; set; }
+    public bool IsSharedWithStudents { get; set; }
+    public int SharedStudentCount { get; set; }
+    public bool IsFromTeacher { get; set; }
+    public string? TeacherName { get; set; }
 }
 
 public class DownloadedItem
