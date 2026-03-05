@@ -340,6 +340,13 @@
                         <span class="ex-card__desc">Заполни пробел в контексте</span>
                         <span class="ex-card__accent ex-card__accent--teal"></span>
                     </button>
+                    <button class="ex-card @(ExerciseType == "spelling" ? "ex-card--active" : "")"
+                            @onclick='() => SetExerciseType("spelling")'>
+                        <span class="ex-card__emoji">🐝</span>
+                        <span class="ex-card__name">Spelling Bee</span>
+                        <span class="ex-card__desc">Введи слово по буквам</span>
+                        <span class="ex-card__accent ex-card__accent--amber"></span>
+                    </button>
                     <button class="ex-card ex-card--rainbow @(ExerciseType == "mixed" ? "ex-card--active" : "")"
                             @onclick='() => SetExerciseType("mixed")'>
                         <span class="ex-card__emoji">🎲</span>
@@ -1164,6 +1171,143 @@
                         }
                     </div>
                 }
+                else if (ActiveExerciseType == "spelling")
+                {
+                    <!-- Spelling Bee (§3.2 LEARNING_IMPROVEMENTS) -->
+                    <div class="spelling-card" @onclick="SpellingCardClicked">
+                        <div class="spelling-header">
+                            <span class="spelling-bee-icon">🐝</span>
+                            <h3>Spelling Bee</h3>
+                            <p class="text-muted">Прослушайте слово и введите его по буквам</p>
+                        </div>
+
+                        <div class="spelling-tts-area">
+                            <button class="btn-tts-big" tabindex="-1" @onclick="SpellingSpeakWord" @onclick:stopPropagation="true" title="Прослушать слово">
+                                <i class="bi bi-volume-up-fill"></i>
+                            </button>
+                            <div class="spelling-tts-controls">
+                                <span class="text-muted small">Нажмите, чтобы прослушать</span>
+                                <div class="volume-wrapper">
+                                    <button class="btn-volume-toggle" tabindex="-1" @onclick="SpellingToggleVolume" @onclick:stopPropagation="true" title="Громкость">
+                                        <i class="@VolumeIcon"></i>
+                                    </button>
+                                    @if (ShowVolumeSlider)
+                                    {
+                                        <div class="volume-popover" @onclick:stopPropagation="true">
+                                            <input type="range" min="0" max="1" step="0.01"
+                                                   tabindex="-1"
+                                                   value="@TtsVolumeFormatted"
+                                                   @oninput="OnVolumeChanged" />
+                                            <span class="volume-value">@TtsVolumePercent%</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(CurrentWord.Translation))
+                        {
+                            <div class="spelling-hint mb-3">
+                                <span class="badge bg-primary-subtle text-primary px-3 py-2" style="font-size: 1rem;">
+                                    <i class="bi bi-translate me-1"></i> @CurrentWord.Translation
+                                </span>
+                            </div>
+                        }
+
+                        <div class="spelling-letters">
+                            @{
+                                var correctWord = CurrentWord.OriginalWord;
+                                for (int i = 0; i < correctWord.Length; i++)
+                                {
+                                    var idx = i;
+                                    char? typed = idx < SpellingTyped.Length ? SpellingTyped[idx] : null;
+                                    char expected = correctWord[idx];
+                                    var cellClass = "spelling-cell";
+                                    if (typed != null)
+                                    {
+                                        cellClass += char.ToLowerInvariant(typed.Value) == char.ToLowerInvariant(expected)
+                                            ? " spelling-cell--correct"
+                                            : " spelling-cell--wrong";
+                                    }
+                                    else if (idx == SpellingTyped.Length && !SpellingAnswered)
+                                    {
+                                        cellClass += " spelling-cell--cursor";
+                                    }
+                                    <span class="@cellClass">
+                                        @if (typed != null)
+                                        {
+                                            @typed
+                                        }
+                                        else if (SpellingAnswered)
+                                        {
+                                            <span class="spelling-cell__reveal">@expected</span>
+                                        }
+                                    </span>
+                                }
+                            }
+                        </div>
+
+                        @if (!SpellingAnswered)
+                        {
+                            <div class="spelling-input-area">
+                                <input type="text" class="spelling-hidden-input"
+                                       @bind="SpellingTyped"
+                                       @bind:event="oninput"
+                                       @onkeydown="HandleSpellingKeyDown"
+                                       maxlength="@CurrentWord.OriginalWord.Length"
+                                       autocomplete="off"
+                                       autocapitalize="off"
+                                       spellcheck="false"
+                                       @ref="spellingInput" />
+                                <button class="btn btn-primary btn-lg" tabindex="-1"
+                                        @onclick="SpellingCheckAndRefocus" @onclick:stopPropagation="true"
+                                        disabled="@(SpellingTyped.Length == 0)">
+                                    <i class="bi bi-check-lg me-2"></i>Проверить
+                                </button>
+                            </div>
+                        }
+
+                        @if (SpellingAnswered)
+                        {
+                            <div class="typing-feedback @(SpellingWasCorrect ? "success" : "error") mt-3">
+                                @if (SpellingWasCorrect)
+                                {
+                                    <i class="bi bi-check-circle"></i>
+                                    <span>Отлично! <strong>@SpellingCorrectWord</strong></span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle"></i>
+                                    <span>Неверно. Правильно: <strong>@SpellingCorrectWord</strong></span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(CurrentWord.Translation))
+                            {
+                                <div class="mt-2 text-muted">
+                                    <i class="bi bi-translate me-1"></i> @CurrentWord.Translation
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(CurrentWord.Transcription))
+                            {
+                                <div class="mt-2 text-muted">
+                                    <i class="bi bi-mic me-1"></i> @CurrentWord.Transcription
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(CurrentWord.Example))
+                            {
+                                <div class="example mt-2">
+                                    <i class="bi bi-chat-quote"></i> @CurrentWord.Example
+                                    <button class="btn-tts-sm" @onclick="SpeakExample" title="Прослушать пример">
+                                        <i class="bi bi-volume-up"></i>
+                                    </button>
+                                </div>
+                            }
+                            <button class="btn btn-primary btn-lg mt-3" @onclick="NextSpellingWord">
+                                <i class="bi bi-arrow-right me-2"></i>Далее
+                            </button>
+                        }
+                    </div>
+                }
             }
             else
             {
@@ -1314,6 +1458,12 @@ private bool ClozeAnswered;
 private bool ClozeWasCorrect;
 private string ClozeSentenceHtml = "";
 private string ClozeCorrectWord = "";
+
+// Spelling Bee state (§3.2 LEARNING_IMPROVEMENTS)
+private string SpellingTyped = "";
+private bool SpellingAnswered;
+private bool SpellingWasCorrect;
+private string SpellingCorrectWord = "";
 
 // Tags state (#9 LEARNING_IMPROVEMENTS)
 private List<string> AvailableTags = new();
@@ -1557,7 +1707,7 @@ private async Task InstallStarterPack()
 
     private string PickRandomExerciseType()
     {
-        var types = new[] { "flashcard", "mcq", "typing", "listening", "matching", "cloze" };
+        var types = new[] { "flashcard", "mcq", "typing", "listening", "matching", "cloze", "spelling" };
         // For cloze, need example — fallback if not available
         var picked = types[_random.Next(types.Length)];
         if (picked == "cloze" && (CurrentWord == null || string.IsNullOrWhiteSpace(CurrentWord.Example)))
@@ -1592,6 +1742,12 @@ private async Task InstallStarterPack()
         ClozeTypedAnswer = "";
         ClozeSentenceHtml = "";
         ClozeCorrectWord = "";
+
+        // Reset spelling bee state (§3.2)
+        SpellingAnswered = false;
+        SpellingWasCorrect = false;
+        SpellingTyped = "";
+        SpellingCorrectWord = "";
 
         // Reset note editor state (§8.3)
         IsEditingNote = false;
@@ -1646,6 +1802,14 @@ private async Task InstallStarterPack()
                 if (_isMixedMode)
                     _activeExerciseType = "typing";
             }
+        }
+
+        // Prepare spelling bee mode (§3.2 LEARNING_IMPROVEMENTS)
+        if (effectiveType == "spelling" && CurrentWord != null)
+        {
+            SpellingCorrectWord = CurrentWord.OriginalWord;
+            _ = SpeakWord();
+            _ = Task.Delay(100).ContinueWith(_ => InvokeAsync(FocusSpellingInput));
         }
 
         // Speed Round: auto-reveal flashcard (§3.3 LEARNING_IMPROVEMENTS)
@@ -1975,6 +2139,7 @@ private async Task InstallStarterPack()
                     "typing" => "Typing",
                     "listening" => "Listening",
                     "matching" => "Matching",
+                    "spelling" => "Spelling",
                     "mixed" => "Mixed",
                     _ => "Mixed"
                 },
@@ -2167,6 +2332,80 @@ private async Task InstallStarterPack()
     }
 
     private async Task NextClozeWord()
+    {
+        await MoveToNextWord();
+    }
+
+    // === Spelling Bee mode (§3.2 LEARNING_IMPROVEMENTS) ===
+
+    private ElementReference spellingInput;
+
+    private async Task FocusSpellingInput()
+    {
+        try { await spellingInput.FocusAsync(); } catch { }
+    }
+
+    private async Task SpellingCardClicked()
+    {
+        if (!SpellingAnswered)
+            await FocusSpellingInput();
+    }
+
+    private async Task SpellingSpeakWord()
+    {
+        await SpeakWord();
+        if (!SpellingAnswered)
+            await FocusSpellingInput();
+    }
+
+    private async Task SpellingToggleVolume()
+    {
+        ToggleVolumeSlider();
+        if (!SpellingAnswered)
+            await FocusSpellingInput();
+    }
+
+    private async Task SpellingCheckAndRefocus()
+    {
+        await CheckSpellingAnswer();
+    }
+
+    private async Task HandleSpellingKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !SpellingAnswered && SpellingTyped.Length > 0)
+        {
+            await CheckSpellingAnswer();
+        }
+    }
+
+    private async Task CheckSpellingAnswer()
+    {
+        if (SpellingAnswered || CurrentWord == null) return;
+
+        SpellingAnswered = true;
+        SpellingCorrectWord = CurrentWord.OriginalWord;
+
+        SpellingWasCorrect = string.Equals(SpellingTyped.Trim(), SpellingCorrectWord, StringComparison.OrdinalIgnoreCase);
+
+        var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
+        var quality = SpellingWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
+        await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "spelling");
+
+        if (SpellingWasCorrect)
+        {
+            CorrectCount++;
+            SessionCorrectCount++;
+        }
+        else
+        {
+            SessionWrongCount++;
+            if (!DifficultWordsList.Contains(CurrentWord.OriginalWord))
+                DifficultWordsList.Add(CurrentWord.OriginalWord);
+            _againQueue.Enqueue(CurrentWord);
+        }
+    }
+
+    private async Task NextSpellingWord()
     {
         await MoveToNextWord();
     }
