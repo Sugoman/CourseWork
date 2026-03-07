@@ -1,0 +1,287 @@
+@if (Achievement != null && Visible)
+{
+    <div class="milestone-overlay" @onclick="Dismiss">
+        <div class="milestone-toast @RarityClass" @onclick:stopPropagation="true">
+            <!-- Confetti particles -->
+            <div class="milestone-confetti">
+                @for (int i = 0; i < 24; i++)
+                {
+                    <span class="confetti-piece" style="--i: @i;"></span>
+                }
+            </div>
+
+            <div class="milestone-content">
+                <div class="milestone-icon-wrap">
+                    <span class="milestone-icon">@Achievement.Icon</span>
+                </div>
+                <div class="milestone-badge">Новое достижение!</div>
+                <h3 class="milestone-title">@Achievement.Title</h3>
+                <p class="milestone-desc">@Achievement.Description</p>
+                <span class="milestone-rarity">@RarityLabel</span>
+            </div>
+
+            <button class="milestone-close" @onclick="Dismiss">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+}
+
+<style>
+    .milestone-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(4px);
+        animation: milestoneOverlayIn 0.3s ease;
+    }
+
+    @@keyframes milestoneOverlayIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+    }
+
+    .milestone-toast {
+        position: relative;
+        width: 340px;
+        max-width: calc(100vw - 2rem);
+        background: var(--surface-card, white);
+        border-radius: 20px;
+        padding: 2.5rem 2rem 2rem;
+        text-align: center;
+        overflow: hidden;
+        animation: milestonePopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    @@keyframes milestonePopIn {
+        from { opacity: 0; transform: scale(0.7) translateY(30px); }
+        to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .milestone-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .milestone-icon-wrap {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+        animation: milestoneIconBounce 0.6s 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    .milestone-toast.rarity-rare .milestone-icon-wrap {
+        background: linear-gradient(135deg, #dbeafe, #93c5fd);
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .milestone-toast.rarity-epic .milestone-icon-wrap {
+        background: linear-gradient(135deg, #ede9fe, #a78bfa);
+        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+    }
+
+    .milestone-toast.rarity-legendary .milestone-icon-wrap {
+        background: linear-gradient(135deg, #fef3c7, #f59e0b);
+        box-shadow: 0 4px 24px rgba(245, 158, 11, 0.4);
+        animation: milestoneIconBounce 0.6s 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+                   legendaryGlow 2s ease-in-out infinite;
+    }
+
+    @@keyframes milestoneIconBounce {
+        from { transform: scale(0); }
+        to   { transform: scale(1); }
+    }
+
+    @@keyframes legendaryGlow {
+        0%, 100% { box-shadow: 0 4px 24px rgba(245, 158, 11, 0.4); }
+        50%      { box-shadow: 0 4px 32px rgba(245, 158, 11, 0.6); }
+    }
+
+    .milestone-icon {
+        font-size: 2.5rem;
+        line-height: 1;
+    }
+
+    .milestone-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #f59e0b;
+        margin-bottom: 0.5rem;
+    }
+
+    .milestone-title {
+        font-size: 1.35rem;
+        font-weight: 700;
+        margin: 0 0 0.35rem;
+        color: #1f2937;
+    }
+
+    .milestone-desc {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin: 0 0 0.75rem;
+        line-height: 1.4;
+    }
+
+    .milestone-rarity {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+
+    .rarity-uncommon .milestone-rarity {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .rarity-rare .milestone-rarity {
+        background: #dbeafe;
+        color: #2563eb;
+    }
+
+    .rarity-epic .milestone-rarity {
+        background: #ede9fe;
+        color: #7c3aed;
+    }
+
+    .rarity-legendary .milestone-rarity {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        color: #b45309;
+    }
+
+    .milestone-close {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        z-index: 3;
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: rgba(0, 0, 0, 0.06);
+        border-radius: 8px;
+        color: #9ca3af;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        transition: all 0.2s;
+    }
+
+    .milestone-close:hover {
+        background: rgba(0, 0, 0, 0.1);
+        color: #374151;
+    }
+
+    /* Confetti */
+    .milestone-confetti {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .confetti-piece {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        top: 50%;
+        left: 50%;
+        border-radius: 2px;
+        animation: confettiBurst 1s calc(var(--i) * 0.02s) cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+
+    .confetti-piece:nth-child(3n)   { background: #f43f5e; border-radius: 50%; }
+    .confetti-piece:nth-child(3n+1) { background: #3b82f6; }
+    .confetti-piece:nth-child(3n+2) { background: #f59e0b; border-radius: 50%; }
+    .confetti-piece:nth-child(4n)   { background: #10b981; }
+    .confetti-piece:nth-child(5n)   { background: #8b5cf6; width: 6px; height: 10px; }
+    .confetti-piece:nth-child(7n)   { background: #ec4899; width: 10px; height: 6px; }
+
+    @@keyframes confettiBurst {
+        0% {
+            transform: translate(0, 0) rotate(0deg) scale(0);
+            opacity: 1;
+        }
+        100% {
+            transform:
+                translate(
+                    calc(cos(calc(var(--i) * 15deg)) * 160px),
+                    calc(sin(calc(var(--i) * 15deg)) * 160px - 40px)
+                )
+                rotate(calc(var(--i) * 45deg))
+                scale(1);
+            opacity: 0;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .milestone-toast {
+            padding: 2rem 1.5rem 1.5rem;
+        }
+
+        .milestone-icon-wrap {
+            width: 64px;
+            height: 64px;
+        }
+
+        .milestone-icon {
+            font-size: 2rem;
+        }
+
+        .milestone-title {
+            font-size: 1.15rem;
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public UnlockedAchievementInfo? Achievement { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private bool Visible => Achievement != null;
+
+    private string RarityClass => Achievement?.Rarity?.ToLowerInvariant() switch
+    {
+        "uncommon" => "rarity-uncommon",
+        "rare" => "rarity-rare",
+        "epic" => "rarity-epic",
+        "legendary" => "rarity-legendary",
+        _ => "rarity-common"
+    };
+
+    private string RarityLabel => Achievement?.Rarity switch
+    {
+        "Common" => "Обычное",
+        "Uncommon" => "Необычное",
+        "Rare" => "Редкое",
+        "Epic" => "Эпическое",
+        "Legendary" => "Легендарное",
+        _ => Achievement?.Rarity ?? ""
+    };
+
+    private async Task Dismiss()
+    {
+        await OnDismiss.InvokeAsync();
+    }
+}

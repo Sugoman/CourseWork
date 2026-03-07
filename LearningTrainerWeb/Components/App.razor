@@ -14,6 +14,16 @@
     <link rel="stylesheet" href="LearningTrainerWeb.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+    <script>
+        // Apply saved theme BEFORE first paint to avoid flash (§12.1 LEARNING_IMPROVEMENTS)
+        (function() {
+            var saved = localStorage.getItem('ingat-theme');
+            if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -133,6 +143,29 @@
         function getNotificationPermission() {
             if ('Notification' in window) return Notification.permission;
             return 'denied';
+        }
+
+        // Theme toggle (§12.1 LEARNING_IMPROVEMENTS — Dark Mode)
+        function getTheme() {
+            return document.documentElement.getAttribute('data-theme') || 'light';
+        }
+
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                document.documentElement.setAttribute('data-bs-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                document.documentElement.removeAttribute('data-bs-theme');
+            }
+            localStorage.setItem('ingat-theme', theme);
+        }
+
+        function toggleTheme() {
+            var current = getTheme();
+            var next = current === 'dark' ? 'light' : 'dark';
+            setTheme(next);
+            return next;
         }
     </script>
 </body>

@@ -157,12 +157,12 @@ public class StatisticsController : BaseApiController
             return BadRequest("CompletedAt must be after StartedAt");
         }
 
-        await _statisticsService.SaveSessionAsync(userId, request, ct);
+        var newAchievements = await _statisticsService.SaveSessionAsync(userId, request, ct);
 
         // Инвалидируем кеш
         await InvalidateUserStatsCacheAsync(userId);
 
-        return Ok(new { message = "Session saved successfully" });
+        return Ok(new { message = "Session saved successfully", newAchievements });
     }
 
     /// <summary>

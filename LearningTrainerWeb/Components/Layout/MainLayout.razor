@@ -34,6 +34,10 @@
             </nav>
 
             <div class="navbar-auth">
+                <a href="settings" class="settings-nav-btn" title="Настройки" aria-label="Настройки">
+                    <i class="bi bi-gear"></i>
+                </a>
+                <ThemeToggle />
                 <AuthStatus />
             </div>
 
@@ -70,8 +74,14 @@
                 <NavLink class="mobile-nav-link" href="classroom" @onclick="CloseMobileMenu">
                     <i class="bi bi-people"></i> Класс
                 </NavLink>
+                <NavLink class="mobile-nav-link" href="settings" @onclick="CloseMobileMenu">
+                    <i class="bi bi-gear"></i> Настройки
+                </NavLink>
             </nav>
             <div class="mobile-auth">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <ThemeToggle />
+                </div>
                 <AuthStatus />
             </div>
         </div>

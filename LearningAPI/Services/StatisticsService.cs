@@ -14,7 +14,7 @@ public interface IStatisticsService
     Task<List<DictionaryStats>> GetDictionaryStatsAsync(int userId, CancellationToken ct = default);
     Task<List<DifficultWord>> GetDifficultWordsAsync(int userId, int limit, CancellationToken ct = default);
     Task<List<Achievement>> GetAchievementsAsync(int userId, CancellationToken ct = default);
-    Task SaveSessionAsync(int userId, SaveSessionRequest request, CancellationToken ct = default);
+    Task<List<UnlockedAchievementInfo>> SaveSessionAsync(int userId, SaveSessionRequest request, CancellationToken ct = default);
     Task UpdateUserStatsAsync(int userId, CancellationToken ct = default);
 }
 
@@ -27,6 +27,18 @@ public class SaveSessionRequest
     public int WrongAnswers { get; set; }
     public string Mode { get; set; } = "Flashcards";
     public int? DictionaryId { get; set; }
+}
+
+/// <summary>
+/// Информация о разблокированном достижении (§5.4 LEARNING_IMPROVEMENTS — Milestone-уведомления)
+/// </summary>
+public class UnlockedAchievementInfo
+{
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Icon { get; set; } = string.Empty;
+    public string Rarity { get; set; } = string.Empty;
 }
 
 public class StatisticsService : IStatisticsService
@@ -365,7 +377,7 @@ public class StatisticsService : IStatisticsService
         return result;
     }
 
-    public async Task SaveSessionAsync(int userId, SaveSessionRequest request, CancellationToken ct = default)
+    public async Task<List<UnlockedAchievementInfo>> SaveSessionAsync(int userId, SaveSessionRequest request, CancellationToken ct = default)
     {
         var session = new TrainingSession
         {
@@ -385,8 +397,9 @@ public class StatisticsService : IStatisticsService
         // Обновляем агрегированную статистику
         await UpdateUserStatsAsync(userId, ct);
 
-        // Проверяем достижения
-        await CheckAndUnlockAchievementsAsync(userId, session, ct);
+        // Проверяем достижения и возвращаем новые (§5.4 Milestone-уведомления)
+        var newAchievements = await CheckAndUnlockAchievementsAsync(userId, session, ct);
+        return newAchievements;
     }
 
     public async Task UpdateUserStatsAsync(int userId, CancellationToken ct = default)
@@ -464,7 +477,7 @@ public class StatisticsService : IStatisticsService
         return streak;
     }
 
-    private async Task CheckAndUnlockAchievementsAsync(int userId, TrainingSession session, CancellationToken ct)
+    private async Task<List<UnlockedAchievementInfo>> CheckAndUnlockAchievementsAsync(int userId, TrainingSession session, CancellationToken ct)
     {
         var existingAchievementsList = await _context.UserAchievements
             .Where(a => a.UserId == userId)
@@ -475,7 +488,7 @@ public class StatisticsService : IStatisticsService
 
         // Early exit — все ачивки уже разблокированы
         if (existingAchievements.Count >= AchievementDefinitions.All.Count)
-            return;
+            return new List<UnlockedAchievementInfo>();
 
         var newAchievements = new List<UserAchievement>();
 
@@ -597,6 +610,20 @@ public class StatisticsService : IStatisticsService
             _logger.LogInformation("User {UserId} unlocked {Count} new achievements", 
                 userId, newAchievements.Count);
         }
+
+        // §5.4 Milestone-уведомления: вернуть инфо о новых достижениях
+        return newAchievements.Select(a =>
+        {
+            var def = AchievementDefinitions.GetById(a.AchievementId);
+            return new UnlockedAchievementInfo
+            {
+                Id = a.AchievementId,
+                Title = def?.Title ?? a.AchievementId,
+                Description = def?.Description ?? "",
+                Icon = def?.Icon ?? "🏆",
+                Rarity = def?.Rarity.ToString() ?? "Common"
+            };
+        }).ToList();
     }
 
     private static void CheckMilestoneAchievement(string achievementId, int target, int currentValue,

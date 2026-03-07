@@ -1,0 +1,279 @@
+@* §12.3 LEARNING_IMPROVEMENTS — Onboarding overlay for new users *@
+@inject IJSRuntime JS
+
+@if (IsVisible)
+{
+    <div class="onboarding-overlay">
+        <div class="onboarding-backdrop" @onclick="Skip"></div>
+        <div class="onboarding-card">
+            <div class="onboarding-progress">
+                @for (int i = 0; i < steps.Length; i++)
+                {
+                    var idx = i;
+                    <div class="onboarding-dot @(idx == currentStep ? "active" : idx < currentStep ? "done" : "")"></div>
+                }
+            </div>
+
+            <div class="onboarding-icon">@steps[currentStep].Icon</div>
+            <h2 class="onboarding-title">@steps[currentStep].Title</h2>
+            <p class="onboarding-text">@steps[currentStep].Text</p>
+
+            <div class="onboarding-actions">
+                @if (currentStep > 0)
+                {
+                    <button class="onboarding-btn onboarding-btn-secondary" @onclick="PrevStep">
+                        <i class="bi bi-arrow-left"></i> Назад
+                    </button>
+                }
+                @if (currentStep < steps.Length - 1)
+                {
+                    <button class="onboarding-btn onboarding-btn-primary" @onclick="NextStep">
+                        Далее <i class="bi bi-arrow-right"></i>
+                    </button>
+                }
+                else
+                {
+                    <button class="onboarding-btn onboarding-btn-primary" @onclick="Finish">
+                        <i class="bi bi-rocket-takeoff me-1"></i> Начать!
+                    </button>
+                }
+            </div>
+
+            <button class="onboarding-skip" @onclick="Skip">Пропустить</button>
+        </div>
+    </div>
+}
+
+<style>
+    .onboarding-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .onboarding-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(17, 24, 39, 0.55);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+
+    .onboarding-card {
+        position: relative;
+        background: var(--surface-card, white);
+        border-radius: var(--radius-2xl, 24px);
+        box-shadow: var(--shadow-2xl, 0 25px 50px -12px rgb(0 0 0 / 0.25));
+        padding: 2.5rem 2rem 2rem;
+        max-width: 460px;
+        width: 100%;
+        text-align: center;
+        animation: onboardingIn 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @@keyframes onboardingIn {
+        from { opacity: 0; transform: scale(0.9) translateY(20px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .onboarding-progress {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .onboarding-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--gray-300, #d1d5db);
+        transition: all 0.3s ease;
+    }
+
+    .onboarding-dot.active {
+        width: 24px;
+        border-radius: 4px;
+        background: var(--primary-500, #6366f1);
+    }
+
+    .onboarding-dot.done {
+        background: var(--primary-300, #a5b4fc);
+    }
+
+    .onboarding-icon {
+        font-size: 3.5rem;
+        margin-bottom: 1rem;
+        line-height: 1;
+    }
+
+    .onboarding-title {
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--text-primary, var(--gray-900));
+        margin-bottom: 0.75rem;
+    }
+
+    .onboarding-text {
+        color: var(--text-muted, var(--gray-600));
+        font-size: 0.95rem;
+        line-height: 1.7;
+        margin-bottom: 2rem;
+        max-width: 380px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .onboarding-actions {
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .onboarding-btn {
+        padding: 0.7rem 1.5rem;
+        border-radius: var(--radius-full, 9999px);
+        font-weight: 600;
+        font-size: 0.95rem;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s;
+    }
+
+    .onboarding-btn-primary {
+        background: linear-gradient(135deg, var(--primary-500, #6366f1), var(--accent-purple, #a855f7));
+        color: white;
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    }
+
+    .onboarding-btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+    }
+
+    .onboarding-btn-secondary {
+        background: var(--gray-100, #f3f4f6);
+        color: var(--text-muted, var(--gray-600));
+    }
+
+    .onboarding-btn-secondary:hover {
+        background: var(--gray-200, #e5e7eb);
+    }
+
+    .onboarding-skip {
+        background: none;
+        border: none;
+        color: var(--text-placeholder, var(--gray-400));
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .onboarding-skip:hover {
+        color: var(--text-muted, var(--gray-600));
+    }
+
+    @@media (max-width: 575px) {
+        .onboarding-card {
+            padding: 2rem 1.5rem 1.5rem;
+        }
+
+        .onboarding-icon {
+            font-size: 2.5rem;
+        }
+
+        .onboarding-title {
+            font-size: 1.15rem;
+        }
+
+        .onboarding-text {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public EventCallback OnCompleted { get; set; }
+
+    private bool IsVisible;
+    private int currentStep = 0;
+
+    private record OnboardingStep(string Icon, string Title, string Text);
+
+    private readonly OnboardingStep[] steps = new[]
+    {
+        new OnboardingStep("🚀", "Добро пожаловать в Ingat!",
+            "Ingat использует метод интервального повторения — вы повторяете слова в оптимальный момент, когда начинаете их забывать. Это самый эффективный способ запоминания!"),
+
+        new OnboardingStep("📚", "Создайте или найдите словарь",
+            "Вы можете создать свой собственный словарь, скачать готовый из маркетплейса или установить стартовый набор одним нажатием."),
+
+        new OnboardingStep("🎯", "Выберите режим тренировки",
+            "Карточки, тест, ввод ответа, аудирование, пары, заполнение пропусков — выбирайте режим, который подходит вам, или используйте «Микс» для разнообразия."),
+
+        new OnboardingStep("⭐", "Оцените свой ответ",
+            "После каждого слова оцените, насколько хорошо вы его помните: «Не знаю» — слово повторится скоро, «Легко» — интервал увеличится. Честная самооценка — ключ к эффективности!"),
+
+        new OnboardingStep("🔥", "Занимайтесь каждый день",
+            "Даже 5 минут в день — это отличный результат. Следите за серией дней, зарабатывайте XP и достижения. Готовы начать?")
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var completed = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-onboarding-done");
+                if (completed != "true")
+                {
+                    IsVisible = true;
+                    StateHasChanged();
+                }
+            }
+            catch { }
+        }
+    }
+
+    private void NextStep()
+    {
+        if (currentStep < steps.Length - 1)
+            currentStep++;
+    }
+
+    private void PrevStep()
+    {
+        if (currentStep > 0)
+            currentStep--;
+    }
+
+    private async Task Finish()
+    {
+        await MarkCompleted();
+    }
+
+    private async Task Skip()
+    {
+        await MarkCompleted();
+    }
+
+    private async Task MarkCompleted()
+    {
+        IsVisible = false;
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "ingat-onboarding-done", "true");
+        }
+        catch { }
+        await OnCompleted.InvokeAsync();
+    }
+}

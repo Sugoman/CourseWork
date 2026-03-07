@@ -11,7 +11,7 @@ public interface IStatisticsApiService
     Task<List<DictionaryStats>> GetDictionaryStatsAsync();
     Task<List<DifficultWord>> GetDifficultWordsAsync(int limit = 20);
     Task<List<Achievement>> GetAchievementsAsync();
-    Task<bool> SaveSessionAsync(SaveSessionRequest request);
+    Task<List<UnlockedAchievementInfo>> SaveSessionAsync(SaveSessionRequest request);
 }
 
 public class StatisticsApiService : IStatisticsApiService
@@ -163,20 +163,46 @@ public class StatisticsApiService : IStatisticsApiService
         }
     }
 
-    public async Task<bool> SaveSessionAsync(SaveSessionRequest request)
+    public async Task<List<UnlockedAchievementInfo>> SaveSessionAsync(SaveSessionRequest request)
     {
         try
         {
             await ApplyAuthAsync();
             var response = await _httpClient.PostAsJsonAsync("api/statistics/session", request);
-            return response.IsSuccessStatusCode;
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<SaveSessionResponse>();
+                return result?.NewAchievements ?? new List<UnlockedAchievementInfo>();
+            }
+            return new List<UnlockedAchievementInfo>();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving session");
-            return false;
+            return new List<UnlockedAchievementInfo>();
         }
     }
+}
+
+/// <summary>
+/// Ответ сервера при сохранении сессии (§5.4 Milestone-уведомления)
+/// </summary>
+public class SaveSessionResponse
+{
+    public string? Message { get; set; }
+    public List<UnlockedAchievementInfo> NewAchievements { get; set; } = new();
+}
+
+/// <summary>
+/// Информация о разблокированном достижении
+/// </summary>
+public class UnlockedAchievementInfo
+{
+    public string Id { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Icon { get; set; } = string.Empty;
+    public string Rarity { get; set; } = string.Empty;
 }
 
 public class SaveSessionRequest

@@ -38,6 +38,25 @@
     --gray-800: #1f2937;
     --gray-900: #111827;
 
+    /* Semantic surface colors (§12.1 LEARNING_IMPROVEMENTS — Dark Mode) */
+    --surface-body: var(--gray-50);
+    --surface-card: #ffffff;
+    --surface-elevated: #ffffff;
+    --surface-input: #ffffff;
+    --surface-navbar: rgba(255, 255, 255, 0.9);
+    --surface-mobile-menu: #ffffff;
+    --surface-footer: #ffffff;
+    --surface-tabs: var(--gray-100);
+    --surface-tabs-active: #ffffff;
+    --border-default: var(--gray-200);
+    --border-light: var(--gray-100);
+    --border-navbar: rgba(0, 0, 0, 0.06);
+    --text-primary: var(--gray-900);
+    --text-secondary: var(--gray-800);
+    --text-body: var(--gray-700);
+    --text-muted: var(--gray-600);
+    --text-placeholder: var(--gray-400);
+
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
@@ -64,6 +83,57 @@
     --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* ===== DARK THEME (§12.1 LEARNING_IMPROVEMENTS) ===== */
+[data-theme="dark"] {
+    --gray-50: #111827;
+    --gray-100: #1f2937;
+    --gray-200: #374151;
+    --gray-300: #4b5563;
+    --gray-400: #6b7280;
+    --gray-500: #9ca3af;
+    --gray-600: #d1d5db;
+    --gray-700: #e5e7eb;
+    --gray-800: #f3f4f6;
+    --gray-900: #f9fafb;
+
+    --primary-50: rgba(99, 102, 241, 0.1);
+    --primary-100: rgba(99, 102, 241, 0.15);
+    --primary-200: rgba(99, 102, 241, 0.25);
+
+    --accent-green-light: rgba(16, 185, 129, 0.15);
+    --accent-yellow-light: rgba(245, 158, 11, 0.15);
+    --accent-red-light: rgba(239, 68, 68, 0.15);
+    --accent-blue-light: rgba(59, 130, 246, 0.15);
+    --accent-purple-light: rgba(168, 85, 247, 0.15);
+
+    --surface-body: #0f172a;
+    --surface-card: #1e293b;
+    --surface-elevated: #1e293b;
+    --surface-input: #1e293b;
+    --surface-navbar: rgba(15, 23, 42, 0.92);
+    --surface-mobile-menu: #1e293b;
+    --surface-footer: #1e293b;
+    --surface-tabs: #1e293b;
+    --surface-tabs-active: #334155;
+    --border-default: #334155;
+    --border-light: #1e293b;
+    --border-navbar: rgba(255, 255, 255, 0.06);
+    --text-primary: #f1f5f9;
+    --text-secondary: #e2e8f0;
+    --text-body: #cbd5e1;
+    --text-muted: #94a3b8;
+    --text-placeholder: #64748b;
+
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.2);
+    --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.2);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.3), 0 4px 6px -4px rgb(0 0 0 / 0.2);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.2);
+    --shadow-colored: 0 4px 14px 0 rgb(99 102 241 / 0.35);
+    --shadow-card: 0 4px 20px -2px rgb(0 0 0 / 0.2), 0 2px 8px -2px rgb(0 0 0 / 0.15);
+    --shadow-card-hover: 0 20px 40px -8px rgb(99 102 241 / 0.25), 0 8px 16px -4px rgb(0 0 0 / 0.2);
+}
+
 /* ===== BASE STYLES ===== */
 *, *::before, *::after {
     box-sizing: border-box;
@@ -76,14 +146,15 @@ html {
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: var(--gray-50);
-    color: var(--gray-800);
+    background-color: var(--surface-body);
+    color: var(--text-body);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body.mobile-menu-open {
@@ -93,7 +164,7 @@ body.mobile-menu-open {
 h1, h2, h3, h4, h5, h6 {
     font-family: 'Poppins', sans-serif;
     font-weight: 700;
-    color: var(--gray-900);
+    color: var(--text-primary);
     line-height: 1.2;
     margin: 0;
 }
@@ -128,11 +199,12 @@ a:hover {
     left: 0;
     right: 0;
     z-index: 1000;
-    background: rgba(255, 255, 255, 0.9);
+    background: var(--surface-navbar);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    border-bottom: 1px solid var(--border-navbar);
     height: 72px;
+    transition: background-color 0.3s ease;
 }
 
 .navbar-container {
@@ -153,7 +225,7 @@ a:hover {
     font-family: 'Poppins', sans-serif;
     font-size: 1.35rem;
     font-weight: 700;
-    color: var(--gray-900) !important;
+    color: var(--text-primary) !important;
     text-decoration: none;
 }
 
@@ -181,7 +253,7 @@ a:hover {
     gap: 0.5rem;
     padding: 0.625rem 0.875rem;
     border-radius: var(--radius);
-    color: var(--gray-600);
+    color: var(--text-muted);
     font-weight: 500;
     font-size: 0.95rem;
     white-space: nowrap;
@@ -202,6 +274,30 @@ a:hover {
 .navbar-auth {
     display: flex;
     align-items: center;
+    gap: 0.25rem;
+}
+
+.settings-nav-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition);
+    font-size: 1.05rem;
+    text-decoration: none;
+}
+
+.settings-nav-btn:hover {
+    background: var(--primary-50);
+    border-color: var(--primary-400);
+    color: var(--primary-600);
 }
 
 .mobile-menu-toggle {
@@ -242,7 +338,7 @@ a:hover {
     left: 0;
     right: 0;
     bottom: 0;
-    background: white;
+    background: var(--surface-mobile-menu);
     padding: 1rem;
     padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
     z-index: 999;
@@ -275,7 +371,7 @@ a:hover {
     gap: 0.75rem;
     padding: 0.875rem 1rem;
     border-radius: var(--radius);
-    color: var(--gray-700);
+    color: var(--text-body);
     font-weight: 500;
     font-size: 1rem;
     text-decoration: none;
@@ -292,7 +388,7 @@ a:hover {
 .mobile-auth {
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid var(--gray-200);
+    border-top: 1px solid var(--border-default);
 }
 
 @media (max-width: 991px) {
@@ -583,7 +679,7 @@ a:hover {
 /* ===== FEATURES SECTION ===== */
 .features-section {
     padding: 6rem 0;
-    background: white;
+    background: var(--surface-card);
 }
 
 .features-grid {
@@ -593,7 +689,7 @@ a:hover {
 }
 
 .feature-card-modern {
-    background: white;
+    background: var(--surface-card);
     border-radius: var(--radius-xl);
     padding: 2.5rem;
     box-shadow: var(--shadow-card);
@@ -694,7 +790,7 @@ a:hover {
 }
 
 .popular-card {
-    background: white;
+    background: var(--surface-card);
     border-radius: var(--radius-xl);
     padding: 1.5rem;
     box-shadow: var(--shadow-card);
@@ -749,7 +845,7 @@ a:hover {
     font-size: 1.15rem;
     font-weight: 600;
     margin-bottom: 0.75rem;
-    color: var(--gray-900);
+    color: var(--text-primary);
 }
 
 .popular-author {
@@ -778,7 +874,7 @@ a:hover {
     justify-content: space-between;
     align-items: center;
     padding-top: 1rem;
-    border-top: 1px solid var(--gray-100);
+    border-top: 1px solid var(--border-light);
 }
 
 .popular-downloads {
@@ -907,9 +1003,10 @@ a:hover {
 
 /* ===== FOOTER ===== */
 .site-footer {
-    background: white;
-    border-top: 1px solid var(--gray-200);
+    background: var(--surface-footer);
+    border-top: 1px solid var(--border-default);
     padding: 2rem;
+    transition: background-color 0.3s ease;
 }
 
 .footer-container {
@@ -1008,7 +1105,7 @@ a:hover {
 
 /* ===== CARDS ===== */
 .card {
-    background: white;
+    background: var(--surface-card);
     border: none;
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-card);
@@ -1028,18 +1125,18 @@ a:hover {
 .card-title {
     font-family: 'Poppins', sans-serif;
     font-weight: 600;
-    color: var(--gray-900);
+    color: var(--text-primary);
     margin-bottom: 0.5rem;
 }
 
 .card-text {
-    color: var(--gray-600);
+    color: var(--text-muted);
     font-size: 0.95rem;
 }
 
 .card-footer {
-    background: var(--gray-50);
-    border-top: 1px solid var(--gray-100);
+    background: var(--surface-body);
+    border-top: 1px solid var(--border-light);
     padding: 1rem 1.5rem;
 }
 
@@ -1091,13 +1188,13 @@ a:hover {
 }
 
 .btn-light {
-    background: white;
+    background: var(--surface-card);
     color: var(--primary-700);
     box-shadow: var(--shadow);
 }
 
 .btn-light:hover {
-    background: white;
+    background: var(--surface-elevated);
     color: var(--primary-800);
     box-shadow: var(--shadow-md);
 }
@@ -1153,12 +1250,13 @@ a:hover {
 
 /* ===== FORMS ===== */
 .form-control, .form-select {
-    border: 2px solid var(--gray-200);
+    border: 2px solid var(--border-default);
     border-radius: var(--radius);
     padding: 0.75rem 1rem;
     font-size: 0.95rem;
     transition: all var(--transition-fast);
-    background-color: white;
+    background-color: var(--surface-input);
+    color: var(--text-secondary);
 }
 
 .form-control:focus, .form-select:focus {
@@ -1173,7 +1271,7 @@ a:hover {
 
 .form-label {
     font-weight: 600;
-    color: var(--gray-700);
+    color: var(--text-body);
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
 }
@@ -1190,11 +1288,11 @@ a:hover {
 }
 
 .input-group-text {
-    background: white;
-    border: 2px solid var(--gray-200);
+    background: var(--surface-input);
+    border: 2px solid var(--border-default);
     border-right: none;
     border-radius: var(--radius) 0 0 var(--radius) !important;
-    color: var(--gray-500);
+    color: var(--text-muted);
     padding: 0.75rem 1rem;
 }
 
@@ -1317,7 +1415,7 @@ a:hover {
 .nav-tabs {
     border: none;
     gap: 0.5rem;
-    background: var(--gray-100);
+    background: var(--surface-tabs);
     padding: 0.5rem;
     border-radius: var(--radius);
 }
@@ -1333,11 +1431,11 @@ a:hover {
 
 .nav-tabs .nav-link:hover {
     color: var(--primary-600);
-    background: white;
+    background: var(--surface-tabs-active);
 }
 
 .nav-tabs .nav-link.active {
-    background: white;
+    background: var(--surface-tabs-active);
     color: var(--primary-600);
     box-shadow: var(--shadow-sm);
 }
@@ -1350,11 +1448,11 @@ a:hover {
 .page-item .page-link {
     border: none;
     border-radius: var(--radius-sm);
-    color: var(--gray-600);
+    color: var(--text-muted);
     font-weight: 600;
     padding: 0.625rem 1rem;
     transition: all var(--transition);
-    background: white;
+    background: var(--surface-card);
     box-shadow: var(--shadow-sm);
 }
 
@@ -1392,7 +1490,7 @@ a:hover {
 
 /* ===== STATS SECTION ===== */
 .stats-section {
-    background: white;
+    background: var(--surface-card);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow);
 }
@@ -1458,7 +1556,7 @@ a:hover {
 
 /* ===== FEATURE CARDS ===== */
 .feature-card {
-    background: white;
+    background: var(--surface-card);
     border-radius: var(--radius-xl);
     padding: 2rem;
     text-align: center;

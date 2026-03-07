@@ -1,0 +1,58 @@
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<button class="theme-toggle-btn" @onclick="Toggle" title="@(isDark ? "Светлая тема" : "Тёмная тема")" aria-label="Переключить тему">
+    <i class="bi @(isDark ? "bi-sun-fill" : "bi-moon-fill")"></i>
+</button>
+
+<style>
+    .theme-toggle-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius);
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all var(--transition);
+        font-size: 1.05rem;
+    }
+
+    .theme-toggle-btn:hover {
+        background: var(--primary-50);
+        border-color: var(--primary-400);
+        color: var(--primary-600);
+    }
+</style>
+
+@code {
+    private bool isDark;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var theme = await JS.InvokeAsync<string>("getTheme");
+                isDark = theme == "dark";
+                StateHasChanged();
+            }
+            catch { }
+        }
+    }
+
+    private async Task Toggle()
+    {
+        try
+        {
+            var newTheme = await JS.InvokeAsync<string>("toggleTheme");
+            isDark = newTheme == "dark";
+        }
+        catch { }
+    }
+}

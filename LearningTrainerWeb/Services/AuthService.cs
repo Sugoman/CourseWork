@@ -24,6 +24,11 @@ public interface IAuthService
     /// Updates the current session's access token and role without requiring re-login.
     /// </summary>
     Task UpdateSessionAsync(string newAccessToken, string newRole);
+
+    /// <summary>
+    /// Changes the user's password via the API.
+    /// </summary>
+    Task<(bool Success, string Message)> ChangePasswordAsync(string oldPassword, string newPassword);
 }
 
 public class AuthService : IAuthService
@@ -295,6 +300,31 @@ public class AuthService : IAuthService
         }
         return _currentSession;
     }
+
+    public async Task<(bool Success, string Message)> ChangePasswordAsync(string oldPassword, string newPassword)
+    {
+        try
+        {
+            await _tokenProvider.EnsureValidTokenAsync(_httpClient);
+            var request = new { OldPassword = oldPassword, NewPassword = newPassword };
+            var response = await _httpClient.PostAsJsonAsync("api/auth/change-password", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                return (true, "Пароль успешно обновлён");
+            }
+
+            var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+            return (false, error?.Message ?? "Ошибка при смене пароля");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error changing password");
+            return (false, "Ошибка соединения с сервером");
+        }
+    }
+
+    private class ErrorResponse { public string? Message { get; set; } }
 
     private class LoginResponse
     {

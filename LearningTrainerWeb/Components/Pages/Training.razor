@@ -81,6 +81,10 @@
     {
         <!-- Обзор плана на сегодня -->
         <div class="daily-plan">
+
+            <!-- §12.3 LEARNING_IMPROVEMENTS — Onboarding for new users -->
+            <OnboardingOverlay />
+
             <div class="plan-header">
                 <h1>
                     <i class="bi bi-calendar-check me-2"></i>
@@ -1404,6 +1408,10 @@
     }
 </div>
 
+<LearningTrainerWeb.Components.Shared.MilestoneToast
+    Achievement="@CurrentMilestone"
+    OnDismiss="DismissMilestone" />
+
 @code {
 private bool IsAuthenticated;
 private bool IsLoading = true;
@@ -1529,6 +1537,10 @@ private string? AiMnemonic;
 private bool IsLoadingAiExplanation;
 private bool IsLoadingMnemonic;
 
+// Milestone toast state (§5.4 LEARNING_IMPROVEMENTS)
+private Queue<UnlockedAchievementInfo> _milestoneQueue = new();
+private UnlockedAchievementInfo? CurrentMilestone;
+
 // Element reference for focus
 private ElementReference trainingContainer;
 
@@ -1537,6 +1549,24 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
     if (firstRender)
     {
         IsEdgeBrowser = await JS.InvokeAsync<bool>("isEdgeBrowser");
+
+        // Load saved preferences from localStorage (§12.2 LEARNING_IMPROVEMENTS)
+        try
+        {
+            var vol = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-tts-volume");
+            if (double.TryParse(vol, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v))
+                TtsVolume = v;
+
+            var dir = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-translation-dir");
+            if (!string.IsNullOrEmpty(dir) && TranslationDirection == "direct")
+            {
+                if (dir == "normal") TranslationDirection = "direct";
+                else if (dir == "reverse") TranslationDirection = "reverse";
+                else if (dir == "auto") TranslationDirection = "auto";
+            }
+        }
+        catch { }
+
         StateHasChanged();
 
         if (IsTrainingActive)
@@ -1728,11 +1758,49 @@ private async Task InstallStarterPack()
 
     private string PickRandomExerciseType()
     {
+        // §14.4 LEARNING_IMPROVEMENTS — Adaptive exercise type selection
+        // Choose exercise type based on word's KnowledgeLevel for optimal learning progression
+        if (CurrentWord != null)
+        {
+            var level = CurrentWord.KnowledgeLevel;
+            var hasExample = !string.IsNullOrWhiteSpace(CurrentWord.Example);
+
+            // KnowledgeLevel 0 (new) → flashcard (introduction, low pressure)
+            if (level == 0)
+                return "flashcard";
+
+            // KnowledgeLevel 1–2 → MCQ (recognition from options) with some flashcard
+            if (level <= 2)
+                return _random.NextDouble() < 0.7 ? "mcq" : "flashcard";
+
+            // KnowledgeLevel 3 → typing (active recall) with some MCQ
+            if (level == 3)
+                return _random.NextDouble() < 0.6 ? "typing" : "mcq";
+
+            // KnowledgeLevel 4 → cloze/listening (context & listening)
+            if (level == 4)
+            {
+                var r = _random.NextDouble();
+                if (r < 0.35 && hasExample) return "cloze";
+                if (r < 0.65) return "listening";
+                return "typing";
+            }
+
+            // KnowledgeLevel 5+ → spelling/reverse typing (mastery: exact reproduction)
+            if (level >= 5)
+            {
+                var r = _random.NextDouble();
+                if (r < 0.4) return "spelling";
+                if (r < 0.7) return "typing";
+                return "listening";
+            }
+        }
+
+        // Fallback: pure random (original behavior)
         var types = new[] { "flashcard", "mcq", "typing", "listening", "matching", "cloze", "spelling" };
-        // For cloze, need example — fallback if not available
         var picked = types[_random.Next(types.Length)];
         if (picked == "cloze" && (CurrentWord == null || string.IsNullOrWhiteSpace(CurrentWord.Example)))
-            picked = "typing"; // fallback
+            picked = "typing";
         return picked;
     }
 
@@ -2167,7 +2235,16 @@ private async Task InstallStarterPack()
                 DictionaryId = TrainingWords.FirstOrDefault()?.DictionaryId
             };
 
-            await StatsService.SaveSessionAsync(request);
+            var newAchievements = await StatsService.SaveSessionAsync(request);
+
+            // §5.4 Milestone-уведомления: показать pop-up при новых достижениях
+            if (newAchievements.Count > 0)
+            {
+                foreach (var a in newAchievements)
+                    _milestoneQueue.Enqueue(a);
+
+                ShowNextMilestone();
+            }
         }
         catch (Exception ex)
         {
@@ -2437,11 +2514,41 @@ private async Task InstallStarterPack()
         TtsTipDismissed = true;
     }
 
-    private void OnVolumeChanged(ChangeEventArgs e)
+    // === Milestone toast (§5.4 LEARNING_IMPROVEMENTS) ===
+
+    private void ShowNextMilestone()
+    {
+        if (_milestoneQueue.Count > 0)
+        {
+            CurrentMilestone = _milestoneQueue.Dequeue();
+            StateHasChanged();
+        }
+        else
+        {
+            CurrentMilestone = null;
+        }
+    }
+
+    private void DismissMilestone()
+    {
+        CurrentMilestone = null;
+        // Показать следующее достижение из очереди, если есть
+        if (_milestoneQueue.Count > 0)
+        {
+            _ = Task.Delay(300).ContinueWith(_ => InvokeAsync(() =>
+            {
+                ShowNextMilestone();
+                StateHasChanged();
+            }));
+        }
+    }
+
+    private async Task OnVolumeChanged(ChangeEventArgs e)
     {
         if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var vol))
         {
             TtsVolume = Math.Max(0, Math.Min(1, vol));
+            try { await JS.InvokeVoidAsync("localStorage.setItem", "ingat-tts-volume", TtsVolume.ToString(System.Globalization.CultureInfo.InvariantCulture)); } catch { }
         }
     }
 

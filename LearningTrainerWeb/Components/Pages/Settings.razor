@@ -1,0 +1,551 @@
+@* §12.2 LEARNING_IMPROVEMENTS — Настройки пользователя *@
+@page "/settings"
+@rendermode InteractiveServer
+@inject IAuthService AuthService
+@inject ITrainingApiService TrainingApi
+@inject IJSRuntime JS
+
+@using LearningTrainerShared.Models
+
+<div class="container py-4" style="max-width: 800px;">
+    <div class="settings-header mb-4">
+        <h1><i class="bi bi-gear me-2"></i>Настройки</h1>
+        <p class="text-muted">Настройте приложение под себя</p>
+    </div>
+
+    @if (!IsAuthenticated)
+    {
+        <div class="card" style="border-radius: var(--radius-lg);">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-lock" style="font-size: 3rem; opacity: 0.4;"></i>
+                <h5 class="mt-3">Авторизуйтесь для доступа к настройкам</h5>
+                <a href="login" class="btn btn-primary mt-2"><i class="bi bi-box-arrow-in-right me-1"></i> Войти</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        @* === ПРОФИЛЬ === *@
+        <div class="settings-section">
+            <div class="settings-section-header" @onclick='() => ToggleSection("profile")'>
+                <div class="settings-section-title">
+                    <i class="bi bi-person-circle"></i>
+                    <span>Профиль</span>
+                </div>
+                <i class="bi @(expandedSections.Contains("profile") ? "bi-chevron-up" : "bi-chevron-down")"></i>
+            </div>
+            @if (expandedSections.Contains("profile"))
+            {
+                <div class="settings-section-body">
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Имя пользователя</strong>
+                            <span class="text-muted small">Ваш логин в системе</span>
+                        </div>
+                        <div class="setting-value">
+                            <span class="badge-info-text">@Session?.UserName</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Email</strong>
+                        </div>
+                        <div class="setting-value">
+                            <span class="badge-info-text">@Session?.Email</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Роль</strong>
+                        </div>
+                        <div class="setting-value">
+                            <span class="role-badge">@(Session?.Role ?? "User")</span>
+                        </div>
+                    </div>
+
+                    <hr class="my-3" />
+
+                    <h6 class="mb-3"><i class="bi bi-key me-1"></i> Смена пароля</h6>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Текущий пароль</label>
+                        <input type="password" class="form-control" @bind="OldPassword" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Новый пароль</label>
+                        <input type="password" class="form-control" @bind="NewPassword" />
+                        <div class="form-text">Минимум 8 символов, хотя бы одна буква и одна цифра</div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" @onclick="ChangePassword"
+                            disabled="@(IsChangingPassword || string.IsNullOrWhiteSpace(OldPassword) || string.IsNullOrWhiteSpace(NewPassword))">
+                        @if (IsChangingPassword)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        <i class="bi bi-check-lg me-1"></i> Обновить пароль
+                    </button>
+
+                    @if (PasswordMessage != null)
+                    {
+                        <div class="mt-2 small @(PasswordSuccess ? "text-success" : "text-danger")">
+                            <i class="bi @(PasswordSuccess ? "bi-check-circle" : "bi-exclamation-circle") me-1"></i>@PasswordMessage
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @* === ОБУЧЕНИЕ === *@
+        <div class="settings-section">
+            <div class="settings-section-header" @onclick='() => ToggleSection("learning")'>
+                <div class="settings-section-title">
+                    <i class="bi bi-mortarboard"></i>
+                    <span>Обучение</span>
+                </div>
+                <i class="bi @(expandedSections.Contains("learning") ? "bi-chevron-up" : "bi-chevron-down")"></i>
+            </div>
+            @if (expandedSections.Contains("learning"))
+            {
+                <div class="settings-section-body">
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Дневная цель</strong>
+                            <span class="text-muted small">Количество слов для изучения в день</span>
+                        </div>
+                        <div class="setting-value">
+                            <div class="setting-options">
+                                @foreach (var g in new[] { 5, 10, 15, 20, 30, 50 })
+                                {
+                                    var goal = g;
+                                    <button class="setting-pill @(DailyGoal == goal ? "active" : "")"
+                                            @onclick="() => SetDailyGoal(goal)">@goal</button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Предпочтительный режим</strong>
+                            <span class="text-muted small">Режим по умолчанию при запуске тренировки</span>
+                        </div>
+                        <div class="setting-value">
+                            <select class="form-select form-select-sm" style="max-width: 200px;"
+                                    value="@PreferredMode" @onchange="OnPreferredModeChanged">
+                                <option value="mixed">Микс</option>
+                                <option value="flashcard">Карточки</option>
+                                <option value="mcq">Тест</option>
+                                <option value="typing">Ввод ответа</option>
+                                <option value="listening">Аудирование</option>
+                                <option value="matching">Пары</option>
+                                <option value="cloze">Заполнение пропуска</option>
+                                <option value="speed">Скорость</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Направление перевода</strong>
+                            <span class="text-muted small">Обычное: слово → перевод. Обратное: перевод → слово</span>
+                        </div>
+                        <div class="setting-value">
+                            <div class="setting-options">
+                                <button class="setting-pill @(TranslationDir == "normal" ? "active" : "")"
+                                        @onclick='() => SetTranslationDir("normal")'>Обычное</button>
+                                <button class="setting-pill @(TranslationDir == "reverse" ? "active" : "")"
+                                        @onclick='() => SetTranslationDir("reverse")'>Обратное</button>
+                                <button class="setting-pill @(TranslationDir == "auto" ? "active" : "")"
+                                        @onclick='() => SetTranslationDir("auto")'>Авто ↑</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* === ИНТЕРФЕЙС === *@
+        <div class="settings-section">
+            <div class="settings-section-header" @onclick='() => ToggleSection("interface")'>
+                <div class="settings-section-title">
+                    <i class="bi bi-palette"></i>
+                    <span>Интерфейс</span>
+                </div>
+                <i class="bi @(expandedSections.Contains("interface") ? "bi-chevron-up" : "bi-chevron-down")"></i>
+            </div>
+            @if (expandedSections.Contains("interface"))
+            {
+                <div class="settings-section-body">
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Тема оформления</strong>
+                            <span class="text-muted small">Выберите светлую, тёмную или системную тему</span>
+                        </div>
+                        <div class="setting-value">
+                            <div class="setting-options">
+                                <button class="setting-pill @(ThemeMode == "light" ? "active" : "")"
+                                        @onclick='() => SetTheme("light")'>
+                                    <i class="bi bi-sun me-1"></i> Светлая
+                                </button>
+                                <button class="setting-pill @(ThemeMode == "dark" ? "active" : "")"
+                                        @onclick='() => SetTheme("dark")'>
+                                    <i class="bi bi-moon me-1"></i> Тёмная
+                                </button>
+                                <button class="setting-pill @(ThemeMode == "auto" ? "active" : "")"
+                                        @onclick='() => SetTheme("auto")'>
+                                    <i class="bi bi-circle-half me-1"></i> Авто
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Громкость TTS</strong>
+                            <span class="text-muted small">Громкость произношения слов</span>
+                        </div>
+                        <div class="setting-value d-flex align-items-center gap-2" style="min-width: 200px;">
+                            <i class="bi bi-volume-down"></i>
+                            <input type="range" class="form-range" min="0" max="1" step="0.1"
+                                   value="@TtsVolume.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                   @onchange="OnTtsVolumeChanged" />
+                            <i class="bi bi-volume-up"></i>
+                            <span class="small text-muted" style="min-width: 36px;">@((TtsVolume * 100).ToString("0"))%</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Скорость TTS</strong>
+                            <span class="text-muted small">Скорость произношения (0.5–1.5)</span>
+                        </div>
+                        <div class="setting-value d-flex align-items-center gap-2" style="min-width: 200px;">
+                            <i class="bi bi-speedometer"></i>
+                            <input type="range" class="form-range" min="0.5" max="1.5" step="0.1"
+                                   value="@TtsSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                   @onchange="OnTtsSpeedChanged" />
+                            <span class="small text-muted" style="min-width: 36px;">×@TtsSpeed.ToString("0.0")</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* === УВЕДОМЛЕНИЯ === *@
+        <div class="settings-section">
+            <div class="settings-section-header" @onclick='() => ToggleSection("notifications")'>
+                <div class="settings-section-title">
+                    <i class="bi bi-bell"></i>
+                    <span>Уведомления</span>
+                </div>
+                <i class="bi @(expandedSections.Contains("notifications") ? "bi-chevron-up" : "bi-chevron-down")"></i>
+            </div>
+            @if (expandedSections.Contains("notifications"))
+            {
+                <div class="settings-section-body">
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Напоминания о тренировке</strong>
+                            <span class="text-muted small">Показывать всплывающие напоминания</span>
+                        </div>
+                        <div class="setting-value">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" checked="@RemindersEnabled"
+                                       @onchange="OnRemindersToggled" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Браузерные уведомления</strong>
+                            <span class="text-muted small">Уведомления когда вкладка в фоне</span>
+                        </div>
+                        <div class="setting-value">
+                            @if (NotificationPermission == "granted")
+                            {
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Разрешены</span>
+                            }
+                            else if (NotificationPermission == "denied")
+                            {
+                                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Заблокированы</span>
+                            }
+                            else
+                            {
+                                <button class="btn btn-outline-primary btn-sm" @onclick="RequestNotificationPermission">
+                                    <i class="bi bi-bell me-1"></i> Разрешить
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* === О ПРИЛОЖЕНИИ === *@
+        <div class="settings-section">
+            <div class="settings-section-header" @onclick='() => ToggleSection("about")'>
+                <div class="settings-section-title">
+                    <i class="bi bi-info-circle"></i>
+                    <span>О приложении</span>
+                </div>
+                <i class="bi @(expandedSections.Contains("about") ? "bi-chevron-up" : "bi-chevron-down")"></i>
+            </div>
+            @if (expandedSections.Contains("about"))
+            {
+                <div class="settings-section-body">
+                    <div class="setting-row">
+                        <div class="setting-label"><strong>Версия</strong></div>
+                        <div class="setting-value"><span class="badge-info-text">1.0.0</span></div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-label"><strong>Алгоритм повторения</strong></div>
+                        <div class="setting-value"><span class="badge-info-text">SM-2 (модифицированный)</span></div>
+                    </div>
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Сбросить онбординг</strong>
+                            <span class="text-muted small">Показать приветственный тур заново</span>
+                        </div>
+                        <div class="setting-value">
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="ResetOnboarding">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i> Сбросить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @* === Toast === *@
+        <LearningTrainerWeb.Components.Shared.AppToast
+            Message="@ToastMessage"
+            IsSuccess="@ToastSuccess"
+            OnDismiss="() => ToastMessage = null" />
+    }
+</div>
+
+@code {
+    private UserSession? Session;
+    private bool IsAuthenticated;
+
+    // Profile
+    private string OldPassword = "";
+    private string NewPassword = "";
+    private bool IsChangingPassword;
+    private string? PasswordMessage;
+    private bool PasswordSuccess;
+
+    // Learning
+    private int DailyGoal = 20;
+    private string PreferredMode = "mixed";
+    private string TranslationDir = "normal";
+
+    // Interface
+    private string ThemeMode = "light";
+    private double TtsVolume = 1.0;
+    private double TtsSpeed = 0.9;
+
+    // Notifications
+    private bool RemindersEnabled = true;
+    private string NotificationPermission = "default";
+
+    // UI
+    private HashSet<string> expandedSections = new() { "profile" };
+    private string? ToastMessage;
+    private bool ToastSuccess;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Session = await AuthService.GetCurrentSessionAsync();
+            IsAuthenticated = Session != null;
+
+            if (IsAuthenticated)
+            {
+                await LoadLocalSettings();
+                await LoadDailyGoal();
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadLocalSettings()
+    {
+        try
+        {
+            var theme = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-theme");
+            ThemeMode = theme ?? "light";
+
+            var vol = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-tts-volume");
+            if (double.TryParse(vol, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v))
+                TtsVolume = v;
+
+            var spd = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-tts-speed");
+            if (double.TryParse(spd, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var s))
+                TtsSpeed = s;
+
+            var mode = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-preferred-mode");
+            if (!string.IsNullOrEmpty(mode)) PreferredMode = mode;
+
+            var dir = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-translation-dir");
+            if (!string.IsNullOrEmpty(dir)) TranslationDir = dir;
+
+            var rem = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-reminders-enabled");
+            RemindersEnabled = rem != "false";
+
+            NotificationPermission = await JS.InvokeAsync<string>("getNotificationPermission");
+        }
+        catch { }
+    }
+
+    private async Task LoadDailyGoal()
+    {
+        try
+        {
+            var plan = await TrainingApi.GetDailyPlanAsync();
+            if (plan != null && plan.Stats.DailyGoal > 0)
+                DailyGoal = plan.Stats.DailyGoal;
+        }
+        catch { }
+    }
+
+    private void ToggleSection(string section)
+    {
+        if (!expandedSections.Add(section))
+            expandedSections.Remove(section);
+    }
+
+    // === Profile ===
+    private async Task ChangePassword()
+    {
+        if (string.IsNullOrWhiteSpace(OldPassword) || string.IsNullOrWhiteSpace(NewPassword)) return;
+
+        IsChangingPassword = true;
+        PasswordMessage = null;
+        try
+        {
+            var (success, message) = await AuthService.ChangePasswordAsync(OldPassword, NewPassword);
+            PasswordSuccess = success;
+            PasswordMessage = message;
+            if (success)
+            {
+                OldPassword = "";
+                NewPassword = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            PasswordSuccess = false;
+            PasswordMessage = "Ошибка: " + ex.Message;
+        }
+        finally
+        {
+            IsChangingPassword = false;
+        }
+    }
+
+    // === Learning ===
+    private async Task SetDailyGoal(int goal)
+    {
+        DailyGoal = goal;
+        await TrainingApi.SetDailyGoalAsync(goal);
+        ShowToast("Дневная цель обновлена", true);
+    }
+
+    private async Task OnPreferredModeChanged(ChangeEventArgs e)
+    {
+        PreferredMode = e.Value?.ToString() ?? "mixed";
+        await SaveLocal("ingat-preferred-mode", PreferredMode);
+    }
+
+    private async Task SetTranslationDir(string dir)
+    {
+        TranslationDir = dir;
+        await SaveLocal("ingat-translation-dir", dir);
+    }
+
+    // === Interface ===
+    private async Task SetTheme(string theme)
+    {
+        ThemeMode = theme;
+        try
+        {
+            if (theme == "auto")
+            {
+                var prefersDark = await JS.InvokeAsync<bool>("eval",
+                    "window.matchMedia('(prefers-color-scheme: dark)').matches");
+                await JS.InvokeVoidAsync("setTheme", prefersDark ? "dark" : "light");
+                await SaveLocal("ingat-theme", "auto");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("setTheme", theme);
+            }
+        }
+        catch { }
+    }
+
+    private async Task OnTtsVolumeChanged(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var v))
+        {
+            TtsVolume = v;
+            await SaveLocal("ingat-tts-volume", v.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+    }
+
+    private async Task OnTtsSpeedChanged(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Float,
+            System.Globalization.CultureInfo.InvariantCulture, out var s))
+        {
+            TtsSpeed = s;
+            await SaveLocal("ingat-tts-speed", s.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+    }
+
+    // === Notifications ===
+    private async Task OnRemindersToggled(ChangeEventArgs e)
+    {
+        RemindersEnabled = (bool)(e.Value ?? true);
+        await SaveLocal("ingat-reminders-enabled", RemindersEnabled ? "true" : "false");
+    }
+
+    private async Task RequestNotificationPermission()
+    {
+        try
+        {
+            NotificationPermission = await JS.InvokeAsync<string>("requestNotificationPermission");
+        }
+        catch { }
+    }
+
+    // === About ===
+    private async Task ResetOnboarding()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", "ingat-onboarding-done");
+            ShowToast("Онбординг сброшен. Обновите страницу.", true);
+        }
+        catch { }
+    }
+
+    // === Helpers ===
+    private async Task SaveLocal(string key, string value)
+    {
+        try { await JS.InvokeVoidAsync("localStorage.setItem", key, value); } catch { }
+    }
+
+    private void ShowToast(string msg, bool success)
+    {
+        ToastMessage = msg;
+        ToastSuccess = success;
+    }
+}
