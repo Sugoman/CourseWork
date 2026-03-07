@@ -38,6 +38,8 @@ public interface IContentApiService
     // Import
     Task<ImportResult> ImportDictionaryFromFileAsync(Stream fileStream, string fileName,
         string? dictionaryName = null, string? languageFrom = null, string? languageTo = null);
+    Task<ImportResult> ImportDictionaryFromAnkiAsync(Stream fileStream, string fileName,
+        string? dictionaryName = null, string? languageFrom = null, string? languageTo = null);
 
     // Export
     Task<ExportResult> ExportDictionaryAsJsonAsync(int dictionaryId);
@@ -278,6 +280,36 @@ public class ContentApiService : IContentApiService
             formContent.Add(new StringContent(languageTo), "languageTo");
 
         var response = await _httpClient.PostAsync("api/dictionaries/import/json/auto", formContent);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            var msg = TryExtractMessage(body) ?? body;
+            throw new HttpRequestException(msg);
+        }
+
+        var result = await response.Content.ReadFromJsonAsync<ImportResult>();
+        return result ?? new ImportResult();
+    }
+
+    public async Task<ImportResult> ImportDictionaryFromAnkiAsync(Stream fileStream, string fileName,
+        string? dictionaryName = null, string? languageFrom = null, string? languageTo = null)
+    {
+        await ApplyAuthAsync();
+
+        using var formContent = new MultipartFormDataContent();
+        var streamContent = new StreamContent(fileStream);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+        formContent.Add(streamContent, "file", fileName);
+
+        if (!string.IsNullOrEmpty(dictionaryName))
+            formContent.Add(new StringContent(dictionaryName), "dictionaryName");
+        if (!string.IsNullOrEmpty(languageFrom))
+            formContent.Add(new StringContent(languageFrom), "languageFrom");
+        if (!string.IsNullOrEmpty(languageTo))
+            formContent.Add(new StringContent(languageTo), "languageTo");
+
+        var response = await _httpClient.PostAsync("api/dictionaries/import/anki", formContent);
 
         if (!response.IsSuccessStatusCode)
         {

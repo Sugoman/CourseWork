@@ -4,8 +4,11 @@ using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using LearningAPI.Services;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.IO.Compression;
 using CsvHelper;
 using System.Globalization;
+using Microsoft.Data.Sqlite;
 
 namespace LearningAPI.Controllers
 {
@@ -487,6 +490,215 @@ namespace LearningAPI.Controllers
                 return StatusCode(500, new { message = "Error importing dictionary", error = ex.Message });
             }
         }
+
+        /// <summary>
+        /// Импортирует словарь из Anki .apkg файла.
+        /// .apkg — ZIP-архив с SQLite-базой данных (collection.anki2 / collection.anki21).
+        /// Поля карточки извлекаются из таблицы notes, разделитель — \x1f.
+        /// </summary>
+        [HttpPost("anki")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> ImportFromAnki(
+            IFormFile file,
+            [FromForm] string? dictionaryName = null,
+            [FromForm] string? languageFrom = null,
+            [FromForm] string? languageTo = null)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                    return BadRequest(new { message = "No file provided" });
+
+                if (!file.FileName.EndsWith(".apkg", StringComparison.OrdinalIgnoreCase) &&
+                    !file.FileName.EndsWith(".colpkg", StringComparison.OrdinalIgnoreCase))
+                    return BadRequest(new { message = "File must be Anki package (.apkg or .colpkg)" });
+
+                var userId = GetUserId();
+                var tempDir = Path.Combine(Path.GetTempPath(), $"anki_import_{Guid.NewGuid():N}");
+
+                try
+                {
+                    Directory.CreateDirectory(tempDir);
+
+                    // .apkg — ZIP-архив
+                    var zipPath = Path.Combine(tempDir, "deck.zip");
+                    using (var fs = new FileStream(zipPath, FileMode.Create))
+                        await file.CopyToAsync(fs);
+
+                    ZipFile.ExtractToDirectory(zipPath, tempDir, overwriteFiles: true);
+
+                    // Ищем SQLite-базу: collection.anki21, collection.anki2, или любой .anki2/.anki21
+                    var dbPath = FindAnkiDatabase(tempDir);
+                    if (dbPath == null)
+                        return BadRequest(new { message = "Anki database not found inside the package" });
+
+                    var words = ExtractWordsFromAnkiDb(dbPath, userId);
+
+                    if (!words.Any())
+                        return BadRequest(new { message = "No valid cards found in the Anki deck" });
+
+                    var fallbackName = Path.GetFileNameWithoutExtension(file.FileName);
+                    var deckName = TryGetAnkiDeckName(dbPath);
+
+                    var dictionary = new Dictionary
+                    {
+                        Name = dictionaryName ?? deckName ?? fallbackName ?? "Anki Import",
+                        Description = $"Imported from Anki ({words.Count} cards)",
+                        LanguageFrom = languageFrom ?? "English",
+                        LanguageTo = languageTo ?? "Russian",
+                        UserId = userId,
+                        Words = words
+                    };
+
+                    _context.Dictionaries.Add(dictionary);
+                    await _context.SaveChangesAsync();
+
+                    foreach (var word in dictionary.Words.Where(w => string.IsNullOrWhiteSpace(w.Transcription)))
+                    {
+                        await _transcriptionChannel.Writer.WriteAsync(
+                            new TranscriptionRequest(word.Id, word.OriginalWord));
+                    }
+
+                    _logger.LogInformation(
+                        "Anki deck imported by user {UserId}, DictionaryId={DictionaryId}, WordCount={WordCount}",
+                        userId, dictionary.Id, words.Count);
+
+                    return Ok(new
+                    {
+                        message = "Anki deck imported successfully",
+                        dictionaryId = dictionary.Id,
+                        name = dictionary.Name,
+                        wordCount = dictionary.Words.Count
+                    });
+                }
+                finally
+                {
+                    try { Directory.Delete(tempDir, recursive: true); } catch { /* best effort cleanup */ }
+                }
+            }
+            catch (InvalidDataException)
+            {
+                return BadRequest(new { message = "Invalid .apkg file — could not unzip" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error importing Anki deck");
+                return StatusCode(500, new { message = "Error importing Anki deck" });
+            }
+        }
+
+        #region Anki helpers
+
+        private static string? FindAnkiDatabase(string dir)
+        {
+            // Anki 2.1+ uses collection.anki21; older uses collection.anki2
+            var candidates = new[] { "collection.anki21", "collection.anki2" };
+            foreach (var name in candidates)
+            {
+                var path = Path.Combine(dir, name);
+                if (System.IO.File.Exists(path))
+                    return path;
+            }
+
+            // Fallback: find any .anki2 / .anki21 file recursively
+            return System.IO.Directory.EnumerateFiles(dir, "*.anki2*", SearchOption.AllDirectories).FirstOrDefault();
+        }
+
+        private static string? TryGetAnkiDeckName(string dbPath)
+        {
+            try
+            {
+                using var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly");
+                conn.Open();
+                using var cmd = conn.CreateCommand();
+                // Anki stores deck info in 'col' table, 'decks' JSON column
+                cmd.CommandText = "SELECT decks FROM col LIMIT 1";
+                var json = cmd.ExecuteScalar() as string;
+                if (string.IsNullOrEmpty(json)) return null;
+
+                using var doc = JsonDocument.Parse(json);
+                // Find the first non-default deck name
+                foreach (var prop in doc.RootElement.EnumerateObject())
+                {
+                    if (prop.Value.TryGetProperty("name", out var nameEl))
+                    {
+                        var name = nameEl.GetString();
+                        if (!string.IsNullOrEmpty(name) && name != "Default")
+                            return name;
+                    }
+                }
+            }
+            catch { /* non-critical */ }
+            return null;
+        }
+
+        private static List<Word> ExtractWordsFromAnkiDb(string dbPath, int userId)
+        {
+            var words = new List<Word>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            using var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly");
+            conn.Open();
+
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "SELECT flds FROM notes";
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                var flds = reader.GetString(0);
+                // Fields are separated by \x1f (unit separator)
+                var fields = flds.Split('\x1f');
+
+                if (fields.Length < 2) continue;
+
+                var front = StripHtml(fields[0]).Trim();
+                var back = StripHtml(fields[1]).Trim();
+
+                if (string.IsNullOrWhiteSpace(front) || string.IsNullOrWhiteSpace(back))
+                    continue;
+
+                // Truncate long fields (Anki cards can contain paragraphs)
+                if (front.Length > 100) front = front[..97] + "...";
+                if (back.Length > 100) back = back[..97] + "...";
+
+                // Deduplicate
+                var key = front.ToLowerInvariant();
+                if (!seen.Add(key)) continue;
+
+                string? example = null;
+                if (fields.Length >= 3)
+                {
+                    var ex = StripHtml(fields[2]).Trim();
+                    if (!string.IsNullOrWhiteSpace(ex) && ex.Length <= 500)
+                        example = ex;
+                }
+
+                words.Add(new Word
+                {
+                    OriginalWord = front,
+                    Translation = back,
+                    Example = example ?? "",
+                    UserId = userId
+                });
+            }
+
+            return words;
+        }
+
+        private static readonly Regex HtmlTagRegex = new(@"<[^>]+>", RegexOptions.Compiled);
+        private static readonly Regex MultiSpaceRegex = new(@"\s{2,}", RegexOptions.Compiled);
+
+        private static string StripHtml(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return input;
+            var text = HtmlTagRegex.Replace(input, " ");
+            text = System.Net.WebUtility.HtmlDecode(text);
+            text = MultiSpaceRegex.Replace(text, " ");
+            return text.Trim();
+        }
+
+        #endregion
 
         public class ImportDictionaryData
         {

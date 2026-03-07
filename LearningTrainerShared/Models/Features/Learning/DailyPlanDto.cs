@@ -93,6 +93,12 @@ public class TrainingWordDto
     public string? RelatedRuleTitle { get; set; }
 
     /// <summary>
+    /// Язык оригинала из словаря (например "English", "Danish", "Japanese").
+    /// Используется для TTS — конвертируется в BCP-47 код на клиенте.
+    /// </summary>
+    public string? LanguageFrom { get; set; }
+
+    /// <summary>
     /// Процент правильных ответов (0–100). Если попыток не было — null.
     /// Используется для визуализации прогресса слова в тренировке (#10 LEARNING_IMPROVEMENTS).
     /// </summary>

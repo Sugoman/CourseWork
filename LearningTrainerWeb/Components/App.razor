@@ -30,15 +30,82 @@
             document.body.removeChild(link);
         }
 
+        // Language name → BCP-47 code mapping for TTS
+        var langMap = {
+            'english': 'en-US', 'en': 'en-US',
+            'russian': 'ru-RU', 'русский': 'ru-RU', 'ru': 'ru-RU',
+            'german': 'de-DE', 'deutsch': 'de-DE', 'de': 'de-DE',
+            'french': 'fr-FR', 'français': 'fr-FR', 'fr': 'fr-FR',
+            'spanish': 'es-ES', 'español': 'es-ES', 'es': 'es-ES',
+            'italian': 'it-IT', 'italiano': 'it-IT', 'it': 'it-IT',
+            'portuguese': 'pt-BR', 'português': 'pt-BR', 'pt': 'pt-BR',
+            'chinese': 'zh-CN', '中文': 'zh-CN', 'zh': 'zh-CN',
+            'japanese': 'ja-JP', '日本語': 'ja-JP', 'ja': 'ja-JP',
+            'korean': 'ko-KR', '한국어': 'ko-KR', 'ko': 'ko-KR',
+            'arabic': 'ar-SA', 'ar': 'ar-SA',
+            'turkish': 'tr-TR', 'türkçe': 'tr-TR', 'tr': 'tr-TR',
+            'polish': 'pl-PL', 'polski': 'pl-PL', 'pl': 'pl-PL',
+            'dutch': 'nl-NL', 'nederlands': 'nl-NL', 'nl': 'nl-NL',
+            'swedish': 'sv-SE', 'svenska': 'sv-SE', 'sv': 'sv-SE',
+            'norwegian': 'nb-NO', 'norsk': 'nb-NO', 'no': 'nb-NO',
+            'danish': 'da-DK', 'dansk': 'da-DK', 'da': 'da-DK',
+            'finnish': 'fi-FI', 'suomi': 'fi-FI', 'fi': 'fi-FI',
+            'czech': 'cs-CZ', 'čeština': 'cs-CZ', 'cs': 'cs-CZ',
+            'greek': 'el-GR', 'ελληνικά': 'el-GR', 'el': 'el-GR',
+            'hindi': 'hi-IN', 'हिन्दी': 'hi-IN', 'hi': 'hi-IN',
+            'thai': 'th-TH', 'ไทย': 'th-TH', 'th': 'th-TH',
+            'vietnamese': 'vi-VN', 'tiếng việt': 'vi-VN', 'vi': 'vi-VN',
+            'indonesian': 'id-ID', 'bahasa indonesia': 'id-ID', 'id': 'id-ID',
+            'ukrainian': 'uk-UA', 'українська': 'uk-UA', 'uk': 'uk-UA',
+            'hungarian': 'hu-HU', 'magyar': 'hu-HU', 'hu': 'hu-HU',
+            'romanian': 'ro-RO', 'română': 'ro-RO', 'ro': 'ro-RO',
+            'hebrew': 'he-IL', 'עברית': 'he-IL', 'he': 'he-IL',
+            'catalan': 'ca-ES', 'català': 'ca-ES', 'ca': 'ca-ES',
+            'croatian': 'hr-HR', 'hrvatski': 'hr-HR', 'hr': 'hr-HR',
+            'slovak': 'sk-SK', 'slovenčina': 'sk-SK', 'sk': 'sk-SK',
+            'bulgarian': 'bg-BG', 'български': 'bg-BG', 'bg': 'bg-BG',
+            'malay': 'ms-MY', 'melayu': 'ms-MY', 'ms': 'ms-MY',
+            'persian': 'fa-IR', 'فارسی': 'fa-IR', 'fa': 'fa-IR',
+            'bengali': 'bn-IN', 'বাংলা': 'bn-IN', 'bn': 'bn-IN',
+            'tamil': 'ta-IN', 'தமிழ்': 'ta-IN', 'ta': 'ta-IN'
+        };
+
+        function resolveLang(lang) {
+            if (!lang) return 'en-US';
+            var key = lang.trim().toLowerCase();
+            return langMap[key] || lang;
+        }
+
+        function findBestVoice(bcp47) {
+            var voices = window.speechSynthesis.getVoices();
+            if (!voices.length) return null;
+            var langPrefix = bcp47.split('-')[0].toLowerCase();
+            // Exact match first
+            var exact = voices.find(function(v) { return v.lang.toLowerCase() === bcp47.toLowerCase(); });
+            if (exact) return exact;
+            // Prefix match (e.g. "da" matches "da-DK")
+            var prefix = voices.find(function(v) { return v.lang.toLowerCase().startsWith(langPrefix); });
+            return prefix || null;
+        }
+
         function speakText(text, lang, volume) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
+                var bcp47 = resolveLang(lang);
                 var utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = lang || 'en-US';
+                utterance.lang = bcp47;
                 utterance.rate = 0.9;
                 utterance.volume = (typeof volume === 'number') ? Math.max(0, Math.min(1, volume)) : 1;
+                var voice = findBestVoice(bcp47);
+                if (voice) utterance.voice = voice;
                 window.speechSynthesis.speak(utterance);
             }
+        }
+
+        // Pre-load voices (some browsers load them async)
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
+            window.speechSynthesis.getVoices();
         }
 
         // Training reminders (#7 LEARNING_IMPROVEMENTS)

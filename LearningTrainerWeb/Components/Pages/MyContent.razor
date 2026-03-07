@@ -472,7 +472,7 @@
                 </div>
                 <div>
                     <h4 class="import-modal-title">Импорт словаря</h4>
-                    <p class="import-modal-subtitle">Загрузите JSON или CSV файл — структура распознается автоматически</p>
+                    <p class="import-modal-subtitle">Загрузите JSON, CSV или Anki (.apkg) файл — структура распознается автоматически</p>
                 </div>
                 <button type="button" class="import-modal-close" @onclick="CloseImportDialog">
                     <i class="bi bi-x-lg"></i>
@@ -492,7 +492,7 @@
                                     <i class="bi bi-file-earmark-arrow-up"></i>
                                 </div>
                                 <span class="import-dropzone-title">Выберите файл</span>
-                                <span class="import-dropzone-hint">или перетащите сюда · JSON, CSV</span>
+                                <span class="import-dropzone-hint">или перетащите сюда · JSON, CSV, Anki (.apkg)</span>
                             }
                             else
                             {
@@ -503,7 +503,7 @@
                                 <span class="import-dropzone-hint">@((ImportFile.Size / 1024.0).ToString("F1")) KB</span>
                             }
                         </div>
-                        <InputFile OnChange="OnImportFileSelected" accept=".json,.csv"
+                        <InputFile OnChange="OnImportFileSelected" accept=".json,.csv,.apkg,.colpkg"
                                    class="import-dropzone-input" />
                     </div>
                 </div>
@@ -777,13 +777,22 @@
 
         try
         {
-            using var stream = ImportFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-            var result = await ContentApi.ImportDictionaryFromFileAsync(
-                stream,
-                ImportFile.Name,
-                string.IsNullOrWhiteSpace(ImportDictionaryName) ? null : ImportDictionaryName,
-                string.IsNullOrWhiteSpace(ImportLanguageFrom) ? null : ImportLanguageFrom,
-                string.IsNullOrWhiteSpace(ImportLanguageTo) ? null : ImportLanguageTo);
+            using var stream = ImportFile.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);
+            var name = string.IsNullOrWhiteSpace(ImportDictionaryName) ? null : ImportDictionaryName;
+            var langFrom = string.IsNullOrWhiteSpace(ImportLanguageFrom) ? null : ImportLanguageFrom;
+            var langTo = string.IsNullOrWhiteSpace(ImportLanguageTo) ? null : ImportLanguageTo;
+
+            ImportResult result;
+
+            if (ImportFile.Name.EndsWith(".apkg", StringComparison.OrdinalIgnoreCase) ||
+                ImportFile.Name.EndsWith(".colpkg", StringComparison.OrdinalIgnoreCase))
+            {
+                result = await ContentApi.ImportDictionaryFromAnkiAsync(stream, ImportFile.Name, name, langFrom, langTo);
+            }
+            else
+            {
+                result = await ContentApi.ImportDictionaryFromFileAsync(stream, ImportFile.Name, name, langFrom, langTo);
+            }
 
             ShowImportModal = false;
             ExportMessage = $"Словарь «{result.Name}» ({result.WordCount} слов) успешно импортирован!";

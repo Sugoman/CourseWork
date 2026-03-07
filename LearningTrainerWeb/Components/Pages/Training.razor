@@ -2250,7 +2250,8 @@ private async Task InstallStarterPack()
     {
         if (CurrentWord != null)
         {
-            await JS.InvokeVoidAsync("speakText", CurrentWord.OriginalWord, "en-US", TtsVolume);
+            var lang = CurrentWord.LanguageFrom ?? "en-US";
+            await JS.InvokeVoidAsync("speakText", CurrentWord.OriginalWord, lang, TtsVolume);
         }
     }
 
@@ -2400,7 +2401,8 @@ private async Task InstallStarterPack()
     {
         if (CurrentWord != null && !string.IsNullOrEmpty(CurrentWord.Example))
         {
-            await JS.InvokeVoidAsync("speakText", CurrentWord.Example, "en-US", TtsVolume);
+            var lang = CurrentWord.LanguageFrom ?? "en-US";
+            await JS.InvokeVoidAsync("speakText", CurrentWord.Example, lang, TtsVolume);
         }
     }
 

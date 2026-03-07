@@ -57,8 +57,9 @@ public class TrainingController : BaseApiController
                 .Select(p => MapToTrainingWordProjection(p))
                 .ToList();
 
-            // --- 2. Сложные слова (проекция, без Include) — исключаем замороженные ---
+            // --- 2. Сложные слова — исключаем замороженные ---
             var difficultWords = await _context.LearningProgresses
+                .Include(p => p.Word).ThenInclude(w => w.Dictionary)
                 .Where(p => p.UserId == userId && p.Word != null && !p.IsSuspended &&
                            (p.KnowledgeLevel == 0 ||
                             (p.TotalAttempts > 2 && p.CorrectAnswers < p.TotalAttempts / 2)))
@@ -119,6 +120,7 @@ public class TrainingController : BaseApiController
                     DictionaryName = w.Dictionary != null ? w.Dictionary.Name : "",
                     DictionaryId = w.DictionaryId,
                     DictionaryTags = w.Dictionary != null ? w.Dictionary.Tags : null,
+                    LanguageFrom = w.Dictionary != null ? w.Dictionary.LanguageFrom : null,
                     KnowledgeLevel = 0,
                     NextReview = null,
                     TotalAttempts = 0,
@@ -256,6 +258,7 @@ public class TrainingController : BaseApiController
                             DictionaryName = w.Dictionary != null ? w.Dictionary.Name : "",
                             DictionaryId = w.DictionaryId,
                             DictionaryTags = w.Dictionary != null ? w.Dictionary.Tags : null,
+                            LanguageFrom = w.Dictionary != null ? w.Dictionary.LanguageFrom : null,
                             KnowledgeLevel = 0,
                             TotalAttempts = 0,
                             CorrectAnswers = 0,
@@ -309,6 +312,7 @@ public class TrainingController : BaseApiController
                             DictionaryName = w.Dictionary != null ? w.Dictionary.Name : "",
                             DictionaryId = w.DictionaryId,
                             DictionaryTags = w.Dictionary != null ? w.Dictionary.Tags : null,
+                            LanguageFrom = w.Dictionary != null ? w.Dictionary.LanguageFrom : null,
                             KnowledgeLevel = 0,
                             TotalAttempts = 0,
                             CorrectAnswers = 0
@@ -548,6 +552,7 @@ public class TrainingController : BaseApiController
             DictionaryName = p.Word?.Dictionary?.Name ?? "",
             DictionaryId = p.Word?.DictionaryId ?? 0,
             DictionaryTags = p.Word?.Dictionary?.Tags,
+            LanguageFrom = p.Word?.Dictionary?.LanguageFrom,
             KnowledgeLevel = p.KnowledgeLevel,
             NextReview = p.NextReview,
             TotalAttempts = p.TotalAttempts,
@@ -572,6 +577,7 @@ public class TrainingController : BaseApiController
             DictionaryName = p.Word?.Dictionary?.Name ?? "",
             DictionaryId = p.Word?.DictionaryId ?? 0,
             DictionaryTags = p.Word?.Dictionary?.Tags,
+            LanguageFrom = p.Word?.Dictionary?.LanguageFrom,
             KnowledgeLevel = p.KnowledgeLevel,
             NextReview = p.NextReview,
             TotalAttempts = p.TotalAttempts,
