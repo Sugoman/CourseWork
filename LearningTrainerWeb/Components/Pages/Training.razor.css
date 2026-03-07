@@ -980,6 +980,57 @@
     gap: 0.25rem;
 }
 
+/* TTS Browser Tip */
+.tts-browser-tip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #e8f4fd 0%, #f0e6ff 100%);
+    border: 1px solid #c5ddf0;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    color: #3a5a7c;
+    animation: ttsTipFadeIn 0.4s ease;
+}
+
+@keyframes ttsTipFadeIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.tts-browser-tip-content {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+}
+
+.tts-browser-tip-content i {
+    font-size: 1.1rem;
+    color: #0078d4;
+    flex-shrink: 0;
+}
+
+.tts-browser-tip-close {
+    background: none;
+    border: none;
+    color: #8aa4be;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.tts-browser-tip-close:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: #3a5a7c;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .training-container {

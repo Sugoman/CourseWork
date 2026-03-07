@@ -108,6 +108,10 @@
             window.speechSynthesis.getVoices();
         }
 
+        function isEdgeBrowser() {
+            return /Edg\//.test(navigator.userAgent);
+        }
+
         // Training reminders (#7 LEARNING_IMPROVEMENTS)
         function requestNotificationPermission() {
             if ('Notification' in window) {

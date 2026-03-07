@@ -404,6 +404,19 @@
                 </div>
             </div>
 
+            @if (!IsEdgeBrowser && !TtsTipDismissed)
+            {
+                <div class="tts-browser-tip">
+                    <div class="tts-browser-tip-content">
+                        <i class="bi bi-volume-up-fill me-2"></i>
+                        <span>Для лучшего звучания (нейросетевые голоса) рекомендуем использовать браузер <strong>Microsoft Edge</strong>.</span>
+                    </div>
+                    <button class="tts-browser-tip-close" @onclick="DismissTtsTip" title="Закрыть">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            }
+
             <div class="quick-start">
                 <button class="btn btn-primary btn-xl" @onclick='() => StartTraining("mixed")'
                         disabled="@(DailyPlan.Stats.TotalReviewCount == 0 && DailyPlan.Stats.TotalNewCount == 0)">
@@ -1490,6 +1503,8 @@ private string EditingNoteText = "";
 // TTS state
 private double TtsVolume = 0.8;
 private bool ShowVolumeSlider;
+private bool IsEdgeBrowser = true;
+private bool TtsTipDismissed;
 
 // Speed Round state (§3.3 LEARNING_IMPROVEMENTS)
 private bool IsSpeedRound;
@@ -1519,9 +1534,15 @@ private ElementReference trainingContainer;
 
 protected override async Task OnAfterRenderAsync(bool firstRender)
 {
-    if (firstRender && IsTrainingActive)
+    if (firstRender)
     {
-        await FocusContainer();
+        IsEdgeBrowser = await JS.InvokeAsync<bool>("isEdgeBrowser");
+        StateHasChanged();
+
+        if (IsTrainingActive)
+        {
+            await FocusContainer();
+        }
     }
 }
 
@@ -2409,6 +2430,11 @@ private async Task InstallStarterPack()
     private void ToggleVolumeSlider()
     {
         ShowVolumeSlider = !ShowVolumeSlider;
+    }
+
+    private void DismissTtsTip()
+    {
+        TtsTipDismissed = true;
     }
 
     private void OnVolumeChanged(ChangeEventArgs e)
