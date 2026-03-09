@@ -36,6 +36,13 @@ public interface IAiApiService
 
     Task<List<AiExtractedWord>> ExtractWordsFromTextAsync(string text, string language, string targetLanguage,
         int maxWords = 20, string? languageLevel = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Генерация типизированных грамматических упражнений (§17.8 LEARNING_IMPROVEMENTS).
+    /// </summary>
+    Task<List<AiTypedExerciseResult>> GenerateTypedExercisesAsync(string ruleTitle, string ruleContent,
+        string language, string targetLanguage, string exerciseType, int count = 3,
+        int difficultyTier = 1, CancellationToken ct = default);
 }
 
 public class AiApiService : IAiApiService
@@ -274,6 +281,45 @@ public class AiApiService : IAiApiService
         }
     }
 
+    public async Task<List<AiTypedExerciseResult>> GenerateTypedExercisesAsync(string ruleTitle, string ruleContent,
+        string language, string targetLanguage, string exerciseType, int count = 3,
+        int difficultyTier = 1, CancellationToken ct = default)
+    {
+        try
+        {
+            var payload = new { ruleTitle, ruleContent, language, targetLanguage, exerciseType, count, difficultyTier };
+            var response = await _httpClient.PostAsJsonAsync("/api/ai/generate-typed-exercises", payload, ct);
+
+            if (!response.IsSuccessStatusCode)
+                return new List<AiTypedExerciseResult>();
+
+            var dto = await response.Content.ReadFromJsonAsync<TypedExercisesDto>(JsonOptions, ct);
+            if (dto?.Exercises == null)
+                return new List<AiTypedExerciseResult>();
+
+            return dto.Exercises
+                .Where(e => !string.IsNullOrWhiteSpace(e.Question) || !string.IsNullOrWhiteSpace(e.IncorrectSentence))
+                .Select(e => new AiTypedExerciseResult
+                {
+                    Question = e.Question,
+                    Options = e.Options,
+                    CorrectIndex = e.CorrectIndex,
+                    CorrectAnswer = e.CorrectAnswer,
+                    AlternativeAnswers = e.AlternativeAnswers,
+                    IncorrectSentence = e.IncorrectSentence,
+                    ShuffledWords = e.ShuffledWords,
+                    Explanation = e.Explanation ?? "",
+                    DifficultyTier = difficultyTier
+                })
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "AI generate-typed-exercises failed");
+            return new List<AiTypedExerciseResult>();
+        }
+    }
+
     #region Internal DTOs
 
     private sealed class TranslateDto
@@ -351,6 +397,23 @@ public class AiApiService : IAiApiService
         public string Translation { get; set; } = string.Empty;
         public string? PartOfSpeech { get; set; }
         public string? Context { get; set; }
+    }
+
+    private sealed class TypedExercisesDto
+    {
+        public List<TypedExerciseItemDto>? Exercises { get; set; }
+    }
+
+    private sealed class TypedExerciseItemDto
+    {
+        public string Question { get; set; } = string.Empty;
+        public List<string>? Options { get; set; }
+        public int? CorrectIndex { get; set; }
+        public string? CorrectAnswer { get; set; }
+        public List<string>? AlternativeAnswers { get; set; }
+        public string? IncorrectSentence { get; set; }
+        public List<string>? ShuffledWords { get; set; }
+        public string? Explanation { get; set; }
     }
 
     #endregion

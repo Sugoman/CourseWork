@@ -2,6 +2,7 @@
 @using LearningTrainerShared.Models.Statistics
 @using LearningTrainerWeb.Services
 @inject IStatisticsApiService StatsService
+@inject IGrammarApiService GrammarService
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
 
@@ -473,6 +474,74 @@
             </div>
         }
 
+        <!-- Грамматика (§17.7 LEARNING_IMPROVEMENTS) -->
+        @if (GrammarSummary != null && GrammarSummary.TotalRules > 0)
+        {
+            <div class="section-card">
+                <div class="section-header">
+                    <h3><i class="bi bi-book-half me-2"></i>Грамматика</h3>
+                    <a href="/grammar" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-arrow-right me-1"></i>Перейти
+                    </a>
+                </div>
+                <div class="stats-cards" style="margin-top: 1rem;">
+                    <div class="stat-card stat-card-primary">
+                        <div class="stat-icon"><i class="bi bi-book"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value">@GrammarSummary.MasteredRules / @GrammarSummary.TotalRules</div>
+                            <div class="stat-label">Правил освоено</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-success">
+                        <div class="stat-icon"><i class="bi bi-bullseye"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value">@GrammarSummary.OverallAccuracy%</div>
+                            <div class="stat-label">Точность</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-info">
+                        <div class="stat-icon"><i class="bi bi-journal-check"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value">@GrammarSummary.TotalSessions</div>
+                            <div class="stat-label">Сессий</div>
+                        </div>
+                    </div>
+                    <div class="stat-card stat-card-warning">
+                        <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value">@GrammarSummary.DueForReview</div>
+                            <div class="stat-label">К повторению</div>
+                        </div>
+                    </div>
+                </div>
+                @if (GrammarSummary.TotalRules > 0)
+                {
+                    <div class="progress mt-3" style="height: 20px; border-radius: 10px;">
+                        @{
+                            double gmPct = GrammarSummary.TotalRules > 0
+                                ? (double)GrammarSummary.MasteredRules / GrammarSummary.TotalRules * 100 : 0;
+                            double gipPct = GrammarSummary.TotalRules > 0
+                                ? (double)GrammarSummary.InProgressRules / GrammarSummary.TotalRules * 100 : 0;
+                        }
+                        <div class="progress-bar bg-success" style="width: @gmPct.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)%"
+                             title="Освоено: @GrammarSummary.MasteredRules">
+                            @if (gmPct > 15)
+                            {
+                                <span>✅ @GrammarSummary.MasteredRules</span>
+                            }
+                        </div>
+                        <div class="progress-bar bg-warning" style="width: @gipPct.ToString("F0", System.Globalization.CultureInfo.InvariantCulture)%"
+                             title="В процессе: @GrammarSummary.InProgressRules">
+                            @if (gipPct > 15)
+                            {
+                                <span>🔄 @GrammarSummary.InProgressRules</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
         <!-- Достижения -->
         <div class="section-card">
             <div class="section-header">
@@ -544,6 +613,7 @@
 
 @code {
     private UserStatistics? Stats;
+    private GrammarProgressSummaryDto? GrammarSummary;
     private bool IsLoading = true;
     private bool IsAuthenticated;
     private string SelectedPeriod = "week";
@@ -571,7 +641,11 @@
 
         try
         {
-            Stats = await StatsService.GetStatisticsAsync(SelectedPeriod);
+            var statsTask = StatsService.GetStatisticsAsync(SelectedPeriod);
+            var grammarTask = GrammarService.GetProgressSummaryAsync();
+            await Task.WhenAll(statsTask, grammarTask);
+            Stats = statsTask.Result;
+            GrammarSummary = grammarTask.Result;
         }
         finally
         {

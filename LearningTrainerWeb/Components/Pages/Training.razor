@@ -8,6 +8,7 @@
 @inject IJSRuntime JS
 @inject IAiApiService AiService
 @inject IContentApiService ContentApi
+@inject IGrammarApiService GrammarService
 @implements IDisposable
 
 <PageTitle>Тренировка - Ingat</PageTitle>
@@ -297,6 +298,17 @@
                         </div>
                         <h4>Скорость</h4>
                         <p>60 секунд — максимум слов!</p>
+                    </button>
+                    <button class="mode-card mode-grammar" @onclick="NavigateToGrammar">
+                        <div class="mode-icon">
+                            <i class="bi bi-book-half"></i>
+                        </div>
+                        <h4>Грамматика</h4>
+                        <p>Интерактивные упражнения</p>
+                        @if (GrammarDueCount > 0)
+                        {
+                            <span class="badge bg-warning text-dark mt-1">@GrammarDueCount к повторению</span>
+                        }
                     </button>
                 </div>
                 
@@ -1541,6 +1553,9 @@ private bool IsLoadingMnemonic;
 private Queue<UnlockedAchievementInfo> _milestoneQueue = new();
 private UnlockedAchievementInfo? CurrentMilestone;
 
+// Grammar integration state (§17.6 LEARNING_IMPROVEMENTS)
+private int GrammarDueCount;
+
 // Element reference for focus
 private ElementReference trainingContainer;
 
@@ -1564,6 +1579,11 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
                 else if (dir == "reverse") TranslationDirection = "reverse";
                 else if (dir == "auto") TranslationDirection = "auto";
             }
+
+            // Load preferred exercise mode (§12.2 LEARNING_IMPROVEMENTS)
+            var prefMode = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-preferred-mode");
+            if (!string.IsNullOrEmpty(prefMode))
+                SetExerciseType(prefMode);
         }
         catch { }
 
@@ -1667,6 +1687,7 @@ protected override async Task OnInitializedAsync()
     {
         await LoadDailyPlan();
         AvailableTags = await ContentApi.GetDictionaryTagsAsync();
+        _ = LoadGrammarDueCount(); // Fire-and-forget, не блокирует UI
     }
 
     IsLoading = false;
@@ -2880,5 +2901,23 @@ private async Task InstallStarterPack()
         {
             await LoadMnemonic();
         }
+    }
+
+    // === Grammar Integration (§17.6 LEARNING_IMPROVEMENTS) ===
+
+    private async Task LoadGrammarDueCount()
+    {
+        try
+        {
+            var dueReviews = await GrammarService.GetDueReviewsAsync();
+            GrammarDueCount = dueReviews?.Count ?? 0;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch { /* ignore */ }
+    }
+
+    private void NavigateToGrammar()
+    {
+        Navigation.NavigateTo("/grammar");
     }
 }

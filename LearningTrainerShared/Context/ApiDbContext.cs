@@ -41,6 +41,9 @@ namespace LearningTrainerShared.Context
         // Grammar exercises
         public DbSet<GrammarExercise> GrammarExercises { get; set; } = null!;
 
+        // Grammar progress (§17.2 LEARNING_IMPROVEMENTS)
+        public DbSet<GrammarProgress> GrammarProgresses { get; set; } = null!;
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -221,6 +224,29 @@ namespace LearningTrainerShared.Context
 
             modelBuilder.Entity<GrammarExercise>()
                 .HasQueryFilter(ge => TenantUserId == null || ge.Rule!.UserId == TenantUserId);
+
+            // === GRAMMAR PROGRESS (§17.2 LEARNING_IMPROVEMENTS) ===
+
+            modelBuilder.Entity<GrammarProgress>()
+                .HasAlternateKey(gp => new { gp.UserId, gp.RuleId });
+
+            modelBuilder.Entity<GrammarProgress>()
+                .HasOne(gp => gp.User)
+                .WithMany()
+                .HasForeignKey(gp => gp.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<GrammarProgress>()
+                .HasOne(gp => gp.Rule)
+                .WithMany()
+                .HasForeignKey(gp => gp.RuleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GrammarProgress>()
+                .HasIndex(gp => new { gp.UserId, gp.NextReview });
+
+            modelBuilder.Entity<GrammarProgress>()
+                .HasQueryFilter(gp => TenantUserId == null || gp.UserId == TenantUserId);
         }
     }
 }

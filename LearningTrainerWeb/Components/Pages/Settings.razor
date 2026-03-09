@@ -61,7 +61,7 @@
                             <strong>Роль</strong>
                         </div>
                         <div class="setting-value">
-                            <span class="role-badge">@(Session?.Role ?? "User")</span>
+                            <span class="role-badge">@GetRoleDisplayName(Session?.Role)</span>
                         </div>
                     </div>
 
@@ -548,4 +548,13 @@
         ToastMessage = msg;
         ToastSuccess = success;
     }
+
+    private static string GetRoleDisplayName(string? role) => role switch
+    {
+        "Admin" => "Администратор",
+        "Teacher" => "Учитель",
+        "Student" => "Ученик",
+        "User" => "Пользователь",
+        _ => "Пользователь"
+    };
 }

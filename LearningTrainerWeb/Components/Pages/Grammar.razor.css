@@ -1,0 +1,101 @@
+/* Grammar.razor — Scoped CSS (§17 LEARNING_IMPROVEMENTS) */
+
+.container {
+    max-width: 1200px;
+    padding-bottom: 2rem;
+}
+
+/* === Section heading === */
+.section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.section-heading i {
+    font-size: 1.8rem;
+    color: var(--bs-primary);
+}
+
+.section-heading h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* === Skill tree nodes === */
+.skill-node {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-width: 2px;
+}
+
+.skill-node:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.skill-node.border-success {
+    border-color: var(--bs-success) !important;
+}
+
+.skill-node.border-warning {
+    border-color: var(--bs-warning) !important;
+}
+
+.skill-node.border-secondary {
+    border-color: var(--bs-secondary) !important;
+}
+
+/* === Empty state === */
+.empty-state-card {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--surface-card, white);
+    border-radius: var(--radius-lg, 16px);
+    border: 2px dashed var(--border-default, #e0e0e0);
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    color: var(--bs-primary);
+    opacity: 0.5;
+    margin-bottom: 1rem;
+}
+
+.empty-state-icon i {
+    font-size: 4rem;
+}
+
+.empty-state-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* === Progress bar text === */
+.progress-bar span {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* === Due reviews banner === */
+.border-warning {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, rgba(255, 193, 7, 0.02) 100%);
+}
+
+/* === Responsive === */
+@media (max-width: 576px) {
+    .section-heading h1 {
+        font-size: 1.3rem;
+    }
+
+    .skill-node .card-body {
+        padding: 0.75rem !important;
+    }
+
+    .fs-1 {
+        font-size: 2rem !important;
+    }
+}

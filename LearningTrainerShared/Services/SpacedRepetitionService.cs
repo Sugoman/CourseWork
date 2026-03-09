@@ -20,6 +20,12 @@ namespace LearningTrainerShared.Services
     public interface ISpacedRepetitionService
     {
         void ApplyAnswer(LearningProgress progress, ResponseQuality quality, int? responseTimeMs = null);
+
+        /// <summary>
+        /// Обновляет GrammarProgress по результатам сессии упражнений (§17.2 LEARNING_IMPROVEMENTS).
+        /// accuracy >= 80% → Good, 50–79% → Hard, &lt; 50% → Again.
+        /// </summary>
+        void ApplyGrammarSession(GrammarProgress progress, int correctAnswers, int totalAnswers);
     }
 
     public class SpacedRepetitionService : ISpacedRepetitionService
@@ -111,6 +117,9 @@ namespace LearningTrainerShared.Services
                 }
                 progress.IntervalDays *= jitter;
 
+                // Cap interval to prevent DateTime overflow
+                progress.IntervalDays = Math.Min(progress.IntervalDays, 365);
+
                 progress.NextReview = DateTime.UtcNow.AddDays(progress.IntervalDays);
             }
         }
@@ -185,6 +194,67 @@ namespace LearningTrainerShared.Services
                 2 => 6,
                 _ => previousInterval * easeFactor
             };
+        }
+
+        /// <inheritdoc />
+        public void ApplyGrammarSession(GrammarProgress progress, int correctAnswers, int totalAnswers)
+        {
+            if (totalAnswers <= 0) return;
+
+            double accuracy = (double)correctAnswers / totalAnswers;
+
+            // Маппинг accuracy → ResponseQuality
+            ResponseQuality quality;
+            if (accuracy >= 0.8)
+                quality = ResponseQuality.Good;
+            else if (accuracy >= 0.5)
+                quality = ResponseQuality.Hard;
+            else
+                quality = ResponseQuality.Again;
+
+            // Обновляем статистику сессии
+            progress.TotalSessions++;
+            progress.CorrectAnswers += correctAnswers;
+            progress.TotalAnswers += totalAnswers;
+            progress.LastPracticeDate = DateTime.UtcNow;
+
+            // Инициализация EaseFactor
+            if (progress.EaseFactor < MinEaseFactor)
+                progress.EaseFactor = DefaultEaseFactor;
+
+            int q = MapToSm2Quality(quality);
+            progress.EaseFactor = CalculateNewEaseFactor(progress.EaseFactor, q);
+
+            if (q < 3) // Again → сброс
+            {
+                if (progress.KnowledgeLevel > 0)
+                    progress.LapseCount++;
+
+                progress.KnowledgeLevel = Math.Max(0, progress.KnowledgeLevel - 1);
+                progress.IntervalDays = 1;
+                progress.NextReview = DateTime.UtcNow.AddDays(1);
+            }
+            else
+            {
+                progress.KnowledgeLevel = Math.Min(5, progress.KnowledgeLevel + 1);
+                progress.IntervalDays = CalculateInterval(progress.KnowledgeLevel, progress.IntervalDays, progress.EaseFactor);
+
+                if (quality == ResponseQuality.Easy || accuracy >= 0.95)
+                    progress.IntervalDays *= 1.3;
+
+                // Jitter ±10%
+                double jitter;
+                lock (_jitterRandom)
+                {
+                    jitter = 0.9 + _jitterRandom.NextDouble() * 0.2;
+                }
+                progress.IntervalDays *= jitter;
+
+                // Cap interval to prevent DateTime overflow
+                progress.IntervalDays = Math.Min(progress.IntervalDays, 365);
+
+                progress.NextReview = DateTime.UtcNow.AddDays(progress.IntervalDays);
+            }
         }
     }
 }

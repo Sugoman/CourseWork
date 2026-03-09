@@ -10,149 +10,85 @@ namespace LearningTrainerShared.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Idempotent: all these changes may already exist in the database.
+            // Use raw SQL with IF NOT EXISTS guards to avoid "column already exists" errors.
+
             // Dictionary marketplace fields
-            migrationBuilder.AddColumn<bool>(
-                name: "IsPublished",
-                table: "Dictionaries",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
-
-            migrationBuilder.AddColumn<double>(
-                name: "Rating",
-                table: "Dictionaries",
-                type: "float",
-                nullable: false,
-                defaultValue: 0.0);
-
-            migrationBuilder.AddColumn<int>(
-                name: "RatingCount",
-                table: "Dictionaries",
-                type: "int",
-                nullable: false,
-                defaultValue: 0);
-
-            migrationBuilder.AddColumn<int>(
-                name: "DownloadCount",
-                table: "Dictionaries",
-                type: "int",
-                nullable: false,
-                defaultValue: 0);
-
-            migrationBuilder.AddColumn<int>(
-                name: "SourceDictionaryId",
-                table: "Dictionaries",
-                type: "int",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Dictionaries', 'IsPublished') IS NULL
+                    ALTER TABLE [Dictionaries] ADD [IsPublished] bit NOT NULL DEFAULT CAST(0 AS bit);");
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Dictionaries', 'Rating') IS NULL
+                    ALTER TABLE [Dictionaries] ADD [Rating] float NOT NULL DEFAULT 0;");
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Dictionaries', 'RatingCount') IS NULL
+                    ALTER TABLE [Dictionaries] ADD [RatingCount] int NOT NULL DEFAULT 0;");
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Dictionaries', 'DownloadCount') IS NULL
+                    ALTER TABLE [Dictionaries] ADD [DownloadCount] int NOT NULL DEFAULT 0;");
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Dictionaries', 'SourceDictionaryId') IS NULL
+                    ALTER TABLE [Dictionaries] ADD [SourceDictionaryId] int NULL;");
 
             // Rule marketplace fields
-            migrationBuilder.AddColumn<bool>(
-                name: "IsPublished",
-                table: "Rules",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
-
-            migrationBuilder.AddColumn<double>(
-                name: "Rating",
-                table: "Rules",
-                type: "float",
-                nullable: false,
-                defaultValue: 0.0);
-
-            migrationBuilder.AddColumn<int>(
-                name: "RatingCount",
-                table: "Rules",
-                type: "int",
-                nullable: false,
-                defaultValue: 0);
-
-            migrationBuilder.AddColumn<int>(
-                name: "DownloadCount",
-                table: "Rules",
-                type: "int",
-                nullable: false,
-                defaultValue: 0);
-
-            migrationBuilder.AddColumn<int>(
-                name: "SourceRuleId",
-                table: "Rules",
-                type: "int",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Rules', 'IsPublished') IS NULL
+                    ALTER TABLE [Rules] ADD [IsPublished] bit NOT NULL DEFAULT CAST(0 AS bit);");
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Rules', 'Rating') IS NULL
+                    ALTER TABLE [Rules] ADD [Rating] float NOT NULL DEFAULT 0;");
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Rules', 'RatingCount') IS NULL
+                    ALTER TABLE [Rules] ADD [RatingCount] int NOT NULL DEFAULT 0;");
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Rules', 'DownloadCount') IS NULL
+                    ALTER TABLE [Rules] ADD [DownloadCount] int NOT NULL DEFAULT 0;");
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Rules', 'SourceRuleId') IS NULL
+                    ALTER TABLE [Rules] ADD [SourceRuleId] int NULL;");
 
             // Comments table
-            migrationBuilder.CreateTable(
-                name: "Comments",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    ContentType = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    ContentId = table.Column<int>(type: "int", nullable: false),
-                    Rating = table.Column<int>(type: "int", nullable: false),
-                    Text = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Comments", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Comments_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+            migrationBuilder.Sql(@"
+                IF OBJECT_ID('Comments', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE [Comments] (
+                        [Id] int NOT NULL IDENTITY(1,1),
+                        [UserId] int NOT NULL,
+                        [ContentType] nvarchar(20) NOT NULL,
+                        [ContentId] int NOT NULL,
+                        [Rating] int NOT NULL,
+                        [Text] nvarchar(1000) NOT NULL,
+                        [CreatedAt] datetime2 NOT NULL,
+                        CONSTRAINT [PK_Comments] PRIMARY KEY ([Id]),
+                        CONSTRAINT [FK_Comments_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users]([Id]) ON DELETE CASCADE
+                    );
+                    CREATE INDEX [IX_Comments_UserId] ON [Comments]([UserId]);
+                    CREATE INDEX [IX_Comments_ContentType_ContentId] ON [Comments]([ContentType], [ContentId]);
+                END;");
 
             // Downloads table
-            migrationBuilder.CreateTable(
-                name: "Downloads",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<int>(type: "int", nullable: false),
-                    ContentType = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    ContentId = table.Column<int>(type: "int", nullable: false),
-                    DownloadedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Downloads", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Downloads_Users_UserId",
-                        column: x => x.UserId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+            migrationBuilder.Sql(@"
+                IF OBJECT_ID('Downloads', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE [Downloads] (
+                        [Id] int NOT NULL IDENTITY(1,1),
+                        [UserId] int NOT NULL,
+                        [ContentType] nvarchar(20) NOT NULL,
+                        [ContentId] int NOT NULL,
+                        [DownloadedAt] datetime2 NOT NULL,
+                        CONSTRAINT [PK_Downloads] PRIMARY KEY ([Id]),
+                        CONSTRAINT [FK_Downloads_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users]([Id]) ON DELETE CASCADE
+                    );
+                    CREATE INDEX [IX_Downloads_UserId] ON [Downloads]([UserId]);
+                END;");
 
-            // Indexes
-            migrationBuilder.CreateIndex(
-                name: "IX_Comments_UserId",
-                table: "Comments",
-                column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Comments_ContentType_ContentId",
-                table: "Comments",
-                columns: new[] { "ContentType", "ContentId" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Downloads_UserId",
-                table: "Downloads",
-                column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Dictionaries_IsPublished",
-                table: "Dictionaries",
-                column: "IsPublished");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Rules_IsPublished",
-                table: "Rules",
-                column: "IsPublished");
+            // Indexes (idempotent)
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Dictionaries_IsPublished' AND object_id = OBJECT_ID('Dictionaries'))
+                    CREATE INDEX [IX_Dictionaries_IsPublished] ON [Dictionaries]([IsPublished]);");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Rules_IsPublished' AND object_id = OBJECT_ID('Rules'))
+                    CREATE INDEX [IX_Rules_IsPublished] ON [Rules]([IsPublished]);");
         }
 
         /// <inheritdoc />

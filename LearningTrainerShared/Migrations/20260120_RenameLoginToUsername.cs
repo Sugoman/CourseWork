@@ -10,42 +10,30 @@ namespace LearningTrainerShared.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Переименовываем колонку Login в Username
-            migrationBuilder.RenameColumn(
-                name: "Login",
-                table: "Users",
-                newName: "Username");
+            // Idempotent: these changes may already exist in the database.
 
-            // Делаем Email обязательным (NOT NULL)
-            // Сначала обновляем существующие NULL значения
-            migrationBuilder.Sql("UPDATE Users SET Email = Username WHERE Email IS NULL OR Email = ''");
+            // Rename Login → Username (only if Login still exists)
+            migrationBuilder.Sql(@"
+                IF COL_LENGTH('Users', 'Login') IS NOT NULL AND COL_LENGTH('Users', 'Username') IS NULL
+                    EXEC sp_rename 'Users.Login', 'Username', 'COLUMN';");
 
-            // Теперь меняем колонку на NOT NULL
-            migrationBuilder.AlterColumn<string>(
-                name: "Email",
-                table: "Users",
-                type: "nvarchar(100)",
-                maxLength: 100,
-                nullable: false,
-                defaultValue: "",
-                oldClrType: typeof(string),
-                oldType: "nvarchar(100)",
-                oldMaxLength: 100,
-                oldNullable: true);
+            // Make Email NOT NULL (fill empty values first)
+            migrationBuilder.Sql(@"
+                UPDATE Users SET Email = Username WHERE Email IS NULL OR Email = '';");
+            migrationBuilder.Sql(@"
+                IF EXISTS (
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = 'Users' AND COLUMN_NAME = 'Email' AND IS_NULLABLE = 'YES'
+                )
+                    ALTER TABLE [Users] ALTER COLUMN [Email] nvarchar(100) NOT NULL;");
 
-            // Добавляем уникальный индекс на Email
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_Email",
-                table: "Users",
-                column: "Email",
-                unique: true);
-
-            // Добавляем уникальный индекс на Username
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_Username",
-                table: "Users",
-                column: "Username",
-                unique: true);
+            // Unique indexes (idempotent)
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Users_Email' AND object_id = OBJECT_ID('Users'))
+                    CREATE UNIQUE INDEX [IX_Users_Email] ON [Users]([Email]);");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Users_Username' AND object_id = OBJECT_ID('Users'))
+                    CREATE UNIQUE INDEX [IX_Users_Username] ON [Users]([Username]);");
         }
 
         /// <inheritdoc />

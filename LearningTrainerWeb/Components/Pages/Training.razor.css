@@ -258,6 +258,10 @@
     background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
 }
 
+.mode-grammar .mode-icon {
+    background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
+}
+
 /* Speed Round UI */
 .speed-timer {
     font-weight: 700;

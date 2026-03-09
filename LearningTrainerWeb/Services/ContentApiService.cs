@@ -41,6 +41,13 @@ public interface IContentApiService
     Task<ImportResult> ImportDictionaryFromAnkiAsync(Stream fileStream, string fileName,
         string? dictionaryName = null, string? languageFrom = null, string? languageTo = null);
 
+    // Create
+    Task<CreatedDictionaryResult> CreateDictionaryAsync(string name, string description,
+        string languageFrom, string languageTo, string? tags = null);
+    Task<CreatedWordResult> AddWordAsync(int dictionaryId, string originalWord, string translation, string? example = null);
+    Task<CreatedRuleResult> CreateRuleAsync(string title, string markdownContent, string description,
+        string category, int difficultyLevel, List<CreateExerciseInput>? exercises = null);
+
     // Export
     Task<ExportResult> ExportDictionaryAsJsonAsync(int dictionaryId);
     Task<ExportResult> ExportDictionaryAsCsvAsync(int dictionaryId);
@@ -320,6 +327,68 @@ public class ContentApiService : IContentApiService
 
         var result = await response.Content.ReadFromJsonAsync<ImportResult>();
         return result ?? new ImportResult();
+    }
+
+    #endregion
+
+    #region Create
+
+    public async Task<CreatedDictionaryResult> CreateDictionaryAsync(string name, string description,
+        string languageFrom, string languageTo, string? tags = null)
+    {
+        await ApplyAuthAsync();
+        var request = new { Name = name, Description = description, LanguageFrom = languageFrom, LanguageTo = languageTo, Tags = tags };
+        var response = await _httpClient.PostAsJsonAsync("api/dictionaries", request);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException(TryExtractMessage(body) ?? $"Ошибка создания словаря: {response.StatusCode}");
+        }
+        return await response.Content.ReadFromJsonAsync<CreatedDictionaryResult>() ?? new();
+    }
+
+    public async Task<CreatedWordResult> AddWordAsync(int dictionaryId, string originalWord, string translation, string? example = null)
+    {
+        await ApplyAuthAsync();
+        var request = new { DictionaryId = dictionaryId, OriginalWord = originalWord, Translation = translation, Example = example ?? "" };
+        var response = await _httpClient.PostAsJsonAsync("api/words", request);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException(TryExtractMessage(body) ?? $"Ошибка добавления слова: {response.StatusCode}");
+        }
+        return await response.Content.ReadFromJsonAsync<CreatedWordResult>() ?? new();
+    }
+
+    public async Task<CreatedRuleResult> CreateRuleAsync(string title, string markdownContent, string description,
+        string category, int difficultyLevel, List<CreateExerciseInput>? exercises = null)
+    {
+        await ApplyAuthAsync();
+        var exercisesList = exercises?.Select((e, idx) => new
+            {
+                e.Question,
+                e.Options,
+                e.CorrectIndex,
+                e.Explanation,
+                OrderIndex = idx
+            }).ToArray();
+        var request = new
+        {
+            Title = title,
+            MarkdownContent = markdownContent,
+            Description = description,
+            Category = category,
+            DifficultyLevel = difficultyLevel,
+            CreatedAt = DateTime.UtcNow,
+            Exercises = exercisesList ?? Array.Empty<object>()
+        };
+        var response = await _httpClient.PostAsJsonAsync("api/rules", request);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException(TryExtractMessage(body) ?? $"Ошибка создания правила: {response.StatusCode}");
+        }
+        return await response.Content.ReadFromJsonAsync<CreatedRuleResult>() ?? new();
     }
 
     #endregion
@@ -605,6 +674,33 @@ public class PublishedContentItem
     public string Name { get; set; } = "";
     public double Rating { get; set; }
     public int DownloadCount { get; set; }
+}
+
+public class CreatedDictionaryResult
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+}
+
+public class CreatedWordResult
+{
+    public int Id { get; set; }
+    public string OriginalWord { get; set; } = "";
+    public string Translation { get; set; } = "";
+}
+
+public class CreatedRuleResult
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = "";
+}
+
+public class CreateExerciseInput
+{
+    public string Question { get; set; } = "";
+    public string[] Options { get; set; } = Array.Empty<string>();
+    public int CorrectIndex { get; set; }
+    public string Explanation { get; set; } = "";
 }
 
 #endregion

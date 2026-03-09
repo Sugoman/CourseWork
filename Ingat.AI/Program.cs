@@ -409,6 +409,68 @@ app.MapPost("/api/ai/generate-exercises", async (GenerateExercisesRequest req, I
     }
 }).RequireRateLimiting("ai");
 
+// POST /api/ai/generate-typed-exercises — генерация упражнений указанного типа (§17.8 LEARNING_IMPROVEMENTS)
+app.MapPost("/api/ai/generate-typed-exercises", async (GenerateTypedExercisesRequest req, IAiProvider ai, IMemoryCache cache, ILogger<Program> logger) =>
+{
+    if (string.IsNullOrWhiteSpace(req.RuleTitle))
+        return Results.BadRequest(new { error = "RuleTitle is required" });
+
+    if (string.IsNullOrWhiteSpace(req.RuleContent))
+        return Results.BadRequest(new { error = "RuleContent is required" });
+
+    if (req.RuleContent.Length > 5000)
+        return Results.BadRequest(new { error = "RuleContent too long (max 5000 chars)" });
+
+    req.Count = Math.Clamp(req.Count, 1, 10);
+    req.DifficultyTier = Math.Clamp(req.DifficultyTier, 1, 3);
+
+    var validTypes = new HashSet<string> { "mcq", "transformation", "error_correction", "word_order", "translation", "matching" };
+    if (!validTypes.Contains(req.ExerciseType))
+        return Results.BadRequest(new { error = $"Invalid exercise type. Valid: {string.Join(", ", validTypes)}" });
+
+    var cacheKey = $"typed-exercises:{req.RuleTitle.Trim().ToLowerInvariant()}:{req.ExerciseType}:{req.DifficultyTier}:{req.Count}";
+    if (cache.TryGetValue(cacheKey, out GenerateTypedExercisesResponse? cached) && cached != null && cached.Exercises.Count > 0)
+    {
+        logger.LogDebug("Cache hit for typed exercises '{Rule}' type={Type}", req.RuleTitle, req.ExerciseType);
+        return Results.Ok(cached);
+    }
+
+    try
+    {
+        var maxTokens = req.Count * 200 + 300;
+        var prompt = PromptTemplates.GenerateTypedExercisesUser(
+            req.RuleTitle.Trim(), req.RuleContent.Trim(), req.Language,
+            req.TargetLanguage, req.ExerciseType, req.Count, req.DifficultyTier);
+        var parsed = await CompleteWithRetry<GenerateTypedExercisesResponse>(
+            ai, PromptTemplates.GenerateTypedExercisesSystem, prompt, logger, maxTokens: maxTokens);
+
+        if (parsed == null || parsed.Exercises.Count == 0)
+            return Results.Json(new { error = "AI returned invalid response" }, statusCode: 502);
+
+        // Post-validation: убираем упражнения без вопроса
+        parsed.Exercises.RemoveAll(e => string.IsNullOrWhiteSpace(e.Question) && string.IsNullOrWhiteSpace(e.IncorrectSentence));
+
+        // Assign difficulty tier from request
+        foreach (var ex in parsed.Exercises)
+            ex.DifficultyTier = req.DifficultyTier;
+
+        if (parsed.Exercises.Count == 0)
+            return Results.Json(new { error = "AI returned no valid exercises" }, statusCode: 502);
+
+        cache.Set(cacheKey, parsed, TimeSpan.FromHours(6));
+        return Results.Ok(parsed);
+    }
+    catch (HttpRequestException ex)
+    {
+        logger.LogError(ex, "Ollama connection error");
+        return Results.Json(new { error = "AI service unavailable" }, statusCode: 503);
+    }
+    catch (TaskCanceledException)
+    {
+        return Results.Json(new { error = "AI request timed out" }, statusCode: 504);
+    }
+}).RequireRateLimiting("ai");
+
 // POST /api/ai/explain-mistake — объяснение ошибки в тренировке
 app.MapPost("/api/ai/explain-mistake", async (ExplainMistakeRequest req, IAiProvider ai, IMemoryCache cache, ILogger<Program> logger) =>
 {

@@ -104,7 +104,8 @@
                 var bcp47 = resolveLang(lang);
                 var utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = bcp47;
-                utterance.rate = 0.9;
+                var savedSpeed = parseFloat(localStorage.getItem('ingat-tts-speed'));
+                utterance.rate = (!isNaN(savedSpeed) && savedSpeed >= 0.5 && savedSpeed <= 1.5) ? savedSpeed : 0.9;
                 utterance.volume = (typeof volume === 'number') ? Math.max(0, Math.min(1, volume)) : 1;
                 var voice = findBestVoice(bcp47);
                 if (voice) utterance.voice = voice;

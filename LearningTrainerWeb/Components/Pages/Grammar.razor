@@ -1,0 +1,295 @@
+@page "/grammar"
+@using LearningTrainerWeb.Services
+@inject IGrammarApiService GrammarApi
+@inject NavigationManager Navigation
+@inject ILogger<Grammar> Logger
+
+<PageTitle>Грамматика - Ingat</PageTitle>
+
+<div class="container">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="section-heading" style="margin-bottom: 0;">
+            <i class="bi bi-book"></i>
+            <h1 style="margin-bottom: 0;">Грамматика</h1>
+        </div>
+        @if (ProgressSummary != null)
+        {
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-primary fs-6">
+                    ⭐ @ProgressSummary.MasteredRules / @ProgressSummary.TotalRules навыков
+                </span>
+                @if (ProgressSummary.OverallAccuracy > 0)
+                {
+                    <span class="badge bg-success fs-6">
+                        🎯 @ProgressSummary.OverallAccuracy%
+                    </span>
+                }
+            </div>
+        }
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="text-muted mt-3">Загрузка грамматики...</p>
+        </div>
+    }
+    else
+    {
+        <!-- Due Reviews Banner -->
+        @if (DueReviews != null && DueReviews.Count > 0)
+        {
+            <div class="card mb-4 border-warning" style="border-radius: var(--radius-lg); border-width: 2px;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-1">
+                                <i class="bi bi-clock-history text-warning me-2"></i>
+                                Повторение: @DueReviews.Count @GetRulesWord(DueReviews.Count)
+                            </h5>
+                            <p class="text-muted mb-0">
+                                @if (DueReviews.Rules.Any())
+                                {
+                                    <span>Следующее: <strong>@DueReviews.Rules.First().RuleTitle</strong></span>
+                                }
+                            </p>
+                        </div>
+                        <button class="btn btn-warning btn-lg" @onclick="StartDueReview">
+                            <i class="bi bi-play-fill me-1"></i> Повторить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Progress Overview -->
+        @if (ProgressSummary != null)
+        {
+            <div class="card mb-4" style="border-radius: var(--radius-lg);">
+                <div class="card-body p-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-bar-chart me-2"></i> Мой прогресс
+                    </h5>
+                    <div class="progress mb-2" style="height: 24px; border-radius: 12px;">
+                        @{
+                            int total = Math.Max(1, ProgressSummary.TotalRules);
+                            int mastered = ProgressSummary.MasteredRules;
+                            int inProgress = ProgressSummary.InProgressRules;
+                            double masteredPct = (double)mastered / total * 100;
+                            double inProgressPct = (double)inProgress / total * 100;
+                        }
+                        <div class="progress-bar bg-success" style="width: @masteredPct.ToString("F0")%"
+                             title="Освоено: @mastered">
+                            @if (masteredPct > 10)
+                            {
+                                <span>@mastered освоено</span>
+                            }
+                        </div>
+                        <div class="progress-bar bg-warning" style="width: @inProgressPct.ToString("F0")%"
+                             title="В процессе: @inProgress">
+                            @if (inProgressPct > 10)
+                            {
+                                <span>@inProgress в процессе</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between text-muted small">
+                        <span>🟢 Освоено: @mastered</span>
+                        <span>🟡 В процессе: @inProgress</span>
+                        <span>⚪ Не начато: @(total - mastered - inProgress)</span>
+                        <span>📊 Сессий: @ProgressSummary.TotalSessions</span>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Skill Tree -->
+        @if (SkillNodes != null && SkillNodes.Any())
+        {
+            @foreach (var levelGroup in SkillNodes.GroupBy(n => n.SkillTreeLevel).OrderBy(g => g.Key))
+            {
+                <div class="mb-4">
+                    <h5 class="text-muted mb-3">
+                        @GetSkillTreeLevelTitle(levelGroup.Key)
+                    </h5>
+                    <div class="row g-3">
+                        @foreach (var node in levelGroup)
+                        {
+                            <div class="col-sm-6 col-md-4 col-lg-3">
+                                <div class="card h-100 skill-node @GetSkillNodeClass(node)"
+                                     style="border-radius: var(--radius-lg); cursor: @(node.IsUnlocked ? "pointer" : "default"); opacity: @(node.IsUnlocked ? "1" : "0.6");"
+                                     @onclick="() => OpenSkill(node)">
+                                    <div class="card-body text-center p-3">
+                                        <!-- Icon -->
+                                        <div class="fs-1 mb-2">
+                                            @if (!node.IsUnlocked)
+                                            {
+                                                <span>🔒</span>
+                                            }
+                                            else if (!string.IsNullOrEmpty(node.IconEmoji))
+                                            {
+                                                <span>@node.IconEmoji</span>
+                                            }
+                                            else
+                                            {
+                                                <span>📖</span>
+                                            }
+                                        </div>
+
+                                        <!-- Title -->
+                                        <h6 class="card-title mb-1">@node.Title</h6>
+
+                                        @if (!string.IsNullOrEmpty(node.SkillSummary))
+                                        {
+                                            <p class="text-muted small mb-2" style="font-size: 0.8rem;">@node.SkillSummary</p>
+                                        }
+
+                                        <!-- Stars -->
+                                        <div class="mb-2">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                if (i <= node.KnowledgeLevel)
+                                                {
+                                                    <i class="bi bi-star-fill text-warning"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i class="bi bi-star text-muted"></i>
+                                                }
+                                            }
+                                        </div>
+
+                                        <!-- Stats -->
+                                        <div class="d-flex justify-content-center gap-2 small">
+                                            @if (node.ExerciseCount > 0)
+                                            {
+                                                <span class="badge bg-light text-dark">
+                                                    @node.ExerciseCount упр.
+                                                </span>
+                                            }
+                                            @if (node.TotalSessions > 0)
+                                            {
+                                                <span class="badge bg-light text-dark">
+                                                    @node.AccuracyPercent%
+                                                </span>
+                                            }
+                                        </div>
+
+                                        <!-- Due indicator -->
+                                        @if (node.NextReview.HasValue && node.NextReview.Value <= DateTime.UtcNow)
+                                        {
+                                            <div class="mt-2">
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="bi bi-clock-history"></i> Повторить
+                                                </span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state-card">
+                <div class="empty-state-icon">
+                    <i class="bi bi-book"></i>
+                </div>
+                <h3>У вас нет грамматических правил</h3>
+                <p class="text-muted mb-4">
+                    Создайте свои правила в разделе «Мой контент» или скачайте из маркетплейса.
+                </p>
+                <div class="empty-state-actions">
+                    <a href="rules" class="btn btn-primary">
+                        <i class="bi bi-search me-2"></i> Маркетплейс правил
+                    </a>
+                    <a href="mycontent" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle me-2"></i> Мой контент
+                    </a>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<SkillTreeNodeDto>? SkillNodes;
+    private DueReviewsDto? DueReviews;
+    private GrammarProgressSummaryDto? ProgressSummary;
+    private bool IsLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var skillTreeTask = GrammarApi.GetSkillTreeAsync();
+            var dueReviewsTask = GrammarApi.GetDueReviewsAsync();
+            var progressTask = GrammarApi.GetProgressSummaryAsync();
+
+            await Task.WhenAll(skillTreeTask, dueReviewsTask, progressTask);
+
+            SkillNodes = skillTreeTask.Result;
+            DueReviews = dueReviewsTask.Result;
+            ProgressSummary = progressTask.Result;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading grammar page");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void OpenSkill(SkillTreeNodeDto node)
+    {
+        if (!node.IsUnlocked) return;
+        Navigation.NavigateTo($"/grammar/{node.Id}");
+    }
+
+    private void StartDueReview()
+    {
+        if (DueReviews?.Rules.Any() == true)
+        {
+            Navigation.NavigateTo($"/grammar/{DueReviews.Rules.First().RuleId}?mode=review");
+        }
+    }
+
+    private string GetSkillNodeClass(SkillTreeNodeDto node)
+    {
+        if (!node.IsUnlocked) return "border-secondary";
+        return node.KnowledgeLevel switch
+        {
+            >= 4 => "border-success",
+            >= 1 => "border-warning",
+            _ => ""
+        };
+    }
+
+    private string GetSkillTreeLevelTitle(int level) => level switch
+    {
+        1 => "🌱 Базовый уровень",
+        2 => "🌿 Средний уровень",
+        3 => "🌳 Продвинутый уровень",
+        _ => $"Уровень {level}"
+    };
+
+    private string GetRulesWord(int count)
+    {
+        if (count % 100 >= 11 && count % 100 <= 19) return "правил";
+        return (count % 10) switch
+        {
+            1 => "правило",
+            2 or 3 or 4 => "правила",
+            _ => "правил"
+        };
+    }
+}

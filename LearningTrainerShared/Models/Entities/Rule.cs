@@ -35,6 +35,38 @@ namespace LearningTrainerShared.Models
         /// </summary>
         public int? SourceRuleId { get; set; }
 
+        // === Skill Tree fields (§17.1 LEARNING_IMPROVEMENTS) ===
+
+        /// <summary>
+        /// Уровень в дереве навыков (1 = базовый, 2 = средний, 3 = продвинутый).
+        /// Определяет позицию в skill tree и требования к предпосылкам.
+        /// </summary>
+        public int SkillTreeLevel { get; set; } = 1;
+
+        /// <summary>
+        /// ID правил-предпосылок (JSON array). Пользователь должен достичь KnowledgeLevel >= 3
+        /// по каждому из них, чтобы разблокировать это правило.
+        /// null = доступно с самого начала.
+        /// </summary>
+        public string? PrerequisiteRuleIdsJson { get; set; }
+
+        /// <summary>
+        /// Иконка/эмоджи для визуального отображения в дереве навыков.
+        /// </summary>
+        [MaxLength(10)]
+        public string? IconEmoji { get; set; }
+
+        /// <summary>
+        /// Краткое описание навыка (одна строка для skill tree).
+        /// </summary>
+        [MaxLength(100)]
+        public string? SkillSummary { get; set; }
+
+        /// <summary>
+        /// Количество XP за полное прохождение всех упражнений правила.
+        /// </summary>
+        public int XpReward { get; set; } = 50;
+
         [JsonIgnore]
         public virtual User? User { get; set; }
 
@@ -46,5 +78,18 @@ namespace LearningTrainerShared.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow; 
         [NotMapped]
         public bool IsFeatured { get; set; }
+
+        // Helper for prerequisite IDs
+        [NotMapped]
+        public int[] PrerequisiteRuleIds
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(PrerequisiteRuleIdsJson)) return Array.Empty<int>();
+                try { return System.Text.Json.JsonSerializer.Deserialize<int[]>(PrerequisiteRuleIdsJson) ?? Array.Empty<int>(); }
+                catch { return Array.Empty<int>(); }
+            }
+            set => PrerequisiteRuleIdsJson = System.Text.Json.JsonSerializer.Serialize(value ?? Array.Empty<int>());
+        }
     }
 }

@@ -16,7 +16,7 @@ namespace LearningTrainerShared.Models
         [Required]
         public string MarkdownContent { get; set; }
 
-        [MaxLength(50)]
+        [MaxLength(500)]
         public string Description { get; set; }
 
         [MaxLength(50)]

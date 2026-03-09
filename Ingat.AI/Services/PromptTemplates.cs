@@ -100,6 +100,75 @@ public static class PromptTemplates
         {"exercises": [{"question": "She ___ to school every day.", "options": ["go", "goes", "going", "gone"], "correctIndex": 1, "explanation": "Present Simple, 3rd person singular → -es"}]}
         """;
 
+    // === Phase 4: Diverse Grammar Exercises (§17.3 LEARNING_IMPROVEMENTS) ===
+
+    public const string GenerateTypedExercisesSystem =
+        "You are an expert language teacher who creates diverse grammar exercises of a specific type. You respond ONLY with a single valid JSON object. No markdown, no code blocks, no explanation.";
+
+    /// <summary>
+    /// Генерирует грамматические упражнения указанного типа (§17.4 LEARNING_IMPROVEMENTS).
+    /// </summary>
+    public static string GenerateTypedExercisesUser(string ruleTitle, string ruleContent,
+        string language, string targetLanguage, string exerciseType, int count, int difficultyTier) =>
+        $$"""
+        Create {{count}} grammar exercises of type "{{exerciseType}}" for the rule: "{{ruleTitle}}".
+        Difficulty tier: {{difficultyTier}} (1=basic, 2=intermediate, 3=advanced).
+
+        Rule description:
+        {{ruleContent[..Math.Min(ruleContent.Length, 1000)]}}
+
+        {{GetExerciseTypeInstructions(exerciseType)}}
+
+        Language: {{language}}. Explanations in: {{targetLanguage}}.
+        Return ONLY valid JSON matching the schema for type "{{exerciseType}}".
+        """;
+
+    private static string GetExerciseTypeInstructions(string exerciseType) => exerciseType switch
+    {
+        "transformation" => """
+            EXERCISE TYPE: Sentence Transformation
+            The student must rewrite a sentence according to instructions (change tense, voice, form).
+
+            Return JSON:
+            {"exercises": [{"question": "Rewrite in Past Simple: 'She goes to school every day.'", "correctAnswer": "She went to school every day.", "alternativeAnswers": ["She went to school each day."], "explanation": "Past Simple of 'go' is 'went'", "difficultyTier": 1}]}
+            """,
+        "error_correction" => """
+            EXERCISE TYPE: Error Correction
+            The student must find and correct the grammar error in the sentence.
+
+            Return JSON:
+            {"exercises": [{"question": "Find and correct the error:", "incorrectSentence": "She don't like coffee.", "correctAnswer": "She doesn't like coffee.", "alternativeAnswers": [], "explanation": "3rd person singular uses 'doesn't', not 'don't'", "difficultyTier": 1}]}
+            """,
+        "word_order" => """
+            EXERCISE TYPE: Word Order
+            The student must arrange shuffled words into a correct sentence.
+
+            Return JSON:
+            {"exercises": [{"question": "Arrange the words into a correct sentence:", "shuffledWords": ["been", "has", "she", "to", "Paris", "never"], "correctAnswer": "She has never been to Paris.", "alternativeAnswers": [], "explanation": "Present Perfect: Subject + has/have + never + past participle", "difficultyTier": 1}]}
+            """,
+        "translation" => """
+            EXERCISE TYPE: Translation Challenge
+            The student must translate a sentence applying the grammar rule.
+
+            Return JSON:
+            {"exercises": [{"question": "Translate: 'Если бы я был богат, я бы путешествовал.'", "correctAnswer": "If I were rich, I would travel.", "alternativeAnswers": ["If I was rich, I would travel."], "explanation": "Second conditional: If + past simple, would + infinitive", "difficultyTier": 2}]}
+            """,
+        "matching" => """
+            EXERCISE TYPE: Matching
+            Create pairs that the student must match (sentence halves, forms, etc.).
+
+            Return JSON:
+            {"exercises": [{"question": "Match the sentence halves:", "options": ["If I had money...|...I would buy a car.", "If I had had money...|...I would have bought a car.", "If I have money...|...I will buy a car."], "correctAnswer": "", "explanation": "Conditionals: 2nd (would+inf), 3rd (would have+pp), 1st (will+inf)", "difficultyTier": 2}]}
+            """,
+        _ => """
+            EXERCISE TYPE: Fill-in-the-blank (MCQ)
+            Standard multiple choice exercise with 4 options.
+
+            Return JSON:
+            {"exercises": [{"question": "She ___ to school every day.", "options": ["go", "goes", "going", "gone"], "correctIndex": 1, "explanation": "Present Simple, 3rd person singular", "difficultyTier": 1}]}
+            """
+    };
+
     public const string ExplainMistakeSystem =
         "You are a patient language tutor. You respond ONLY with a single valid JSON object. No markdown, no code blocks, no explanation.";
 

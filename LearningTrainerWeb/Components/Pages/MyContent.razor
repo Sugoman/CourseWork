@@ -28,7 +28,21 @@
                 <i class="bi bi-folder2-open"></i>
                 <h1 style="margin-bottom: 0;">Мой контент</h1>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 flex-wrap">
+                @if (ActiveTab == "dictionaries")
+                {
+                    <button class="btn btn-success gap-2" @onclick="ShowCreateDictionaryDialog">
+                        <i class="bi bi-plus-lg me-1"></i>
+                        Создать словарь
+                    </button>
+                }
+                else if (ActiveTab == "rules")
+                {
+                    <button class="btn btn-success gap-2" @onclick="ShowCreateRuleDialog">
+                        <i class="bi bi-plus-lg me-1"></i>
+                        Создать правило
+                    </button>
+                }
                 <button class="btn btn-outline-success gap-2" @onclick="ShowImportDialog">
                     <i class="bi bi-upload me-1"></i>
                     Импорт
@@ -194,9 +208,17 @@
                         <div class="text-center py-5">
                             <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-book"></i></div>
                             <p class="text-muted">У вас пока нет словарей</p>
-                            <a href="dictionaries" class="btn btn-primary">
-                                <i class="bi bi-search me-1"></i> Найти словари
-                            </a>
+                            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                <button class="btn btn-primary" @onclick="ShowCreateDictionaryDialog">
+                                    <i class="bi bi-plus-lg me-1"></i> Создать словарь
+                                </button>
+                                <button class="btn btn-outline-primary" @onclick="ShowImportDialog">
+                                    <i class="bi bi-upload me-1"></i> Импортировать
+                                </button>
+                                <a href="dictionaries" class="btn btn-outline-secondary">
+                                    <i class="bi bi-search me-1"></i> Найти в маркетплейсе
+                                </a>
+                            </div>
                         </div>
                     </div>
                 }
@@ -344,9 +366,14 @@
                         <div class="text-center py-5">
                             <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-journal-text"></i></div>
                             <p class="text-muted">У вас пока нет правил</p>
-                            <a href="rules" class="btn btn-primary">
-                                <i class="bi bi-search me-1"></i> Найти правила
-                            </a>
+                            <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                <button class="btn btn-primary" @onclick="ShowCreateRuleDialog">
+                                    <i class="bi bi-plus-lg me-1"></i> Создать правило
+                                </button>
+                                <a href="rules" class="btn btn-outline-secondary">
+                                    <i class="bi bi-search me-1"></i> Найти в маркетплейсе
+                                </a>
+                            </div>
                         </div>
                     </div>
                 }
@@ -460,8 +487,8 @@
 
 @if (ShowImportModal)
 {
-    <div class="import-modal-overlay" @onclick="CloseImportDialog">
-        <div class="import-modal" @onclick:stopPropagation="true">
+    <div class="import-modal-overlay" @onmousedown="CloseImportDialog">
+        <div class="import-modal" @onmousedown:stopPropagation="true">
             <!-- Gradient accent bar -->
             <div class="import-modal-accent"></div>
 
@@ -627,6 +654,300 @@
         </div>
     </div>
 }
+
+@* === Create Dictionary Modal === *@
+@if (ShowCreateDictModal)
+{
+    <div class="import-modal-overlay" @onmousedown="() => ShowCreateDictModal = false">
+        <div class="import-modal" @onmousedown:stopPropagation="true">
+            <div class="import-modal-accent"></div>
+            <div class="import-modal-header">
+                <div class="import-modal-icon">
+                    <i class="bi bi-book"></i>
+                </div>
+                <div>
+                    <h4 class="import-modal-title">Новый словарь</h4>
+                    <p class="import-modal-subtitle">Создайте пустой словарь и добавляйте слова</p>
+                </div>
+                <button type="button" class="import-modal-close" @onclick="() => ShowCreateDictModal = false">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="import-modal-body">
+                <div class="import-field">
+                    <label class="import-field-label">Название *</label>
+                    <input type="text" class="form-control" @bind="NewDictName" placeholder="Например: IELTS Vocabulary" />
+                </div>
+                <div class="import-field">
+                    <label class="import-field-label">Описание</label>
+                    <input type="text" class="form-control" @bind="NewDictDescription" placeholder="Краткое описание словаря" />
+                </div>
+                <div class="import-lang-row">
+                    <div class="import-field">
+                        <label class="import-field-label"><i class="bi bi-translate me-1"></i> Оригинал</label>
+                        <select class="form-select" @bind="NewDictLangFrom">
+                            @foreach (var lang in LanguageOptions)
+                            {
+                                <option value="@lang">@lang</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="import-lang-arrow"><i class="bi bi-arrow-right"></i></div>
+                    <div class="import-field">
+                        <label class="import-field-label"><i class="bi bi-translate me-1"></i> Перевод</label>
+                        <select class="form-select" @bind="NewDictLangTo">
+                            @foreach (var lang in LanguageOptions)
+                            {
+                                <option value="@lang">@lang</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="import-field">
+                    <label class="import-field-label">Теги</label>
+                    <input type="text" class="form-control" @bind="NewDictTags" placeholder="travel, food, business (через запятую)" />
+                </div>
+
+                @* Inline word adder *@
+                <hr class="my-3" />
+                <label class="import-field-label mb-2">
+                    <i class="bi bi-plus-circle me-1"></i> Добавить слова (необязательно)
+                </label>
+                <div class="d-flex gap-2 mb-2">
+                    <input type="text" class="form-control" @bind="NewWordOriginal" @bind:event="oninput"
+                           placeholder="Слово" @onkeydown="OnWordKeyDown" />
+                    <input type="text" class="form-control" @bind="NewWordTranslation" @bind:event="oninput"
+                           placeholder="Перевод" @onkeydown="OnWordKeyDown" />
+                    <button class="btn btn-outline-primary flex-shrink-0" @onclick="AddWordToList"
+                            disabled="@(string.IsNullOrWhiteSpace(NewWordOriginal) || string.IsNullOrWhiteSpace(NewWordTranslation))">
+                        <i class="bi bi-plus"></i>
+                    </button>
+                </div>
+                @if (NewWords.Count > 0)
+                {
+                    <div class="border rounded p-2" style="max-height: 200px; overflow-y: auto;">
+                        @foreach (var (word, idx) in NewWords.Select((w, i) => (w, i)))
+                        {
+                            <div class="d-flex justify-content-between align-items-center py-1 px-2 @(idx % 2 == 0 ? "" : "bg-body-secondary rounded")">
+                                <span><strong>@word.Original</strong> — @word.Translation</span>
+                                <button class="btn btn-sm btn-link text-danger p-0" @onclick="() => NewWords.RemoveAt(idx)">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                    <small class="text-muted">@NewWords.Count слов</small>
+                }
+
+                @if (!string.IsNullOrEmpty(CreateDictError))
+                {
+                    <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <div>@CreateDictError</div>
+                    </div>
+                }
+            </div>
+            <div class="import-modal-footer">
+                <button class="btn import-btn-cancel" @onclick="() => ShowCreateDictModal = false">Отмена</button>
+                <button class="btn btn-primary import-btn-submit" @onclick="CreateDictionary"
+                        disabled="@(IsCreatingDict || string.IsNullOrWhiteSpace(NewDictName))">
+                    @if (IsCreatingDict)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        <span>Создание...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-plus-lg me-2"></i>
+                        <span>Создать</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* === Create Rule Modal === *@
+@if (ShowCreateRuleModal)
+{
+    <div class="import-modal-overlay" @onmousedown="() => ShowCreateRuleModal = false">
+        <div class="import-modal" style="max-width: 750px;" @onmousedown:stopPropagation="true">
+            <div class="import-modal-accent"></div>
+            <div class="import-modal-header">
+                <div class="import-modal-icon">
+                    <i class="bi bi-journal-text"></i>
+                </div>
+                <div>
+                    <h4 class="import-modal-title">Новое правило</h4>
+                    <p class="import-modal-subtitle">Создайте грамматическое правило с упражнениями</p>
+                </div>
+                <button type="button" class="import-modal-close" @onclick="() => ShowCreateRuleModal = false">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="import-modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <div class="import-field">
+                    <label class="import-field-label">Название *</label>
+                    <input type="text" class="form-control" @bind="NewRuleTitle" placeholder="Например: Present Simple" />
+                </div>
+                <div class="import-field">
+                    <label class="import-field-label">Краткое описание</label>
+                    <textarea class="form-control" rows="2" @bind="NewRuleDescription" maxlength="500"
+                              placeholder="Простое настоящее время — описание регулярных действий, общих истин и расписаний"></textarea>
+                </div>
+                <div class="import-lang-row">
+                    <div class="import-field">
+                        <label class="import-field-label">Категория</label>
+                        <select class="form-select" @bind="NewRuleCategory">
+                            <option value="Grammar">Грамматика</option>
+                            <option value="Vocabulary">Лексика</option>
+                            <option value="Pronunciation">Произношение</option>
+                            <option value="Writing">Письмо</option>
+                            <option value="Reading">Чтение</option>
+                            <option value="Other">Другое</option>
+                        </select>
+                    </div>
+                    <div class="import-field">
+                        <label class="import-field-label">Сложность</label>
+                        <select class="form-select" @bind="NewRuleDifficulty">
+                            <option value="1">1 — Начальный</option>
+                            <option value="2">2 — Средний</option>
+                            <option value="3">3 — Продвинутый</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="import-field">
+                    <label class="import-field-label">Содержание (Markdown) *</label>
+                    <textarea class="form-control" rows="8" @bind="NewRuleContent"
+                              placeholder="# Present Simple&#10;&#10;Используется для описания регулярных действий.&#10;&#10;**Формула:** Subject + V1&#10;&#10;**Примеры:**&#10;- I play football every day.&#10;- She goes to school."
+                              style="font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.9rem;"></textarea>
+                </div>
+
+                @* === Exercises section === *@
+                <hr class="my-3" />
+                <label class="import-field-label mb-2">
+                    <i class="bi bi-pencil-square me-1"></i> Упражнения (необязательно)
+                </label>
+                <p class="text-muted small mb-3">Добавьте вопросы с вариантами ответов для закрепления правила</p>
+
+                @if (NewExercises.Count > 0)
+                {
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        @for (int exIdx = 0; exIdx < NewExercises.Count; exIdx++)
+                        {
+                            var ex = NewExercises[exIdx];
+                            var capturedIdx = exIdx;
+                            <div class="border rounded p-3 position-relative">
+                                <button class="btn btn-sm btn-link text-danger position-absolute top-0 end-0 p-2"
+                                        @onclick="() => NewExercises.RemoveAt(capturedIdx)" title="Удалить">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                <div class="fw-semibold small text-muted mb-1">Вопрос @(capturedIdx + 1)</div>
+                                <div class="mb-1">@ex.Question</div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    @{ var options = ex.Options; }
+                                    @for (int oi = 0; oi < options.Length; oi++)
+                                    {
+                                        var isCorrect = oi == ex.CorrectIndex;
+                                        <span class="badge @(isCorrect ? "bg-success" : "bg-secondary bg-opacity-25 text-body")">
+                                            @(isCorrect ? "✓ " : "")@options[oi]
+                                        </span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(ex.Explanation))
+                                {
+                                    <div class="text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>@ex.Explanation</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                @* Add new exercise form *@
+                <div class="border rounded p-3 bg-body-secondary">
+                    <div class="import-field mb-2">
+                        <label class="import-field-label">Вопрос</label>
+                        <input type="text" class="form-control form-control-sm" @bind="ExQuestion"
+                               placeholder="He ___ to school every day." />
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-text">
+                                    <input type="radio" name="correctOption" class="form-check-input mt-0"
+                                           checked="@(ExCorrectIndex == 0)" @onchange="SetCorrect0" />
+                                </div>
+                                <input type="text" class="form-control" @bind="ExOption0" placeholder="Вариант 1" />
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-text">
+                                    <input type="radio" name="correctOption" class="form-check-input mt-0"
+                                           checked="@(ExCorrectIndex == 1)" @onchange="SetCorrect1" />
+                                </div>
+                                <input type="text" class="form-control" @bind="ExOption1" placeholder="Вариант 2" />
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-text">
+                                    <input type="radio" name="correctOption" class="form-check-input mt-0"
+                                           checked="@(ExCorrectIndex == 2)" @onchange="SetCorrect2" />
+                                </div>
+                                <input type="text" class="form-control" @bind="ExOption2" placeholder="Вариант 3" />
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="input-group input-group-sm">
+                                <div class="input-group-text">
+                                    <input type="radio" name="correctOption" class="form-check-input mt-0"
+                                           checked="@(ExCorrectIndex == 3)" @onchange="SetCorrect3" />
+                                </div>
+                                <input type="text" class="form-control" @bind="ExOption3" placeholder="Вариант 4" />
+                            </div>
+                        </div>
+                    </div>
+                    <small class="text-muted d-block mb-2">Отметьте радиокнопкой правильный вариант</small>
+                    <div class="import-field mb-2">
+                        <label class="import-field-label">Объяснение</label>
+                        <input type="text" class="form-control form-control-sm" @bind="ExExplanation"
+                               placeholder="Present Simple, 3rd person → goes" />
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm" @onclick="AddExerciseToList"
+                            disabled="@(!CanAddExercise)">
+                        <i class="bi bi-plus-lg me-1"></i> Добавить вопрос
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(CreateRuleError))
+                {
+                    <div class="alert alert-danger d-flex align-items-center gap-2 mt-3 mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <div>@CreateRuleError</div>
+                    </div>
+                }
+            </div>
+            <div class="import-modal-footer">
+                <button class="btn import-btn-cancel" @onclick="() => ShowCreateRuleModal = false">Отмена</button>
+                <button class="btn btn-primary import-btn-submit" @onclick="CreateRule"
+                        disabled="@(IsCreatingRule || string.IsNullOrWhiteSpace(NewRuleTitle) || string.IsNullOrWhiteSpace(NewRuleContent))">
+                    @if (IsCreatingRule)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        <span>Создание...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-plus-lg me-2"></i>
+                        <span>Создать</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 <LearningTrainerWeb.Components.Shared.AppToast
     Message="@ExportMessage"
     IsSuccess="@ExportSuccess"
@@ -655,6 +976,47 @@
     private string? ImportLanguageFrom;
     private string? ImportLanguageTo;
     private string? ImportError;
+
+    // Create dictionary state
+    private bool ShowCreateDictModal;
+    private bool IsCreatingDict;
+    private string NewDictName = "";
+    private string NewDictDescription = "";
+    private string NewDictLangFrom = "English";
+    private string NewDictLangTo = "Russian";
+    private string? NewDictTags;
+    private string? CreateDictError;
+    private string NewWordOriginal = "";
+    private string NewWordTranslation = "";
+    private List<(string Original, string Translation)> NewWords = new();
+
+    // Create rule state
+    private bool ShowCreateRuleModal;
+    private bool IsCreatingRule;
+    private string NewRuleTitle = "";
+    private string NewRuleDescription = "";
+    private string NewRuleCategory = "Grammar";
+    private int NewRuleDifficulty = 1;
+    private string NewRuleContent = "";
+    private string? CreateRuleError;
+
+    // Exercise builder state
+    private List<CreateExerciseInput> NewExercises = new();
+    private string ExQuestion = "";
+    private string ExOption0 = "";
+    private string ExOption1 = "";
+    private string ExOption2 = "";
+    private string ExOption3 = "";
+    private int ExCorrectIndex = 0;
+    private string ExExplanation = "";
+
+    private static readonly string[] LanguageOptions = {
+        "English", "Russian", "German", "French", "Spanish", "Italian", "Portuguese",
+        "Chinese", "Japanese", "Korean", "Arabic", "Turkish", "Polish", "Dutch",
+        "Swedish", "Norwegian", "Danish", "Finnish", "Czech", "Greek", "Hindi",
+        "Thai", "Vietnamese", "Indonesian", "Ukrainian", "Hungarian", "Romanian",
+        "Hebrew", "Croatian", "Bulgarian"
+    };
 
     // Share dialog state
     private bool ShareDialogVisible;
@@ -961,5 +1323,201 @@
         ShareDialogVisible = false;
         await LoadMyContent();
         StateHasChanged();
+    }
+
+    // === Create Dictionary ===
+
+    private void ShowCreateDictionaryDialog()
+    {
+        NewDictName = "";
+        NewDictDescription = "";
+        NewDictLangFrom = "English";
+        NewDictLangTo = "Russian";
+        NewDictTags = null;
+        CreateDictError = null;
+        NewWords.Clear();
+        NewWordOriginal = "";
+        NewWordTranslation = "";
+        ShowCreateDictModal = true;
+    }
+
+    private void AddWordToList()
+    {
+        if (string.IsNullOrWhiteSpace(NewWordOriginal) || string.IsNullOrWhiteSpace(NewWordTranslation)) return;
+        NewWords.Add((NewWordOriginal.Trim(), NewWordTranslation.Trim()));
+        NewWordOriginal = "";
+        NewWordTranslation = "";
+    }
+
+    private void OnWordKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddWordToList();
+        }
+    }
+
+    private async Task CreateDictionary()
+    {
+        if (string.IsNullOrWhiteSpace(NewDictName)) return;
+
+        IsCreatingDict = true;
+        CreateDictError = null;
+        StateHasChanged();
+
+        try
+        {
+            var result = await ContentApi.CreateDictionaryAsync(
+                NewDictName.Trim(), NewDictDescription.Trim(),
+                NewDictLangFrom, NewDictLangTo, NewDictTags?.Trim());
+
+            // Add words if any
+            int added = 0;
+            foreach (var (original, translation) in NewWords)
+            {
+                try
+                {
+                    await ContentApi.AddWordAsync(result.Id, original, translation);
+                    added++;
+                }
+                catch { /* skip individual word errors */ }
+            }
+
+            ShowCreateDictModal = false;
+            ExportMessage = added > 0
+                ? $"Словарь «{result.Name}» создан ({added} слов добавлено)!"
+                : $"Словарь «{result.Name}» создан!";
+            ExportSuccess = true;
+            await LoadMyContent();
+            StateHasChanged();
+            await Task.Delay(4000);
+            ExportMessage = null;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            CreateDictError = ex.Message;
+        }
+        finally
+        {
+            IsCreatingDict = false;
+            StateHasChanged();
+        }
+    }
+
+    // === Create Rule ===
+
+    private void ShowCreateRuleDialog()
+    {
+        NewRuleTitle = "";
+        NewRuleDescription = "";
+        NewRuleCategory = "Grammar";
+        NewRuleDifficulty = 1;
+        NewRuleContent = "";
+        CreateRuleError = null;
+        NewExercises.Clear();
+        ResetExerciseForm();
+        ShowCreateRuleModal = true;
+    }
+
+    // Exercise builder helpers
+
+    private bool CanAddExercise
+    {
+        get
+        {
+            var opts = new[] { ExOption0, ExOption1, ExOption2, ExOption3 };
+            return !string.IsNullOrWhiteSpace(ExQuestion)
+                && opts.Count(o => !string.IsNullOrWhiteSpace(o)) >= 2
+                && ExCorrectIndex < 4
+                && !string.IsNullOrWhiteSpace(opts[ExCorrectIndex]);
+        }
+    }
+
+    private string GetExOption(int idx) => idx switch { 0 => ExOption0, 1 => ExOption1, 2 => ExOption2, _ => ExOption3 };
+
+    private void SetExOption(int idx, string value)
+    {
+        switch (idx) { case 0: ExOption0 = value; break; case 1: ExOption1 = value; break; case 2: ExOption2 = value; break; case 3: ExOption3 = value; break; }
+    }
+
+    private void SetCorrect0() => ExCorrectIndex = 0;
+    private void SetCorrect1() => ExCorrectIndex = 1;
+    private void SetCorrect2() => ExCorrectIndex = 2;
+    private void SetCorrect3() => ExCorrectIndex = 3;
+
+    private static string GetStringValue(ChangeEventArgs e) => e.Value?.ToString() ?? "";
+
+    private Action<ChangeEventArgs> CreateOptionHandler(int idx) =>
+        (ChangeEventArgs e) => SetExOption(idx, e.Value?.ToString() ?? "");
+
+    private static string GetOptionPlaceholder(int idx) => "Вариант " + (idx + 1);
+
+    private void AddExerciseToList()
+    {
+        if (!CanAddExercise) return;
+
+        var allOptions = new[] { ExOption0, ExOption1, ExOption2, ExOption3 };
+        var nonEmptyOptions = allOptions.Where(o => !string.IsNullOrWhiteSpace(o)).ToArray();
+        var correctedIndex = Array.IndexOf(nonEmptyOptions, allOptions[ExCorrectIndex]);
+
+        NewExercises.Add(new CreateExerciseInput
+        {
+            Question = ExQuestion.Trim(),
+            Options = nonEmptyOptions.Select(o => o.Trim()).ToArray(),
+            CorrectIndex = correctedIndex >= 0 ? correctedIndex : 0,
+            Explanation = ExExplanation.Trim()
+        });
+
+        ResetExerciseForm();
+    }
+
+    private void ResetExerciseForm()
+    {
+        ExQuestion = "";
+        ExOption0 = "";
+        ExOption1 = "";
+        ExOption2 = "";
+        ExOption3 = "";
+        ExCorrectIndex = 0;
+        ExExplanation = "";
+    }
+
+    private async Task CreateRule()
+    {
+        if (string.IsNullOrWhiteSpace(NewRuleTitle) || string.IsNullOrWhiteSpace(NewRuleContent)) return;
+
+        IsCreatingRule = true;
+        CreateRuleError = null;
+        StateHasChanged();
+
+        try
+        {
+            var result = await ContentApi.CreateRuleAsync(
+                NewRuleTitle.Trim(), NewRuleContent.Trim(),
+                NewRuleDescription.Trim(), NewRuleCategory, NewRuleDifficulty,
+                NewExercises.Count > 0 ? NewExercises : null);
+
+            ShowCreateRuleModal = false;
+            var msg = $"Правило «{result.Title}» создано!";
+            if (NewExercises.Count > 0) msg = $"Правило «{result.Title}» создано ({NewExercises.Count} упражнений)!";
+            ExportMessage = msg;
+            ExportSuccess = true;
+            ActiveTab = "rules";
+            await LoadMyContent();
+            StateHasChanged();
+            await Task.Delay(4000);
+            ExportMessage = null;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            CreateRuleError = ex.Message;
+        }
+        finally
+        {
+            IsCreatingRule = false;
+            StateHasChanged();
+        }
     }
 }

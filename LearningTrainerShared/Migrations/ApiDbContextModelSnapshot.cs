@@ -181,13 +181,36 @@ namespace LearningTrainerShared.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AlternativeAnswersJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CorrectAnswer")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<int>("CorrectIndex")
                         .HasColumnType("int");
+
+                    b.Property<int>("DifficultyTier")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.Property<string>("ExerciseType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasDefaultValue("mcq");
 
                     b.Property<string>("Explanation")
                         .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("IncorrectSentence")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("OptionsJson")
                         .IsRequired()
@@ -204,11 +227,80 @@ namespace LearningTrainerShared.Migrations
                     b.Property<int>("RuleId")
                         .HasColumnType("int");
 
+                    b.Property<string>("ShuffledWordsJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("RuleId");
 
                     b.ToTable("GrammarExercises");
+                });
+
+            modelBuilder.Entity("LearningTrainerShared.Models.GrammarProgress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CorrectAnswers")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<double>("EaseFactor")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("float")
+                        .HasDefaultValue(2.5);
+
+                    b.Property<double>("IntervalDays")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("float")
+                        .HasDefaultValue(0.0);
+
+                    b.Property<int>("KnowledgeLevel")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("LapseCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("LastPracticeDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NextReview")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RuleId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalAnswers")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("TotalSessions")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("UserId", "RuleId");
+
+                    b.HasIndex("RuleId");
+
+                    b.HasIndex("UserId", "NextReview");
+
+                    b.ToTable("GrammarProgresses");
                 });
 
             modelBuilder.Entity("LearningTrainerShared.Models.LearningProgress", b =>
@@ -341,6 +433,10 @@ namespace LearningTrainerShared.Migrations
                     b.Property<int>("DownloadCount")
                         .HasColumnType("int");
 
+                    b.Property<string>("IconEmoji")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
                     b.Property<bool>("IsPublished")
                         .HasColumnType("bit");
 
@@ -348,11 +444,23 @@ namespace LearningTrainerShared.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("PrerequisiteRuleIdsJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<double>("Rating")
                         .HasColumnType("float");
 
                     b.Property<int>("RatingCount")
                         .HasColumnType("int");
+
+                    b.Property<int>("SkillTreeLevel")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.Property<string>("SkillSummary")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int?>("SourceRuleId")
                         .HasColumnType("int");
@@ -364,6 +472,11 @@ namespace LearningTrainerShared.Migrations
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
+
+                    b.Property<int>("XpReward")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(50);
 
                     b.HasKey("Id");
 
@@ -697,6 +810,25 @@ namespace LearningTrainerShared.Migrations
                         .HasForeignKey("RuleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Rule");
+                });
+
+            modelBuilder.Entity("LearningTrainerShared.Models.GrammarProgress", b =>
+                {
+                    b.HasOne("LearningTrainerShared.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LearningTrainerShared.Models.Rule", "Rule")
+                        .WithMany()
+                        .HasForeignKey("RuleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
 
                     b.Navigation("Rule");
                 });

@@ -212,6 +212,10 @@
     {
         try
         {
+            // Check if reminders are disabled in settings
+            var remSetting = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-reminders-enabled");
+            if (remSetting == "false") return;
+
             var plan = await TrainingService.GetDailyPlanAsync();
             if (plan == null) return;
 
