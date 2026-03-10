@@ -168,6 +168,19 @@
             setTheme(next);
             return next;
         }
+
+        // Markdown anchor navigation: prevent Blazor from intercepting in-page #hash links
+        document.addEventListener('click', function (e) {
+            var anchor = e.target.closest('.markdown-content a[href^="#"]');
+            if (!anchor) return;
+            e.preventDefault();
+            var id = anchor.getAttribute('href').substring(1);
+            var target = document.getElementById(id);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                history.replaceState(null, '', '#' + id);
+            }
+        });
     </script>
 </body>
 

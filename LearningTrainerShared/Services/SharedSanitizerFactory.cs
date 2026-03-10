@@ -26,6 +26,10 @@ namespace LearningTrainerShared.Services
             sanitizer.AllowedTags.Add("em");
             sanitizer.AllowedTags.Add("i");
             sanitizer.AllowedTags.Add("u");
+            sanitizer.AllowedTags.Add("del");
+            sanitizer.AllowedTags.Add("sup");
+            sanitizer.AllowedTags.Add("sub");
+            sanitizer.AllowedTags.Add("mark");
             sanitizer.AllowedTags.Add("code");
             sanitizer.AllowedTags.Add("pre");
             sanitizer.AllowedTags.Add("ul");
@@ -33,16 +37,30 @@ namespace LearningTrainerShared.Services
             sanitizer.AllowedTags.Add("li");
             sanitizer.AllowedTags.Add("blockquote");
             sanitizer.AllowedTags.Add("table");
+            sanitizer.AllowedTags.Add("caption");
             sanitizer.AllowedTags.Add("thead");
             sanitizer.AllowedTags.Add("tbody");
+            sanitizer.AllowedTags.Add("tfoot");
             sanitizer.AllowedTags.Add("tr");
             sanitizer.AllowedTags.Add("th");
             sanitizer.AllowedTags.Add("td");
             sanitizer.AllowedTags.Add("a");
+            sanitizer.AllowedTags.Add("span");
+            sanitizer.AllowedTags.Add("div");
+            sanitizer.AllowedTags.Add("section");
+            sanitizer.AllowedTags.Add("aside");
 
             sanitizer.AllowedAttributes.Clear();
             sanitizer.AllowedAttributes.Add("href");
             sanitizer.AllowedAttributes.Add("class");
+            sanitizer.AllowedAttributes.Add("id");
+            sanitizer.AllowedAttributes.Add("style");
+            sanitizer.AllowedAttributes.Add("rowspan");
+            sanitizer.AllowedAttributes.Add("colspan");
+            sanitizer.AllowedAttributes.Add("title");
+
+            sanitizer.AllowedCssProperties.Clear();
+            sanitizer.AllowedCssProperties.Add("text-align");
 
             sanitizer.AllowedSchemes.Clear();
             sanitizer.AllowedSchemes.Add("http");

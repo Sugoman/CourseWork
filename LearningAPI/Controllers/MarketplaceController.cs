@@ -3,6 +3,7 @@ using LearningAPI.Extensions;
 using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using LearningTrainerShared.Services;
+using Markdig;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -1103,34 +1104,17 @@ public class MarketplaceController : BaseApiController
         }
     }
 
+    private static readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .UseEmojiAndSmiley()
+        .Build();
+
     private string ConvertMarkdownToHtml(string markdown)
     {
         if (string.IsNullOrEmpty(markdown))
             return "";
 
-        // Базовая конвертация Markdown в HTML
-        var html = markdown
-            .Replace("\r\n", "\n")
-            .Replace("\r", "\n");
-
-        // Заголовки
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"^### (.+)$", "<h3>$1</h3>", System.Text.RegularExpressions.RegexOptions.Multiline);
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"^## (.+)$", "<h2>$1</h2>", System.Text.RegularExpressions.RegexOptions.Multiline);
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"^# (.+)$", "<h1>$1</h1>", System.Text.RegularExpressions.RegexOptions.Multiline);
-
-        // Жирный и курсив
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"\*(.+?)\*", "<em>$1</em>");
-
-        // Код
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"`(.+?)`", "<code>$1</code>");
-
-        // Параграфы
-        var paragraphs = html.Split(new[] { "\n\n" }, StringSplitOptions.RemoveEmptyEntries);
-        html = string.Join("", paragraphs.Select(p => 
-            p.StartsWith("<h") ? p : $"<p>{p.Replace("\n", "<br/>")}</p>"));
-
-        // Санитизация HTML для защиты от XSS-атак
+        var html = Markdown.ToHtml(markdown, _markdownPipeline);
         return _htmlSanitizer.Sanitize(html);
     }
 
