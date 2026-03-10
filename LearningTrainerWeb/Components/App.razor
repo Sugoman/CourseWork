@@ -181,6 +181,20 @@
                 history.replaceState(null, '', '#' + id);
             }
         });
+
+        // Plain localStorage helpers for auth session persistence (no Data Protection dependency)
+        function authStorageGet(key) {
+            try { return localStorage.getItem(key); }
+            catch { return null; }
+        }
+        function authStorageSet(key, value) {
+            try { localStorage.setItem(key, value); }
+            catch { }
+        }
+        function authStorageRemove(key) {
+            try { localStorage.removeItem(key); }
+            catch { }
+        }
     </script>
 </body>
 

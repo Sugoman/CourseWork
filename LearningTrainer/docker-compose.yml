@@ -94,4 +94,6 @@ services:
 
 volumes:
   sql_data:
+    name: ingat_sql_data
   web_dataprotection_keys:
+    name: ingat_web_dataprotection_keys

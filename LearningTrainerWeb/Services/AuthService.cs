@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+﻿using Microsoft.JSInterop;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 
 namespace LearningTrainerWeb.Services;
@@ -34,25 +35,25 @@ public interface IAuthService
 public class AuthService : IAuthService
 {
     private readonly HttpClient _httpClient;
-    private readonly ProtectedSessionStorage _sessionStorage;
-    private readonly ProtectedLocalStorage _localStorage;
+    private readonly IJSRuntime _js;
     private readonly AuthTokenProvider _tokenProvider;
     private readonly ILogger<AuthService> _logger;
     private UserSession? _currentSession;
     private bool _isInitialized;
-    private const string SessionKey = "auth_session";
-    private const string PersistentSessionKey = "auth_session_persistent";
+    /// <summary>
+    /// Plain localStorage key for persistent "Remember me" sessions.
+    /// NOT encrypted — survives container rebuilds without DP key dependency.
+    /// </summary>
+    private const string PersistentKey = "ingat_auth";
 
     public AuthService(
-        HttpClient httpClient, 
-        ProtectedSessionStorage sessionStorage, 
-        ProtectedLocalStorage localStorage,
+        HttpClient httpClient,
+        IJSRuntime js,
         AuthTokenProvider tokenProvider,
         ILogger<AuthService> logger)
     {
         _httpClient = httpClient;
-        _sessionStorage = sessionStorage;
-        _localStorage = localStorage;
+        _js = js;
         _tokenProvider = tokenProvider;
         _logger = logger;
     }
@@ -65,23 +66,30 @@ public class AuthService : IAuthService
 
         try
         {
-            // Сначала проверяем session storage
-            var result = await _sessionStorage.GetAsync<UserSession>(SessionKey);
-            if (result.Success && result.Value != null)
+            // Read from plain localStorage (no DP encryption — survives container rebuilds)
+            var json = await _js.InvokeAsync<string?>("authStorageGet", PersistentKey);
+            if (!string.IsNullOrEmpty(json))
             {
-                _currentSession = result.Value;
-                SetAuthHeaders(_currentSession.Token, _currentSession.ExpiresAtUtc);
-            }
-            else
-            {
-                // Если нет в session, проверяем local storage (для "Запомнить меня")
-                var persistentResult = await _localStorage.GetAsync<UserSession>(PersistentSessionKey);
-                if (persistentResult.Success && persistentResult.Value != null)
+                var session = JsonSerializer.Deserialize<UserSession>(json);
+                if (session != null && !string.IsNullOrEmpty(session.Token))
                 {
-                    _currentSession = persistentResult.Value;
+                    _currentSession = session;
                     SetAuthHeaders(_currentSession.Token, _currentSession.ExpiresAtUtc);
-                    // Копируем в session storage для текущей сессии
-                    await _sessionStorage.SetAsync(SessionKey, _currentSession);
+                    _logger.LogDebug("Restored session for user {UserId} from localStorage", session.UserId);
+                }
+            }
+
+            // If token is restored but expired — try refresh
+            if (_currentSession != null && _currentSession.ExpiresAtUtc <= DateTime.UtcNow)
+            {
+                _logger.LogInformation("Restored token is expired, attempting refresh");
+                var refreshed = await RefreshAccessTokenAsync();
+                if (!refreshed)
+                {
+                    _logger.LogWarning("Token refresh failed — clearing session");
+                    _currentSession = null;
+                    _tokenProvider.Token = null;
+                    await RemovePersistentSession();
                 }
             }
 
@@ -92,32 +100,46 @@ public class AuthService : IAuthService
             // Expected during Blazor prerendering — JS interop not available.
             // Do NOT set _isInitialized = true so InitializeAsync retries on interactive render.
         }
-        catch (System.Security.Cryptography.CryptographicException ex)
-        {
-            // Data Protection keys changed (container restart without persisted keys).
-            // Clear corrupted entries so the user can log in again cleanly.
-            _logger.LogWarning(ex, "Data Protection keys changed — clearing corrupted auth session");
-            try
-            {
-                await _sessionStorage.DeleteAsync(SessionKey);
-                await _localStorage.DeleteAsync(PersistentSessionKey);
-            }
-            catch { /* best effort cleanup */ }
-            _isInitialized = true;
-        }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Error restoring auth session during initialization");
-            // Attempt to clean up potentially corrupted storage
-            try
-            {
-                await _sessionStorage.DeleteAsync(SessionKey);
-                await _localStorage.DeleteAsync(PersistentSessionKey);
-            }
-            catch { /* best effort cleanup */ }
+            await RemovePersistentSession();
             _isInitialized = true;
         }
     }
+
+    #region Plain localStorage helpers
+
+    private async Task SavePersistentSession()
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(_currentSession);
+            await _js.InvokeVoidAsync("authStorageSet", PersistentKey, json);
+        }
+        catch { /* JS interop not available during prerendering */ }
+    }
+
+    private async Task RemovePersistentSession()
+    {
+        try
+        {
+            await _js.InvokeVoidAsync("authStorageRemove", PersistentKey);
+        }
+        catch { /* best effort */ }
+    }
+
+    private async Task<bool> HasPersistentSession()
+    {
+        try
+        {
+            var json = await _js.InvokeAsync<string?>("authStorageGet", PersistentKey);
+            return !string.IsNullOrEmpty(json);
+        }
+        catch { return false; }
+    }
+
+    #endregion
 
     private void SetAuthHeaders(string? token, DateTime expiresAtUtc = default)
     {
@@ -130,7 +152,7 @@ public class AuthService : IAuthService
     {
         var request = new { Username = username, Password = password };
         var response = await _httpClient.PostAsJsonAsync("api/auth/login", request);
-        
+
         if (response.IsSuccessStatusCode)
         {
             var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
@@ -144,27 +166,15 @@ public class AuthService : IAuthService
                         Token = result.AccessToken,
                         RefreshToken = result.RefreshToken,
                         Role = result.UserRole ?? "",
+                        RememberMe = rememberMe,
                         ExpiresAtUtc = DateTime.UtcNow.AddSeconds(result.ExpiresIn > 0 ? result.ExpiresIn : 7200)
                     };
-                
+
                 SetAuthHeaders(result.AccessToken, _currentSession.ExpiresAtUtc);
-                
-                try
-                {
-                    // Всегда сохраняем в session storage
-                    await _sessionStorage.SetAsync(SessionKey, _currentSession);
-                    
-                    // Если "Запомнить меня" - сохраняем также в local storage
-                    if (rememberMe)
-                    {
-                        await _localStorage.SetAsync(PersistentSessionKey, _currentSession);
-                    }
-                }
-                catch
-                {
-                    // Ignore during prerendering
-                }
-                
+
+                // Always save to plain localStorage (session will be cleared on logout)
+                await SavePersistentSession();
+
                 return true;
             }
         }
@@ -224,21 +234,7 @@ public class AuthService : IAuthService
             SetAuthHeaders(_currentSession.Token, _currentSession.ExpiresAtUtc);
 
             // Persist updated session
-            try
-            {
-                await _sessionStorage.SetAsync(SessionKey, _currentSession);
-
-                // If user chose "Remember me", update local storage too
-                var persistentResult = await _localStorage.GetAsync<UserSession>(PersistentSessionKey);
-                if (persistentResult.Success && persistentResult.Value != null)
-                {
-                    await _localStorage.SetAsync(PersistentSessionKey, _currentSession);
-                }
-            }
-            catch (InvalidOperationException)
-            {
-                // JS interop not available during prerendering
-            }
+            await SavePersistentSession();
 
             _logger.LogDebug("Access token refreshed successfully for user {UserId}", _currentSession.UserId);
             return true;
@@ -254,16 +250,7 @@ public class AuthService : IAuthService
     {
         _currentSession = null;
         SetAuthHeaders(null);
-
-        try
-        {
-            await _sessionStorage.DeleteAsync(SessionKey);
-            await _localStorage.DeleteAsync(PersistentSessionKey);
-        }
-        catch
-        {
-            // Ignore during prerendering
-        }
+        await RemovePersistentSession();
     }
 
     public async Task UpdateSessionAsync(string newAccessToken, string newRole)
@@ -275,21 +262,7 @@ public class AuthService : IAuthService
         _currentSession.ExpiresAtUtc = DateTime.UtcNow.AddHours(2);
 
         SetAuthHeaders(_currentSession.Token, _currentSession.ExpiresAtUtc);
-
-        try
-        {
-            await _sessionStorage.SetAsync(SessionKey, _currentSession);
-
-            var persistentResult = await _localStorage.GetAsync<UserSession>(PersistentSessionKey);
-            if (persistentResult.Success && persistentResult.Value != null)
-            {
-                await _localStorage.SetAsync(PersistentSessionKey, _currentSession);
-            }
-        }
-        catch
-        {
-            // Ignore during prerendering
-        }
+        await SavePersistentSession();
     }
 
     public async Task<UserSession?> GetCurrentSessionAsync()
@@ -354,6 +327,7 @@ public class UserSession
     public string Token { get; set; } = "";
     public string RefreshToken { get; set; } = "";
     public string Role { get; set; } = "";
+    public bool RememberMe { get; set; }
     /// <summary>
     /// UTC time when the access token expires.
     /// </summary>

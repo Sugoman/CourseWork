@@ -21,6 +21,13 @@ services:
       - ConnectionStrings__Redis=redis:6379
       - Jwt__Key=4d9b4ec83f469d8b02e1cdb17745350b15cb532c5441be4ea1ca5d4f54881678
       - ASPNETCORE_URLS=http://+:8080
+    develop:
+      watch:
+        - action: rebuild
+          path: ./LearningAPI
+        - action: sync
+          path: ./LearningAPI/wwwroot
+          target: /app/wwwroot
     volumes:
       - ./keys:/root/.aspnet/DataProtection-Keys
 
