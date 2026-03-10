@@ -818,11 +818,14 @@
                         </select>
                     </div>
                 </div>
-                <div class="import-field">
+                <div class="import-field" style="flex: 1;">
                     <label class="import-field-label">Содержание (Markdown) *</label>
-                    <textarea class="form-control" rows="8" @bind="NewRuleContent"
+                    <textarea class="form-control" rows="16" maxlength="50000" @bind="NewRuleContent"
                               placeholder="# Present Simple&#10;&#10;Используется для описания регулярных действий.&#10;&#10;**Формула:** Subject + V1&#10;&#10;**Примеры:**&#10;- I play football every day.&#10;- She goes to school."
-                              style="font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.9rem;"></textarea>
+                              style="font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.9rem; min-height: 240px; resize: vertical;"></textarea>
+                    <div class="d-flex justify-content-end mt-1">
+                        <small class="text-muted">@(NewRuleContent?.Length ?? 0) / 50 000 символов</small>
+                    </div>
                 </div>
 
                 @* === Exercises section === *@

@@ -142,39 +142,84 @@
             @* === Дневная цель (P0 LEARNING_IMPROVEMENTS §1.2) === *@
             @if (DailyPlan.Stats.DailyGoal > 0)
             {
-                var goalPercent = Math.Min(100, DailyPlan.Stats.CompletedToday * 100.0 / DailyPlan.Stats.DailyGoal);
-                var goalMet = DailyPlan.Stats.CompletedToday >= DailyPlan.Stats.DailyGoal;
-                <div class="daily-goal-section">
-                    <div class="daily-goal-header">
-                        <span>
-                            <i class="bi bi-bullseye me-1"></i>
-                            Дневная цель: <strong>@DailyPlan.Stats.CompletedToday</strong> / @DailyPlan.Stats.DailyGoal слов
+                var goalDone = DailyPlan.Stats.CompletedToday;
+                var goalTarget = DailyPlan.Stats.DailyGoal;
+                var goalPercent = Math.Min(100, goalDone * 100.0 / goalTarget);
+                var goalMet = goalDone >= goalTarget;
+                var circumference = 2 * Math.PI * 38;
+                var dashOffset = circumference - (circumference * goalPercent / 100.0);
+
+                <div class="daily-goal-section @(goalMet ? "daily-goal--done" : "")">
+                    <div class="daily-goal-ring">
+                        <svg viewBox="0 0 88 88" class="goal-svg">
+                            <circle cx="44" cy="44" r="38" fill="none"
+                                    stroke="var(--goal-track)" stroke-width="6" />
+                            <circle cx="44" cy="44" r="38" fill="none"
+                                    stroke="var(--goal-fill)" stroke-width="6"
+                                    stroke-linecap="round"
+                                    stroke-dasharray="@circumference.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                    stroke-dashoffset="@dashOffset.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                    transform="rotate(-90 44 44)"
+                                    class="goal-progress-ring" />
+                        </svg>
+                        <div class="goal-ring-label">
                             @if (goalMet)
                             {
-                                <span class="ms-2 text-success"><i class="bi bi-check-circle-fill"></i> Выполнено!</span>
+                                <i class="bi bi-check-lg goal-ring-check"></i>
                             }
-                        </span>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleDailyGoalEditor" title="Изменить цель">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                    </div>
-                    <div class="progress" style="height: 8px; border-radius: 4px;">
-                        <div class="progress-bar @(goalMet ? "bg-success" : "bg-primary")" 
-                             style="width: @goalPercent%; transition: width 0.5s ease;"></div>
-                    </div>
-                    @if (ShowDailyGoalEditor)
-                    {
-                        <div class="daily-goal-editor mt-2">
-                            <div class="setting-options">
-                                @foreach (var g in new[] { 5, 10, 15, 20, 30, 50 })
-                                {
-                                    <button class="setting-pill @(DailyPlan.Stats.DailyGoal == g ? "active" : "")"
-                                            @onclick="() => UpdateDailyGoal(g)">@g</button>
-                                }
-                            </div>
+                            else
+                            {
+                                <span class="goal-ring-number">@goalDone</span>
+                                <span class="goal-ring-of">из @goalTarget</span>
+                            }
                         </div>
-                    }
+                    </div>
+
+                    <div class="daily-goal-body">
+                        <div class="daily-goal-title">
+                            Дневная цель
+                            @if (goalMet)
+                            {
+                                <span class="goal-done-badge"><i class="bi bi-check-circle-fill me-1"></i>Выполнено!</span>
+                            }
+                        </div>
+                        <div class="daily-goal-subtitle">
+                            @if (goalMet)
+                            {
+                                <span>Отлично! Вы повторили <strong>@goalDone</strong> слов сегодня 🎉</span>
+                            }
+                            else
+                            {
+                                var remaining = goalTarget - goalDone;
+                                <span>Осталось <strong>@remaining</strong> @WordDeclension(remaining) до цели</span>
+                            }
+                        </div>
+                        <div class="daily-goal-bar-wrap">
+                            <div class="daily-goal-bar">
+                                <div class="daily-goal-bar-fill @(goalMet ? "done" : "")" style="width: @goalPercent.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></div>
+                            </div>
+                            <span class="daily-goal-bar-label">@((int)goalPercent)%</span>
+                        </div>
+                    </div>
+
+                    <button class="daily-goal-edit-btn" @onclick="ToggleDailyGoalEditor" title="Изменить цель">
+                        <i class="bi bi-pencil"></i>
+                    </button>
                 </div>
+
+                @if (ShowDailyGoalEditor)
+                {
+                    <div class="daily-goal-editor">
+                        <span class="daily-goal-editor-label">Установить цель:</span>
+                        <div class="daily-goal-editor-pills">
+                            @foreach (var g in new[] { 5, 10, 15, 20, 30, 50 })
+                            {
+                                <button class="goal-pill @(goalTarget == g ? "active" : "")"
+                                        @onclick="() => UpdateDailyGoal(g)">@g</button>
+                            }
+                        </div>
+                    </div>
+                }
             }
 
             @* === Ежедневный челлендж (§5.2 LEARNING_IMPROVEMENTS) === *@
@@ -2468,6 +2513,16 @@ private async Task InstallStarterPack()
             DailyPlan.Stats.DailyGoal = goal;
             ShowDailyGoalEditor = false;
         }
+    }
+
+    private static string WordDeclension(int n)
+    {
+        var abs = Math.Abs(n) % 100;
+        var last = abs % 10;
+        if (abs > 10 && abs < 20) return "слов";
+        if (last == 1) return "слово";
+        if (last >= 2 && last <= 4) return "слова";
+        return "слов";
     }
 
     // === User notes (§8.3 LEARNING_IMPROVEMENTS) ===

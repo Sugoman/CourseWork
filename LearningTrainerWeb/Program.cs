@@ -11,6 +11,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Increase SignalR max message size for large rule content (Markdown up to 50 KB)
+builder.Services.AddSignalR(options =>
+{
+    options.MaximumReceiveMessageSize = 512 * 1024; // 512 KB
+});
+
 // Data Protection: persist keys so encrypted sessions survive container restarts
 var keysPath = builder.Configuration["DataProtection:KeysPath"] ?? "/app/keys";
 builder.Services.AddDataProtection()
