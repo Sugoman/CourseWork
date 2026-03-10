@@ -35,6 +35,37 @@ namespace LearningTrainer.ViewModels
         }
     }
 
+    /// <summary>
+    /// Item for Matching mode (§18.1a). Represents one side of a match pair.
+    /// </summary>
+    public class MatchItem : Core.ObservableObject
+    {
+        public int WordId { get; set; }
+        public string Text { get; set; }
+        public bool IsOriginal { get; set; }
+
+        private bool _isMatched;
+        public bool IsMatched
+        {
+            get => _isMatched;
+            set => SetProperty(ref _isMatched, value);
+        }
+
+        private bool _isSelected;
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => SetProperty(ref _isSelected, value);
+        }
+
+        private bool _isWrong;
+        public bool IsWrong
+        {
+            get => _isWrong;
+            set => SetProperty(ref _isWrong, value);
+        }
+    }
+
     public class LearningViewModel : TabViewModelBase
     {
         private readonly IDataService _dataService;
@@ -54,6 +85,17 @@ namespace LearningTrainer.ViewModels
         private bool _disposed;
         private string _translationDirection = "direct";
         private bool _isAdaptiveDifficulty;
+
+        // === Speed Round (§18.1d) ===
+        private System.Windows.Threading.DispatcherTimer _speedTimer;
+        private int _speedRoundTimeLeft;
+        private int _speedRoundScore;
+        private bool _isSpeedRound;
+
+        // === Matching mode (§18.1a) ===
+        private List<MatchItem> _matchItems = new();
+        private MatchItem _selectedMatchItem;
+        private bool _isMatchAnimating;
 
         private Word _currentWord;
         public Word CurrentWord
@@ -90,6 +132,9 @@ namespace LearningTrainer.ViewModels
                     OnPropertyChanged(nameof(IsMcqMode));
                     OnPropertyChanged(nameof(IsTypingMode));
                     OnPropertyChanged(nameof(IsListeningMode));
+                    OnPropertyChanged(nameof(IsMatchingMode));
+                    OnPropertyChanged(nameof(IsClozeMode));
+                    OnPropertyChanged(nameof(IsSpellingBeeMode));
                     PrepareCurrentExercise();
                 }
             }
@@ -99,6 +144,132 @@ namespace LearningTrainer.ViewModels
         public bool IsMcqMode => ExerciseType == "mcq";
         public bool IsTypingMode => ExerciseType == "typing";
         public bool IsListeningMode => ExerciseType == "listening";
+        public bool IsMatchingMode => ExerciseType == "matching";
+
+        // === Speed Round (§18.1d) ===
+        public bool IsSpeedRound
+        {
+            get => _isSpeedRound;
+            set
+            {
+                if (SetProperty(ref _isSpeedRound, value))
+                    OnPropertyChanged(nameof(ShowSpeedOverlay));
+            }
+        }
+
+        public int SpeedRoundTimeLeft
+        {
+            get => _speedRoundTimeLeft;
+            set => SetProperty(ref _speedRoundTimeLeft, value);
+        }
+
+        public int SpeedRoundScore
+        {
+            get => _speedRoundScore;
+            set => SetProperty(ref _speedRoundScore, value);
+        }
+
+        public bool ShowSpeedOverlay => IsSpeedRound && IsExerciseTypeChosen;
+
+        // === Matching mode (§18.1a) ===
+        public ObservableCollection<MatchItem> MatchItems { get; } = new();
+
+        private int _matchedPairsCount;
+        public int MatchedPairsCount
+        {
+            get => _matchedPairsCount;
+            set => SetProperty(ref _matchedPairsCount, value);
+        }
+
+        private int _matchTotalPairs;
+        public int MatchTotalPairs
+        {
+            get => _matchTotalPairs;
+            set => SetProperty(ref _matchTotalPairs, value);
+        }
+
+        private bool _matchingCompleted;
+        public bool MatchingCompleted
+        {
+            get => _matchingCompleted;
+            set => SetProperty(ref _matchingCompleted, value);
+        }
+
+        // === Cloze mode (§18.1b) ===
+        private string _clozeSentence = "";
+        public string ClozeSentence
+        {
+            get => _clozeSentence;
+            set => SetProperty(ref _clozeSentence, value);
+        }
+
+        private string _clozeAnswer = "";
+        public string ClozeAnswer
+        {
+            get => _clozeAnswer;
+            set
+            {
+                if (SetProperty(ref _clozeAnswer, value))
+                    (CheckClozeCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            }
+        }
+
+        private bool _clozeAnswered;
+        public bool ClozeAnswered
+        {
+            get => _clozeAnswered;
+            set => SetProperty(ref _clozeAnswered, value);
+        }
+
+        private bool _clozeWasCorrect;
+        public bool ClozeWasCorrect
+        {
+            get => _clozeWasCorrect;
+            set => SetProperty(ref _clozeWasCorrect, value);
+        }
+
+        private string _clozeCorrectWord = "";
+        public string ClozeCorrectWord
+        {
+            get => _clozeCorrectWord;
+            set => SetProperty(ref _clozeCorrectWord, value);
+        }
+
+        public bool IsClozeMode => ExerciseType == "cloze";
+        public bool IsSpellingBeeMode => ExerciseType == "spellingbee";
+
+        // === Spelling Bee (§18.1c) ===
+        private string _spellingAnswer = "";
+        public string SpellingAnswer
+        {
+            get => _spellingAnswer;
+            set
+            {
+                if (SetProperty(ref _spellingAnswer, value))
+                    (CheckSpellingCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            }
+        }
+
+        private bool _spellingAnswered;
+        public bool SpellingAnswered
+        {
+            get => _spellingAnswered;
+            set => SetProperty(ref _spellingAnswered, value);
+        }
+
+        private bool _spellingWasCorrect;
+        public bool SpellingWasCorrect
+        {
+            get => _spellingWasCorrect;
+            set => SetProperty(ref _spellingWasCorrect, value);
+        }
+
+        private string _spellingHint = "";
+        public string SpellingHint
+        {
+            get => _spellingHint;
+            set => SetProperty(ref _spellingHint, value);
+        }
 
         // --- Translation direction ---
         private bool _isReversed;
@@ -379,25 +550,32 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _typingDiffUser, value);
         }
 
-        public ICommand FlipCardCommand { get; }
-        public ICommand AnswerCommand { get; }
-        public ICommand CloseTabCommand { get; }
-        public ICommand StartEarlyCommand { get; }
-        public ICommand SelectMcqOptionCommand { get; }
-        public ICommand NextMcqWordCommand { get; }
-        public ICommand CheckTypingCommand { get; }
-        public ICommand NextTypingWordCommand { get; }
-        public ICommand SetExerciseTypeCommand { get; }
-        public ICommand SpeakWordCommand { get; }
-        public ICommand SkipWordCommand { get; }
-        public ICommand CopyReportCommand { get; }
-        public ICommand SetWordLimitCommand { get; }
-        public ICommand ReplayListeningCommand { get; }
-        public ICommand CheckListeningCommand { get; }
-        public ICommand NextListeningWordCommand { get; }
-        public ICommand SetTranslationDirectionCommand { get; }
-        public ICommand ReviewErrorsCommand { get; }
-        public ICommand UseHintCommand { get; }
+        public ICommand FlipCardCommand { get; private set; }
+        public ICommand AnswerCommand { get; private set; }
+        public ICommand CloseTabCommand { get; private set; }
+        public ICommand StartEarlyCommand { get; private set; }
+        public ICommand SelectMcqOptionCommand { get; private set; }
+        public ICommand NextMcqWordCommand { get; private set; }
+        public ICommand CheckTypingCommand { get; private set; }
+        public ICommand NextTypingWordCommand { get; private set; }
+        public ICommand SetExerciseTypeCommand { get; private set; }
+        public ICommand SpeakWordCommand { get; private set; }
+        public ICommand SkipWordCommand { get; private set; }
+        public ICommand CopyReportCommand { get; private set; }
+        public ICommand SetWordLimitCommand { get; private set; }
+        public ICommand ReplayListeningCommand { get; private set; }
+        public ICommand CheckListeningCommand { get; private set; }
+        public ICommand NextListeningWordCommand { get; private set; }
+        public ICommand SetTranslationDirectionCommand { get; private set; }
+        public ICommand ReviewErrorsCommand { get; private set; }
+        public ICommand UseHintCommand { get; private set; }
+        public ICommand StartSpeedRoundCommand { get; private set; }
+        public ICommand SelectMatchItemCommand { get; private set; }
+        public ICommand NextMatchingRoundCommand { get; private set; }
+        public ICommand CheckClozeCommand { get; private set; }
+        public ICommand NextClozeWordCommand { get; private set; }
+        public ICommand CheckSpellingCommand { get; private set; }
+        public ICommand NextSpellingWordCommand { get; private set; }
 
         private int _selectedWordLimit;
         public int SelectedWordLimit
@@ -423,7 +601,52 @@ namespace LearningTrainer.ViewModels
             }
 
             SetLocalizedTitle("Loc.Tab.Learning", $": {dictionaryName}");
+            InitializeCommands();
+            _ = LoadSessionAsync();
+        }
 
+        /// <summary>
+        /// Constructor for Daily Plan smart training (§18.2 LEARNING_IMPROVEMENTS).
+        /// Accepts pre-loaded words from DailyPlan instead of loading from a single dictionary.
+        /// </summary>
+        public LearningViewModel(IDataService dataService, List<TrainingWordDto> trainingWords, string sessionTitle, SettingsService settingsService = null)
+        {
+            _dataService = dataService;
+            _dictionaryId = 0;
+            _dictionaryName = sessionTitle;
+            _languageFrom = trainingWords.FirstOrDefault()?.LanguageFrom ?? "English";
+            _settingsService = settingsService;
+            _speechService = new SpeechService();
+
+            if (settingsService != null)
+            {
+                _translationDirection = settingsService.CurrentSettings.DefaultTranslationDirection ?? "direct";
+                _isAdaptiveDifficulty = settingsService.CurrentSettings.EnableAdaptiveDifficulty;
+                _speechService.Volume = settingsService.CurrentSettings.TtsVolume;
+            }
+
+            SetLocalizedTitle("Loc.Tab.Learning", $": {sessionTitle}");
+            InitializeCommands();
+
+            // Convert TrainingWordDto → Word and start session immediately
+            var words = trainingWords.Select(w => new Word
+            {
+                Id = w.WordId,
+                OriginalWord = w.OriginalWord,
+                Translation = w.Translation,
+                Transcription = w.Transcription,
+                Example = w.Example,
+                DictionaryId = w.DictionaryId
+            }).ToList();
+
+            if (words.Any())
+                StartSession(words);
+            else
+                IsEmptySession = true;
+        }
+
+        private void InitializeCommands()
+        {
             FlipCardCommand = new RelayCommand(
                 (param) => IsFlipped = true,
                 (param) => !IsFlipped && CurrentWord != null
@@ -488,6 +711,24 @@ namespace LearningTrainer.ViewModels
                                     EventAggregator.Instance.Publish(ShowNotificationMessage.Info(
                                         "Недостаточно слов",
                                         "Для режима теста нужно минимум 4 слова с разными переводами. Выбран режим карточек."));
+                                    type = "flashcard";
+                                }
+                            }
+                            if (type == "matching" && (_allWords == null || _allWords.Count < 4))
+                            {
+                                EventAggregator.Instance.Publish(ShowNotificationMessage.Info(
+                                    "Недостаточно слов",
+                                    "Для режима «Сопоставление» нужно минимум 4 слова. Выбран режим карточек."));
+                                type = "flashcard";
+                            }
+                            if (type == "cloze")
+                            {
+                                var wordsWithExamples = _allWords?.Count(w => !string.IsNullOrWhiteSpace(w.Example)) ?? 0;
+                                if (wordsWithExamples == 0)
+                                {
+                                    EventAggregator.Instance.Publish(ShowNotificationMessage.Info(
+                                        "Нет примеров",
+                                        "Для режима «Заполни пропуск» нужны слова с примерами. Выбран режим карточек."));
                                     type = "flashcard";
                                 }
                             }
@@ -568,7 +809,48 @@ namespace LearningTrainer.ViewModels
                 (param) => CurrentWord != null && !TypingAnswered && !ListeningAnswered && _hintCount < 3
             );
 
-            _ = LoadSessionAsync();
+            // Speed Round (§18.1d)
+            StartSpeedRoundCommand = new RelayCommand(
+                (param) => StartSpeedRound(),
+                (param) => !IsSpeedRound && _allWords != null && _allWords.Count >= 4
+            );
+
+            // Matching mode (§18.1a)
+            SelectMatchItemCommand = new RelayCommand(
+                (param) =>
+                {
+                    if (param is MatchItem item)
+                        HandleMatchSelection(item);
+                },
+                (param) => param is MatchItem m && !m.IsMatched
+            );
+
+            NextMatchingRoundCommand = new RelayCommand(
+                async (param) => await MoveToNextWordAsync(),
+                (param) => MatchingCompleted
+            );
+
+            // Cloze mode (§18.1b)
+            CheckClozeCommand = new RelayCommand(
+                async (param) => await HandleCheckClozeAsync(),
+                (param) => !ClozeAnswered && CurrentWord != null && !string.IsNullOrWhiteSpace(ClozeAnswer)
+            );
+
+            NextClozeWordCommand = new RelayCommand(
+                async (param) => await MoveToNextWordAsync(),
+                (param) => ClozeAnswered
+            );
+
+            // Spelling Bee (§18.1c)
+            CheckSpellingCommand = new RelayCommand(
+                async (param) => await HandleCheckSpellingAsync(),
+                (param) => !SpellingAnswered && CurrentWord != null && !string.IsNullOrWhiteSpace(SpellingAnswer)
+            );
+
+            NextSpellingWordCommand = new RelayCommand(
+                async (param) => await MoveToNextWordAsync(),
+                (param) => SpellingAnswered
+            );
         }
 
         private async Task LoadSessionAsync()
@@ -667,6 +949,9 @@ namespace LearningTrainer.ViewModels
                     OnPropertyChanged(nameof(IsMcqMode));
                     OnPropertyChanged(nameof(IsTypingMode));
                     OnPropertyChanged(nameof(IsListeningMode));
+                    OnPropertyChanged(nameof(IsMatchingMode));
+                    OnPropertyChanged(nameof(IsClozeMode));
+                    OnPropertyChanged(nameof(IsSpellingBeeMode));
                 }
             }
 
@@ -697,9 +982,27 @@ namespace LearningTrainer.ViewModels
             ListeningWasCorrect = false;
             ListeningWasAlmostCorrect = false;
             ListeningTypedAnswer = "";
+            ClozeAnswered = false;
+            ClozeWasCorrect = false;
+            ClozeAnswer = "";
+            ClozeSentence = "";
+            ClozeCorrectWord = "";
+            SpellingAnswered = false;
+            SpellingWasCorrect = false;
+            SpellingAnswer = "";
+            SpellingHint = "";
 
             if (ExerciseType == "mcq")
                 GenerateMcqOptions();
+
+            if (ExerciseType == "matching")
+                GenerateMatchingBoard();
+
+            if (ExerciseType == "cloze")
+                GenerateClozeSentence();
+
+            if (ExerciseType == "spellingbee")
+                PrepareSpellingBee();
 
             // Auto-play in listening mode
             if (ExerciseType == "listening" && CurrentWord != null)
@@ -715,6 +1018,13 @@ namespace LearningTrainer.ViewModels
             (SpeakWordCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (SkipWordCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (UseHintCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (StartSpeedRoundCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (SelectMatchItemCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (NextMatchingRoundCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (CheckClozeCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (NextClozeWordCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (CheckSpellingCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (NextSpellingWordCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
         private Func<Word, string> GetMcqDistractorField()
@@ -773,6 +1083,16 @@ namespace LearningTrainer.ViewModels
 
                 var quality = McqWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
                 await TrackAndSubmitAsync(quality);
+
+                if (IsSpeedRound)
+                {
+                    AddSpeedScore(McqWasCorrect);
+                    // Auto-advance in speed round
+                    await Task.Delay(300);
+                    _isProcessing = false;
+                    await MoveToNextWordAsync();
+                    return;
+                }
 
                 (SelectMcqOptionCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 (NextMcqWordCommand as RelayCommand)?.RaiseCanExecuteChanged();
@@ -922,11 +1242,20 @@ namespace LearningTrainer.ViewModels
             _isProcessing = true;
             try
             {
-                var wordToRequeue = _wordsQueue.Dequeue();
-
-                if (McqAnswered && !McqWasCorrect || TypingAnswered && !TypingWasCorrect || ListeningAnswered && !ListeningWasCorrect)
+                // In matching mode, skip multiple words from the queue
+                if (IsMatchingMode && MatchingCompleted)
                 {
-                    RequeueWordAtAdaptivePosition(wordToRequeue);
+                    for (int i = 0; i < MatchTotalPairs && _wordsQueue.Count > 0; i++)
+                        _wordsQueue.Dequeue();
+                }
+                else
+                {
+                    var wordToRequeue = _wordsQueue.Dequeue();
+
+                    if (McqAnswered && !McqWasCorrect || TypingAnswered && !TypingWasCorrect || ListeningAnswered && !ListeningWasCorrect || ClozeAnswered && !ClozeWasCorrect || SpellingAnswered && !SpellingWasCorrect)
+                    {
+                        RequeueWordAtAdaptivePosition(wordToRequeue);
+                    }
                 }
 
                 UpdateProgress();
@@ -1273,7 +1602,12 @@ namespace LearningTrainer.ViewModels
             var distractorField = GetMcqDistractorField();
             if (_allWords != null && _allWords.Select(w => distractorField(w)).Where(t => !string.IsNullOrEmpty(t)).Distinct().Count() >= 4)
                 types.Add("mcq");
+            if (_allWords != null && _allWords.Count >= 4)
+                types.Add("matching");
+            if (_allWords != null && _allWords.Any(w => !string.IsNullOrWhiteSpace(w.Example)))
+                types.Add("cloze");
             types.Add("listening");
+            types.Add("spellingbee");
             return types[_random.Next(types.Count)];
         }
 
@@ -1382,10 +1716,310 @@ namespace LearningTrainer.ViewModels
             catch { }
         }
 
+        // ── §18.1d Speed Round ─────────────────────────────────────────
+
+        private void StartSpeedRound()
+        {
+            if (_allWords == null || _allWords.Count < 4) return;
+
+            IsSpeedRound = true;
+            SpeedRoundScore = 0;
+            SpeedRoundTimeLeft = 60;
+
+            // Reset the queue with all words for the speed round
+            var shuffled = _allWords.OrderBy(_ => _random.Next()).ToList();
+            _wordsQueue = new Queue<Word>(shuffled);
+            _totalWordsCount = shuffled.Count;
+            CurrentWord = _wordsQueue.Peek();
+            IsFlipped = false;
+
+            // Force MCQ mode for speed
+            _isMixedMode = false;
+            ExerciseType = "mcq";
+            IsExerciseTypeChosen = true;
+            PrepareCurrentExercise();
+
+            _speedTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _speedTimer.Tick += SpeedTimer_Tick;
+            _speedTimer.Start();
+        }
+
+        private void SpeedTimer_Tick(object sender, EventArgs e)
+        {
+            SpeedRoundTimeLeft--;
+            if (SpeedRoundTimeLeft <= 0)
+            {
+                _speedTimer.Stop();
+                _speedTimer.Tick -= SpeedTimer_Tick;
+                _ = CompleteSessionAsync();
+            }
+        }
+
+        private void AddSpeedScore(bool correct)
+        {
+            if (!IsSpeedRound) return;
+            if (correct)
+                SpeedRoundScore += Math.Max(1, SpeedRoundTimeLeft / 10 + 1);
+        }
+
+        // ── §18.1c Spelling Bee ─────────────────────────────────────────
+
+        private void PrepareSpellingBee()
+        {
+            if (CurrentWord == null) return;
+
+            // Play the word audio
+            _speechService.Speak(CurrentWord.OriginalWord, _languageFrom);
+
+            // Generate hint: show first letter + word length
+            var word = CurrentWord.OriginalWord;
+            SpellingHint = $"Первая буква: {word[0].ToString().ToUpper()}, {word.Length} букв";
+        }
+
+        private async Task HandleCheckSpellingAsync()
+        {
+            if (_isProcessing || SpellingAnswered || CurrentWord == null) return;
+            _isProcessing = true;
+            try
+            {
+                SpellingAnswered = true;
+
+                var userAnswer = SpellingAnswer.Trim();
+                var correct = CurrentWord.OriginalWord.Trim();
+
+                SpellingWasCorrect = string.Equals(userAnswer, correct, StringComparison.OrdinalIgnoreCase);
+
+                var quality = SpellingWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
+                await TrackAndSubmitAsync(quality);
+
+                if (IsSpeedRound)
+                {
+                    AddSpeedScore(SpellingWasCorrect);
+                    await Task.Delay(400);
+                    _isProcessing = false;
+                    await MoveToNextWordAsync();
+                    return;
+                }
+
+                (CheckSpellingCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                (NextSpellingWordCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            }
+            finally
+            {
+                _isProcessing = false;
+            }
+        }
+
+        // ── §18.1b Cloze Mode ─────────────────────────────────────────
+
+        private void GenerateClozeSentence()
+        {
+            if (CurrentWord == null) return;
+
+            var word = CurrentWord;
+            var example = word.Example;
+            var target = word.OriginalWord;
+
+            if (!string.IsNullOrWhiteSpace(example) && example.Contains(target, StringComparison.OrdinalIgnoreCase))
+            {
+                // Replace the word in the example with a blank
+                var idx = example.IndexOf(target, StringComparison.OrdinalIgnoreCase);
+                var blank = new string('_', Math.Max(target.Length, 4));
+                ClozeSentence = example.Substring(0, idx) + blank + example.Substring(idx + target.Length);
+                ClozeCorrectWord = target;
+            }
+            else if (!string.IsNullOrWhiteSpace(example))
+            {
+                // Example doesn't contain the word — show example with blank for the word
+                ClozeSentence = $"«{example}»\n\nНапишите слово: {new string('_', Math.Max(target.Length, 4))}";
+                ClozeCorrectWord = target;
+            }
+            else
+            {
+                // No example — generate a simple cloze from translation
+                ClozeSentence = $"Переведите: {word.Translation}\n\n{new string('_', Math.Max(target.Length, 4))}";
+                ClozeCorrectWord = target;
+            }
+        }
+
+        private async Task HandleCheckClozeAsync()
+        {
+            if (_isProcessing || ClozeAnswered || CurrentWord == null) return;
+            _isProcessing = true;
+            try
+            {
+                ClozeAnswered = true;
+
+                var userAnswer = ClozeAnswer.Trim();
+                var correct = ClozeCorrectWord.Trim();
+
+                ClozeWasCorrect = string.Equals(userAnswer, correct, StringComparison.OrdinalIgnoreCase);
+
+                var quality = ClozeWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
+                await TrackAndSubmitAsync(quality);
+
+                if (IsSpeedRound)
+                {
+                    AddSpeedScore(ClozeWasCorrect);
+                    await Task.Delay(400);
+                    _isProcessing = false;
+                    await MoveToNextWordAsync();
+                    return;
+                }
+
+                (CheckClozeCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                (NextClozeWordCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            }
+            finally
+            {
+                _isProcessing = false;
+            }
+        }
+
+        // ── §18.1a Matching Mode ────────────────────────────────────────
+
+        private void GenerateMatchingBoard()
+        {
+            MatchItems.Clear();
+            MatchingCompleted = false;
+            MatchedPairsCount = 0;
+            _selectedMatchItem = null;
+            _isMatchAnimating = false;
+
+            // Pick up to 5 random words for matching
+            var words = _allWords.OrderBy(_ => _random.Next()).Take(5).ToList();
+            MatchTotalPairs = words.Count;
+
+            var originals = words.Select(w => new MatchItem
+            {
+                WordId = w.Id,
+                Text = IsReversed ? w.Translation : w.OriginalWord,
+                IsOriginal = true
+            }).ToList();
+
+            var translations = words.Select(w => new MatchItem
+            {
+                WordId = w.Id,
+                Text = IsReversed ? w.OriginalWord : w.Translation,
+                IsOriginal = false
+            }).ToList();
+
+            // Shuffle each column independently
+            var shuffledOriginals = originals.OrderBy(_ => _random.Next()).ToList();
+            var shuffledTranslations = translations.OrderBy(_ => _random.Next()).ToList();
+
+            // Interleave: originals first, then translations (UI will display in 2 columns)
+            foreach (var item in shuffledOriginals)
+                MatchItems.Add(item);
+            foreach (var item in shuffledTranslations)
+                MatchItems.Add(item);
+        }
+
+        private async void HandleMatchSelection(MatchItem item)
+        {
+            if (item.IsMatched || _isMatchAnimating) return;
+
+            if (_selectedMatchItem == null)
+            {
+                // First selection
+                _selectedMatchItem = item;
+                item.IsSelected = true;
+                return;
+            }
+
+            // Second selection
+            if (_selectedMatchItem == item)
+            {
+                // Deselect
+                item.IsSelected = false;
+                _selectedMatchItem = null;
+                return;
+            }
+
+            // Must select one from each side
+            if (_selectedMatchItem.IsOriginal == item.IsOriginal)
+            {
+                _selectedMatchItem.IsSelected = false;
+                _selectedMatchItem = item;
+                item.IsSelected = true;
+                return;
+            }
+
+            // Check match
+            if (_selectedMatchItem.WordId == item.WordId)
+            {
+                // Correct match!
+                _selectedMatchItem.IsMatched = true;
+                _selectedMatchItem.IsSelected = false;
+                _selectedMatchItem = null;
+
+                item.IsMatched = true;
+                item.IsSelected = false;
+                MatchedPairsCount++;
+                CorrectCount++;
+                CurrentStreak++;
+
+                if (IsSpeedRound) AddSpeedScore(true);
+
+                // Submit progress for the matched word
+                try
+                {
+                    var word = _allWords.FirstOrDefault(w => w.Id == item.WordId);
+                    if (word != null)
+                    {
+                        await _dataService.UpdateProgressAsync(new UpdateProgressRequest
+                        {
+                            WordId = word.Id,
+                            Quality = ResponseQuality.Good
+                        });
+                    }
+                }
+                catch { }
+
+                if (MatchedPairsCount >= MatchTotalPairs)
+                {
+                    MatchingCompleted = true;
+                    (NextMatchingRoundCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                }
+            }
+            else
+            {
+                // Wrong match — capture the selected item before the await
+                // because rapid clicks can nullify _selectedMatchItem during the delay
+                var previousSelection = _selectedMatchItem;
+                _selectedMatchItem = null;
+                _isMatchAnimating = true;
+
+                item.IsWrong = true;
+                previousSelection.IsWrong = true;
+                WrongCount++;
+                CurrentStreak = 0;
+
+                if (IsSpeedRound) AddSpeedScore(false);
+
+                await Task.Delay(500);
+                item.IsWrong = false;
+                item.IsSelected = false;
+                previousSelection.IsWrong = false;
+                previousSelection.IsSelected = false;
+                _isMatchAnimating = false;
+            }
+
+            UpdateProgress();
+        }
+
         public override void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
+            if (_speedTimer != null)
+            {
+                _speedTimer.Stop();
+                _speedTimer.Tick -= SpeedTimer_Tick;
+            }
             _speechService?.Dispose();
             base.Dispose();
         }

@@ -51,6 +51,12 @@ namespace LearningTrainer.ViewModels
         public ICommand EditRuleCommand { get; }
         public ICommand RefreshCommand { get; }
         public ICommand ShareRuleCommand { get; }
+        public ICommand ExportAllCommand { get; }
+        public ICommand InstallStarterPackCommand { get; }
+        public ICommand OpenLeechManagerCommand { get; }
+        public ICommand ImportCsvCommand { get; }
+        public ICommand UnsuspendWordCommand { get; }
+        public ICommand CloseLeechPanelCommand { get; }
 
         private bool _isOverviewMode;
         public bool IsOverviewMode
@@ -81,9 +87,89 @@ namespace LearningTrainer.ViewModels
                 if (SetProperty(ref _stats, value))
                 {
                     UpdateCharts();
+                    OnPropertyChanged(nameof(XpLevel));
+                    OnPropertyChanged(nameof(XpCurrent));
+                    OnPropertyChanged(nameof(XpNeeded));
+                    OnPropertyChanged(nameof(XpProgressPercent));
+                    OnPropertyChanged(nameof(XpProgressText));
+                    OnPropertyChanged(nameof(HasXp));
                 }
             }
         }
+
+        // === XP (§18.5a LEARNING_IMPROVEMENTS) ===
+        public bool HasXp => Stats != null && Stats.Level > 0;
+        public int XpLevel => Stats?.Level ?? 1;
+        public long XpCurrent => (Stats?.TotalXp ?? 0) - (Stats?.XpForCurrentLevel ?? 0);
+        public long XpNeeded => (Stats?.XpForNextLevel ?? 1) - (Stats?.XpForCurrentLevel ?? 0);
+        public double XpProgressPercent => XpNeeded > 0
+            ? Math.Min(100.0, (double)XpCurrent / XpNeeded * 100.0)
+            : 0;
+        public string XpProgressText => $"{Stats?.TotalXp ?? 0} XP";
+
+        // === Starter Pack (§18.2d LEARNING_IMPROVEMENTS) ===
+        private bool _showStarterPack;
+        public bool ShowStarterPack
+        {
+            get => _showStarterPack;
+            set => SetProperty(ref _showStarterPack, value);
+        }
+
+        private bool _isInstallingStarterPack;
+        public bool IsInstallingStarterPack
+        {
+            get => _isInstallingStarterPack;
+            set => SetProperty(ref _isInstallingStarterPack, value);
+        }
+
+        // === Leech Manager (§18.3a LEARNING_IMPROVEMENTS) ===
+        public ObservableCollection<TrainingWordDto> LeechWords { get; } = new();
+
+        private bool _showLeechPanel;
+        public bool ShowLeechPanel
+        {
+            get => _showLeechPanel;
+            set => SetProperty(ref _showLeechPanel, value);
+        }
+
+        // === Daily Plan (§18.2 LEARNING_IMPROVEMENTS) ===
+        private DailyPlanDto? _dailyPlan;
+        public DailyPlanDto? DailyPlan
+        {
+            get => _dailyPlan;
+            set
+            {
+                if (SetProperty(ref _dailyPlan, value))
+                {
+                    OnPropertyChanged(nameof(HasDailyPlan));
+                    OnPropertyChanged(nameof(DailyGoalProgress));
+                    OnPropertyChanged(nameof(DailyGoalText));
+                    OnPropertyChanged(nameof(DailyGoalTarget));
+                    OnPropertyChanged(nameof(DailyPlanTotalWords));
+                    OnPropertyChanged(nameof(HasLeechWords));
+                    OnPropertyChanged(nameof(LeechCountText));
+                }
+            }
+        }
+
+        public bool HasDailyPlan => DailyPlan != null && DailyPlanTotalWords > 0;
+        public int DailyPlanTotalWords => DailyPlan != null
+            ? DailyPlan.Stats.TotalReviewCount + DailyPlan.Stats.TotalNewCount + DailyPlan.Stats.TotalDifficultCount
+            : 0;
+        public int DailyGoalTarget => DailyPlan?.Stats.DailyGoal > 0
+            ? DailyPlan.Stats.DailyGoal
+            : _settingsService?.CurrentSettings?.DailyGoal ?? 10;
+        public double DailyGoalProgress => DailyGoalTarget > 0
+            ? Math.Min(100.0, (double)(DailyPlan?.Stats.CompletedToday ?? 0) / DailyGoalTarget * 100.0)
+            : 0;
+        public string DailyGoalText => $"{DailyPlan?.Stats.CompletedToday ?? 0} / {DailyGoalTarget}";
+        public bool HasLeechWords => (DailyPlan?.Stats.LeechCount ?? 0) > 0;
+        public string LeechCountText => $"{DailyPlan?.Stats.LeechCount ?? 0}";
+
+        public ICommand StartSmartTrainingCommand { get; }
+        public ICommand StartReviewCommand { get; }
+        public ICommand StartNewWordsCommand { get; }
+        public ICommand StartDifficultCommand { get; }
 
         private ISeries[] _activitySeries = Array.Empty<ISeries>();
         public ISeries[] ActivitySeries
@@ -317,8 +403,18 @@ namespace LearningTrainer.ViewModels
                         if (newDictionary?.Words != null && newDictionary.Words.Any())
                         {
                             newDictionary.Id = 0;
-                            wordsToImport = newDictionary.Words.ToList();
+                            // Фильтруем слова без OriginalWord/Translation (могут быть null
+                            // если JSON использует другие имена полей, напр. "Original")
+                            wordsToImport = newDictionary.Words
+                                .Where(w => !string.IsNullOrWhiteSpace(w.OriginalWord)
+                                         && !string.IsNullOrWhiteSpace(w.Translation))
+                                .ToList();
                             newDictionary.Words.Clear();
+
+                            // Если после фильтрации не осталось валидных слов —
+                            // строгий формат не подходит, пробуем гибкий парсер
+                            if (!wordsToImport.Any())
+                                newDictionary = null;
                         }
                         else
                         {
@@ -340,17 +436,29 @@ namespace LearningTrainer.ViewModels
 
                     var savedDictionary = await _dataService.AddDictionaryAsync(newDictionary);
 
+                    int imported = 0, skipped = 0;
                     foreach (var word in wordsToImport)
                     {
                         word.Id = 0;
                         word.DictionaryId = savedDictionary.Id;
-                        await _dataService.AddWordAsync(word);
+                        try
+                        {
+                            await _dataService.AddWordAsync(word);
+                            imported++;
+                        }
+                        catch
+                        {
+                            // Пропускаем слова, вызвавшие ошибку (дубликаты, пустые и т.д.)
+                            skipped++;
+                        }
                     }
                     EventAggregator.Instance.Publish(new DictionaryAddedMessage(savedDictionary));
 
-                    _notificationService.AddSuccessNotification(
-                        "Импорт завершен",
-                        $"Словарь '{savedDictionary.Name}' ({wordsToImport.Count} слов) успешно импортирован!");
+                    var msg = $"Словарь '{savedDictionary.Name}' ({imported} слов) успешно импортирован!";
+                    if (skipped > 0)
+                        msg += $" ({skipped} слов пропущено)";
+
+                    _notificationService.AddSuccessNotification("Импорт завершен", msg);
                 }
                 catch (Exception ex)
                 {
@@ -564,6 +672,25 @@ namespace LearningTrainer.ViewModels
                 }
                 Stats = await _dataService.GetStatsAsync();
 
+                // Load Daily Plan (§18.2 LEARNING_IMPROVEMENTS)
+                if (_isOnlineMode)
+                {
+                    try
+                    {
+                        var goal = _settingsService?.CurrentSettings?.DailyGoal ?? 10;
+                        DailyPlan = await _dataService.GetDailyPlanAsync(newWordsLimit: goal, reviewLimit: goal * 2);
+                        (StartReviewCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                        (StartNewWordsCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                        (StartDifficultCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    }
+                    catch { /* DailyPlan is optional */ }
+                }
+
+                // Show Starter Pack if user has no dictionaries (§18.2d)
+                ShowStarterPack = _isOnlineMode && Dictionaries.Count == 0;
+                (InstallStarterPackCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                (OpenLeechManagerCommand as RelayCommand)?.RaiseCanExecuteChanged();
+
                 OnPropertyChanged(nameof(Dictionaries));
             }
             catch (HttpRequestException httpEx)
@@ -634,6 +761,215 @@ namespace LearningTrainer.ViewModels
                 var learningVM = new LearningViewModel(_dataService, dictionaryVM.Id, dictionaryVM.Name, dictionaryVM.LanguageFrom ?? "English", _settingsService);
 
                 EventAggregator.Instance.Publish(learningVM);
+            }
+        }
+
+        /// <summary>
+        /// Start smart training from Daily Plan (§18.2 LEARNING_IMPROVEMENTS).
+        /// </summary>
+        private async Task StartSmartTraining(string mode = null)
+        {
+            if (DailyPlan == null) return;
+
+            List<TrainingWordDto> words;
+            string title;
+
+            switch (mode)
+            {
+                case "review":
+                    words = DailyPlan.ReviewWords;
+                    title = "Повторение";
+                    break;
+                case "new":
+                    words = DailyPlan.NewWords;
+                    title = "Новые слова";
+                    break;
+                case "difficult":
+                    words = DailyPlan.DifficultWords;
+                    title = "Сложные слова";
+                    break;
+                default:
+                    // Mix all categories
+                    words = DailyPlan.ReviewWords
+                        .Concat(DailyPlan.NewWords)
+                        .Concat(DailyPlan.DifficultWords)
+                        .ToList();
+                    title = "Умная тренировка";
+                    break;
+            }
+
+            if (words == null || !words.Any())
+            {
+                _notificationService.AddInfoNotification("Нет слов", "В данной категории нет слов для тренировки");
+                return;
+            }
+
+            var learningVM = new LearningViewModel(_dataService, words, title, _settingsService);
+            EventAggregator.Instance.Publish(learningVM);
+        }
+
+        /// <summary>
+        /// Export all dictionaries as ZIP (§18.7c).
+        /// </summary>
+        private async Task ExportAllDictionaries()
+        {
+            try
+            {
+                var data = await _dataService.ExportAllDictionariesAsZipAsync();
+                if (data == null || data.Length == 0)
+                {
+                    _notificationService.AddInfoNotification("Экспорт", "Нет словарей для экспорта");
+                    return;
+                }
+
+                var dialog = new Microsoft.Win32.SaveFileDialog
+                {
+                    FileName = $"all_dictionaries_{DateTime.Now:yyyyMMdd}.zip",
+                    Filter = "ZIP Archive (*.zip)|*.zip",
+                    Title = "Экспорт всех словарей"
+                };
+
+                if (dialog.ShowDialog() == true)
+                {
+                    await System.IO.File.WriteAllBytesAsync(dialog.FileName, data);
+                    _notificationService.AddSuccessNotification("Экспорт завершён",
+                        $"Все словари ({Dictionaries.Count}) сохранены в {System.IO.Path.GetFileName(dialog.FileName)}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _notificationService.AddErrorNotification("Ошибка экспорта", $"Не удалось экспортировать: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Install starter pack for new users (§18.2d LEARNING_IMPROVEMENTS).
+        /// </summary>
+        private async Task InstallStarterPack()
+        {
+            if (IsInstallingStarterPack) return;
+            IsInstallingStarterPack = true;
+            (InstallStarterPackCommand as RelayCommand)?.RaiseCanExecuteChanged();
+
+            try
+            {
+                var result = await _dataService.InstallStarterPackAsync();
+                if (result != null)
+                {
+                    _notificationService.AddSuccessNotification(
+                        "Стартовый набор установлен",
+                        $"{result.Message} ({result.WordCount} слов)");
+                    ShowStarterPack = false;
+                    await LoadDataAsync();
+                }
+                else
+                {
+                    _notificationService.AddInfoNotification(
+                        "Стартовый набор",
+                        "Стартовый набор уже был установлен ранее");
+                    ShowStarterPack = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _notificationService.AddErrorNotification("Ошибка", $"Не удалось установить стартовый набор: {ex.Message}");
+            }
+            finally
+            {
+                IsInstallingStarterPack = false;
+                (InstallStarterPackCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            }
+        }
+
+        /// <summary>
+        /// Opens leech manager: shows all suspended words with unsuspend option (§18.3a).
+        /// </summary>
+        private async Task OpenLeechManager()
+        {
+            try
+            {
+                var leeches = await _dataService.GetLeechWordsAsync();
+                if (leeches.Count == 0)
+                {
+                    _notificationService.AddInfoNotification("Нет замороженных слов", "Все слова в обычной очереди повторения");
+                    return;
+                }
+
+                LeechWords.Clear();
+                foreach (var w in leeches)
+                    LeechWords.Add(w);
+
+                ShowLeechPanel = true;
+            }
+            catch (Exception ex)
+            {
+                _notificationService.AddErrorNotification("Ошибка", $"Не удалось загрузить leech-слова: {ex.Message}");
+            }
+        }
+
+        private async Task UnsuspendLeechWord(object parameter)
+        {
+            if (parameter is TrainingWordDto word)
+            {
+                var success = await _dataService.UnsuspendWordAsync(word.WordId);
+                if (success)
+                {
+                    LeechWords.Remove(word);
+                    _notificationService.AddSuccessNotification("Разморожено", $"«{word.OriginalWord}» возвращено в очередь");
+
+                    if (LeechWords.Count == 0)
+                        ShowLeechPanel = false;
+
+                    // Refresh daily plan to update leech count
+                    try
+                    {
+                        DailyPlan = await _dataService.GetDailyPlanAsync();
+                        (OpenLeechManagerCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    }
+                    catch { }
+                }
+                else
+                {
+                    _notificationService.AddErrorNotification("Ошибка", "Не удалось разморозить слово");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Import CSV file as a new dictionary (§18.7b).
+        /// </summary>
+        private async Task ImportCsvFile()
+        {
+            try
+            {
+                var dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Filter = "CSV files (*.csv)|*.csv|Text files (*.txt)|*.txt",
+                    Title = "Импорт CSV файла"
+                };
+
+                if (dialog.ShowDialog() != true) return;
+
+                var fileBytes = await File.ReadAllBytesAsync(dialog.FileName);
+                var fileName = Path.GetFileNameWithoutExtension(dialog.FileName);
+
+                var result = await _dataService.ImportCsvAsync(fileName, "English", "Russian", fileBytes);
+                if (result != null)
+                {
+                    _notificationService.AddSuccessNotification(
+                        "Импорт завершён",
+                        $"Словарь «{result.Name}» создан ({result.WordCount} слов)");
+                    await LoadDataAsync();
+                }
+                else
+                {
+                    _notificationService.AddErrorNotification("Ошибка импорта",
+                        "Не удалось импортировать CSV. Проверьте формат: original;translation или original,translation");
+                }
+            }
+            catch (Exception ex)
+            {
+                _notificationService.AddErrorNotification("Ошибка импорта", $"Не удалось импортировать: {ex.Message}");
             }
         }
 
@@ -874,6 +1210,16 @@ namespace LearningTrainer.ViewModels
             OpenSettingsCommand = new RelayCommand(OpenSettings);
             OpenMarketplaceCommand = new RelayCommand(_ => OpenMarketplace());
             OpenStatisticsCommand = new RelayCommand(_ => OpenStatistics());
+
+            // Daily Plan commands (§18.2 LEARNING_IMPROVEMENTS)
+            StartSmartTrainingCommand = new RelayCommand(async _ => await StartSmartTraining());
+            StartReviewCommand = new RelayCommand(async _ => await StartSmartTraining("review"),
+                _ => DailyPlan?.ReviewWords?.Count > 0);
+            StartNewWordsCommand = new RelayCommand(async _ => await StartSmartTraining("new"),
+                _ => DailyPlan?.NewWords?.Count > 0);
+            StartDifficultCommand = new RelayCommand(async _ => await StartSmartTraining("difficult"),
+                _ => DailyPlan?.DifficultWords?.Count > 0);
+
             DisplaySortOptions = new ObservableCollection<SortingDisplayItem>()
             {
                 new SortingDisplayItem { Key = SortKey.NameAsc, DisplayName = GetLocalized("Loc.Sort.NameAsc") },
@@ -886,6 +1232,32 @@ namespace LearningTrainer.ViewModels
             {
                 _ = LoadDataAsync();
             });
+
+            // Export All (§18.7c)
+            ExportAllCommand = new RelayCommand(async (_) => await ExportAllDictionaries(),
+                (_) => _isOnlineMode);
+
+            // Starter Pack (§18.2d)
+            InstallStarterPackCommand = new RelayCommand(
+                async (_) => await InstallStarterPack(),
+                (_) => _isOnlineMode && ShowStarterPack && !IsInstallingStarterPack);
+
+            // Leech Manager (§18.3a)
+            OpenLeechManagerCommand = new RelayCommand(
+                async (_) => await OpenLeechManager(),
+                (_) => _isOnlineMode && HasLeechWords);
+
+            // Import CSV (§18.7b)
+            ImportCsvCommand = new RelayCommand(
+                async (_) => await ImportCsvFile(),
+                (_) => _isOnlineMode);
+
+            // Leech unsuspend/close
+            UnsuspendWordCommand = new RelayCommand(
+                async (param) => await UnsuspendLeechWord(param));
+            CloseLeechPanelCommand = new RelayCommand(
+                (_) => ShowLeechPanel = false);
+
             EventAggregator.Instance.Subscribe<DictionaryDeletedMessage>(OnDictionaryDeleted);
             EventAggregator.Instance.Subscribe<RefreshDataMessage>(OnRefreshData);
             EventAggregator.Instance.Subscribe<RuleAddedMessage>(OnRuleAdded);

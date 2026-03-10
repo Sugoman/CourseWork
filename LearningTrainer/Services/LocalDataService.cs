@@ -697,6 +697,11 @@ namespace LearningTrainer.Services
             return Task.FromResult<StarterPackResult?>(null);
         }
 
+        public Task<List<TrainingWordDto>> GetLeechWordsAsync() => Task.FromResult(new List<TrainingWordDto>());
+        public Task<bool> UnsuspendWordAsync(int wordId) => Task.FromResult(false);
+        public Task<ImportResult?> ImportCsvAsync(string name, string languageFrom, string languageTo, byte[] csvData)
+            => Task.FromResult<ImportResult?>(null);
+
         public Task<LearningTrainerShared.Models.Statistics.UserStatistics?> GetStatisticsAsync(string period = "week")
         {
             // В оффлайн-режиме возвращаем базовую статистику из локальных данных

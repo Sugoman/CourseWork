@@ -1,0 +1,243 @@
+@page "/my-dictionary/{Id:int}"
+@inject IContentApiService ContentApi
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>@(DictName ?? "Словарь") - Ingat</PageTitle>
+
+<div class="container py-4">
+    @if (!IsAuthenticated)
+    {
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; color: var(--primary-400);"><i class="bi bi-lock"></i></div>
+            <h2>Требуется авторизация</h2>
+            <a href="login" class="btn btn-primary btn-lg mt-3">Войти</a>
+        </div>
+    }
+    else if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="text-muted mt-3">Загрузка словаря...</p>
+        </div>
+    }
+    else if (Dict == null)
+    {
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; color: var(--gray-400);"><i class="bi bi-emoji-frown"></i></div>
+            <h2>Словарь не найден</h2>
+            <p class="text-muted mb-4">Возможно, он был удалён</p>
+            <a href="my-content" class="btn btn-primary"><i class="bi bi-arrow-left me-2"></i>Мой контент</a>
+        </div>
+    }
+    else
+    {
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb" style="background: transparent; padding: 0;">
+                <li class="breadcrumb-item">
+                    <a href="my-content" style="color: var(--primary-600);"><i class="bi bi-folder2-open me-1"></i>Мой контент</a>
+                </li>
+                <li class="breadcrumb-item active" style="color: var(--gray-500);">@Dict.Name</li>
+            </ol>
+        </nav>
+
+        <!-- Header -->
+        <div class="card mb-4" style="border-radius: 1rem; overflow: hidden;">
+            <div style="background: linear-gradient(135deg, var(--primary-600), var(--primary-800)); padding: 1.5rem 2rem; color: white;">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                    <div>
+                        <h1 style="color: white; margin-bottom: 0.25rem; font-size: 1.75rem;">@Dict.Name</h1>
+                        @if (!string.IsNullOrWhiteSpace(Dict.Description))
+                        {
+                            <p style="opacity: 0.9; margin-bottom: 0;">@Dict.Description</p>
+                        }
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="training" class="btn btn-light">
+                            <i class="bi bi-play-fill me-1"></i>Тренировка
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge bg-primary-subtle text-primary px-3 py-2" style="font-size: 0.9rem;">
+                        <i class="bi bi-collection me-1"></i>@Words.Count слов
+                    </span>
+                    <span class="badge bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
+                        @Dict.LanguageFrom → @Dict.LanguageTo
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add word form -->
+        <div class="card mb-4" style="border-radius: 1rem;">
+            <div class="card-body">
+                <h5 class="mb-3"><i class="bi bi-plus-circle me-2"></i>Добавить слово</h5>
+                <div class="d-flex gap-2 flex-wrap">
+                    <input type="text" class="form-control" style="max-width: 250px;" placeholder="Слово" @bind="NewOriginal" @bind:event="oninput" />
+                    <input type="text" class="form-control" style="max-width: 250px;" placeholder="Перевод" @bind="NewTranslation" @bind:event="oninput" />
+                    <input type="text" class="form-control" style="max-width: 300px;" placeholder="Пример (необязательно)" @bind="NewExample" @bind:event="oninput" />
+                    <button class="btn btn-primary" @onclick="AddWord"
+                            disabled="@(IsAddingWord || string.IsNullOrWhiteSpace(NewOriginal) || string.IsNullOrWhiteSpace(NewTranslation))">
+                        @if (IsAddingWord) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        <i class="bi bi-plus-lg me-1"></i>Добавить
+                    </button>
+                </div>
+                @if (!string.IsNullOrEmpty(AddWordMessage))
+                {
+                    <div class="mt-2 small @(AddWordSuccess ? "text-success" : "text-danger")">@AddWordMessage</div>
+                }
+            </div>
+        </div>
+
+        <!-- Words list -->
+        <div class="card" style="border-radius: 1rem;">
+            <div class="card-body p-0">
+                <div class="p-3 d-flex justify-content-between align-items-center border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-list-ul me-2"></i>Слова</h5>
+                    <input type="text" class="form-control" style="max-width: 250px;" placeholder="Поиск..."
+                           @bind="SearchQuery" @bind:event="oninput" />
+                </div>
+
+                @if (FilteredWords.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%; padding-left: 1rem;">#</th>
+                                    <th style="width: 30%;">Слово</th>
+                                    <th style="width: 30%;">Перевод</th>
+                                    <th style="width: 25%;">Транскрипция</th>
+                                    <th style="width: 10%;">Пример</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ var idx = 0; }
+                                @foreach (var w in FilteredWords)
+                                {
+                                    idx++;
+                                    <tr>
+                                        <td style="padding-left: 1rem; color: var(--gray-400);">@idx</td>
+                                        <td><strong>@w.OriginalWord</strong></td>
+                                        <td>@w.Translation</td>
+                                        <td class="text-muted" style="font-family: serif;">@w.Transcription</td>
+                                        <td>
+                                            @if (!string.IsNullOrWhiteSpace(w.Example))
+                                            {
+                                                <span title="@w.Example"><i class="bi bi-chat-quote text-muted"></i></span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-search" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">Слова не найдены</p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private bool IsAuthenticated;
+    private bool IsLoading = true;
+    private MyDictionaryFullDto? Dict;
+    private List<MyDictionaryWordDto> Words = new();
+    private string SearchQuery = "";
+
+    // Add word state
+    private string NewOriginal = "";
+    private string NewTranslation = "";
+    private string NewExample = "";
+    private bool IsAddingWord;
+    private string? AddWordMessage;
+    private bool AddWordSuccess;
+
+    private string? DictName => Dict?.Name;
+
+    private IEnumerable<MyDictionaryWordDto> FilteredWords =>
+        string.IsNullOrWhiteSpace(SearchQuery)
+            ? Words
+            : Words.Where(w =>
+                (w.OriginalWord?.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (w.Translation?.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) ?? false));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.InitializeAsync();
+        var session = await AuthService.GetCurrentSessionAsync();
+        IsAuthenticated = session != null;
+
+        if (IsAuthenticated)
+            await LoadDictionary();
+
+        IsLoading = false;
+    }
+
+    private async Task LoadDictionary()
+    {
+        try
+        {
+            Dict = await ContentApi.GetMyDictionaryFullAsync(Id);
+            Words = Dict?.Words ?? new();
+        }
+        catch
+        {
+            Dict = null;
+        }
+    }
+
+    private async Task AddWord()
+    {
+        if (string.IsNullOrWhiteSpace(NewOriginal) || string.IsNullOrWhiteSpace(NewTranslation)) return;
+
+        IsAddingWord = true;
+        AddWordMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            var result = await ContentApi.AddWordAsync(Id, NewOriginal.Trim(), NewTranslation.Trim(),
+                string.IsNullOrWhiteSpace(NewExample) ? null : NewExample.Trim());
+
+            Words.Add(new MyDictionaryWordDto
+            {
+                OriginalWord = NewOriginal.Trim(),
+                Translation = NewTranslation.Trim(),
+                Example = NewExample?.Trim()
+            });
+
+            NewOriginal = "";
+            NewTranslation = "";
+            NewExample = "";
+            AddWordSuccess = true;
+            AddWordMessage = "Слово добавлено!";
+        }
+        catch (Exception ex)
+        {
+            AddWordSuccess = false;
+            AddWordMessage = $"Ошибка: {ex.Message}";
+        }
+        finally
+        {
+            IsAddingWord = false;
+        }
+    }
+}

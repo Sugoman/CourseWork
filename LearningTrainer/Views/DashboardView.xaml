@@ -15,6 +15,7 @@
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <converters:StringNullOrEmptyToVisibilityConverter x:Key="StringNullOrEmptyToVisibilityConverter" />
+        <converters:PercentToFixedWidthConverter x:Key="PercentToFixedWidthConverter" MaxWidth="400"/>
     </UserControl.Resources>
 
     <!-- ОСНОВНОЙ МАКЕТ с наложением уведомлений -->
@@ -82,6 +83,23 @@
                         Command="{Binding ImportDictionaryCommand}"
                         Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
+                        <Button Style="{StaticResource NavButtonStyle}" Command="{Binding ExportAllCommand}" Margin="5,0,0,0"
+                                Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                ToolTip="Экспортировать все словари">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📦" FontSize="14" VerticalAlignment="Center"/>
+                                <TextBlock Text="Экспорт" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Button Style="{StaticResource NavButtonStyle}" Command="{Binding ImportCsvCommand}" Margin="5,0,0,0"
+                                Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                ToolTip="Импорт CSV файла">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📄" FontSize="14" VerticalAlignment="Center"/>
+                                <TextBlock Text="CSV" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
 
                         <Button Style="{StaticResource NavButtonStyle}" Command="{Binding OpenMarketplaceCommand}" Margin="10,0,0,0">
                             <Button.ContentTemplate>
@@ -264,6 +282,155 @@
                                 </Grid>
                             </Border>
 
+                            <!-- XP Level bar (§18.5a LEARNING_IMPROVEMENTS) -->
+                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,15"
+                                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                    Visibility="{Binding HasXp, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Level badge -->
+                                    <Border Grid.Column="0" Background="{DynamicResource PrimaryAccentBrush}" CornerRadius="20"
+                                            Width="40" Height="40" Margin="0,0,12,0">
+                                        <TextBlock Text="{Binding XpLevel}" FontSize="18" FontWeight="Bold" Foreground="White"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+
+                                    <!-- Progress bar -->
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,4">
+                                            <Run Text="Уровень"/>
+                                            <Run Text="{Binding XpLevel, Mode=OneWay}"/>
+                                        </TextBlock>
+                                        <Border Background="{DynamicResource BorderBrush}" CornerRadius="4" Height="8">
+                                            <Border Background="{DynamicResource PrimaryAccentBrush}" CornerRadius="4" HorizontalAlignment="Left"
+                                                    Width="{Binding XpProgressPercent, Converter={StaticResource PercentToFixedWidthConverter}}"/>
+                                        </Border>
+                                    </StackPanel>
+
+                                    <!-- XP text -->
+                                    <TextBlock Grid.Column="2" Text="{Binding XpProgressText}" FontSize="14" FontWeight="SemiBold"
+                                               Foreground="{DynamicResource PrimaryAccentBrush}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Daily Plan (§18.2 LEARNING_IMPROVEMENTS) -->
+                            <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,0,15"
+                                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                    Visibility="{Binding HasDailyPlan, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="📋 Дневной план" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                            <TextBlock Foreground="{DynamicResource SecondaryTextBrush}" FontSize="12" Margin="0,2,0,0">
+                                                <TextBlock.Text>
+                                                    <MultiBinding StringFormat="{}{0} к повторению · {1} новых · {2} сложных">
+                                                        <Binding Path="DailyPlan.Stats.TotalReviewCount"/>
+                                                        <Binding Path="DailyPlan.Stats.TotalNewCount"/>
+                                                        <Binding Path="DailyPlan.Stats.TotalDifficultCount"/>
+                                                    </MultiBinding>
+                                                </TextBlock.Text>
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Command="{Binding StartSmartTrainingCommand}"
+                                                Style="{StaticResource NavButtonStyle}" Padding="16,8">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="🚀" FontSize="16" VerticalAlignment="Center"/>
+                                                <TextBlock Text="Начать" Margin="6,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+
+                                    <!-- Daily Goal progress bar -->
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="🎯 Дневная цель" FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,0,0,4"/>
+                                            <Border Background="{DynamicResource BorderBrush}" CornerRadius="4" Height="8">
+                                                <Border Background="{DynamicResource PrimaryAccentBrush}" CornerRadius="4" HorizontalAlignment="Left"
+                                                        Width="{Binding DailyGoalProgress, Converter={StaticResource PercentToFixedWidthConverter}}"/>
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" Text="{Binding DailyGoalText}" FontSize="14" FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource PrimaryAccentBrush}" VerticalAlignment="Bottom" Margin="12,0,0,0"/>
+                                    </Grid>
+
+                                    <!-- Category buttons -->
+                                    <UniformGrid Columns="3" Margin="0,4,0,0">
+                                        <Button Command="{Binding StartReviewCommand}" Style="{StaticResource NavButtonStyle}" Margin="0,0,4,0" Padding="10,8">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="🔄" FontSize="14" VerticalAlignment="Center"/>
+                                                <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">
+                                                    <TextBlock.Text>
+                                                        <Binding Path="DailyPlan.Stats.TotalReviewCount" StringFormat="Повторить ({0})"/>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Command="{Binding StartNewWordsCommand}" Style="{StaticResource NavButtonStyle}" Margin="4,0,4,0" Padding="10,8">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="✨" FontSize="14" VerticalAlignment="Center"/>
+                                                <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">
+                                                    <TextBlock.Text>
+                                                        <Binding Path="DailyPlan.Stats.TotalNewCount" StringFormat="Новые ({0})"/>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Button>
+                                        <Button Command="{Binding StartDifficultCommand}" Style="{StaticResource NavButtonStyle}" Margin="4,0,0,0" Padding="10,8">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="💪" FontSize="14" VerticalAlignment="Center"/>
+                                                <TextBlock VerticalAlignment="Center" Margin="4,0,0,0">
+                                                    <TextBlock.Text>
+                                                        <Binding Path="DailyPlan.Stats.TotalDifficultCount" StringFormat="Сложные ({0})"/>
+                                                    </TextBlock.Text>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Button>
+                                    </UniformGrid>
+
+                                    <!-- Leech warning -->
+                                    <Border Visibility="{Binding HasLeechWords, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                            Background="#FFF3CD" CornerRadius="8" Padding="10,8" Margin="0,10,0,0">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Text="🐛" FontSize="16" VerticalAlignment="Center"/>
+                                                <TextBlock VerticalAlignment="Center" Margin="6,0,0,0" Foreground="#856404" FontSize="12">
+                                                    <Run Text="{Binding LeechCountText, Mode=OneWay}"/>
+                                                    <Run Text="слов заморожено — они вызывают постоянные трудности"/>
+                                                </TextBlock>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="Управление" Command="{Binding OpenLeechManagerCommand}"
+                                                    Background="#856404" Foreground="White" BorderThickness="0" Cursor="Hand"
+                                                    Padding="12,4" FontSize="11">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
                             <UniformGrid Columns="2" Rows="2" >
 
                                 <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,0,15,15">
@@ -319,6 +486,92 @@
                                                        LegendTextPaint="{Binding LegendTextPaint}" />
                                 </Border>
                             </StackPanel>
+
+                            <!-- Leech Manager Panel (§18.3a) -->
+                            <Border Visibility="{Binding ShowLeechPanel, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                    Background="{DynamicResource CardBackgroundBrush}" CornerRadius="12" Padding="20" Margin="0,20,0,0"
+                                    BorderBrush="#E0A800" BorderThickness="1">
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="🐛 Замороженные слова" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                            <TextBlock Text="Эти слова вызывают постоянные трудности. Нажмите «Разморозить», чтобы вернуть в очередь."
+                                                       FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="✕" Command="{Binding CloseLeechPanelCommand}"
+                                                Background="Transparent" BorderThickness="0" FontSize="18" Cursor="Hand"
+                                                Foreground="{DynamicResource SecondaryTextBrush}" VerticalAlignment="Top"/>
+                                    </Grid>
+
+                                    <ItemsControl ItemsSource="{Binding LeechWords}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" CornerRadius="8"
+                                                        Padding="12,8" Margin="0,4"
+                                                        BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="{Binding OriginalWord}" FontSize="14" FontWeight="SemiBold"
+                                                                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                                                <TextBlock Text=" → " Foreground="{DynamicResource SecondaryTextBrush}" FontSize="14"/>
+                                                                <TextBlock Text="{Binding Translation}" FontSize="14"
+                                                                           Foreground="{DynamicResource SecondaryTextBrush}"/>
+                                                            </StackPanel>
+                                                            <TextBlock FontSize="11" Foreground="{DynamicResource SecondaryTextBrush}" Opacity="0.7">
+                                                                <Run Text="Сбросов:"/>
+                                                                <Run Text="{Binding LapseCount, Mode=OneWay}"/>
+                                                                <Run Text="· Словарь:"/>
+                                                                <Run Text="{Binding DictionaryName, Mode=OneWay}"/>
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Transcription}" FontSize="12"
+                                                                   Foreground="{DynamicResource PrimaryAccentBrush}" VerticalAlignment="Center"
+                                                                   Margin="8,0">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Transcription}" Value="{x:Null}">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Transcription}" Value="">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                        <Button Grid.Column="2" Content="Разморозить"
+                                                                Command="{Binding DataContext.UnsuspendWordCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}"
+                                                                Background="#28a745" Foreground="White" BorderThickness="0" Cursor="Hand"
+                                                                Padding="10,4" FontSize="11" VerticalAlignment="Center">
+                                                            <Button.Template>
+                                                                <ControlTemplate TargetType="Button">
+                                                                    <Border Background="{TemplateBinding Background}" CornerRadius="4"
+                                                                            Padding="{TemplateBinding Padding}">
+                                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                    </Border>
+                                                                </ControlTemplate>
+                                                            </Button.Template>
+                                                        </Button>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
 
                         </StackPanel>
                     </ScrollViewer>
@@ -495,6 +748,32 @@
                                Style="{StaticResource SectionHeaderStyle}" 
                                FontSize="28"
                                Foreground="{DynamicResource PrimaryTextBrush}"/>
+
+                        <!-- Starter Pack (§18.2d LEARNING_IMPROVEMENTS) -->
+                        <Border Background="{DynamicResource CardBackgroundBrush}" CornerRadius="16" Padding="24,20" Margin="0,0,0,16"
+                                BorderBrush="{DynamicResource PrimaryAccentBrush}" BorderThickness="2"
+                                Visibility="{Binding ShowStarterPack, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                    <TextBlock Text="🎒 Начните обучение!" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    <TextBlock Text="Установите стартовый набор слов, чтобы начать тренировку прямо сейчас." FontSize="14"
+                                               Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Command="{Binding InstallStarterPackCommand}"
+                                        Style="{StaticResource NavButtonStyle}" Padding="20,12" Margin="16,0,0,0"
+                                        VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🚀" FontSize="18" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Установить" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="15"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Border>
+
                         <ItemsControl ItemsSource="{Binding DisplayDictionaries}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>

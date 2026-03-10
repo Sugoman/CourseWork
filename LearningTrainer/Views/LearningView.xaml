@@ -477,6 +477,76 @@
                             </StackPanel>
                         </StackPanel>
                     </Button>
+
+                    <!-- Matching mode (§18.1a) -->
+                    <Button Command="{Binding SetExerciseTypeCommand}" CommandParameter="matching"
+                            Margin="0,4" Height="60" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource McqOptionButton}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔗" FontSize="{DynamicResource FontSizeXLarge}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Сопоставление" FontSize="{DynamicResource FontSizeMedium}" FontWeight="SemiBold"/>
+                                <TextBlock Text="Соедините слова с переводами" FontSize="{DynamicResource FontSizeSmall}" Opacity="0.6"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Cloze mode (§18.1b) -->
+                    <Button Command="{Binding SetExerciseTypeCommand}" CommandParameter="cloze"
+                            Margin="0,4" Height="60" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource McqOptionButton}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📝" FontSize="{DynamicResource FontSizeXLarge}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Заполни пропуск" FontSize="{DynamicResource FontSizeMedium}" FontWeight="SemiBold"/>
+                                <TextBlock Text="Вставьте слово в контекстное предложение" FontSize="{DynamicResource FontSizeSmall}" Opacity="0.6"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Spelling Bee (§18.1c) -->
+                    <Button Command="{Binding SetExerciseTypeCommand}" CommandParameter="spellingbee"
+                            Margin="0,4" Height="60" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource McqOptionButton}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🐝" FontSize="{DynamicResource FontSizeXLarge}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Spelling Bee" FontSize="{DynamicResource FontSizeMedium}" FontWeight="SemiBold"/>
+                                <TextBlock Text="Прослушайте и напишите слово по буквам" FontSize="{DynamicResource FontSizeSmall}" Opacity="0.6"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Speed Round (§18.1d) -->
+                    <Button Command="{Binding StartSpeedRoundCommand}"
+                            Margin="0,12,0,4" Height="60" Cursor="Hand">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource McqOptionButton}">
+                                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                                <Setter Property="BorderBrush" Value="{DynamicResource WarningBrush}"/>
+                                <Setter Property="BorderThickness" Value="2"/>
+                            </Style>
+                        </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="⚡" FontSize="{DynamicResource FontSizeXLarge}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Скоростной раунд" FontSize="{DynamicResource FontSizeMedium}" FontWeight="SemiBold"/>
+                                <TextBlock Text="60 секунд — отвечай как можно быстрее!" FontSize="{DynamicResource FontSizeSmall}" Opacity="0.6"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
                 </ScrollViewer>
             </Grid>
@@ -1256,6 +1326,402 @@
                             Visibility="{Binding ListeningAnswered, Converter={StaticResource InverseBoolToVis}}"/>
                 </StackPanel>
             </Grid>
+
+            <!-- ====== CLOZE MODE (§18.1b) ====== -->
+            <Grid Grid.Row="1">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsExerciseTypeChosen}" Value="True"/>
+                                    <Condition Binding="{Binding IsClozeMode}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="500">
+                    <TextBlock Text="📝 Заполните пропуск" FontSize="{DynamicResource FontSizeLarge}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource PrimaryTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+
+                    <!-- Cloze sentence -->
+                    <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" CornerRadius="12" Padding="24,20" Margin="0,0,0,16"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                        <TextBlock Text="{Binding ClozeSentence}" FontSize="{DynamicResource FontSizeMedium}" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource PrimaryTextBrush}" TextAlignment="Center" LineHeight="28"/>
+                    </Border>
+
+                    <!-- Input -->
+                    <TextBox Text="{Binding ClozeAnswer, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="{DynamicResource FontSizeMedium}" Padding="12,8" Margin="0,0,0,8"
+                             HorizontalContentAlignment="Center" MaxWidth="300"
+                             IsEnabled="{Binding ClozeAnswered, Converter={StaticResource InverseBoolConverter}}">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding ClozeWasCorrect}" Value="True">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+
+                    <!-- Check button -->
+                    <Button Content="Проверить" Command="{Binding CheckClozeCommand}"
+                            Style="{StaticResource McqOptionButton}" HorizontalAlignment="Center"
+                            Width="160" Height="40" FontSize="{DynamicResource FontSizeBody}"
+                            Visibility="{Binding ClozeAnswered, Converter={StaticResource InverseBoolToVis}}"/>
+
+                    <!-- Cloze feedback -->
+                    <StackPanel Margin="0,16,0,0" Visibility="{Binding ClozeAnswered, Converter={StaticResource BoolToVis}}">
+                        <TextBlock HorizontalAlignment="Center" FontSize="{DynamicResource FontSizeLarge}" FontWeight="Bold">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="✗ Неправильно"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ClozeWasCorrect}" Value="True">
+                                            <Setter Property="Text" Value="✓ Правильно!"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                        <!-- Show correct answer if wrong -->
+                        <TextBlock HorizontalAlignment="Center" FontSize="{DynamicResource FontSizeMedium}" Margin="0,8,0,0"
+                                   Foreground="{DynamicResource SecondaryTextBrush}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ClozeWasCorrect}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                            <Run Text="Правильный ответ: "/>
+                            <Run Text="{Binding ClozeCorrectWord, Mode=OneWay}" FontWeight="Bold" Foreground="{DynamicResource SuccessBrush}"/>
+                        </TextBlock>
+
+                        <!-- Translation hint -->
+                        <TextBlock HorizontalAlignment="Center" FontSize="{DynamicResource FontSizeBody}" Margin="0,4,0,0"
+                                   Foreground="{DynamicResource SecondaryTextBrush}">
+                            <Run Text="Перевод: "/>
+                            <Run Text="{Binding CurrentWord.Translation, Mode=OneWay}" FontWeight="SemiBold"/>
+                        </TextBlock>
+
+                        <Button Content="Далее →" Command="{Binding NextClozeWordCommand}"
+                                Style="{StaticResource McqOptionButton}" HorizontalAlignment="Center"
+                                Margin="0,12,0,0" Width="160" Height="40" FontSize="{DynamicResource FontSizeBody}"/>
+                    </StackPanel>
+
+                    <!-- Skip button -->
+                    <Button Content="Пропустить (Esc)" Command="{Binding SkipWordCommand}"
+                            Background="Transparent" BorderThickness="0" Cursor="Hand"
+                            Foreground="{DynamicResource SecondaryTextBrush}" FontSize="{DynamicResource FontSizeSmall}"
+                            HorizontalAlignment="Center" Margin="0,8,0,0"
+                            Visibility="{Binding ClozeAnswered, Converter={StaticResource InverseBoolToVis}}"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ====== SPELLING BEE MODE (§18.1c) ====== -->
+            <Grid Grid.Row="1">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsExerciseTypeChosen}" Value="True"/>
+                                    <Condition Binding="{Binding IsSpellingBeeMode}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="500">
+                    <!-- Audio prompt -->
+                    <Border Background="{DynamicResource SecondaryMainBackgroundBrush}" CornerRadius="16" Padding="24"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Margin="0,0,0,16">
+                        <Border.Effect>
+                            <DropShadowEffect ShadowDepth="4" Color="Black" Opacity="0.2" BlurRadius="20"/>
+                        </Border.Effect>
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="🐝" FontSize="{DynamicResource FontSizeDisplay1}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="Прослушайте и напишите слово" FontSize="{DynamicResource FontSizeMedium}"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                            <TextBlock Text="{Binding SpellingHint}" FontSize="{DynamicResource FontSizeBase}" FontStyle="Italic"
+                                       Foreground="{DynamicResource PrimaryAccentBrush}" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                            <Button Command="{Binding ReplayListeningCommand}" 
+                                    ToolTip="Повторить озвучку" Background="Transparent" BorderThickness="0" 
+                                    Cursor="Hand" Margin="0,10,0,0" HorizontalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔊" FontSize="{DynamicResource FontSizeXLarge}" Margin="0,0,6,0"/>
+                                    <TextBlock Text="Повторить" FontSize="{DynamicResource FontSizeMedium}" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource PrimaryAccentBrush}"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Translation hint -->
+                    <TextBlock HorizontalAlignment="Center" FontSize="{DynamicResource FontSizeBase}" Margin="0,0,0,12"
+                               Foreground="{DynamicResource SecondaryTextBrush}">
+                        <Run Text="Перевод: "/>
+                        <Run Text="{Binding CurrentWord.Translation, Mode=OneWay}" FontWeight="SemiBold"/>
+                    </TextBlock>
+
+                    <!-- Input -->
+                    <TextBox Text="{Binding SpellingAnswer, UpdateSourceTrigger=PropertyChanged}"
+                             FontSize="{DynamicResource FontSizeLarge}" Padding="12" HorizontalContentAlignment="Center"
+                             Background="{DynamicResource SecondaryMainBackgroundBrush}"
+                             Foreground="{DynamicResource PrimaryTextBrush}"
+                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="2"
+                             CharacterCasing="Normal"
+                             IsEnabled="{Binding SpellingAnswered, Converter={StaticResource InverseBoolConverter}}">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SpellingWasCorrect}" Value="True">
+                                        <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
+
+                    <!-- Check button -->
+                    <Button Content="Проверить" Command="{Binding CheckSpellingCommand}"
+                            Style="{StaticResource McqOptionButton}" HorizontalAlignment="Center"
+                            Width="160" Height="40" FontSize="{DynamicResource FontSizeBody}" Margin="0,12,0,0"
+                            Visibility="{Binding SpellingAnswered, Converter={StaticResource InverseBoolToVis}}"/>
+
+                    <!-- Feedback -->
+                    <StackPanel Margin="0,16,0,0" Visibility="{Binding SpellingAnswered, Converter={StaticResource BoolToVis}}">
+                        <TextBlock HorizontalAlignment="Center" FontSize="{DynamicResource FontSizeLarge}" FontWeight="Bold">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="✗ Неправильно"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource DangerBrush}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SpellingWasCorrect}" Value="True">
+                                            <Setter Property="Text" Value="✓ Правильно!"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                        <TextBlock HorizontalAlignment="Center" FontSize="{DynamicResource FontSizeMedium}" Margin="0,8,0,0"
+                                   Foreground="{DynamicResource SecondaryTextBrush}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SpellingWasCorrect}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                            <Run Text="Правильный ответ: "/>
+                            <Run Text="{Binding CurrentWord.OriginalWord, Mode=OneWay}" FontWeight="Bold" Foreground="{DynamicResource SuccessBrush}"/>
+                        </TextBlock>
+
+                        <Button Content="Далее →" Command="{Binding NextSpellingWordCommand}"
+                                Style="{StaticResource McqOptionButton}" HorizontalAlignment="Center"
+                                Margin="0,12,0,0" Width="160" Height="40" FontSize="{DynamicResource FontSizeBody}"/>
+                    </StackPanel>
+
+                    <!-- Skip -->
+                    <Button Content="Пропустить (Esc)" Command="{Binding SkipWordCommand}"
+                            Background="Transparent" BorderThickness="0" Cursor="Hand"
+                            Foreground="{DynamicResource SecondaryTextBrush}" FontSize="{DynamicResource FontSizeSmall}"
+                            HorizontalAlignment="Center" Margin="0,8,0,0"
+                            Visibility="{Binding SpellingAnswered, Converter={StaticResource InverseBoolToVis}}"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- ====== MATCHING MODE (§18.1a) ====== -->
+            <Grid Grid.Row="1">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsExerciseTypeChosen}" Value="True"/>
+                                    <Condition Binding="{Binding IsMatchingMode}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="700">
+                    <TextBlock Text="🔗 Соедините слова с переводами" FontSize="{DynamicResource FontSizeLarge}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource PrimaryTextBrush}" HorizontalAlignment="Center" Margin="0,0,0,16"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
+                        <TextBlock Foreground="{DynamicResource SecondaryTextBrush}" FontSize="{DynamicResource FontSizeBody}">
+                            <Run Text="{Binding MatchedPairsCount, Mode=OneWay}"/>
+                            <Run Text="/"/>
+                            <Run Text="{Binding MatchTotalPairs, Mode=OneWay}"/>
+                            <Run Text="пар найдено"/>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Left column: originals -->
+                        <ItemsControl Grid.Column="0" ItemsSource="{Binding MatchItems}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Command="{Binding DataContext.SelectMatchItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Margin="0,4" Height="48" Cursor="Hand" HorizontalContentAlignment="Center">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource McqOptionButton}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsOriginal}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsMatched}" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                        <Setter Property="Opacity" Value="0.6"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                                        <Setter Property="BorderThickness" Value="3"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsWrong}" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                        <TextBlock Text="{Binding Text}" FontSize="{DynamicResource FontSizeMedium}" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Right column: translations -->
+                        <ItemsControl Grid.Column="2" ItemsSource="{Binding MatchItems}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Command="{Binding DataContext.SelectMatchItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Margin="0,4" Height="48" Cursor="Hand" HorizontalContentAlignment="Center">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource McqOptionButton}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsOriginal}" Value="False">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsMatched}" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                        <Setter Property="Opacity" Value="0.6"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                        <Setter Property="BorderBrush" Value="{DynamicResource PrimaryAccentBrush}"/>
+                                                        <Setter Property="BorderThickness" Value="3"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsWrong}" Value="True">
+                                                        <Setter Property="Background" Value="{DynamicResource DangerBrush}"/>
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                        <TextBlock Text="{Binding Text}" FontSize="{DynamicResource FontSizeMedium}" TextWrapping="Wrap" TextAlignment="Center"/>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+
+                    <!-- Matching completed -->
+                    <StackPanel Visibility="{Binding MatchingCompleted, Converter={StaticResource BoolToVis}}" Margin="0,16,0,0" HorizontalAlignment="Center">
+                        <TextBlock Text="✅ Все пары найдены!" FontSize="{DynamicResource FontSizeLarge}" FontWeight="Bold"
+                                   Foreground="{DynamicResource SuccessBrush}" HorizontalAlignment="Center"/>
+                        <Button Content="Далее →" Command="{Binding NextMatchingRoundCommand}"
+                                Style="{StaticResource McqOptionButton}" HorizontalAlignment="Center"
+                                Margin="0,12,0,0" Width="160" Height="40" FontSize="{DynamicResource FontSizeBody}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+
+            <!-- ====== SPEED ROUND OVERLAY (§18.1d) ====== -->
+            <Border Grid.Row="0" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="20,8,20,0"
+                    CornerRadius="12" Padding="16,8"
+                    Visibility="{Binding ShowSpeedOverlay, Converter={StaticResource BoolToVis}}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource WarningBrush}"/>
+                        <Setter Property="BorderThickness" Value="2"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SpeedRoundTimeLeft, Converter={StaticResource BoolToVis}, ConverterParameter=10}" Value="True">
+                                <Setter Property="Background" Value="#FFEBEE"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="⏱️" FontSize="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBlock FontSize="20" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock.Text>
+                            <Binding Path="SpeedRoundTimeLeft" StringFormat="{}{0}с"/>
+                        </TextBlock.Text>
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Text="⚡" FontSize="18" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <TextBlock FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryAccentBrush}" VerticalAlignment="Center">
+                        <TextBlock.Text>
+                            <Binding Path="SpeedRoundScore" StringFormat="{}{0} очков"/>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
 
             <!-- Flashcard bottom buttons -->
             <StackPanel Grid.Row="2" Orientation="Vertical" 

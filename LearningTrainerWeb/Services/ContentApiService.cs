@@ -26,6 +26,7 @@ public interface IContentApiService
 
     // My Content
     Task<List<MyDictionaryItem>> GetMyDictionariesAsync();
+    Task<MyDictionaryFullDto?> GetMyDictionaryFullAsync(int id);
     Task<List<MyRuleItem>> GetMyRulesAsync();
     Task<MyRuleDetailItem?> GetMyRuleDetailsAsync(int id);
     Task<List<DownloadedItem>> GetDownloadedContentAsync();
@@ -205,6 +206,12 @@ public class ContentApiService : IContentApiService
         await ApplyAuthAsync();
         var result = await _httpClient.GetFromJsonAsync<List<MyDictionaryItem>>("api/marketplace/my/dictionaries");
         return result ?? new List<MyDictionaryItem>();
+    }
+
+    public async Task<MyDictionaryFullDto?> GetMyDictionaryFullAsync(int id)
+    {
+        await ApplyAuthAsync();
+        return await _httpClient.GetFromJsonAsync<MyDictionaryFullDto>($"api/dictionaries/{id}");
     }
 
     public async Task<List<MyRuleItem>> GetMyRulesAsync()
@@ -571,6 +578,25 @@ public class MyDictionaryItem
     public int SharedStudentCount { get; set; }
     public bool IsFromTeacher { get; set; }
     public string? TeacherName { get; set; }
+}
+
+public class MyDictionaryFullDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string? Description { get; set; }
+    public string LanguageFrom { get; set; } = "";
+    public string LanguageTo { get; set; } = "";
+    public List<MyDictionaryWordDto> Words { get; set; } = new();
+}
+
+public class MyDictionaryWordDto
+{
+    public int Id { get; set; }
+    public string OriginalWord { get; set; } = "";
+    public string Translation { get; set; } = "";
+    public string? Transcription { get; set; }
+    public string? Example { get; set; }
 }
 
 public class MyRuleItem

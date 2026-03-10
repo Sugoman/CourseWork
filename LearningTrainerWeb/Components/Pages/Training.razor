@@ -398,13 +398,88 @@
 
                     @if (AvailableTags.Count > 0)
                     {
-                        <div class="setting-group">
+                        <div class="setting-group setting-group--dropdown">
                             <span class="setting-label"><i class="bi bi-tags me-1"></i>Тег</span>
-                            <div class="setting-options">
-                                <button class="setting-pill @(SelectedTag == null ? "active" : "")" @onclick="() => SelectedTag = null">Все</button>
-                                @foreach (var tag in AvailableTags)
+                            <div class="filter-dropdown">
+                                <button class="filter-dropdown-toggle" @onclick="() => ToggleDropdown(nameof(_tagDropdownOpen))">
+                                    <span class="filter-dropdown-value">@(SelectedTag ?? "Все")</span>
+                                    <i class="bi bi-chevron-down filter-dropdown-arrow @(_tagDropdownOpen ? "open" : "")"></i>
+                                </button>
+                                @if (_tagDropdownOpen)
                                 {
-                                    <button class="setting-pill @(SelectedTag == tag ? "active" : "")" @onclick="() => SelectedTag = tag">@tag</button>
+                                    <div class="filter-dropdown-backdrop" @onclick="() => CloseDropdown(nameof(_tagDropdownOpen))"></div>
+                                    <div class="filter-dropdown-menu">
+                                        @if (AvailableTags.Count > 5)
+                                        {
+                                            <div class="filter-dropdown-search">
+                                                <i class="bi bi-search"></i>
+                                                <input type="text" placeholder="Поиск тега..." @bind="_tagSearch" @bind:event="oninput" />
+                                            </div>
+                                        }
+                                        <div class="filter-dropdown-items">
+                                            <button class="filter-dropdown-item @(SelectedTag == null ? "active" : "")"
+                                                    @onclick="() => { SelectedTag = null; _tagDropdownOpen = false; _tagSearch = string.Empty; }">
+                                                <span>Все</span>
+                                                <span class="filter-dropdown-count">@AvailableTags.Count</span>
+                                            </button>
+                                            @foreach (var tag in FilteredTags)
+                                            {
+                                                <button class="filter-dropdown-item @(SelectedTag == tag ? "active" : "")"
+                                                        @onclick="() => { SelectedTag = tag; SelectedDictionaryId = null; _tagDropdownOpen = false; _tagSearch = string.Empty; }">
+                                                    <span>@tag</span>
+                                                </button>
+                                            }
+                                            @if (!FilteredTags.Any())
+                                            {
+                                                <div class="filter-dropdown-empty">Ничего не найдено</div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (AvailableDictionaries.Count > 1)
+                    {
+                        <div class="setting-group setting-group--dropdown">
+                            <span class="setting-label"><i class="bi bi-book me-1"></i>Словарь</span>
+                            <div class="filter-dropdown">
+                                <button class="filter-dropdown-toggle" @onclick="() => ToggleDropdown(nameof(_dictDropdownOpen))">
+                                    <span class="filter-dropdown-value">@(SelectedDictionaryId.HasValue ? AvailableDictionaries.FirstOrDefault(d => d.Id == SelectedDictionaryId.Value)?.Name ?? "Все" : "Все")</span>
+                                    <i class="bi bi-chevron-down filter-dropdown-arrow @(_dictDropdownOpen ? "open" : "")"></i>
+                                </button>
+                                @if (_dictDropdownOpen)
+                                {
+                                    <div class="filter-dropdown-backdrop" @onclick="() => CloseDropdown(nameof(_dictDropdownOpen))"></div>
+                                    <div class="filter-dropdown-menu">
+                                        @if (AvailableDictionaries.Count > 5)
+                                        {
+                                            <div class="filter-dropdown-search">
+                                                <i class="bi bi-search"></i>
+                                                <input type="text" placeholder="Поиск словаря..." @bind="_dictSearch" @bind:event="oninput" />
+                                            </div>
+                                        }
+                                        <div class="filter-dropdown-items">
+                                            <button class="filter-dropdown-item @(SelectedDictionaryId == null ? "active" : "")"
+                                                    @onclick="() => { SelectedDictionaryId = null; _dictDropdownOpen = false; _dictSearch = string.Empty; }">
+                                                <span>Все</span>
+                                                <span class="filter-dropdown-count">@AvailableDictionaries.Sum(d => d.WordCount) слов</span>
+                                            </button>
+                                            @foreach (var dict in FilteredDictionaries)
+                                            {
+                                                <button class="filter-dropdown-item @(SelectedDictionaryId == dict.Id ? "active" : "")"
+                                                        @onclick="() => { SelectedDictionaryId = dict.Id; SelectedTag = null; _dictDropdownOpen = false; _dictSearch = string.Empty; }">
+                                                    <span>@dict.Name</span>
+                                                    <span class="filter-dropdown-count">@dict.WordCount слов</span>
+                                                </button>
+                                            }
+                                            @if (!FilteredDictionaries.Any())
+                                            {
+                                                <div class="filter-dropdown-empty">Ничего не найдено</div>
+                                            }
+                                        </div>
+                                    </div>
                                 }
                             </div>
                         </div>
@@ -1501,6 +1576,53 @@ private string SpellingCorrectWord = "";
 // Tags state (#9 LEARNING_IMPROVEMENTS)
 private List<string> AvailableTags = new();
 private string? SelectedTag;
+private bool _tagDropdownOpen;
+private string _tagSearch = "";
+
+// Dictionary selector state
+private List<DictionaryOption> AvailableDictionaries = new();
+private int? SelectedDictionaryId;
+private bool _dictDropdownOpen;
+private string _dictSearch = "";
+
+private IEnumerable<string> FilteredTags =>
+    string.IsNullOrWhiteSpace(_tagSearch)
+        ? AvailableTags
+        : AvailableTags.Where(t => t.Contains(_tagSearch, StringComparison.OrdinalIgnoreCase));
+
+private IEnumerable<DictionaryOption> FilteredDictionaries =>
+    string.IsNullOrWhiteSpace(_dictSearch)
+        ? AvailableDictionaries
+        : AvailableDictionaries.Where(d => d.Name.Contains(_dictSearch, StringComparison.OrdinalIgnoreCase));
+
+private void ToggleDropdown(string field)
+{
+    if (field == nameof(_tagDropdownOpen))
+    {
+        _tagDropdownOpen = !_tagDropdownOpen;
+        _dictDropdownOpen = false;
+        if (!_tagDropdownOpen) _tagSearch = "";
+    }
+    else if (field == nameof(_dictDropdownOpen))
+    {
+        _dictDropdownOpen = !_dictDropdownOpen;
+        _tagDropdownOpen = false;
+        if (!_dictDropdownOpen) _dictSearch = "";
+    }
+}
+
+private void CloseDropdown(string field)
+{
+    if (field == nameof(_tagDropdownOpen)) { _tagDropdownOpen = false; _tagSearch = ""; }
+    else if (field == nameof(_dictDropdownOpen)) { _dictDropdownOpen = false; _dictSearch = ""; }
+}
+
+private class DictionaryOption
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public int WordCount { get; set; }
+}
 
 // Leech manager state (P0 LEARNING_IMPROVEMENTS §1.1)
 private bool IsLeechManagerVisible;
@@ -1687,6 +1809,7 @@ protected override async Task OnInitializedAsync()
     {
         await LoadDailyPlan();
         AvailableTags = await ContentApi.GetDictionaryTagsAsync();
+        await LoadAvailableDictionaries();
         _ = LoadGrammarDueCount(); // Fire-and-forget, не блокирует UI
     }
 
@@ -1697,6 +1820,22 @@ private async Task LoadDailyPlan()
 {
     DailyPlan = await TrainingService.GetDailyPlanAsync();
     DailyChallenge = await TrainingService.GetDailyChallengeAsync();
+}
+
+private async Task LoadAvailableDictionaries()
+{
+    try
+    {
+        var dicts = await ContentApi.GetMyDictionariesAsync();
+        AvailableDictionaries = dicts
+            .Where(d => d.WordCount > 0)
+            .Select(d => new DictionaryOption { Id = d.Id, Name = d.Name, WordCount = d.WordCount })
+            .ToList();
+    }
+    catch
+    {
+        AvailableDictionaries = new();
+    }
 }
 
 private async Task InstallStarterPack()
@@ -1738,7 +1877,7 @@ private async Task InstallStarterPack()
         StateHasChanged();
 
         var limit = WordLimit > 0 ? WordLimit : 200;
-        TrainingWords = await TrainingService.GetTrainingWordsAsync(mode, limit: limit, tag: SelectedTag);
+        TrainingWords = await TrainingService.GetTrainingWordsAsync(mode, dictionaryId: SelectedDictionaryId, limit: limit, tag: SelectedTag);
 
         if (TrainingWords.Count > 0)
         {

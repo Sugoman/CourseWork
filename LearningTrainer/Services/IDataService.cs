@@ -83,6 +83,14 @@ namespace LearningTrainer.Services
         public int WordCount { get; set; }
     }
 
+    public class ImportResult
+    {
+        public string Message { get; set; } = "";
+        public int DictionaryId { get; set; }
+        public string Name { get; set; } = "";
+        public int WordCount { get; set; }
+    }
+
     #endregion
 
     public interface IDataService : IDisposable
@@ -150,6 +158,13 @@ namespace LearningTrainer.Services
         Task<DailyPlanDto?> GetDailyPlanAsync(int newWordsLimit = 10, int reviewLimit = 20);
         Task<List<TrainingWordDto>> GetTrainingWordsAsync(string mode, int? dictionaryId = null, int limit = 20);
         Task<StarterPackResult?> InstallStarterPackAsync();
+
+        // Leech Management (§18.3a)
+        Task<List<TrainingWordDto>> GetLeechWordsAsync();
+        Task<bool> UnsuspendWordAsync(int wordId);
+
+        // Import (§18.7a/b)
+        Task<ImportResult?> ImportCsvAsync(string name, string languageFrom, string languageTo, byte[] csvData);
 
         // Export
         Task<byte[]> ExportDictionaryAsJsonAsync(int dictionaryId);

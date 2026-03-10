@@ -825,6 +825,45 @@ namespace LearningTrainer.Services
             }
         }
 
+        // §18.3a — Leech Management
+        public async Task<List<TrainingWordDto>> GetLeechWordsAsync()
+        {
+            try
+            {
+                var result = await _httpClient.GetFromJsonAsync<List<TrainingWordDto>>("/api/progress/leeches", _jsonOptions);
+                return result ?? new();
+            }
+            catch { return new(); }
+        }
+
+        public async Task<bool> UnsuspendWordAsync(int wordId)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync($"/api/progress/unsuspend/{wordId}", null);
+                return response.IsSuccessStatusCode;
+            }
+            catch { return false; }
+        }
+
+        // §18.7b — Import CSV
+        public async Task<ImportResult?> ImportCsvAsync(string name, string languageFrom, string languageTo, byte[] csvData)
+        {
+            try
+            {
+                using var content = new MultipartFormDataContent();
+                content.Add(new ByteArrayContent(csvData), "file", $"{name}.csv");
+                content.Add(new StringContent(name), "dictionaryName");
+                content.Add(new StringContent(languageFrom), "languageFrom");
+                content.Add(new StringContent(languageTo), "languageTo");
+                var response = await _httpClient.PostAsync("/api/dictionaries/import/csv", content);
+                if (response.IsSuccessStatusCode)
+                    return await response.Content.ReadFromJsonAsync<ImportResult>(_jsonOptions);
+                return null;
+            }
+            catch { return null; }
+        }
+
         #endregion
 
         #region Statistics

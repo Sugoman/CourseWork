@@ -1,5 +1,20 @@
 /* ===== IMPORT MODAL ===== */
 
+/* Card title link */
+.card-title-link {
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.15s ease;
+}
+
+.card-title-link:hover {
+    color: var(--primary-500);
+}
+
+.card-title-link h5 {
+    margin-bottom: 0;
+}
+
 .import-modal-overlay {
     position: fixed;
     inset: 0;

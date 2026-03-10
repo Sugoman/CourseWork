@@ -16,6 +16,12 @@ namespace LearningTrainerShared.Models
         public int CurrentStreak { get; set; }
         public int BestStreak { get; set; }
 
+        // XP и уровни (§18.5a LEARNING_IMPROVEMENTS)
+        public long TotalXp { get; set; }
+        public int Level { get; set; }
+        public long XpForCurrentLevel { get; set; }
+        public long XpForNextLevel { get; set; }
+
         public List<ActivityPoint> ActivityLast7Days { get; set; } = new();
         public List<KnowledgeDistributionPoint> KnowledgeDistribution { get; set; } = new();
     }

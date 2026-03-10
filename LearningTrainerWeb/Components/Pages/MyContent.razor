@@ -94,7 +94,9 @@
                             <div class="card h-100 @(dict.IsFromTeacher ? "card-from-teacher" : dict.IsSharedWithStudents ? "card-shared" : "")">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <h5 class="card-title mb-0">@dict.Name</h5>
+                                        <a href="my-dictionary/@dict.Id" class="card-title-link">
+                                            <h5 class="card-title mb-0">@dict.Name</h5>
+                                        </a>
                                         <div class="d-flex gap-1 flex-wrap justify-content-end">
                                             @if (dict.IsFromTeacher)
                                             {
@@ -673,7 +675,7 @@
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
-            <div class="import-modal-body">
+            <div class="import-modal-body" style="max-height: 60vh; overflow-y: auto;">
                 <div class="import-field">
                     <label class="import-field-label">Название *</label>
                     <input type="text" class="form-control" @bind="NewDictName" placeholder="Например: IELTS Vocabulary" />

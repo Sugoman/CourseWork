@@ -195,6 +195,15 @@ namespace LearningAPI.Controllers
             var userStats = await _context.UserStats.FindAsync(userId);
             stats.BestStreak = userStats != null ? Math.Max(userStats.BestStreak, streak) : streak;
 
+            // XP и уровни (§18.5a LEARNING_IMPROVEMENTS)
+            if (userStats != null)
+            {
+                stats.TotalXp = userStats.TotalXp;
+                stats.Level = userStats.Level;
+                stats.XpForCurrentLevel = userStats.XpForCurrentLevel;
+                stats.XpForNextLevel = userStats.XpForNextLevel;
+            }
+
             stats.ActivityLast7Days = await progresses
                 .Where(p => p.LastPracticed >= fromDate)
                 .GroupBy(p => p.LastPracticed.Date)
