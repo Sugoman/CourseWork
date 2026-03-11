@@ -1,0 +1,3 @@
+{$MY_DOMAIN} {
+    reverse_proxy learningtrainerweb:8080
+}

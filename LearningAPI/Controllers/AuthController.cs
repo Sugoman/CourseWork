@@ -138,7 +138,9 @@ namespace LearningAPI.Controllers
                 Email = request.Email,
                 PasswordHash = passwordHash,
                 RoleId = roleToAssign.Id,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                TermsAcceptedAt = DateTime.UtcNow,
+                TermsVersion = request.AcceptedTermsVersion
             };
 
             _context.Users.Add(newUser);

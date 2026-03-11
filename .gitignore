@@ -411,3 +411,6 @@ FodyWeavers.xsd
 
 # Learn directory
 Learn/
+
+# env file
+.env

@@ -27,6 +27,12 @@ namespace LearningTrainerShared.Models
 
         public string? InviteCode { get; set; }
 
+        /// <summary>
+        /// Version of Terms of Service accepted during registration (e.g. "1.0").
+        /// </summary>
+        [Required(ErrorMessage = "Необходимо принять пользовательское соглашение")]
+        public string AcceptedTermsVersion { get; set; } = "";
+
         // Для обратной совместимости
         [Obsolete("Use Username instead")]
         public string? Login { get => Username; set => Username = value ?? ""; }

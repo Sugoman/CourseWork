@@ -135,6 +135,25 @@ services:
       - Ollama__BaseUrl=http://ollama:11434
       - Ollama__Model=qwen2.5:7b
 
+  # -------------------------------
+  # 6. Caddy (Reverse Proxy)
+  # -------------------------------
+  caddy:
+    image: caddy:latest
+    container_name: learning_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - MY_DOMAIN=${MY_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+
 volumes:
   sql_data:
   ollama_data:
+  caddy_data:
+  caddy_config:

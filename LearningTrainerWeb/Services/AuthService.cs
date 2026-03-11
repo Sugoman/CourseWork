@@ -11,7 +11,7 @@ namespace LearningTrainerWeb.Services;
 public interface IAuthService
 {
     Task<bool> LoginAsync(string username, string password, bool rememberMe);
-    Task<bool> RegisterAsync(string username, string email, string password);
+    Task<bool> RegisterAsync(string username, string email, string password, string termsVersion);
     Task LogoutAsync();
     Task<UserSession?> GetCurrentSessionAsync();
     Task InitializeAsync();
@@ -181,13 +181,14 @@ public class AuthService : IAuthService
         return false;
     }
 
-    public async Task<bool> RegisterAsync(string username, string email, string password)
+    public async Task<bool> RegisterAsync(string username, string email, string password, string termsVersion)
     {
         var request = new 
         { 
             Username = username,
             Email = email,
-            Password = password
+            Password = password,
+            AcceptedTermsVersion = termsVersion
         };
         var response = await _httpClient.PostAsJsonAsync("api/auth/register", request);
         return response.IsSuccessStatusCode;

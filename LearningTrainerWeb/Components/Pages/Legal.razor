@@ -1,0 +1,32 @@
+@page "/legal"
+
+<PageTitle>Пользовательское соглашение - Ingat</PageTitle>
+
+<div class="container">
+    <div class="row justify-content-center mt-4 mb-5">
+        <div class="col-lg-8">
+            <div class="card" style="border-radius: var(--radius-xl);">
+                <div class="card-body p-4 p-md-5">
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div style="font-size: 2rem; color: var(--primary-500);">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
+                        <div>
+                            <h1 class="h3 mb-0">Пользовательское соглашение</h1>
+                            <small class="text-muted">Версия @TermsVersion</small>
+                        </div>
+                    </div>
+
+                    <div class="markdown-content">
+                        @* TERMS.md content will be rendered here *@
+                        <p class="text-muted">Содержание соглашения будет добавлено позже.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private const string TermsVersion = "1.0";
+}

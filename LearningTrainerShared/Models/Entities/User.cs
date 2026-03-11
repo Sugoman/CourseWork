@@ -41,6 +41,11 @@ namespace LearningTrainerShared.Models
         public virtual ICollection<User> Students { get; set; } = new List<User>();
         public string? InviteCode { get; set; }
 
+        // Terms of Service acceptance
+        public DateTime? TermsAcceptedAt { get; set; }
+        [MaxLength(20)]
+        public string? TermsVersion { get; set; }
+
         // Для обратной совместимости со старым кодом
         [NotMapped]
         [Obsolete("Use Username instead")]

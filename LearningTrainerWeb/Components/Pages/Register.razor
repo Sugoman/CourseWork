@@ -103,6 +103,16 @@
                             <ValidationMessage For="() => RegisterModel.ConfirmPassword" class="text-danger small mt-1" />
                         </div>
 
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <InputCheckbox @bind-Value="RegisterModel.AcceptTerms" class="form-check-input" id="acceptTerms" />
+                                <label class="form-check-label" for="acceptTerms">
+                                    Я принимаю <a href="legal" target="_blank" class="fw-semibold">пользовательское соглашение</a>
+                                </label>
+                                <ValidationMessage For="() => RegisterModel.AcceptTerms" class="text-danger small d-block mt-1" />
+                            </div>
+                        </div>
+
                         <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@IsLoading">
                             @if (IsLoading)
                             {
@@ -125,6 +135,8 @@
 </div>
 
 @code {
+    private const string CurrentTermsVersion = "1.0";
+
     [SupplyParameterFromForm]
     private RegisterFormModel RegisterModel { get; set; } = new();
 
@@ -163,6 +175,12 @@
             return;
         }
 
+        if (!RegisterModel.AcceptTerms)
+        {
+            ErrorMessage = "Необходимо принять пользовательское соглашение";
+            return;
+        }
+
         IsLoading = true;
         ErrorMessage = null;
 
@@ -171,7 +189,8 @@
             var success = await AuthService.RegisterAsync(
                 RegisterModel.Username, 
                 RegisterModel.Email, 
-                RegisterModel.Password);
+                RegisterModel.Password,
+                CurrentTermsVersion);
 
             if (success)
             {
@@ -244,5 +263,8 @@
         [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Подтвердите пароль")]
         [System.ComponentModel.DataAnnotations.Compare(nameof(Password), ErrorMessage = "Пароли не совпадают")]
         public string ConfirmPassword { get; set; } = "";
+
+        [System.ComponentModel.DataAnnotations.Range(typeof(bool), "true", "true", ErrorMessage = "Необходимо принять пользовательское соглашение")]
+        public bool AcceptTerms { get; set; }
     }
 }
