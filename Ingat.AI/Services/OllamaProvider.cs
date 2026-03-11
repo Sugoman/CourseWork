@@ -27,7 +27,12 @@ public sealed class OllamaProvider : IAiProvider
 
         var baseUrl = config["Ollama:BaseUrl"] ?? "http://localhost:11434";
         _httpClient.BaseAddress = new Uri(baseUrl);
-        _httpClient.Timeout = TimeSpan.FromSeconds(120);
+
+        var timeoutSeconds = config.GetValue<int?>("Ollama:TimeoutSeconds") ?? 120;
+        _httpClient.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
+
+        _logger.LogInformation("Ollama configured: {BaseUrl}, model={Model}, timeout={Timeout}s",
+            baseUrl, _model, timeoutSeconds);
     }
 
     public async Task<string> CompleteAsync(string systemPrompt, string userPrompt, CancellationToken ct = default, int? maxTokens = null)
