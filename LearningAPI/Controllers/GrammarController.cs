@@ -2,6 +2,8 @@ using LearningAPI.Extensions;
 using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
 using LearningTrainerShared.Services;
+using Markdig;
+using Ganss.Xss;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -23,11 +25,25 @@ namespace LearningAPI.Controllers
         private readonly ISpacedRepetitionService _srs;
         private readonly IDistributedCache _cache;
 
+        private static readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .UseEmojiAndSmiley()
+            .Build();
+
+        private static readonly HtmlSanitizer _htmlSanitizer = LearningTrainerShared.Services.SharedSanitizerFactory.Create();
+
         public GrammarController(ApiDbContext context, ISpacedRepetitionService srs, IDistributedCache cache)
         {
             _context = context;
             _srs = srs;
             _cache = cache;
+        }
+
+        private static string ConvertMarkdownToHtml(string? markdown)
+        {
+            if (string.IsNullOrEmpty(markdown)) return "";
+            var html = Markdown.ToHtml(markdown, _markdownPipeline);
+            return _htmlSanitizer.Sanitize(html);
         }
 
         /// <summary>
@@ -118,6 +134,62 @@ namespace LearningAPI.Controllers
             .ToList();
 
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Получить детали правила: теория (HTML), прогресс, метаданные.
+        /// Для страницы навыка с вкладками (§17.5.2).
+        /// </summary>
+        [HttpGet("{ruleId:int}/details")]
+        public async Task<IActionResult> GetRuleDetail(int ruleId)
+        {
+            var userId = GetUserId();
+
+            var sharedRuleIds = await _context.RuleSharings
+                .Where(rs => rs.StudentId == userId)
+                .Select(rs => rs.RuleId)
+                .ToListAsync();
+
+            var rule = await _context.Rules
+                .IgnoreQueryFilters()
+                .Include(r => r.Exercises)
+                .FirstOrDefaultAsync(r => r.Id == ruleId &&
+                    (r.UserId == userId || sharedRuleIds.Contains(r.Id)));
+
+            if (rule == null)
+                return NotFound("Правило не найдено");
+
+            var progress = await _context.GrammarProgresses
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(gp => gp.UserId == userId && gp.RuleId == ruleId);
+
+            return Ok(new
+            {
+                rule.Id,
+                rule.Title,
+                rule.Description,
+                rule.Category,
+                rule.DifficultyLevel,
+                rule.SkillTreeLevel,
+                rule.IconEmoji,
+                rule.SkillSummary,
+                rule.XpReward,
+                HtmlContent = ConvertMarkdownToHtml(rule.MarkdownContent),
+                ExerciseCount = rule.Exercises.Count,
+                // Progress
+                KnowledgeLevel = progress?.KnowledgeLevel ?? 0,
+                EaseFactor = progress?.EaseFactor ?? 2.5,
+                IntervalDays = progress?.IntervalDays ?? 0,
+                NextReview = progress?.NextReview,
+                TotalSessions = progress?.TotalSessions ?? 0,
+                CorrectAnswers = progress?.CorrectAnswers ?? 0,
+                TotalAnswers = progress?.TotalAnswers ?? 0,
+                AccuracyPercent = (progress?.TotalAnswers ?? 0) > 0
+                    ? Math.Round((double)(progress!.CorrectAnswers) / progress.TotalAnswers * 100, 1)
+                    : 0.0,
+                LastPracticeDate = progress?.LastPracticeDate,
+                LapseCount = progress?.LapseCount ?? 0
+            });
         }
 
         /// <summary>

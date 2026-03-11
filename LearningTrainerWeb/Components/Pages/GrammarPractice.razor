@@ -1,10 +1,11 @@
 @page "/grammar/{RuleId:int}"
 @using LearningTrainerWeb.Services
 @inject IGrammarApiService GrammarApi
+@inject IHtmlSanitizerService HtmlSanitizer
 @inject NavigationManager Navigation
 @inject ILogger<GrammarPractice> Logger
 
-<PageTitle>Практика грамматики - Ingat</PageTitle>
+<PageTitle>@(RuleDetail?.Title ?? "Грамматика") - Ingat</PageTitle>
 
 <div class="container" style="max-width: 800px;">
     @if (IsLoading)
@@ -13,325 +14,621 @@
             <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
                 <span class="visually-hidden">Загрузка...</span>
             </div>
-            <p class="text-muted mt-3">Загрузка упражнений...</p>
+            <p class="text-muted mt-3">Загрузка...</p>
         </div>
     }
-    else if (Session == null || !Session.Exercises.Any())
+    else if (RuleDetail == null)
     {
         <div class="empty-state-card">
             <div class="empty-state-icon">
                 <i class="bi bi-journal-x"></i>
             </div>
-            <h3>Нет упражнений</h3>
-            <p class="text-muted mb-4">Для этого правила ещё нет упражнений. Добавьте их в редакторе правила.</p>
+            <h3>Правило не найдено</h3>
+            <p class="text-muted mb-4">Возможно, оно было удалено или у вас нет доступа.</p>
             <a href="/grammar" class="btn btn-primary">
                 <i class="bi bi-arrow-left me-2"></i> К грамматике
             </a>
         </div>
     }
-    else if (ShowResults)
+    else
     {
-        <!-- Results screen -->
-        <div class="card" style="border-radius: var(--radius-lg);">
-            <div class="card-body text-center p-5">
-                <div class="fs-1 mb-3">
-                    @if (SessionResult != null && SessionResult.AccuracyPercent >= 80)
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb" style="background: transparent; padding: 0; margin: 0;">
+                <li class="breadcrumb-item">
+                    <a href="/grammar" style="color: var(--primary-600, #4f46e5);">
+                        <i class="bi bi-book-half me-1"></i> Грамматика
+                    </a>
+                </li>
+                <li class="breadcrumb-item active" style="color: var(--gray-500, #6b7280);">@RuleDetail.Title</li>
+            </ol>
+        </nav>
+
+        <!-- Header -->
+        <div class="d-flex align-items-center gap-3 mb-4">
+            @if (!string.IsNullOrEmpty(RuleDetail.IconEmoji))
+            {
+                <span class="fs-1">@RuleDetail.IconEmoji</span>
+            }
+            <div class="flex-grow-1">
+                <h2 class="mb-1">@RuleDetail.Title</h2>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    @if (!string.IsNullOrEmpty(RuleDetail.Category))
                     {
-                        <span>🎉</span>
+                        <span class="badge bg-secondary">@RuleDetail.Category</span>
                     }
-                    else if (SessionResult != null && SessionResult.AccuracyPercent >= 50)
+                    <span class="badge @GetDifficultyBadgeClass(RuleDetail.DifficultyLevel)">
+                        @GetDifficultyText(RuleDetail.DifficultyLevel)
+                    </span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary">+@RuleDetail.XpReward XP</span>
+                </div>
+            </div>
+            <div class="text-end">
+                @for (int i = 1; i <= 5; i++)
+                {
+                    if (i <= RuleDetail.KnowledgeLevel)
                     {
-                        <span>👍</span>
+                        <i class="bi bi-star-fill text-warning fs-5"></i>
                     }
                     else
                     {
-                        <span>💪</span>
+                        <i class="bi bi-star text-muted fs-5"></i>
                     }
-                </div>
-                <h2 class="mb-3">@Session.RuleTitle</h2>
-
-                @if (SessionResult != null)
-                {
-                    <div class="row g-3 mb-4 justify-content-center">
-                        <div class="col-auto">
-                            <div class="stat-pill">
-                                <span class="stat-value text-success">@SessionResult.CorrectAnswers</span>
-                                <span class="stat-label">Верно</span>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <div class="stat-pill">
-                                <span class="stat-value text-danger">@(SessionResult.TotalAnswers - SessionResult.CorrectAnswers)</span>
-                                <span class="stat-label">Ошибок</span>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <div class="stat-pill">
-                                <span class="stat-value">@SessionResult.AccuracyPercent%</span>
-                                <span class="stat-label">Точность</span>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            <div class="stat-pill">
-                                <span class="stat-value text-primary">+@SessionResult.XpEarned XP</span>
-                                <span class="stat-label">Опыт</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Level display -->
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
-                            @for (int i = 1; i <= 5; i++)
-                            {
-                                if (i <= SessionResult.KnowledgeLevel)
-                                {
-                                    <i class="bi bi-star-fill text-warning fs-4"></i>
-                                }
-                                else
-                                {
-                                    <i class="bi bi-star text-muted fs-4"></i>
-                                }
-                            }
-                        </div>
-                        @if (SessionResult.LevelUp)
-                        {
-                            <div class="badge bg-success fs-6 px-3 py-2">
-                                🎯 Уровень повышен! ⭐@SessionResult.PreviousLevel → ⭐@SessionResult.KnowledgeLevel
-                            </div>
-                        }
-                        @if (SessionResult.NextReview.HasValue)
-                        {
-                            <p class="text-muted mt-2 small">
-                                Следующее повторение: @SessionResult.NextReview.Value.ToLocalTime().ToString("dd.MM.yyyy")
-                            </p>
-                        }
-                    </div>
                 }
-
-                <div class="d-flex justify-content-center gap-3">
-                    <button class="btn btn-primary" @onclick="RetryPractice">
-                        <i class="bi bi-arrow-repeat me-1"></i> Ещё раз
-                    </button>
-                    <a href="/grammar" class="btn btn-outline-primary">
-                        <i class="bi bi-arrow-left me-1"></i> К грамматике
-                    </a>
-                </div>
             </div>
         </div>
-    }
-    else
-    {
-        <!-- Practice session -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="mb-0">
-                @Session.RuleTitle
-            </h4>
-            <span class="badge bg-primary fs-6">
-                @(CurrentExerciseIndex + 1) / @Session.Exercises.Count
-            </span>
-        </div>
 
-        <!-- Progress bar -->
-        <div class="progress mb-4" style="height: 8px; border-radius: 4px;">
-            <div class="progress-bar" style="width: @(((double)(CurrentExerciseIndex) / Session.Exercises.Count * 100).ToString("F0"))%"></div>
-        </div>
-
-        <div class="card" style="border-radius: var(--radius-lg);">
-            <div class="card-body p-4">
-                <!-- Exercise type badge -->
-                <div class="mb-3">
-                    <span class="badge bg-secondary">@GetExerciseTypeLabel(CurrentExercise.ExerciseType)</span>
-                    @if (CurrentExercise.DifficultyTier > 1)
+        <!-- Tabs -->
+        <ul class="nav nav-tabs grammar-tabs mb-4">
+            <li class="nav-item">
+                <button class="nav-link @(ActiveTab == "theory" ? "active" : "")"
+                        @onclick='() => SwitchTab("theory")'>
+                    <i class="bi bi-book me-1"></i> Теория
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link @(ActiveTab == "practice" ? "active" : "")"
+                        @onclick="StartPracticeTab"
+                        disabled="@(RuleDetail.ExerciseCount == 0)">
+                    <i class="bi bi-pencil-square me-1"></i> Практика
+                    @if (RuleDetail.ExerciseCount > 0)
                     {
-                        <span class="badge bg-warning text-dark ms-1">
-                            @(CurrentExercise.DifficultyTier == 2 ? "Средний" : "Сложный")
-                        </span>
+                        <span class="badge bg-secondary bg-opacity-25 text-secondary ms-1">@RuleDetail.ExerciseCount</span>
+                    }
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link @(ActiveTab == "progress" ? "active" : "")"
+                        @onclick='() => SwitchTab("progress")'>
+                    <i class="bi bi-graph-up me-1"></i> Прогресс
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab: Theory -->
+        @if (ActiveTab == "theory")
+        {
+            <div class="card" style="border-radius: var(--radius-lg, 12px);">
+                <div class="card-body p-4">
+                    @if (!string.IsNullOrEmpty(RuleDetail.Description))
+                    {
+                        <p class="text-muted mb-4" style="font-size: 1.05rem;">@RuleDetail.Description</p>
+                    }
+                    @if (!string.IsNullOrEmpty(RuleDetail.HtmlContent))
+                    {
+                        <div class="markdown-content">
+                            @((MarkupString)HtmlSanitizer.Sanitize(RuleDetail.HtmlContent))
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center py-4">Теория для этого правила пока не добавлена.</p>
                     }
                 </div>
+            </div>
 
-                <!-- Question -->
-                <h5 class="mb-4">@CurrentExercise.Question</h5>
+            @if (RuleDetail.ExerciseCount > 0)
+            {
+                <div class="text-center mt-4">
+                    <button class="btn btn-primary btn-lg" @onclick="StartPracticeTab">
+                        <i class="bi bi-pencil-square me-2"></i> Перейти к практике
+                    </button>
+                </div>
+            }
+        }
 
-                @switch (CurrentExercise.ExerciseType)
-                {
-                    case "mcq":
-                        <!-- MCQ: варианты ответов -->
-                        <div class="d-grid gap-2">
-                            @for (int i = 0; i < CurrentExercise.GetOptions().Length; i++)
+        <!-- Tab: Practice -->
+        @if (ActiveTab == "practice")
+        {
+            @if (IsPracticeLoading)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                    <p class="text-muted mt-3">Подготовка упражнений...</p>
+                </div>
+            }
+            else if (Session == null || !Session.Exercises.Any())
+            {
+                <div class="empty-state-card">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-journal-x"></i>
+                    </div>
+                    <h3>Нет упражнений</h3>
+                    <p class="text-muted mb-4">Для этого правила ещё нет упражнений. Добавьте их в редакторе.</p>
+                </div>
+            }
+            else if (ShowResults)
+            {
+                <!-- Results screen -->
+                <div class="card" style="border-radius: var(--radius-lg, 12px);">
+                    <div class="card-body text-center p-5">
+                        <div class="fs-1 mb-3">
+                            @if (SessionResult != null && SessionResult.AccuracyPercent >= 80)
                             {
-                                var idx = i;
-                                var option = CurrentExercise.GetOptions()[idx];
-                                string btnClass = "btn btn-outline-secondary btn-lg text-start";
-                                bool isDisabled = HasAnswered;
-
-                                if (HasAnswered)
-                                {
-                                    if (idx == CurrentExercise.CorrectIndex)
-                                        btnClass = "btn btn-success btn-lg text-start";
-                                    else if (idx == SelectedMcqIndex)
-                                        btnClass = "btn btn-danger btn-lg text-start";
-                                }
-                                else if (idx == SelectedMcqIndex)
-                                {
-                                    btnClass = "btn btn-primary btn-lg text-start";
-                                }
-
-                                <button class="@btnClass" disabled="@isDisabled"
-                                        @onclick="() => SelectMcqOption(idx)">
-                                    @option
-                                </button>
+                                <span>🎉</span>
+                            }
+                            else if (SessionResult != null && SessionResult.AccuracyPercent >= 50)
+                            {
+                                <span>👍</span>
+                            }
+                            else
+                            {
+                                <span>💪</span>
                             }
                         </div>
-                        break;
+                        <h2 class="mb-3">@Session.RuleTitle</h2>
 
-                    case "error_correction":
-                        <!-- Error Correction: показать предложение с ошибкой -->
-                        @if (!string.IsNullOrEmpty(CurrentExercise.IncorrectSentence))
+                        @if (SessionResult != null)
                         {
-                            <div class="alert alert-warning mb-3">
-                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                <strong>@CurrentExercise.IncorrectSentence</strong>
+                            <div class="row g-3 mb-4 justify-content-center">
+                                <div class="col-auto">
+                                    <div class="stat-pill">
+                                        <span class="stat-value text-success">@SessionResult.CorrectAnswers</span>
+                                        <span class="stat-label">Верно</span>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="stat-pill">
+                                        <span class="stat-value text-danger">@(SessionResult.TotalAnswers - SessionResult.CorrectAnswers)</span>
+                                        <span class="stat-label">Ошибок</span>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="stat-pill">
+                                        <span class="stat-value">@SessionResult.AccuracyPercent%</span>
+                                        <span class="stat-label">Точность</span>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <div class="stat-pill">
+                                        <span class="stat-value text-primary">+@SessionResult.XpEarned XP</span>
+                                        <span class="stat-label">Опыт</span>
+                                    </div>
+                                </div>
                             </div>
-                        }
-                        <div class="mb-3">
-                            <input type="text" class="form-control form-control-lg"
-                                   placeholder="Исправьте ошибку..."
-                                   @bind="TextAnswer"
-                                   @bind:event="oninput"
-                                   @onkeydown="OnTextKeyDown"
-                                   disabled="@HasAnswered" />
-                        </div>
-                        if (!HasAnswered)
-                        {
-                            <button class="btn btn-primary" @onclick="SubmitTextAnswer" disabled="@string.IsNullOrWhiteSpace(TextAnswer)">
-                                Проверить
-                            </button>
-                        }
-                        break;
 
-                    case "transformation":
-                    case "translation":
-                        <!-- Text input answer -->
-                        <div class="mb-3">
-                            <input type="text" class="form-control form-control-lg"
-                                   placeholder="@(CurrentExercise.ExerciseType == "translation" ? "Введите перевод..." : "Введите преобразованное предложение...")"
-                                   @bind="TextAnswer"
-                                   @bind:event="oninput"
-                                   @onkeydown="OnTextKeyDown"
-                                   disabled="@HasAnswered" />
-                        </div>
-                        if (!HasAnswered)
-                        {
-                            <button class="btn btn-primary" @onclick="SubmitTextAnswer" disabled="@string.IsNullOrWhiteSpace(TextAnswer)">
-                                Проверить
-                            </button>
-                        }
-                        break;
-
-                    case "word_order":
-                        <!-- Word Order: перетаскивание слов -->
-                        <div class="mb-3">
-                            <div class="d-flex flex-wrap gap-2 mb-3">
-                                @foreach (var word in AvailableWords)
+                            <!-- Level display -->
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= SessionResult.KnowledgeLevel)
+                                        {
+                                            <i class="bi bi-star-fill text-warning fs-4"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-star text-muted fs-4"></i>
+                                        }
+                                    }
+                                </div>
+                                @if (SessionResult.LevelUp)
                                 {
-                                    var w = word;
-                                    <button class="btn btn-outline-primary" @onclick="() => AddWordToOrder(w)">
-                                        @w
-                                    </button>
+                                    <div class="badge bg-success fs-6 px-3 py-2">
+                                        🎯 Уровень повышен! ⭐@SessionResult.PreviousLevel → ⭐@SessionResult.KnowledgeLevel
+                                    </div>
+                                }
+                                @if (SessionResult.NextReview.HasValue)
+                                {
+                                    <p class="text-muted mt-2 small">
+                                        Следующее повторение: @SessionResult.NextReview.Value.ToLocalTime().ToString("dd.MM.yyyy")
+                                    </p>
                                 }
                             </div>
-                            <div class="border rounded p-3 min-vh-5" style="min-height: 50px;">
-                                @if (OrderedWords.Any())
+                        }
+
+                        <div class="d-flex justify-content-center gap-3">
+                            <button class="btn btn-primary" @onclick="RetryPractice">
+                                <i class="bi bi-arrow-repeat me-1"></i> Ещё раз
+                            </button>
+                            <button class="btn btn-outline-primary" @onclick='() => SwitchTab("progress")'>
+                                <i class="bi bi-graph-up me-1"></i> Прогресс
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Practice session -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-muted">Вопрос</span>
+                    <span class="badge bg-primary fs-6">
+                        @(CurrentExerciseIndex + 1) / @Session.Exercises.Count
+                    </span>
+                </div>
+
+                <!-- Progress bar -->
+                <div class="progress mb-4" style="height: 8px; border-radius: 4px;">
+                    <div class="progress-bar" style="width: @(((double)(CurrentExerciseIndex) / Session.Exercises.Count * 100).ToString("F0"))%"></div>
+                </div>
+
+                <div class="card" style="border-radius: var(--radius-lg, 12px);">
+                    <div class="card-body p-4">
+                        <!-- Exercise type badge -->
+                        <div class="mb-3">
+                            <span class="badge bg-secondary">@GetExerciseTypeLabel(CurrentExercise.ExerciseType)</span>
+                            @if (CurrentExercise.DifficultyTier > 1)
+                            {
+                                <span class="badge bg-warning text-dark ms-1">
+                                    @(CurrentExercise.DifficultyTier == 2 ? "Средний" : "Сложный")
+                                </span>
+                            }
+                        </div>
+
+                        <!-- Question -->
+                        <h5 class="mb-4">@CurrentExercise.Question</h5>
+
+                        @switch (CurrentExercise.ExerciseType)
+                        {
+                            case "mcq":
+                                <div class="d-grid gap-2">
+                                    @for (int i = 0; i < CurrentExercise.GetOptions().Length; i++)
+                                    {
+                                        var idx = i;
+                                        var option = CurrentExercise.GetOptions()[idx];
+                                        string btnClass = "btn btn-outline-secondary btn-lg text-start";
+                                        bool isDisabled = HasAnswered;
+
+                                        if (HasAnswered)
+                                        {
+                                            if (idx == CurrentExercise.CorrectIndex)
+                                                btnClass = "btn btn-success btn-lg text-start";
+                                            else if (idx == SelectedMcqIndex)
+                                                btnClass = "btn btn-danger btn-lg text-start";
+                                        }
+                                        else if (idx == SelectedMcqIndex)
+                                        {
+                                            btnClass = "btn btn-primary btn-lg text-start";
+                                        }
+
+                                        <button class="@btnClass" disabled="@isDisabled"
+                                                @onclick="() => SelectMcqOption(idx)">
+                                            @option
+                                        </button>
+                                    }
+                                </div>
+                                break;
+
+                            case "error_correction":
+                                @if (!string.IsNullOrEmpty(CurrentExercise.IncorrectSentence))
                                 {
-                                    <div class="d-flex flex-wrap gap-2">
-                                        @foreach (var word in OrderedWords)
+                                    <div class="alert alert-warning mb-3">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        <strong>@CurrentExercise.IncorrectSentence</strong>
+                                    </div>
+                                }
+                                <div class="mb-3">
+                                    <input type="text" class="form-control form-control-lg"
+                                           placeholder="Исправьте ошибку..."
+                                           @bind="TextAnswer"
+                                           @bind:event="oninput"
+                                           @onkeydown="OnTextKeyDown"
+                                           disabled="@HasAnswered" />
+                                </div>
+                                if (!HasAnswered)
+                                {
+                                    <button class="btn btn-primary" @onclick="SubmitTextAnswer" disabled="@string.IsNullOrWhiteSpace(TextAnswer)">
+                                        Проверить
+                                    </button>
+                                }
+                                break;
+
+                            case "transformation":
+                            case "translation":
+                                <div class="mb-3">
+                                    <input type="text" class="form-control form-control-lg"
+                                           placeholder="@(CurrentExercise.ExerciseType == "translation" ? "Введите перевод..." : "Введите преобразованное предложение...")"
+                                           @bind="TextAnswer"
+                                           @bind:event="oninput"
+                                           @onkeydown="OnTextKeyDown"
+                                           disabled="@HasAnswered" />
+                                </div>
+                                if (!HasAnswered)
+                                {
+                                    <button class="btn btn-primary" @onclick="SubmitTextAnswer" disabled="@string.IsNullOrWhiteSpace(TextAnswer)">
+                                        Проверить
+                                    </button>
+                                }
+                                break;
+
+                            case "word_order":
+                                <div class="mb-3">
+                                    <div class="d-flex flex-wrap gap-2 mb-3">
+                                        @foreach (var word in AvailableWords)
                                         {
                                             var w = word;
-                                            <button class="btn btn-primary btn-sm" @onclick="() => RemoveWordFromOrder(w)" disabled="@HasAnswered">
-                                                @w <i class="bi bi-x ms-1"></i>
+                                            <button class="btn btn-outline-primary" @onclick="() => AddWordToOrder(w)">
+                                                @w
                                             </button>
                                         }
+                                    </div>
+                                    <div class="border rounded p-3" style="min-height: 50px;">
+                                        @if (OrderedWords.Any())
+                                        {
+                                            <div class="d-flex flex-wrap gap-2">
+                                                @foreach (var word in OrderedWords)
+                                                {
+                                                    var w = word;
+                                                    <button class="btn btn-primary btn-sm" @onclick="() => RemoveWordFromOrder(w)" disabled="@HasAnswered">
+                                                        @w <i class="bi bi-x ms-1"></i>
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Нажимайте на слова для составления предложения...</span>
+                                        }
+                                    </div>
+                                </div>
+                                if (!HasAnswered && OrderedWords.Any())
+                                {
+                                    <button class="btn btn-primary" @onclick="SubmitWordOrder">
+                                        Проверить
+                                    </button>
+                                }
+                                break;
+
+                            case "matching":
+                                <!-- Matching: сопоставление левых и правых элементов -->
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        @for (int i = 0; i < GetMatchingLeftItems().Length; i++)
+                                        {
+                                            var li = i;
+                                            var leftArr = GetMatchingLeftItems();
+                                            string leftClass = "btn btn-outline-secondary w-100 text-start mb-2";
+                                            if (MatchingSelectedLeft == li)
+                                                leftClass = "btn btn-primary w-100 text-start mb-2";
+                                            if (HasAnswered && MatchingPairs.ContainsKey(li))
+                                            {
+                                                leftClass = MatchingPairs[li] == li
+                                                    ? "btn btn-success w-100 text-start mb-2"
+                                                    : "btn btn-danger w-100 text-start mb-2";
+                                            }
+                                            <button class="@leftClass" disabled="@HasAnswered"
+                                                    @onclick="() => SelectMatchingLeft(li)">
+                                                @leftArr[li]
+                                            </button>
+                                        }
+                                    </div>
+                                    <div class="col-6">
+                                        @for (int i = 0; i < GetMatchingRightItems().Length; i++)
+                                        {
+                                            var ri = i;
+                                            var rightArr = GetMatchingRightItems();
+                                            string rightClass = "btn btn-outline-secondary w-100 text-start mb-2";
+                                            if (HasAnswered && MatchingPairs.ContainsValue(ri))
+                                            {
+                                                var leftIdx = MatchingPairs.First(p => p.Value == ri).Key;
+                                                rightClass = leftIdx == ri
+                                                    ? "btn btn-success w-100 text-start mb-2"
+                                                    : "btn btn-danger w-100 text-start mb-2";
+                                            }
+                                            <button class="@rightClass" disabled="@(HasAnswered || MatchingSelectedLeft == null)"
+                                                    @onclick="() => SelectMatchingRight(ri)">
+                                                @rightArr[ri]
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                                if (!HasAnswered && MatchingPairs.Count > 0 && MatchingPairs.Count == GetMatchingLeftItems().Length)
+                                {
+                                    <button class="btn btn-primary mt-3" @onclick="SubmitMatching">
+                                        Проверить
+                                    </button>
+                                }
+                                break;
+
+                            default:
+                                <div class="mb-3">
+                                    <input type="text" class="form-control form-control-lg"
+                                           placeholder="Введите ответ..."
+                                           @bind="TextAnswer"
+                                           @bind:event="oninput"
+                                           @onkeydown="OnTextKeyDown"
+                                           disabled="@HasAnswered" />
+                                </div>
+                                if (!HasAnswered)
+                                {
+                                    <button class="btn btn-primary" @onclick="SubmitTextAnswer" disabled="@string.IsNullOrWhiteSpace(TextAnswer)">
+                                        Проверить
+                                    </button>
+                                }
+                                break;
+                        }
+
+                        <!-- Feedback -->
+                        @if (HasAnswered)
+                        {
+                            <div class="mt-4">
+                                @if (CurrentAnswerCorrect)
+                                {
+                                    <div class="alert alert-success">
+                                        <i class="bi bi-check-circle-fill me-2"></i>
+                                        <strong>Правильно!</strong>
                                     </div>
                                 }
                                 else
                                 {
-                                    <span class="text-muted">Нажимайте на слова для составления предложения...</span>
+                                    <div class="alert alert-danger">
+                                        <i class="bi bi-x-circle-fill me-2"></i>
+                                        <strong>Неверно.</strong>
+                                        @if (!string.IsNullOrEmpty(CurrentExercise.CorrectAnswer))
+                                        {
+                                            <span> Правильный ответ: <strong>@CurrentExercise.CorrectAnswer</strong></span>
+                                        }
+                                        else if (CurrentExercise.ExerciseType == "mcq")
+                                        {
+                                            var opts = CurrentExercise.GetOptions();
+                                            if (CurrentExercise.CorrectIndex >= 0 && CurrentExercise.CorrectIndex < opts.Length)
+                                            {
+                                                <span> Правильный ответ: <strong>@opts[CurrentExercise.CorrectIndex]</strong></span>
+                                            }
+                                        }
+                                    </div>
                                 }
-                            </div>
-                        </div>
-                        if (!HasAnswered && OrderedWords.Any())
-                        {
-                            <button class="btn btn-primary" @onclick="SubmitWordOrder">
-                                Проверить
-                            </button>
-                        }
-                        break;
+                                @if (!string.IsNullOrEmpty(CurrentExercise.Explanation))
+                                {
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-lightbulb me-2"></i>
+                                        @CurrentExercise.Explanation
+                                    </div>
+                                }
 
-                    default:
-                        <!-- Fallback: text input -->
-                        <div class="mb-3">
-                            <input type="text" class="form-control form-control-lg"
-                                   placeholder="Введите ответ..."
-                                   @bind="TextAnswer"
-                                   @bind:event="oninput"
-                                   @onkeydown="OnTextKeyDown"
-                                   disabled="@HasAnswered" />
-                        </div>
-                        if (!HasAnswered)
-                        {
-                            <button class="btn btn-primary" @onclick="SubmitTextAnswer" disabled="@string.IsNullOrWhiteSpace(TextAnswer)">
-                                Проверить
-                            </button>
-                        }
-                        break;
-                }
-
-                <!-- Feedback -->
-                @if (HasAnswered)
-                {
-                    <div class="mt-4">
-                        @if (CurrentAnswerCorrect)
-                        {
-                            <div class="alert alert-success">
-                                <i class="bi bi-check-circle-fill me-2"></i>
-                                <strong>Правильно!</strong>
+                                <button class="btn btn-primary btn-lg w-100 mt-2" @onclick="NextExercise">
+                                    @(CurrentExerciseIndex < Session.Exercises.Count - 1 ? "Далее →" : "Завершить 🏁")
+                                </button>
                             </div>
                         }
-                        else
-                        {
-                            <div class="alert alert-danger">
-                                <i class="bi bi-x-circle-fill me-2"></i>
-                                <strong>Неверно.</strong>
-                                @if (!string.IsNullOrEmpty(CurrentExercise.CorrectAnswer))
+                    </div>
+                </div>
+            }
+        }
+
+        <!-- Tab: Progress -->
+        @if (ActiveTab == "progress")
+        {
+            <div class="card" style="border-radius: var(--radius-lg, 12px);">
+                <div class="card-body p-4">
+                    @if (RuleDetail.TotalSessions == 0)
+                    {
+                        <div class="text-center py-4">
+                            <div class="fs-1 mb-3">📊</div>
+                            <h5>Пока нет данных</h5>
+                            <p class="text-muted mb-3">Пройдите хотя бы одну сессию практики, чтобы увидеть прогресс.</p>
+                            @if (RuleDetail.ExerciseCount > 0)
+                            {
+                                <button class="btn btn-primary" @onclick="StartPracticeTab">
+                                    <i class="bi bi-pencil-square me-1"></i> Начать практику
+                                </button>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Level & Stars -->
+                        <div class="text-center mb-4">
+                            <h5 class="mb-2">Уровень мастерства</h5>
+                            <div class="d-flex justify-content-center align-items-center gap-2 mb-2">
+                                @for (int i = 1; i <= 5; i++)
                                 {
-                                    <span> Правильный ответ: <strong>@CurrentExercise.CorrectAnswer</strong></span>
-                                }
-                                else if (CurrentExercise.ExerciseType == "mcq")
-                                {
-                                    var opts = CurrentExercise.GetOptions();
-                                    if (CurrentExercise.CorrectIndex >= 0 && CurrentExercise.CorrectIndex < opts.Length)
+                                    if (i <= RuleDetail.KnowledgeLevel)
                                     {
-                                        <span> Правильный ответ: <strong>@opts[CurrentExercise.CorrectIndex]</strong></span>
+                                        <i class="bi bi-star-fill text-warning fs-3"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-star text-muted fs-3"></i>
                                     }
                                 }
                             </div>
-                        }
-                        @if (!string.IsNullOrEmpty(CurrentExercise.Explanation))
-                        {
-                            <div class="alert alert-info">
-                                <i class="bi bi-lightbulb me-2"></i>
-                                @CurrentExercise.Explanation
-                            </div>
-                        }
+                            <span class="badge @GetLevelBadgeClass(RuleDetail.KnowledgeLevel) fs-6">
+                                @GetLevelText(RuleDetail.KnowledgeLevel)
+                            </span>
+                        </div>
 
-                        <button class="btn btn-primary btn-lg w-100 mt-2" @onclick="NextExercise">
-                            @(CurrentExerciseIndex < Session.Exercises.Count - 1 ? "Далее →" : "Завершить 🏁")
-                        </button>
-                    </div>
-                }
+                        <hr />
+
+                        <!-- Stats grid -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-6 col-md-3">
+                                <div class="stat-pill text-center">
+                                    <span class="stat-value">@RuleDetail.AccuracyPercent%</span>
+                                    <span class="stat-label">Точность</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="stat-pill text-center">
+                                    <span class="stat-value">@RuleDetail.TotalSessions</span>
+                                    <span class="stat-label">Сессий</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="stat-pill text-center">
+                                    <span class="stat-value text-success">@RuleDetail.CorrectAnswers</span>
+                                    <span class="stat-label">Верных</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="stat-pill text-center">
+                                    <span class="stat-value text-danger">@(RuleDetail.TotalAnswers - RuleDetail.CorrectAnswers)</span>
+                                    <span class="stat-label">Ошибок</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Details -->
+                        <div class="list-group list-group-flush">
+                            @if (RuleDetail.LastPracticeDate.HasValue)
+                            {
+                                <div class="list-group-item d-flex justify-content-between px-0">
+                                    <span class="text-muted"><i class="bi bi-calendar-check me-2"></i>Последнее занятие</span>
+                                    <strong>@RuleDetail.LastPracticeDate.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm")</strong>
+                                </div>
+                            }
+                            @if (RuleDetail.NextReview.HasValue)
+                            {
+                                var daysUntil = (RuleDetail.NextReview.Value - DateTime.UtcNow).TotalDays;
+                                <div class="list-group-item d-flex justify-content-between px-0">
+                                    <span class="text-muted"><i class="bi bi-clock-history me-2"></i>Следующее повторение</span>
+                                    <strong class="@(daysUntil <= 0 ? "text-warning" : "")">
+                                        @if (daysUntil <= 0)
+                                        {
+                                            <span>Сейчас!</span>
+                                        }
+                                        else
+                                        {
+                                            @RuleDetail.NextReview.Value.ToLocalTime().ToString("dd.MM.yyyy")
+                                        }
+                                    </strong>
+                                </div>
+                            }
+                            <div class="list-group-item d-flex justify-content-between px-0">
+                                <span class="text-muted"><i class="bi bi-arrow-repeat me-2"></i>Интервал повторения</span>
+                                <strong>@FormatInterval(RuleDetail.IntervalDays)</strong>
+                            </div>
+                            @if (RuleDetail.LapseCount > 0)
+                            {
+                                <div class="list-group-item d-flex justify-content-between px-0">
+                                    <span class="text-muted"><i class="bi bi-exclamation-triangle me-2"></i>Провалов</span>
+                                    <strong class="text-danger">@RuleDetail.LapseCount</strong>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <button class="btn btn-primary" @onclick="StartPracticeTab">
+                                <i class="bi bi-pencil-square me-1"></i> Практиковать
+                            </button>
+                        </div>
+                    }
+                </div>
             </div>
-        </div>
+        }
     }
 </div>
 
@@ -339,12 +636,15 @@
     [Parameter] public int RuleId { get; set; }
     [SupplyParameterFromQuery] public string? Mode { get; set; }
 
+    private GrammarRuleDetailDto? RuleDetail;
     private GrammarPracticeSession? Session;
     private GrammarSessionResultDto? SessionResult;
     private bool IsLoading = true;
+    private bool IsPracticeLoading;
     private bool ShowResults;
+    private string ActiveTab = "theory";
 
-    // Current exercise state
+    // Practice state
     private int CurrentExerciseIndex;
     private bool HasAnswered;
     private bool CurrentAnswerCorrect;
@@ -354,20 +654,61 @@
     private List<string> AvailableWords = new();
     private System.Diagnostics.Stopwatch _stopwatch = new();
 
+    // Matching state
+    private int? MatchingSelectedLeft;
+    private Dictionary<int, int> MatchingPairs = new();
+
     private GrammarPracticeExerciseDto CurrentExercise =>
         Session!.Exercises[CurrentExerciseIndex];
 
-    // Accumulated answers
     private List<GrammarAnswerSubmission> Answers = new();
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadPractice();
+        await LoadRuleDetail();
+    }
+
+    private async Task LoadRuleDetail()
+    {
+        IsLoading = true;
+        try
+        {
+            RuleDetail = await GrammarApi.GetRuleDetailAsync(RuleId);
+
+            // If navigated with ?mode=review or ?mode=practice, go straight to practice
+            if (RuleDetail != null && (Mode == "review" || Mode == "practice"))
+            {
+                ActiveTab = "practice";
+                await LoadPractice();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading grammar rule detail");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void SwitchTab(string tab)
+    {
+        ActiveTab = tab;
+    }
+
+    private async Task StartPracticeTab()
+    {
+        ActiveTab = "practice";
+        if (Session == null || ShowResults)
+        {
+            await LoadPractice();
+        }
     }
 
     private async Task LoadPractice()
     {
-        IsLoading = true;
+        IsPracticeLoading = true;
         ShowResults = false;
         CurrentExerciseIndex = 0;
         Answers.Clear();
@@ -385,7 +726,7 @@
         }
         finally
         {
-            IsLoading = false;
+            IsPracticeLoading = false;
         }
     }
 
@@ -396,14 +737,16 @@
         SelectedMcqIndex = null;
         TextAnswer = "";
         OrderedWords.Clear();
+        MatchingSelectedLeft = null;
+        MatchingPairs.Clear();
         _stopwatch.Restart();
 
-        if (Session?.Exercises[CurrentExerciseIndex] is { ExerciseType: "word_order" } ex)
+        var ex = Session?.Exercises[CurrentExerciseIndex];
+        if (ex is { ExerciseType: "word_order" })
         {
             AvailableWords = ex.GetShuffledWords().ToList();
             if (!AvailableWords.Any() && !string.IsNullOrEmpty(ex.CorrectAnswer))
             {
-                // Fallback: shuffle the correct answer words
                 var words = ex.CorrectAnswer.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
                 var rng = new Random();
                 for (int i = words.Count - 1; i > 0; i--)
@@ -420,7 +763,6 @@
     {
         if (HasAnswered) return;
         SelectedMcqIndex = index;
-
         CurrentAnswerCorrect = index == CurrentExercise.CorrectIndex;
         RecordAnswer(CurrentAnswerCorrect, CurrentExercise.GetOptions().ElementAtOrDefault(index));
         HasAnswered = true;
@@ -429,7 +771,6 @@
     private void SubmitTextAnswer()
     {
         if (HasAnswered || string.IsNullOrWhiteSpace(TextAnswer)) return;
-
         CurrentAnswerCorrect = CheckTextAnswer(CurrentExercise, TextAnswer.Trim());
         RecordAnswer(CurrentAnswerCorrect, TextAnswer.Trim());
         HasAnswered = true;
@@ -438,11 +779,34 @@
     private void SubmitWordOrder()
     {
         if (HasAnswered || !OrderedWords.Any()) return;
-
         var userSentence = string.Join(" ", OrderedWords);
         TextAnswer = userSentence;
         CurrentAnswerCorrect = CheckTextAnswer(CurrentExercise, userSentence);
         RecordAnswer(CurrentAnswerCorrect, userSentence);
+        HasAnswered = true;
+    }
+
+    // === Matching logic ===
+    private void SelectMatchingLeft(int index)
+    {
+        if (HasAnswered) return;
+        MatchingSelectedLeft = index;
+    }
+
+    private void SelectMatchingRight(int index)
+    {
+        if (HasAnswered || MatchingSelectedLeft == null) return;
+        MatchingPairs[MatchingSelectedLeft.Value] = index;
+        MatchingSelectedLeft = null;
+    }
+
+    private void SubmitMatching()
+    {
+        if (HasAnswered) return;
+        // For matching: correct when left[i] maps to right[i] (pairs match by index)
+        int correctPairs = MatchingPairs.Count(p => p.Key == p.Value);
+        CurrentAnswerCorrect = correctPairs == MatchingPairs.Count;
+        RecordAnswer(CurrentAnswerCorrect, $"matched:{correctPairs}/{MatchingPairs.Count}");
         HasAnswered = true;
     }
 
@@ -451,21 +815,18 @@
         if (string.IsNullOrWhiteSpace(userAnswer)) return false;
         var trimmed = userAnswer.Trim().TrimEnd('.');
 
-        // Check against CorrectAnswer
         if (!string.IsNullOrEmpty(exercise.CorrectAnswer))
         {
             if (string.Equals(trimmed, exercise.CorrectAnswer.Trim().TrimEnd('.'), StringComparison.OrdinalIgnoreCase))
                 return true;
         }
 
-        // Check alternatives
         foreach (var alt in exercise.GetAlternativeAnswers())
         {
             if (string.Equals(trimmed, alt.Trim().TrimEnd('.'), StringComparison.OrdinalIgnoreCase))
                 return true;
         }
 
-        // For MCQ fallback (if correctAnswer not set)
         if (exercise.ExerciseType == "mcq")
         {
             var options = exercise.GetOptions();
@@ -523,6 +884,20 @@
         {
             var submission = new GrammarSessionSubmission { Answers = Answers };
             SessionResult = await GrammarApi.SubmitSessionAsync(RuleId, submission);
+
+            // Update local detail with new progress
+            if (SessionResult != null && RuleDetail != null)
+            {
+                RuleDetail.KnowledgeLevel = SessionResult.KnowledgeLevel;
+                RuleDetail.TotalSessions++;
+                RuleDetail.CorrectAnswers += SessionResult.CorrectAnswers;
+                RuleDetail.TotalAnswers += SessionResult.TotalAnswers;
+                RuleDetail.AccuracyPercent = RuleDetail.TotalAnswers > 0
+                    ? Math.Round((double)RuleDetail.CorrectAnswers / RuleDetail.TotalAnswers * 100, 1)
+                    : 0;
+                RuleDetail.NextReview = SessionResult.NextReview;
+                RuleDetail.LastPracticeDate = DateTime.UtcNow;
+            }
         }
         catch (Exception ex)
         {
@@ -555,4 +930,64 @@
         "dictation" => "🎧 Диктант",
         _ => "📝 Упражнение"
     };
+
+    // Matching helpers
+    private string[] GetMatchingLeftItems()
+    {
+        var opts = CurrentExercise.GetOptions();
+        int half = opts.Length / 2;
+        return opts.Take(half).ToArray();
+    }
+
+    private string[] GetMatchingRightItems()
+    {
+        var opts = CurrentExercise.GetOptions();
+        int half = opts.Length / 2;
+        return opts.Skip(half).ToArray();
+    }
+
+    private string GetDifficultyBadgeClass(int level) => level switch
+    {
+        1 => "bg-success",
+        2 => "bg-warning text-dark",
+        3 => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private string GetDifficultyText(int level) => level switch
+    {
+        1 => "Начальный",
+        2 => "Средний",
+        3 => "Продвинутый",
+        _ => "Неизвестно"
+    };
+
+    private string GetLevelBadgeClass(int level) => level switch
+    {
+        0 => "bg-secondary",
+        1 or 2 => "bg-warning text-dark",
+        3 => "bg-info",
+        4 or 5 => "bg-success",
+        _ => "bg-secondary"
+    };
+
+    private string GetLevelText(int level) => level switch
+    {
+        0 => "Не начато",
+        1 => "Новичок",
+        2 => "Знакомство",
+        3 => "Понимание",
+        4 => "Уверенность",
+        5 => "Мастерство",
+        _ => $"Уровень {level}"
+    };
+
+    private string FormatInterval(double days)
+    {
+        if (days < 1) return "менее 1 дня";
+        if (days < 2) return "1 день";
+        if (days < 7) return $"{(int)days} дн.";
+        if (days < 30) return $"{(int)(days / 7)} нед.";
+        return $"{(int)(days / 30)} мес.";
+    }
 }

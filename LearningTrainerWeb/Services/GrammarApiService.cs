@@ -18,6 +18,11 @@ public interface IGrammarApiService
     Task<DueReviewsDto?> GetDueReviewsAsync();
 
     /// <summary>
+    /// Получить детали правила: теория (HTML), прогресс, метаданные.
+    /// </summary>
+    Task<GrammarRuleDetailDto?> GetRuleDetailAsync(int ruleId);
+
+    /// <summary>
     /// Начать сессию практики по правилу.
     /// </summary>
     Task<GrammarPracticeSession?> StartPracticeAsync(int ruleId, int count = 10);
@@ -73,6 +78,20 @@ public class GrammarApiService : IGrammarApiService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching due reviews");
+            return null;
+        }
+    }
+
+    public async Task<GrammarRuleDetailDto?> GetRuleDetailAsync(int ruleId)
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            return await _httpClient.GetFromJsonAsync<GrammarRuleDetailDto>($"api/grammar/{ruleId}/details");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching grammar rule detail {RuleId}", ruleId);
             return null;
         }
     }
@@ -243,4 +262,30 @@ public class GrammarProgressSummaryDto
     public int DueForReview { get; set; }
     public double OverallAccuracy { get; set; }
     public int TotalSessions { get; set; }
+}
+
+public class GrammarRuleDetailDto
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = "";
+    public string? Description { get; set; }
+    public string? Category { get; set; }
+    public int DifficultyLevel { get; set; }
+    public int SkillTreeLevel { get; set; }
+    public string? IconEmoji { get; set; }
+    public string? SkillSummary { get; set; }
+    public int XpReward { get; set; }
+    public string HtmlContent { get; set; } = "";
+    public int ExerciseCount { get; set; }
+    // Progress fields
+    public int KnowledgeLevel { get; set; }
+    public double EaseFactor { get; set; }
+    public double IntervalDays { get; set; }
+    public DateTime? NextReview { get; set; }
+    public int TotalSessions { get; set; }
+    public int CorrectAnswers { get; set; }
+    public int TotalAnswers { get; set; }
+    public double AccuracyPercent { get; set; }
+    public DateTime? LastPracticeDate { get; set; }
+    public int LapseCount { get; set; }
 }

@@ -4,7 +4,113 @@
     padding-bottom: 2rem;
 }
 
-/* === Stat pills for results screen === */
+/* === Grammar tabs === */
+.grammar-tabs {
+    border-bottom: 2px solid var(--border-default, #e0e0e0);
+}
+
+.grammar-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--text-muted, #6c757d);
+    font-weight: 500;
+    padding: 0.75rem 1.25rem;
+    transition: all 0.2s;
+    cursor: pointer;
+    background: none;
+}
+
+.grammar-tabs .nav-link:hover {
+    color: var(--bs-primary, #4f46e5);
+    border-bottom-color: rgba(79, 70, 229, 0.3);
+}
+
+.grammar-tabs .nav-link.active {
+    color: var(--bs-primary, #4f46e5);
+    border-bottom-color: var(--bs-primary, #4f46e5);
+    background: none;
+}
+
+.grammar-tabs .nav-link:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* === Markdown content styling === */
+.markdown-content {
+    line-height: 1.7;
+    font-size: 1rem;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.markdown-content h1 { font-size: 1.5rem; }
+.markdown-content h2 { font-size: 1.3rem; }
+.markdown-content h3 { font-size: 1.15rem; }
+
+.markdown-content p {
+    margin-bottom: 1rem;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.markdown-content code {
+    background: var(--surface-hover, #f0f0f0);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.markdown-content pre {
+    background: var(--surface-hover, #f0f0f0);
+    padding: 1rem;
+    border-radius: var(--radius-md, 8px);
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+
+.markdown-content pre code {
+    background: none;
+    padding: 0;
+}
+
+.markdown-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+}
+
+.markdown-content th,
+.markdown-content td {
+    border: 1px solid var(--border-default, #e0e0e0);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+}
+
+.markdown-content th {
+    background: var(--surface-hover, #f0f0f0);
+    font-weight: 600;
+}
+
+.markdown-content blockquote {
+    border-left: 4px solid var(--bs-primary, #4f46e5);
+    padding: 0.5rem 1rem;
+    margin: 1rem 0;
+    background: rgba(79, 70, 229, 0.05);
+    border-radius: 0 var(--radius, 6px) var(--radius, 6px) 0;
+}
+
+/* === Stat pills for results & progress === */
 .stat-pill {
     display: flex;
     flex-direction: column;
@@ -112,6 +218,12 @@
     transform: scale(1.15);
 }
 
+/* === Progress tab list items === */
+.list-group-item {
+    background: transparent;
+    border-color: var(--border-default, #e0e0e0);
+}
+
 /* === Responsive === */
 @media (max-width: 576px) {
     .stat-pill {
@@ -126,5 +238,10 @@
     .btn-lg.text-start {
         padding: 0.65rem 1rem;
         font-size: 0.95rem;
+    }
+
+    .grammar-tabs .nav-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.9rem;
     }
 }
