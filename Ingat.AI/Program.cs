@@ -10,6 +10,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpClient<IAiProvider, OllamaProvider>();
 builder.Services.AddMemoryCache();
 
+// Log Ollama config at startup for diagnostics
+var ollamaUrl = builder.Configuration["Ollama:BaseUrl"] ?? "http://localhost:11434";
+var ollamaModel = builder.Configuration["Ollama:Model"] ?? "qwen2.5:7b";
+var ollamaTimeout = builder.Configuration["Ollama:TimeoutSeconds"] ?? "120";
+Console.WriteLine($"[Ingat.AI] Ollama config: BaseUrl={ollamaUrl}, Model={ollamaModel}, Timeout={ollamaTimeout}s");
+
 // CORS — разрешаем Blazor-клиенту и WPF-клиенту обращаться к API
 builder.Services.AddCors(options =>
 {
