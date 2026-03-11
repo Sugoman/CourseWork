@@ -99,6 +99,12 @@ public class TrainingWordDto
     public string? LanguageFrom { get; set; }
 
     /// <summary>
+    /// Язык перевода из словаря (например "Russian", "German", "French").
+    /// Используется для AI-объяснений — ответы генерируются на родном языке пользователя.
+    /// </summary>
+    public string? LanguageTo { get; set; }
+
+    /// <summary>
     /// Процент правильных ответов (0–100). Если попыток не было — null.
     /// Используется для визуализации прогресса слова в тренировке (#10 LEARNING_IMPROVEMENTS).
     /// </summary>

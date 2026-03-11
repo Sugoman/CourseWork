@@ -39,6 +39,7 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - ApiBaseUrl=http://learningapi:8080
+      - AiService__BaseUrl=http://ai-service:5200
     volumes:
       - web_dataprotection_keys:/app/keys
 

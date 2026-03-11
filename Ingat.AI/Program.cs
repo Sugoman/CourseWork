@@ -500,6 +500,19 @@ app.MapPost("/api/ai/explain-mistake", async (ExplainMistakeRequest req, IAiProv
         if (parsed == null || string.IsNullOrWhiteSpace(parsed.Explanation))
             return Results.Json(new { error = "AI returned invalid response" }, statusCode: 502);
 
+        // Post-validation: strip foreign script contamination, then sanitize mixed-script words
+        parsed.Explanation = StripForeignScripts(parsed.Explanation, req.TargetLanguage);
+        parsed.Explanation = SanitizeMixedScriptWords(parsed.Explanation);
+        if (!string.IsNullOrEmpty(parsed.Tip))
+        {
+            parsed.Tip = StripForeignScripts(parsed.Tip, req.TargetLanguage);
+            parsed.Tip = SanitizeMixedScriptWords(parsed.Tip);
+        }
+
+        // If stripping left explanation empty, reject
+        if (string.IsNullOrWhiteSpace(parsed.Explanation))
+            return Results.Json(new { error = "AI returned invalid response" }, statusCode: 502);
+
         cache.Set(cacheKey, parsed, TimeSpan.FromHours(24));
         return Results.Ok(parsed);
     }
@@ -537,6 +550,24 @@ app.MapPost("/api/ai/mnemonic", async (MnemonicRequest req, IAiProvider ai, IMem
             ai, PromptTemplates.MnemonicSystem, prompt, logger, maxTokens: 300);
 
         if (parsed == null || string.IsNullOrWhiteSpace(parsed.Mnemonic))
+            return Results.Json(new { error = "AI returned invalid response" }, statusCode: 502);
+
+        // Post-validation: strip foreign script contamination, then sanitize mixed-script words
+        parsed.Mnemonic = StripForeignScripts(parsed.Mnemonic, req.TargetLanguage);
+        parsed.Mnemonic = SanitizeMixedScriptWords(parsed.Mnemonic);
+        if (!string.IsNullOrEmpty(parsed.Association))
+        {
+            parsed.Association = StripForeignScripts(parsed.Association, req.TargetLanguage);
+            parsed.Association = SanitizeMixedScriptWords(parsed.Association);
+        }
+        if (!string.IsNullOrEmpty(parsed.Etymology))
+        {
+            parsed.Etymology = StripForeignScripts(parsed.Etymology, req.TargetLanguage);
+            parsed.Etymology = SanitizeMixedScriptWords(parsed.Etymology);
+        }
+
+        // If stripping left mnemonic empty, reject
+        if (string.IsNullOrWhiteSpace(parsed.Mnemonic))
             return Results.Json(new { error = "AI returned invalid response" }, statusCode: 502);
 
         cache.Set(cacheKey, parsed, TimeSpan.FromHours(48));
@@ -799,4 +830,117 @@ static bool HasMixedScripts(string text)
 
     int scriptCount = (hasCyrillic ? 1 : 0) + (hasLatin ? 1 : 0) + (hasCjk ? 1 : 0);
     return scriptCount > 1;
+}
+
+/// <summary>
+/// Finds individual words that contain mixed scripts (e.g., "Кبير") and removes
+/// the minority-script characters, keeping the dominant script in each word.
+/// This fixes LLM output like "Кبير" → "بير" or "Шкра" stays as-is (pure Cyrillic).
+/// For sentences that are mostly Cyrillic (Russian), non-Latin foreign fragments get stripped
+/// from individual words so the text stays readable.
+/// </summary>
+static string SanitizeMixedScriptWords(string text)
+{
+    if (string.IsNullOrWhiteSpace(text)) return text;
+
+    var words = text.Split(' ');
+    for (int i = 0; i < words.Length; i++)
+    {
+        var word = words[i];
+        var letters = word.Where(char.IsLetter).ToArray();
+        if (letters.Length < 2) continue;
+
+        bool hasCyrillic = letters.Any(c => c is >= '\u0400' and <= '\u04FF');
+        bool hasArabic = letters.Any(c => c is >= '\u0600' and <= '\u06FF');
+        bool hasCjk = letters.Any(c => c is >= '\u4E00' and <= '\u9FFF'
+                                       or >= '\u3040' and <= '\u30FF'
+                                       or >= '\uAC00' and <= '\uD7AF');
+
+        // Mixed Cyrillic + Arabic in one word: remove the minority script chars
+        if (hasCyrillic && hasArabic)
+        {
+            int cyrCount = letters.Count(c => c is >= '\u0400' and <= '\u04FF');
+            int arbCount = letters.Count(c => c is >= '\u0600' and <= '\u06FF');
+            if (cyrCount >= arbCount)
+                words[i] = new string(word.Where(c => !(c is >= '\u0600' and <= '\u06FF')).ToArray());
+            else
+                words[i] = new string(word.Where(c => !(c is >= '\u0400' and <= '\u04FF')).ToArray());
+        }
+        // Mixed Cyrillic + CJK in one word
+        else if (hasCyrillic && hasCjk)
+        {
+            int cyrCount = letters.Count(c => c is >= '\u0400' and <= '\u04FF');
+            int cjkCount = letters.Length - cyrCount;
+            if (cyrCount >= cjkCount)
+                words[i] = new string(word.Where(c => !(c is >= '\u4E00' and <= '\u9FFF'
+                                                        or >= '\u3040' and <= '\u30FF'
+                                                        or >= '\uAC00' and <= '\uD7AF')).ToArray());
+            else
+                words[i] = new string(word.Where(c => !(c is >= '\u0400' and <= '\u04FF')).ToArray());
+        }
+    }
+
+    return string.Join(' ', words.Where(w => w.Length > 0));
+}
+
+/// <summary>
+/// Strips entire segments of text in unexpected scripts based on the target language.
+/// Fixes LLM cross-contamination like Chinese appearing in Russian output:
+/// "это совсем другое: 环境保护性，而incertidumbre描述的是不确定性" → "это совсем другое: "
+/// Also collapses multiple spaces and trims trailing punctuation artifacts.
+/// </summary>
+static string StripForeignScripts(string text, string targetLanguage)
+{
+    if (string.IsNullOrWhiteSpace(text)) return text;
+
+    var lang = targetLanguage.Trim().ToLowerInvariant();
+
+    // Determine which character predicate to use for "allowed" chars
+    // For Cyrillic targets: allow Cyrillic + Latin (for source-language words) + common chars
+    // For Latin targets: allow Latin + common chars
+    Func<char, bool> isAllowed;
+
+    if (lang is "russian" or "ukrainian" or "belarusian" or "bulgarian" or "serbian"
+        or "русский" or "украинский" or "белорусский")
+    {
+        isAllowed = c =>
+            c is >= '\u0400' and <= '\u04FF'                        // Cyrillic
+            || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')    // Latin
+            || c >= '\u00C0' && c <= '\u024F'                       // Latin Extended (é, ñ, ü)
+            || !char.IsLetter(c);                                    // digits, punctuation, spaces
+    }
+    else if (lang is "chinese" or "japanese" or "korean"
+             or "китайский" or "японский" or "корейский")
+    {
+        isAllowed = c =>
+            c is >= '\u4E00' and <= '\u9FFF'                        // CJK
+            || c is >= '\u3040' and <= '\u30FF'                     // Hiragana + Katakana
+            || c is >= '\uAC00' and <= '\uD7AF'                     // Hangul
+            || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')    // Latin
+            || !char.IsLetter(c);
+    }
+    else if (lang is "arabic" or "hebrew" or "арабский" or "иврит")
+    {
+        isAllowed = c =>
+            c is >= '\u0600' and <= '\u06FF'                        // Arabic
+            || c is >= '\u0590' and <= '\u05FF'                     // Hebrew
+            || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')    // Latin
+            || !char.IsLetter(c);
+    }
+    else
+    {
+        // Latin-based languages: allow Latin + common chars, strip CJK/Arabic/Cyrillic leaks
+        isAllowed = c =>
+            (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
+            || c >= '\u00C0' && c <= '\u024F'                       // Latin Extended
+            || !char.IsLetter(c);
+    }
+
+    var filtered = new string(text.Where(isAllowed).ToArray());
+
+    // Collapse multiple spaces and trim
+    while (filtered.Contains("  "))
+        filtered = filtered.Replace("  ", " ");
+
+    return filtered.Trim();
 }

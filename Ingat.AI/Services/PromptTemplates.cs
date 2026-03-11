@@ -170,39 +170,69 @@ public static class PromptTemplates
     };
 
     public const string ExplainMistakeSystem =
-        "You are a patient language tutor. You respond ONLY with a single valid JSON object. No markdown, no code blocks, no explanation.";
+        """You are a concise bilingual tutor. Respond ONLY with valid JSON. No markdown. Never invent words.""";
 
     public static string ExplainMistakeUser(string word, string userAnswer, string correctAnswer,
         string? context, string language, string targetLanguage) =>
         $$"""
-        A student was asked to translate the {{language}} word "{{word}}" and answered "{{userAnswer}}", but the correct answer is "{{correctAnswer}}".
+        Word: "{{word}}" ({{language}}). Student answered: "{{userAnswer}}". Correct: "{{correctAnswer}}".
         {{(context != null ? $"Context: \"{context}\"" : "")}}
 
-        Provide a brief, encouraging explanation in {{targetLanguage}} (2-3 sentences max):
-        1. Why "{{correctAnswer}}" is correct
-        2. Why "{{userAnswer}}" is wrong or incomplete
-        3. A quick tip to remember the correct answer
+        LANGUAGE: Write BOTH fields ONLY in {{targetLanguage}} + {{language}}. No other languages allowed.
+        Keep {{language}} words intact — never split them with spaces (write "incertidumbre", NOT "Ин certidumbre").
 
-        Return ONLY this JSON:
-        {"explanation": "brief explanation here", "tip": "memory tip here"}
+        "explanation" — TWO sentences:
+        1) What {{word}} means. Use a synonym or description — do NOT just repeat the translation word.
+        2) Вы выбрали «{{userAnswer}}» — это совсем другое: [what domain/concept the wrong answer belongs to, 5–12 words].
+
+        "tip" — one example phrase using {{word}} in {{language}} + translation.
+        Must give NEW context — do NOT repeat the translation from "explanation".
+
+        Example (do NOT copy — write original for "{{word}}"):
+        {"explanation": "Acontecimiento означает важный случай или происшествие. Вы выбрали «преодолевать» — это совсем другое: superar описывает победу над трудностью, а не сам свершившийся факт.", "tip": "El acontecimiento marcó un punto de inflexión — Этот случай стал поворотным моментом."}
+
+        FORBIDDEN:
+        - TAUTOLOGY: never define a word using itself ("событие — это событие")
+        - Do NOT repeat the {{targetLanguage}} translation more than once across both fields
+        - NEVER switch to Chinese, Japanese, Arabic or any language other than {{targetLanguage}} and {{language}}
+        - Do NOT split {{language}} words with spaces ("incertidumbre" — one word, not two)
+        - Do NOT invent words or transliterate between languages
+        - For Arabic/Chinese/Japanese/Korean source words: use Latin transliteration
+
+        Return ONLY: {"explanation": "...", "tip": "..."}
         """;
 
     public const string MnemonicSystem =
-        "You are a creative language learning assistant who helps students memorize words. You respond ONLY with a single valid JSON object. No markdown, no code blocks, no explanation.";
+        """You are a bilingual vocabulary tutor. Respond ONLY with valid JSON. No markdown. Never invent words. Never mix scripts.""";
 
     public static string MnemonicUser(string word, string translation, string language, string targetLanguage) =>
         $$"""
-        Help memorize the {{language}} word "{{word}}" (meaning: "{{translation}}" in {{targetLanguage}}).
+        Memorize: "{{word}}" ({{language}}) = "{{translation}}" ({{targetLanguage}}).
 
-        Create a mnemonic aid in {{targetLanguage}} that includes:
-        1. A vivid association or mental image linking the sound/spelling of "{{word}}" to its meaning "{{translation}}"
-        2. Brief etymology or word origin (if interesting and helpful)
-        3. A memorable phrase or sentence connecting the word to something familiar
+        LANGUAGE: Write ALL fields ONLY in {{targetLanguage}} + {{language}}. No other languages allowed.
+        Keep {{language}} words intact — never split them with spaces.
 
-        Keep it short and memorable (2-3 sentences for association).
+        "mnemonic": One sentence. Answer the question: WHO uses this word, or IN WHAT SITUATION? Name a specific context (a doctor diagnosing, a journalist writing, a teacher explaining, a politician debating, a tourist asking, etc.).
+        "etymology": Real Latin/Greek/Arabic root if it exists. null if unknown. NEVER invent.
+        "association": One phrase in {{language}} with {{targetLanguage}} translation.
 
-        Return ONLY this JSON:
-        {"mnemonic": "vivid association here", "etymology": "word origin here or null", "association": "memorable phrase here"}
+        IMPORTANT: Each word must have its OWN unique context. Do NOT reuse the same domain (e.g. "спортивные новости") for different words.
+
+        Example (do NOT copy — write original for "{{word}}"):
+        {"mnemonic": "Desafío используют тренеры, когда ставят команде сложную задачу на тренировке.", "etymology": "От латинского diffidare (отказывать в доверии), через испанское desafiar.", "association": "Acepto el desafío — Я принимаю вызов."}
+
+        FORBIDDEN:
+        - TAUTOLOGY: never define a word using itself ("событие — это событие")
+        - Do NOT repeat the {{targetLanguage}} translation more than twice
+        - NEVER switch to Chinese, Japanese, Arabic or any language other than {{targetLanguage}} and {{language}}
+        - Do NOT split {{language}} words with spaces
+        - Do NOT invent words or create fake phonetic links
+        - Do NOT start with "Представьте" / "Imagine"
+        - Do NOT use vague phrases like "где-то и когда-то", "что-то важное"
+        - Do NOT use "это как..." metaphors
+        - For Arabic/Chinese/Japanese/Korean source words: use Latin transliteration
+
+        Return ONLY: {"mnemonic": "...", "etymology": "...", "association": "..."}
         """;
 
     public const string DetectLanguageSystem =

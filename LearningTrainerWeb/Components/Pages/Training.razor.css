@@ -1742,46 +1742,244 @@ kbd {
     box-shadow: inset 0 -1px 0 var(--border-default, #dee2e6);
 }
 
-/* Phase 3: AI Explanation Styles */
+/* Phase 3: AI Assistant Card */
 
-.ai-explanation-block {
-    background: var(--accent-blue-light, rgba(59, 130, 246, 0.08));
-    border-radius: 12px;
-    padding: 0.75rem 1rem;
-    border-left: 3px solid var(--bs-info);
+.ai-card {
+    background: var(--surface-card, white);
+    border: 1px solid var(--border-default, #e2e8f0);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.ai-hint {
+.ai-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
+    background: linear-gradient(135deg, #667eea12, #764ba212);
+    border-bottom: 1px solid var(--border-default, #e2e8f0);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.ai-card-header i {
+    color: #8b5cf6;
     font-size: 0.9rem;
-    color: var(--accent-blue, #1a5276);
-    line-height: 1.5;
 }
 
-.ai-hint i {
-    color: var(--bs-info);
-}
-
-.ai-tip {
+.ai-card-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
     font-size: 0.85rem;
-    color: var(--accent-green, #1e8449);
-    line-height: 1.4;
+    color: var(--text-muted, #94a3b8);
 }
 
-.ai-tip i {
-    color: #f39c12;
+.ai-section {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-light, #f1f5f9);
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: var(--text-primary, #334155);
 }
 
-.ai-mnemonic {
+.ai-section:last-child {
+    border-bottom: none;
+}
+
+.ai-section-icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-top: 1px;
+}
+
+.ai-section-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 2px;
+}
+
+.ai-section-content {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Section color variants */
+.ai-section-explanation .ai-section-icon {
+    background: #3b82f612;
+    color: #3b82f6;
+}
+
+.ai-section-explanation .ai-section-label {
+    color: #3b82f6;
+}
+
+.ai-section-tip .ai-section-icon {
+    background: #10b98112;
+    color: #10b981;
+}
+
+.ai-section-tip .ai-section-label {
+    color: #10b981;
+}
+
+.ai-section-mnemonic .ai-section-icon {
+    background: #f59e0b12;
+    color: #f59e0b;
+}
+
+.ai-section-mnemonic .ai-section-label {
+    color: #d97706;
+}
+
+.ai-section-etymology .ai-section-icon {
+    background: #8b5cf612;
+    color: #8b5cf6;
+}
+
+.ai-section-etymology .ai-section-label {
+    color: #7c3aed;
+}
+
+.ai-section-association .ai-section-icon {
+    background: #ec489912;
+    color: #ec4899;
+}
+
+.ai-section-association .ai-section-label {
+    color: #db2777;
+}
+
+.ai-section-action {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border-light, #f1f5f9);
+}
+
+.ai-section-action button {
+    font-size: 0.82rem;
+    border-radius: 8px;
+    padding: 0.3rem 0.75rem;
+}
+
+/* Grammar Due Reviews Widget (§17.7.2 LEARNING_IMPROVEMENTS) */
+.grammar-due-widget {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface-card, white);
+    border: 2px solid var(--accent-purple-light, rgba(125, 60, 152, 0.15));
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 1rem;
+}
+
+.grammar-due-widget:hover {
+    border-color: var(--accent-purple, #7d3c98);
+    box-shadow: 0 4px 16px rgba(125, 60, 152, 0.12);
+    transform: translateY(-1px);
+}
+
+.grammar-due-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #7d3c98, #a855f7);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.grammar-due-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.grammar-due-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--bs-body-color);
+}
+
+.grammar-due-subtitle {
+    font-size: 0.82rem;
+    margin-top: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.grammar-due-action {
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #7d3c98, #a855f7);
+    color: white;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Grammar Hint on Error (§17.6.1 LEARNING_IMPROVEMENTS) */
+.grammar-hint-block {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    padding: 0.6rem 0.85rem;
+    background: var(--accent-purple-light, rgba(125, 60, 152, 0.08));
+    border-left: 3px solid var(--accent-purple, #7d3c98);
+    border-radius: 0 8px 8px 0;
     font-size: 0.85rem;
     color: var(--accent-purple, #7d3c98);
-    line-height: 1.4;
-    background: var(--accent-yellow-light, rgba(245, 158, 11, 0.08));
-    border-radius: 8px;
-    padding: 0.5rem 0.75rem;
+    animation: fadeSlideIn 0.3s ease-out;
 }
 
-.ai-mnemonic i {
-    color: #f39c12;
+.grammar-hint-block i.bi-journal-bookmark {
+    font-size: 1rem;
+}
+
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 576px) {
+    .grammar-due-widget {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    .grammar-due-action {
+        width: 100%;
+        text-align: center;
+    }
+    .grammar-hint-block {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .grammar-hint-block .btn {
+        margin-left: 0 !important;
+        margin-top: 0.3rem;
+    }
 }
 
 /* Matching Mode (#6 LEARNING_IMPROVEMENTS) */

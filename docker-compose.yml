@@ -47,7 +47,7 @@ services:
     environment:
       - ASPNETCORE_URLS=http://+:8080
       - ApiBaseUrl=http://learningapi:8080
-      - AiService__BaseUrl=http://ai-service:8080
+      - AiService__BaseUrl=http://ai-service:5200
 
   # -------------------------------
   # 2. Migrations (runs once)

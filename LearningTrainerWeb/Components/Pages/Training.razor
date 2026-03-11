@@ -259,6 +259,32 @@
                 </button>
             }
 
+            @* === Grammar Due Reviews Widget (§17.7.2 LEARNING_IMPROVEMENTS) === *@
+            @if (GrammarDueCount > 0 && GrammarDueReviews?.Rules.Any() == true)
+            {
+                <div class="grammar-due-widget" @onclick="NavigateToGrammarReview">
+                    <div class="grammar-due-icon">
+                        <i class="bi bi-book-half"></i>
+                    </div>
+                    <div class="grammar-due-body">
+                        <div class="grammar-due-title">
+                            <i class="bi bi-clock-history text-warning me-1"></i>
+                            Грамматика: <strong>@GrammarDueCount</strong> @GrammarDueWordForm(GrammarDueCount) к повторению
+                        </div>
+                        <div class="grammar-due-subtitle text-muted">
+                            Следующее: <strong>@GrammarDueReviews.Rules.First().RuleTitle</strong>
+                            @if (GrammarDueReviews.Rules.First().OverdueDays > 0)
+                            {
+                                <span class="text-warning ms-1">(просрочено @GrammarDueReviews.Rules.First().OverdueDays дн.)</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="grammar-due-action">
+                        <i class="bi bi-play-fill"></i> Повторить
+                    </div>
+                </div>
+            }
+
             @* === Leech-предупреждение (P0 LEARNING_IMPROVEMENTS §1.1) === *@
             @if (DailyPlan.Stats.LeechCount > 0)
             {
@@ -746,7 +772,7 @@
 
                                 @if (CurrentWord.RelatedRuleId.HasValue)
                                 {
-                                    <a href="rules/@CurrentWord.RelatedRuleId" class="btn btn-sm btn-outline-info mt-1" target="_blank" title="Связанное грамматическое правило">
+                                    <a href="/grammar/@CurrentWord.RelatedRuleId" class="btn btn-sm btn-outline-info mt-1" title="Связанное грамматическое правило">
                                         <i class="bi bi-journal-bookmark me-1"></i>@(CurrentWord.RelatedRuleTitle ?? "Правило")
                                     </a>
                                 }
@@ -882,47 +908,84 @@
                             </div>
                             @if (!McqWasCorrect)
                             {
-                                <div class="ai-explanation-block mt-2">
+                                <div class="ai-card mt-3">
+                                    <div class="ai-card-header">
+                                        <i class="bi bi-stars"></i>
+                                        <span>Помощник ИИ</span>
+                                    </div>
+
                                     @if (IsLoadingAiExplanation)
                                     {
-                                        <div class="text-muted small">
-                                            <span class="spinner-border spinner-border-sm me-1"></span>
-                                            ИИ объясняет ошибку...
+                                        <div class="ai-card-loading">
+                                            <span class="spinner-border spinner-border-sm"></span>
+                                            Анализирую ошибку...
                                         </div>
                                     }
                                     else if (!string.IsNullOrEmpty(AiExplanation))
                                     {
-                                        <div class="ai-hint">
-                                            <i class="bi bi-robot me-1"></i>
-                                            <span>@AiExplanation</span>
+                                        <div class="ai-section ai-section-explanation">
+                                            <div class="ai-section-icon"><i class="bi bi-chat-left-text"></i></div>
+                                            <div class="ai-section-content">
+                                                <div class="ai-section-label">Разбор ошибки</div>
+                                                <div>@AiExplanation</div>
+                                            </div>
                                         </div>
                                         @if (!string.IsNullOrEmpty(AiTip))
                                         {
-                                            <div class="ai-tip mt-1">
-                                                <i class="bi bi-lightbulb me-1"></i>
-                                                <span>@AiTip</span>
+                                            <div class="ai-section ai-section-tip">
+                                                <div class="ai-section-icon"><i class="bi bi-translate"></i></div>
+                                                <div class="ai-section-content">
+                                                    <div class="ai-section-label">Пример</div>
+                                                    <div>@AiTip</div>
+                                                </div>
                                             </div>
                                         }
                                     }
+
                                     @if (!IsLoadingMnemonic && string.IsNullOrEmpty(AiMnemonic))
                                     {
-                                        <button class="btn btn-sm btn-outline-info mt-1" @onclick="LoadMnemonic">
-                                            <i class="bi bi-magic me-1"></i>Подсказка для запоминания
-                                        </button>
+                                        <div class="ai-section-action">
+                                            <button class="btn btn-sm btn-outline-secondary" @onclick="LoadMnemonic">
+                                                <i class="bi bi-magic me-1"></i>Подсказка для запоминания
+                                            </button>
+                                        </div>
                                     }
                                     else if (IsLoadingMnemonic)
                                     {
-                                        <div class="text-muted small mt-1">
-                                            <span class="spinner-border spinner-border-sm me-1"></span>
+                                        <div class="ai-card-loading">
+                                            <span class="spinner-border spinner-border-sm"></span>
                                             Генерация мнемоники...
                                         </div>
                                     }
                                     else if (!string.IsNullOrEmpty(AiMnemonic))
                                     {
-                                        <div class="ai-mnemonic mt-1">
-                                            <i class="bi bi-lightbulb-fill me-1 text-warning"></i>
-                                            <span>@AiMnemonic</span>
+                                        <div class="ai-section ai-section-mnemonic">
+                                            <div class="ai-section-icon"><i class="bi bi-lightbulb"></i></div>
+                                            <div class="ai-section-content">
+                                                <div class="ai-section-label">Запоминание</div>
+                                                <div>@AiMnemonic</div>
+                                            </div>
                                         </div>
+                                        @if (!string.IsNullOrEmpty(AiEtymology))
+                                        {
+                                            <div class="ai-section ai-section-etymology">
+                                                <div class="ai-section-icon"><i class="bi bi-book"></i></div>
+                                                <div class="ai-section-content">
+                                                    <div class="ai-section-label">Происхождение</div>
+                                                    <div>@AiEtymology</div>
+                                                </div>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(AiAssociation))
+                                        {
+                                            <div class="ai-section ai-section-association">
+                                                <div class="ai-section-icon"><i class="bi bi-link-45deg"></i></div>
+                                                <div class="ai-section-content">
+                                                    <div class="ai-section-label">Ассоциация</div>
+                                                    <div>@AiAssociation</div>
+                                                </div>
+                                            </div>
+                                        }
                                     }
                                 </div>
                             }
@@ -933,6 +996,18 @@
                                     <button class="btn-tts-sm" @onclick="SpeakExample" title="Прослушать пример">
                                         <i class="bi bi-volume-up"></i>
                                     </button>
+                                </div>
+                            }
+
+                            @* === Grammar Hint on Error (§17.6.1 LEARNING_IMPROVEMENTS) === *@
+                            @if (!McqWasCorrect && CurrentWord.RelatedRuleId.HasValue)
+                            {
+                                <div class="grammar-hint-block mt-2">
+                                    <i class="bi bi-journal-bookmark me-1"></i>
+                                    <span>Связанное правило: <strong>@(CurrentWord.RelatedRuleTitle ?? "Грамматика")</strong></span>
+                                    <a href="/grammar/@CurrentWord.RelatedRuleId?mode=review" class="btn btn-sm btn-outline-info ms-2">
+                                        <i class="bi bi-arrow-right me-1"></i>Повторить
+                                    </a>
                                 </div>
                             }
 
@@ -1048,47 +1123,84 @@
                             </div>
                             @if (!TypingWasCorrect)
                             {
-                                <div class="ai-explanation-block mt-2">
+                                <div class="ai-card mt-3">
+                                    <div class="ai-card-header">
+                                        <i class="bi bi-stars"></i>
+                                        <span>Помощник ИИ</span>
+                                    </div>
+
                                     @if (IsLoadingAiExplanation)
                                     {
-                                        <div class="text-muted small">
-                                            <span class="spinner-border spinner-border-sm me-1"></span>
-                                            ИИ объясняет ошибку...
+                                        <div class="ai-card-loading">
+                                            <span class="spinner-border spinner-border-sm"></span>
+                                            Анализирую ошибку...
                                         </div>
                                     }
                                     else if (!string.IsNullOrEmpty(AiExplanation))
                                     {
-                                        <div class="ai-hint">
-                                            <i class="bi bi-robot me-1"></i>
-                                            <span>@AiExplanation</span>
+                                        <div class="ai-section ai-section-explanation">
+                                            <div class="ai-section-icon"><i class="bi bi-chat-left-text"></i></div>
+                                            <div class="ai-section-content">
+                                                <div class="ai-section-label">Разбор ошибки</div>
+                                                <div>@AiExplanation</div>
+                                            </div>
                                         </div>
                                         @if (!string.IsNullOrEmpty(AiTip))
                                         {
-                                            <div class="ai-tip mt-1">
-                                                <i class="bi bi-lightbulb me-1"></i>
-                                                <span>@AiTip</span>
+                                            <div class="ai-section ai-section-tip">
+                                                <div class="ai-section-icon"><i class="bi bi-translate"></i></div>
+                                                <div class="ai-section-content">
+                                                    <div class="ai-section-label">Пример</div>
+                                                    <div>@AiTip</div>
+                                                </div>
                                             </div>
                                         }
                                     }
+
                                     @if (!IsLoadingMnemonic && string.IsNullOrEmpty(AiMnemonic))
                                     {
-                                        <button class="btn btn-sm btn-outline-info mt-1" @onclick="LoadMnemonic">
-                                            <i class="bi bi-magic me-1"></i>Подсказка для запоминания
-                                        </button>
+                                        <div class="ai-section-action">
+                                            <button class="btn btn-sm btn-outline-secondary" @onclick="LoadMnemonic">
+                                                <i class="bi bi-magic me-1"></i>Подсказка для запоминания
+                                            </button>
+                                        </div>
                                     }
                                     else if (IsLoadingMnemonic)
                                     {
-                                        <div class="text-muted small mt-1">
-                                            <span class="spinner-border spinner-border-sm me-1"></span>
+                                        <div class="ai-card-loading">
+                                            <span class="spinner-border spinner-border-sm"></span>
                                             Генерация мнемоники...
                                         </div>
                                     }
                                     else if (!string.IsNullOrEmpty(AiMnemonic))
                                     {
-                                        <div class="ai-mnemonic mt-1">
-                                            <i class="bi bi-lightbulb-fill me-1 text-warning"></i>
-                                            <span>@AiMnemonic</span>
+                                        <div class="ai-section ai-section-mnemonic">
+                                            <div class="ai-section-icon"><i class="bi bi-lightbulb"></i></div>
+                                            <div class="ai-section-content">
+                                                <div class="ai-section-label">Запоминание</div>
+                                                <div>@AiMnemonic</div>
+                                            </div>
                                         </div>
+                                        @if (!string.IsNullOrEmpty(AiEtymology))
+                                        {
+                                            <div class="ai-section ai-section-etymology">
+                                                <div class="ai-section-icon"><i class="bi bi-book"></i></div>
+                                                <div class="ai-section-content">
+                                                    <div class="ai-section-label">Происхождение</div>
+                                                    <div>@AiEtymology</div>
+                                                </div>
+                                            </div>
+                                        }
+                                        @if (!string.IsNullOrEmpty(AiAssociation))
+                                        {
+                                            <div class="ai-section ai-section-association">
+                                                <div class="ai-section-icon"><i class="bi bi-link-45deg"></i></div>
+                                                <div class="ai-section-content">
+                                                    <div class="ai-section-label">Ассоциация</div>
+                                                    <div>@AiAssociation</div>
+                                                </div>
+                                            </div>
+                                        }
                                     }
                                 </div>
                             }
@@ -1101,6 +1213,19 @@
                                     </button>
                                 </div>
                             }
+
+                            @* === Grammar Hint on Error (§17.6.1 LEARNING_IMPROVEMENTS) — Typing === *@
+                            @if (!TypingWasCorrect && CurrentWord.RelatedRuleId.HasValue)
+                            {
+                                <div class="grammar-hint-block mt-2">
+                                    <i class="bi bi-journal-bookmark me-1"></i>
+                                    <span>Связанное правило: <strong>@(CurrentWord.RelatedRuleTitle ?? "Грамматика")</strong></span>
+                                    <a href="/grammar/@CurrentWord.RelatedRuleId?mode=review" class="btn btn-sm btn-outline-info ms-2">
+                                        <i class="bi bi-arrow-right me-1"></i>Повторить
+                                    </a>
+                                </div>
+                            }
+
                             <button class="btn btn-primary btn-lg mt-3" @onclick="NextTypingWord">
                                 <i class="bi bi-arrow-right me-2"></i>Далее
                             </button>
@@ -1190,6 +1315,19 @@
                                     </button>
                                 </div>
                             }
+
+                            @* === Grammar Hint on Error (§17.6.1 LEARNING_IMPROVEMENTS) — Listening === *@
+                            @if (!ListeningWasCorrect && CurrentWord.RelatedRuleId.HasValue)
+                            {
+                                <div class="grammar-hint-block mt-2">
+                                    <i class="bi bi-journal-bookmark me-1"></i>
+                                    <span>Связанное правило: <strong>@(CurrentWord.RelatedRuleTitle ?? "Грамматика")</strong></span>
+                                    <a href="/grammar/@CurrentWord.RelatedRuleId?mode=review" class="btn btn-sm btn-outline-info ms-2">
+                                        <i class="bi bi-arrow-right me-1"></i>Повторить
+                                    </a>
+                                </div>
+                            }
+
                             <button class="btn btn-primary btn-lg mt-3" @onclick="NextListeningWord">
                                 <i class="bi bi-arrow-right me-2"></i>Далее
                             </button>
@@ -1314,6 +1452,19 @@
                                     <i class="bi bi-chat-quote"></i> @CurrentWord.Example
                                 </div>
                             }
+
+                            @* === Grammar Hint on Error (§17.6.1 LEARNING_IMPROVEMENTS) — Cloze === *@
+                            @if (!ClozeWasCorrect && CurrentWord.RelatedRuleId.HasValue)
+                            {
+                                <div class="grammar-hint-block mt-2">
+                                    <i class="bi bi-journal-bookmark me-1"></i>
+                                    <span>Связанное правило: <strong>@(CurrentWord.RelatedRuleTitle ?? "Грамматика")</strong></span>
+                                    <a href="/grammar/@CurrentWord.RelatedRuleId?mode=review" class="btn btn-sm btn-outline-info ms-2">
+                                        <i class="bi bi-arrow-right me-1"></i>Повторить
+                                    </a>
+                                </div>
+                            }
+
                             <button class="btn btn-primary btn-lg mt-3" @onclick="NextClozeWord">
                                 <i class="bi bi-arrow-right me-2"></i>Далее
                             </button>
@@ -1451,6 +1602,19 @@
                                     </button>
                                 </div>
                             }
+
+                            @* === Grammar Hint on Error (§17.6.1 LEARNING_IMPROVEMENTS) — Spelling === *@
+                            @if (!SpellingWasCorrect && CurrentWord.RelatedRuleId.HasValue)
+                            {
+                                <div class="grammar-hint-block mt-2">
+                                    <i class="bi bi-journal-bookmark me-1"></i>
+                                    <span>Связанное правило: <strong>@(CurrentWord.RelatedRuleTitle ?? "Грамматика")</strong></span>
+                                    <a href="/grammar/@CurrentWord.RelatedRuleId?mode=review" class="btn btn-sm btn-outline-info ms-2">
+                                        <i class="bi bi-arrow-right me-1"></i>Повторить
+                                    </a>
+                                </div>
+                            }
+
                             <button class="btn btn-primary btn-lg mt-3" @onclick="NextSpellingWord">
                                 <i class="bi bi-arrow-right me-2"></i>Далее
                             </button>
@@ -1713,15 +1877,21 @@ private string _sessionDurationSnapshot = "";
 private string? AiExplanation;
 private string? AiTip;
 private string? AiMnemonic;
+private string? AiEtymology;
+private string? AiAssociation;
 private bool IsLoadingAiExplanation;
 private bool IsLoadingMnemonic;
+
+// AI service circuit breaker: skip requests for 60s after a failure
+private DateTime _aiCircuitBreakerUntil;
 
 // Milestone toast state (§5.4 LEARNING_IMPROVEMENTS)
 private Queue<UnlockedAchievementInfo> _milestoneQueue = new();
 private UnlockedAchievementInfo? CurrentMilestone;
 
 // Grammar integration state (§17.6 LEARNING_IMPROVEMENTS)
-private int GrammarDueCount;
+    private int GrammarDueCount;
+    private DueReviewsDto? GrammarDueReviews;
 
 // Element reference for focus
 private ElementReference trainingContainer;
@@ -2051,6 +2221,8 @@ private async Task InstallStarterPack()
         AiExplanation = null;
         AiTip = null;
         AiMnemonic = null;
+        AiEtymology = null;
+        AiAssociation = null;
         IsLoadingAiExplanation = false;
         IsLoadingMnemonic = false;
 
@@ -2905,14 +3077,19 @@ private async Task InstallStarterPack()
 
     private async Task LoadAiExplanation(string word, string userAnswer, string correctAnswer)
     {
+        if (IsLoadingAiExplanation) return;
+        if (DateTime.UtcNow < _aiCircuitBreakerUntil) return;
+
         IsLoadingAiExplanation = true;
         StateHasChanged();
 
         try
         {
+            var sourceLang = CurrentWord?.LanguageFrom ?? "English";
+            var targetLang = CurrentWord?.LanguageTo ?? "Russian";
             var result = await AiService.ExplainMistakeAsync(
                 word, userAnswer, correctAnswer,
-                "English", "Russian",
+                sourceLang, targetLang,
                 CurrentWord?.Example);
 
             if (result != null)
@@ -2923,7 +3100,8 @@ private async Task InstallStarterPack()
         }
         catch
         {
-            // AI unavailable — no explanation, UI stays clean
+            // AI unavailable — back off for 60 seconds
+            _aiCircuitBreakerUntil = DateTime.UtcNow.AddSeconds(60);
         }
         finally
         {
@@ -2934,25 +3112,31 @@ private async Task InstallStarterPack()
 
     private async Task LoadMnemonic()
     {
-        if (CurrentWord == null) return;
+        if (CurrentWord == null || IsLoadingMnemonic) return;
+        if (DateTime.UtcNow < _aiCircuitBreakerUntil) return;
 
         IsLoadingMnemonic = true;
         StateHasChanged();
 
         try
         {
+            var sourceLang = CurrentWord.LanguageFrom ?? "English";
+            var targetLang = CurrentWord.LanguageTo ?? "Russian";
             var result = await AiService.GenerateMnemonicAsync(
                 CurrentWord.OriginalWord, CurrentWord.Translation,
-                "English", "Russian");
+                sourceLang, targetLang);
 
             if (result != null)
             {
                 AiMnemonic = result.Mnemonic;
+                AiEtymology = result.Etymology;
+                AiAssociation = result.Association;
             }
         }
         catch
         {
-            // AI unavailable
+            // AI unavailable — back off for 60 seconds
+            _aiCircuitBreakerUntil = DateTime.UtcNow.AddSeconds(60);
         }
         finally
         {
@@ -3087,6 +3271,7 @@ private async Task InstallStarterPack()
     private async Task TryLoadProactiveMnemonic()
     {
         if (CurrentWord == null || IsExamMode || IsSpeedRound) return;
+        if (IsLoadingMnemonic || !string.IsNullOrEmpty(AiMnemonic)) return;
 
         // Проактивная мнемоника: при первом показе слова (TotalAttempts == 0)
         // и если слово сложное (>= 7 букв или есть транскрипция)
@@ -3103,8 +3288,8 @@ private async Task InstallStarterPack()
     {
         try
         {
-            var dueReviews = await GrammarService.GetDueReviewsAsync();
-            GrammarDueCount = dueReviews?.Count ?? 0;
+            GrammarDueReviews = await GrammarService.GetDueReviewsAsync();
+            GrammarDueCount = GrammarDueReviews?.Count ?? 0;
             await InvokeAsync(StateHasChanged);
         }
         catch { /* ignore */ }
@@ -3113,5 +3298,29 @@ private async Task InstallStarterPack()
     private void NavigateToGrammar()
     {
         Navigation.NavigateTo("/grammar");
+    }
+
+    private void NavigateToGrammarReview()
+    {
+        if (GrammarDueReviews?.Rules.Any() == true)
+        {
+            var firstRule = GrammarDueReviews.Rules.First();
+            Navigation.NavigateTo($"/grammar/{firstRule.RuleId}?mode=review");
+        }
+        else
+        {
+            Navigation.NavigateTo("/grammar");
+        }
+    }
+
+    private string GrammarDueWordForm(int count)
+    {
+        if (count % 100 >= 11 && count % 100 <= 19) return "правил";
+        return (count % 10) switch
+        {
+            1 => "правило",
+            2 or 3 or 4 => "правила",
+            _ => "правил"
+        };
     }
 }
