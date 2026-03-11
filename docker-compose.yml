@@ -135,7 +135,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5200
       - Ollama__BaseUrl=http://host.docker.internal:11434
-      - Ollama__Model=qwen2.5:7b
+      - Ollama__Model=mistral-nemo
       - Ollama__TimeoutSeconds=180
 
   # -------------------------------
