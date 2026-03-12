@@ -178,59 +178,61 @@ public static class PromptTemplates
         Word: "{{word}}" ({{language}}). Student answered: "{{userAnswer}}". Correct: "{{correctAnswer}}".
         {{(context != null ? $"Context: \"{context}\"" : "")}}
 
-        LANGUAGE: Write BOTH fields ONLY in {{targetLanguage}} + {{language}}. No other languages allowed.
-        Keep {{language}} words intact — never split them with spaces (write "incertidumbre", NOT "Ин certidumbre").
+        CRITICAL RULES:
+        1. "explanation" MUST start with the word "{{word}}" (in {{language}}). Never replace it with a pronoun.
+        2. "tip" MUST contain a phrase in {{language}} followed by " — " and its {{targetLanguage}} translation.
+        3. Write in {{targetLanguage}} except for {{language}} words/phrases.
 
-        "explanation" — TWO sentences:
-        1) What {{word}} means. Use a synonym or description — do NOT just repeat the translation word.
-        2) Вы выбрали «{{userAnswer}}» — это совсем другое: [what domain/concept the wrong answer belongs to, 5–12 words].
+        "explanation" format:
+        "{{word}} означает [synonym, not the bare translation]. Вы выбрали «{{userAnswer}}» — это совсем другое: [why wrong, 5–12 words]."
 
-        "tip" — one example phrase using {{word}} in {{language}} + translation.
-        Must give NEW context — do NOT repeat the translation from "explanation".
+        "tip" format:
+        "[phrase in {{language}} using {{word}}] — [translation in {{targetLanguage}}]."
 
-        Example (do NOT copy — write original for "{{word}}"):
-        {"explanation": "Acontecimiento означает важный случай или происшествие. Вы выбрали «преодолевать» — это совсем другое: superar описывает победу над трудностью, а не сам свершившийся факт.", "tip": "El acontecimiento marcó un punto de inflexión — Этот случай стал поворотным моментом."}
+        Example (write ORIGINAL for "{{word}}", do NOT copy):
+        {"explanation": "Acontecimiento означает важный случай или происшествие. Вы выбрали «преодолевать» — это совсем другое: superar описывает победу над трудностью, а не сам факт.", "tip": "El acontecimiento marcó un punto de inflexión — Этот случай стал поворотным моментом."}
 
         FORBIDDEN:
-        - TAUTOLOGY: never define a word using itself ("событие — это событие")
-        - Do NOT repeat the {{targetLanguage}} translation more than once across both fields
-        - NEVER switch to Chinese, Japanese, Arabic or any language other than {{targetLanguage}} and {{language}}
-        - Do NOT split {{language}} words with spaces ("incertidumbre" — one word, not two)
-        - Do NOT invent words or transliterate between languages
-        - For Arabic/Chinese/Japanese/Korean source words: use Latin transliteration
+        - Do NOT replace "{{word}}" with "это слово" or any pronoun
+        - Do NOT omit the {{language}} phrase from "tip"
+        - TAUTOLOGY: never define a word using itself
+        - NEVER switch to Chinese, Japanese, Arabic or any other language
 
         Return ONLY: {"explanation": "...", "tip": "..."}
         """;
 
     public const string MnemonicSystem =
-        """You are a bilingual vocabulary tutor. Respond ONLY with valid JSON. No markdown. Never invent words. Never mix scripts.""";
+        """You are a bilingual vocabulary tutor who creates memorable associations. Respond ONLY with valid JSON. No markdown. Never invent words.""";
 
     public static string MnemonicUser(string word, string translation, string language, string targetLanguage) =>
         $$"""
-        Memorize: "{{word}}" ({{language}}) = "{{translation}}" ({{targetLanguage}}).
+        Help memorize: "{{word}}" ({{language}}) = "{{translation}}" ({{targetLanguage}}).
 
-        LANGUAGE: Write ALL fields ONLY in {{targetLanguage}} + {{language}}. No other languages allowed.
-        Keep {{language}} words intact — never split them with spaces.
+        CRITICAL RULES:
+        1. "mnemonic" MUST start with "{{word}}" (the {{language}} word). Never replace it with a pronoun.
+        2. "association" MUST contain a phrase in {{language}} followed by " — " and {{targetLanguage}} translation.
+        3. Write in {{targetLanguage}} except for {{language}} words/phrases.
 
-        "mnemonic": One sentence. Answer the question: WHO uses this word, or IN WHAT SITUATION? Name a specific context (a doctor diagnosing, a journalist writing, a teacher explaining, a politician debating, a tourist asking, etc.).
+        "mnemonic": Start with "{{word}}". Then choose ONE approach:
+        a) If {{word}} sounds similar to a {{targetLanguage}} word — point out the sound link.
+        b) If there is a real etymology — explain the Latin/Greek root and how it connects to the meaning.
+        c) Otherwise — give a vivid one-sentence image that links the sound or spelling of {{word}} to its meaning "{{translation}}".
+        Do NOT just say "someone uses this word when...". Explain WHY it is easy to remember.
+
         "etymology": Real Latin/Greek/Arabic root if it exists. null if unknown. NEVER invent.
-        "association": One phrase in {{language}} with {{targetLanguage}} translation.
 
-        IMPORTANT: Each word must have its OWN unique context. Do NOT reuse the same domain (e.g. "спортивные новости") for different words.
+        "association": A short memorable phrase using {{word}} in {{language}}, then " — ", then {{targetLanguage}} translation.
 
-        Example (do NOT copy — write original for "{{word}}"):
-        {"mnemonic": "Desafío используют тренеры, когда ставят команде сложную задачу на тренировке.", "etymology": "От латинского diffidare (отказывать в доверии), через испанское desafiar.", "association": "Acepto el desafío — Я принимаю вызов."}
+        Example (write ORIGINAL for "{{word}}", do NOT copy):
+        {"mnemonic": "Comer звучит как русское 'коморка' — маленькая комната, где едят, как кухня.", "etymology": "От латинского comedere (есть, поглощать).", "association": "Vamos a comer juntos — Давай поедим вместе."}
 
         FORBIDDEN:
-        - TAUTOLOGY: never define a word using itself ("событие — это событие")
-        - Do NOT repeat the {{targetLanguage}} translation more than twice
-        - NEVER switch to Chinese, Japanese, Arabic or any language other than {{targetLanguage}} and {{language}}
-        - Do NOT split {{language}} words with spaces
-        - Do NOT invent words or create fake phonetic links
-        - Do NOT start with "Представьте" / "Imagine"
-        - Do NOT use vague phrases like "где-то и когда-то", "что-то важное"
-        - Do NOT use "это как..." metaphors
-        - For Arabic/Chinese/Japanese/Korean source words: use Latin transliteration
+        - Do NOT replace "{{word}}" with "это слово" or any pronoun
+        - Do NOT omit the {{language}} phrase from "association"
+        - Do NOT write generic sentences like "someone uses this word when..."
+        - TAUTOLOGY: never define a word using itself
+        - NEVER switch to Chinese, Japanese, Arabic or any other language
+        - Do NOT invent fake sound similarities
 
         Return ONLY: {"mnemonic": "...", "etymology": "...", "association": "..."}
         """;
