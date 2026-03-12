@@ -831,9 +831,11 @@ public class StatisticsService : IStatisticsService
 
     private async Task<LeaderboardPosition?> GetLeaderboardPositionAsync(int userId, CancellationToken ct)
     {
+        // Global ranking: by total learned words (KnowledgeLevel >= 4), exclude users with 0
         var allUserStats = await _context.LearningProgresses
             .GroupBy(p => p.UserId)
             .Select(g => new { UserId = g.Key, LearnedCount = g.Count(p => p.KnowledgeLevel >= 4) })
+            .Where(x => x.LearnedCount > 0)
             .OrderByDescending(x => x.LearnedCount)
             .ToListAsync(ct);
 
@@ -842,13 +844,29 @@ public class StatisticsService : IStatisticsService
 
         if (userPosition == -1) return null;
 
+        // Weekly ranking: by correct answers this week
+        var weekStart = DateTime.UtcNow.Date.AddDays(-(int)DateTime.UtcNow.DayOfWeek + 1);
+        if (DateTime.UtcNow.DayOfWeek == DayOfWeek.Sunday)
+            weekStart = weekStart.AddDays(-7);
+
+        var weeklyStats = await _context.TrainingSessions
+            .Where(s => s.CompletedAt >= weekStart)
+            .GroupBy(s => s.UserId)
+            .Select(g => new { UserId = g.Key, WeeklyPoints = g.Sum(s => s.CorrectAnswers) })
+            .Where(x => x.WeeklyPoints > 0)
+            .OrderByDescending(x => x.WeeklyPoints)
+            .ToListAsync(ct);
+
+        var weeklyPosition = weeklyStats.FindIndex(x => x.UserId == userId);
+
         return new LeaderboardPosition
         {
             GlobalRank = userPosition + 1,
             TotalUsers = totalUsers,
-            Percentile = totalUsers > 0 ? (1 - (double)userPosition / totalUsers) * 100 : 0,
-            WeeklyRank = userPosition + 1, // Упрощённо - то же что и общий
-            WeeklyPoints = allUserStats[userPosition].LearnedCount
+            // Percentile: #1 из 100 = Топ 1%, #50 из 100 = Топ 50%
+            Percentile = totalUsers > 1 ? (double)(userPosition + 1) / totalUsers * 100 : 100,
+            WeeklyRank = weeklyPosition >= 0 ? weeklyPosition + 1 : 0,
+            WeeklyPoints = weeklyPosition >= 0 ? weeklyStats[weeklyPosition].WeeklyPoints : 0
         };
     }
 
