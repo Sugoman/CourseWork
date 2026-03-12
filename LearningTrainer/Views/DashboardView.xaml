@@ -101,6 +101,15 @@
                             </StackPanel>
                         </Button>
 
+                        <Button Style="{StaticResource NavButtonStyle}" Command="{Binding ImportAnkiCommand}" Margin="5,0,0,0"
+                                Visibility="{Binding CanManage, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                ToolTip="Импорт Anki (.apkg/.colpkg)">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🃏" FontSize="14" VerticalAlignment="Center"/>
+                                <TextBlock Text="Anki" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+
                         <Button Style="{StaticResource NavButtonStyle}" Command="{Binding OpenMarketplaceCommand}" Margin="10,0,0,0">
                             <Button.ContentTemplate>
                                 <DataTemplate>

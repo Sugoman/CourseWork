@@ -55,6 +55,7 @@ namespace LearningTrainer.ViewModels
         public ICommand InstallStarterPackCommand { get; }
         public ICommand OpenLeechManagerCommand { get; }
         public ICommand ImportCsvCommand { get; }
+        public ICommand ImportAnkiCommand { get; }
         public ICommand UnsuspendWordCommand { get; }
         public ICommand CloseLeechPanelCommand { get; }
 
@@ -973,6 +974,44 @@ namespace LearningTrainer.ViewModels
             }
         }
 
+        /// <summary>
+        /// Import Anki (.apkg/.colpkg) file as a new dictionary (§18.7a).
+        /// </summary>
+        private async Task ImportAnkiFile()
+        {
+            try
+            {
+                var dialog = new Microsoft.Win32.OpenFileDialog
+                {
+                    Filter = "Anki files (*.apkg;*.colpkg)|*.apkg;*.colpkg",
+                    Title = "Импорт Anki файла"
+                };
+
+                if (dialog.ShowDialog() != true) return;
+
+                var fileBytes = await File.ReadAllBytesAsync(dialog.FileName);
+                var fileName = Path.GetFileNameWithoutExtension(dialog.FileName);
+
+                var result = await _dataService.ImportAnkiAsync(fileName, fileBytes);
+                if (result != null)
+                {
+                    _notificationService.AddSuccessNotification(
+                        "Импорт Anki завершён",
+                        $"Словарь «{result.Name}» создан ({result.WordCount} слов)");
+                    await LoadDataAsync();
+                }
+                else
+                {
+                    _notificationService.AddErrorNotification("Ошибка импорта Anki",
+                        "Не удалось импортировать .apkg/.colpkg. Проверьте формат файла.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _notificationService.AddErrorNotification("Ошибка импорта", $"Не удалось импортировать Anki: {ex.Message}");
+            }
+        }
+
         private async Task DeleteWord(object parameter)
         {
             if (parameter is Word word)
@@ -1250,6 +1289,11 @@ namespace LearningTrainer.ViewModels
             // Import CSV (§18.7b)
             ImportCsvCommand = new RelayCommand(
                 async (_) => await ImportCsvFile(),
+                (_) => _isOnlineMode);
+
+            // Import Anki (§18.7a)
+            ImportAnkiCommand = new RelayCommand(
+                async (_) => await ImportAnkiFile(),
                 (_) => _isOnlineMode);
 
             // Leech unsuspend/close

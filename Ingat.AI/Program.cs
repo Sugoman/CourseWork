@@ -456,12 +456,106 @@ app.MapPost("/api/ai/generate-typed-exercises", async (GenerateTypedExercisesReq
         // Post-validation: убираем упражнения без вопроса
         parsed.Exercises.RemoveAll(e => string.IsNullOrWhiteSpace(e.Question) && string.IsNullOrWhiteSpace(e.IncorrectSentence));
 
+        // MCQ post-validation: проверяем корректность структуры MCQ
+        if (req.ExerciseType == "mcq")
+        {
+            foreach (var ex in parsed.Exercises)
+            {
+                // Если в question нет ___ — пытаемся заменить правильный ответ на ___
+                if (!ex.Question.Contains("___") && ex.Options is { Count: > 0 } && ex.CorrectIndex is >= 0)
+                {
+                    var idx = Math.Min(ex.CorrectIndex.Value, ex.Options.Count - 1);
+                    var correctWord = ex.Options[idx];
+                    if (!string.IsNullOrWhiteSpace(correctWord) && ex.Question.Contains(correctWord, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Заменяем первое вхождение правильного ответа на ___
+                        var pos = ex.Question.IndexOf(correctWord, StringComparison.OrdinalIgnoreCase);
+                        ex.Question = string.Concat(ex.Question.AsSpan(0, pos), "___", ex.Question.AsSpan(pos + correctWord.Length));
+                        logger.LogInformation("MCQ auto-fix: replaced '{Word}' with ___ in question", correctWord);
+                    }
+                }
+
+                // Проверяем что correctIndex в границах options
+                if (ex.Options is { Count: > 0 } && ex.CorrectIndex.HasValue)
+                {
+                    if (ex.CorrectIndex.Value < 0 || ex.CorrectIndex.Value >= ex.Options.Count)
+                        ex.CorrectIndex = 0;
+                }
+            }
+
+            // Убираем MCQ без ___ (не удалось исправить)
+            parsed.Exercises.RemoveAll(e => !e.Question.Contains("___") && e.Options is { Count: > 0 });
+
+            // Убираем MCQ с дублирующимися вариантами
+            parsed.Exercises.RemoveAll(e =>
+                e.Options is { Count: > 0 } &&
+                e.Options.Select(o => o.Trim().ToLowerInvariant()).Distinct().Count() < e.Options.Count);
+
+            // Перемешиваем опции, чтобы правильный ответ не был всегда первым
+            var rng = Random.Shared;
+            foreach (var ex in parsed.Exercises)
+            {
+                if (ex.Options is { Count: > 1 } && ex.CorrectIndex.HasValue)
+                {
+                    var correctAnswer = ex.Options[ex.CorrectIndex.Value];
+                    // Fisher-Yates shuffle
+                    for (int i = ex.Options.Count - 1; i > 0; i--)
+                    {
+                        int j = rng.Next(i + 1);
+                        (ex.Options[i], ex.Options[j]) = (ex.Options[j], ex.Options[i]);
+                    }
+                    ex.CorrectIndex = ex.Options.IndexOf(correctAnswer);
+                }
+            }
+        }
+
         // Assign difficulty tier from request
         foreach (var ex in parsed.Exercises)
             ex.DifficultyTier = req.DifficultyTier;
 
         if (parsed.Exercises.Count == 0)
             return Results.Json(new { error = "AI returned no valid exercises" }, statusCode: 502);
+
+        // Шаг2: AI-валидация — проверка логики упражнений вторым вызовом LLM
+        try
+        {
+            var exercisesJson = System.Text.Json.JsonSerializer.Serialize(parsed.Exercises, new System.Text.Json.JsonSerializerOptions { WriteIndented = false });
+            var validationPrompt = PromptTemplates.ValidateExerciseBatch(req.RuleTitle.Trim(), req.ExerciseType, exercisesJson);
+            var validationResult = await CompleteWithRetry<List<ExerciseValidationItem>>(
+                ai, PromptTemplates.ValidateExerciseSystem, validationPrompt, logger, maxRetries: 1, maxTokens: parsed.Exercises.Count * 80 + 200);
+
+            if (validationResult != null && validationResult.Count > 0)
+            {
+                var invalidIndices = new HashSet<int>();
+                foreach (var v in validationResult)
+                {
+                    if (!v.Valid && v.Index >= 0 && v.Index < parsed.Exercises.Count)
+                    {
+                        invalidIndices.Add(v.Index);
+                        logger.LogWarning("AI validation rejected exercise {Index} for rule '{Rule}': {Reason}",
+                            v.Index, req.RuleTitle, v.Reason);
+                    }
+                }
+
+                if (invalidIndices.Count > 0)
+                {
+                    var before = parsed.Exercises.Count;
+                    parsed.Exercises = parsed.Exercises
+                        .Where((_, i) => !invalidIndices.Contains(i))
+                        .ToList();
+                    logger.LogInformation("AI validation: {Removed}/{Total} exercises rejected for rule '{Rule}'",
+                        invalidIndices.Count, before, req.RuleTitle);
+                }
+            }
+        }
+        catch (Exception valEx)
+        {
+            // Валидация не должна ломать генерацию — просто логируем
+            logger.LogWarning(valEx, "AI validation step failed for rule '{Rule}', returning unvalidated exercises", req.RuleTitle);
+        }
+
+        if (parsed.Exercises.Count == 0)
+            return Results.Json(new { error = "All exercises were rejected by AI validation" }, statusCode: 502);
 
         cache.Set(cacheKey, parsed, TimeSpan.FromHours(6));
         return Results.Ok(parsed);

@@ -701,6 +701,8 @@ namespace LearningTrainer.Services
         public Task<bool> UnsuspendWordAsync(int wordId) => Task.FromResult(false);
         public Task<ImportResult?> ImportCsvAsync(string name, string languageFrom, string languageTo, byte[] csvData)
             => Task.FromResult<ImportResult?>(null);
+        public Task<ImportResult?> ImportAnkiAsync(string name, byte[] ankiData)
+            => Task.FromResult<ImportResult?>(null);
 
         public Task<LearningTrainerShared.Models.Statistics.UserStatistics?> GetStatisticsAsync(string period = "week")
         {

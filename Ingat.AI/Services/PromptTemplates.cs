@@ -162,12 +162,59 @@ public static class PromptTemplates
             """,
         _ => """
             EXERCISE TYPE: Fill-in-the-blank (MCQ)
-            Standard multiple choice exercise with 4 options.
+            Standard multiple choice exercise with exactly 4 options.
 
-            Return JSON:
-            {"exercises": [{"question": "She ___ to school every day.", "options": ["go", "goes", "going", "gone"], "correctIndex": 1, "explanation": "Present Simple, 3rd person singular", "difficultyTier": 1}]}
+            CRITICAL RULES:
+            1. The "question" field MUST contain a blank shown as "___" (three underscores) where the answer goes.
+               NEVER put the correct answer into the sentence. The student must choose it from options.
+               WRONG: "She went to school every day."  CORRECT: "She ___ to school every day."
+            2. "options" MUST contain exactly 4 items. One of them is the correct answer.
+            3. "correctIndex" is the 0-based index of the correct answer inside "options".
+               The option at options[correctIndex] MUST be the word/phrase that fills the blank.
+            4. All 4 options must be the same part of speech / form category (e.g. all verb forms, all prepositions).
+               Wrong options must be plausible but grammatically incorrect in this sentence.
+            5. The sentence with the blank replaced by options[correctIndex] MUST be grammatically correct.
+            6. Each exercise must test the grammar rule "{{ruleTitle}}" — do not test unrelated grammar.
+            7. For compound tenses (Continuous, Perfect, etc.) the blank and options MUST include
+               the FULL verb phrase with the auxiliary verb.
+               WRONG question: "She ___ a book now." with options ["read","reading","reads","readed"]
+                 — "reading" alone is incomplete; the sentence "She reading a book now" is ungrammatical.
+               CORRECT question: "She ___ a book now." with options ["is reading","reads","read","has read"]
+                 — "She is reading a book now" is grammatically complete.
+               Another valid approach: keep the auxiliary in the sentence and blank only the main verb:
+               "She is ___ a book now." with options ["read","reading","reads","readed"]
+            8. All 4 options MUST be unique. Never repeat the same word/phrase twice.
+
+            Example (Past Simple):
+            {"exercises": [{"question": "She ___ to school yesterday.", "options": ["go", "went", "going", "gone"], "correctIndex": 1, "explanation": "Past Simple of 'go' is 'went'", "difficultyTier": 1}]}
+
+            Example (Present Continuous):
+            {"exercises": [{"question": "They ___ football right now.", "options": ["are playing", "play", "played", "plays"], "correctIndex": 0, "explanation": "Present Continuous: am/is/are + V-ing", "difficultyTier": 1}]}
             """
     };
+
+    public const string ValidateExerciseSystem =
+        "You are a strict grammar exercise reviewer. You verify that exercises are logically correct, match the stated grammar topic, and have no contradictions. Respond ONLY with valid JSON. No markdown, no code blocks.";
+
+    public static string ValidateExerciseBatch(string ruleTitle, string exerciseType, string exercisesJson) =>
+        $$"""
+        Verify this batch of "{{exerciseType}}" grammar exercises for the topic: "{{ruleTitle}}".
+
+        Exercises JSON:
+        {{exercisesJson}}
+
+        For EACH exercise, check:
+        1. Does the sentence/question match the grammar topic "{{ruleTitle}}"? (e.g. if the topic is Past Simple, the sentence must test Past Simple, not Present Simple)
+        2. Is the correct answer actually correct? (e.g. for MCQ: does options[correctIndex] fill the blank to make a grammatically correct sentence?)
+        3. Are the wrong options actually wrong? (they must NOT also be correct in the given sentence)
+        4. Is there any logical contradiction? (e.g. time marker says "last night" but the correct answer is present tense)
+        5. For MCQ: does the blank "___" replace exactly the word being tested?
+        6. For compound tenses (Continuous, Perfect, etc.): does the correct option include the auxiliary verb? E.g. "She ___ a book now" with correct answer "reading" is INVALID because "She reading a book now" is ungrammatical — the correct answer must be "is reading".
+        7. Are all options unique? Duplicate options make the exercise invalid.
+
+        Return ONLY a JSON array with one object per exercise, in the same order:
+        [{"index": 0, "valid": true, "reason": ""}, {"index": 1, "valid": false, "reason": "Correct answer 'watching' is present continuous, not Past Simple as required by the topic"}]
+        """;
 
     public const string ExplainMistakeSystem =
         """You are a concise bilingual tutor. Respond ONLY with valid JSON. No markdown. Never invent words.""";

@@ -165,6 +165,7 @@ namespace LearningTrainer.Services
 
         // Import (§18.7a/b)
         Task<ImportResult?> ImportCsvAsync(string name, string languageFrom, string languageTo, byte[] csvData);
+        Task<ImportResult?> ImportAnkiAsync(string name, byte[] ankiData);
 
         // Export
         Task<byte[]> ExportDictionaryAsJsonAsync(int dictionaryId);

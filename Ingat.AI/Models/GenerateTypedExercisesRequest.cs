@@ -32,3 +32,10 @@ public sealed class GeneratedTypedExercise
     public string Explanation { get; set; } = string.Empty;
     public int DifficultyTier { get; set; } = 1;
 }
+
+public sealed class ExerciseValidationItem
+{
+    public int Index { get; set; }
+    public bool Valid { get; set; }
+    public string Reason { get; set; } = string.Empty;
+}

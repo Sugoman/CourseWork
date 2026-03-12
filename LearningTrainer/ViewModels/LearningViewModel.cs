@@ -97,6 +97,22 @@ namespace LearningTrainer.ViewModels
         private MatchItem _selectedMatchItem;
         private bool _isMatchAnimating;
 
+        // === Milestone Toast (§18.5) ===
+        private HashSet<string> _previouslyUnlockedAchievements = new();
+
+        // === Pomodoro Break (§18.1) ===
+        private const int PomodoroWordInterval = 25;
+        private int _wordsSinceLastBreak;
+
+        private bool _showPomodoroBreak;
+        public bool ShowPomodoroBreak
+        {
+            get => _showPomodoroBreak;
+            set => SetProperty(ref _showPomodoroBreak, value);
+        }
+
+        public string PomodoroMessage => $"Вы прошли {PomodoroWordInterval} слов! Сделайте короткий перерыв 🍅";
+
         private Word _currentWord;
         public Word CurrentWord
         {
@@ -270,6 +286,38 @@ namespace LearningTrainer.ViewModels
             get => _spellingHint;
             set => SetProperty(ref _spellingHint, value);
         }
+
+        // === Mastery Indicator (§18.1 LEARNING_IMPROVEMENTS) ===
+        public int CurrentWordKnowledgeLevel =>
+            CurrentWord?.Progress?.FirstOrDefault()?.KnowledgeLevel ?? 0;
+
+        public string MasteryStars
+        {
+            get
+            {
+                int level = CurrentWordKnowledgeLevel;
+                int stars = level switch
+                {
+                    0 => 0,
+                    <= 2 => 1,
+                    <= 4 => 2,
+                    <= 6 => 3,
+                    <= 8 => 4,
+                    _ => 5
+                };
+                return new string('⭐', stars) + new string('☆', 5 - stars);
+            }
+        }
+
+        public string MasteryLevelText => CurrentWordKnowledgeLevel switch
+        {
+            0 => "Новое",
+            <= 2 => "Начинающий",
+            <= 4 => "Знакомое",
+            <= 6 => "Уверенный",
+            <= 8 => "Продвинутый",
+            _ => "Освоено"
+        };
 
         // --- Translation direction ---
         private bool _isReversed;
@@ -576,6 +624,7 @@ namespace LearningTrainer.ViewModels
         public ICommand NextClozeWordCommand { get; private set; }
         public ICommand CheckSpellingCommand { get; private set; }
         public ICommand NextSpellingWordCommand { get; private set; }
+        public ICommand DismissBreakCommand { get; private set; }
 
         private int _selectedWordLimit;
         public int SelectedWordLimit
@@ -851,6 +900,13 @@ namespace LearningTrainer.ViewModels
                 async (param) => await MoveToNextWordAsync(),
                 (param) => SpellingAnswered
             );
+
+            // Pomodoro Break (§18.1)
+            DismissBreakCommand = new RelayCommand(_ =>
+            {
+                ShowPomodoroBreak = false;
+                _wordsSinceLastBreak = 0;
+            });
         }
 
         private async Task LoadSessionAsync()
@@ -910,6 +966,9 @@ namespace LearningTrainer.ViewModels
         {
             _allWords = words.ToList();
 
+            // Capture current achievements for milestone detection (§18.5)
+            _ = CaptureCurrentAchievementsAsync();
+
             var shuffled = words.OrderBy(_ => _random.Next()).ToList();
             if (SelectedWordLimit > 0 && SelectedWordLimit < shuffled.Count)
                 shuffled = shuffled.Take(SelectedWordLimit).ToList();
@@ -933,6 +992,11 @@ namespace LearningTrainer.ViewModels
         private void PrepareCurrentExercise()
         {
             if (CurrentWord == null) return;
+
+            // Update mastery indicator (§18.1)
+            OnPropertyChanged(nameof(CurrentWordKnowledgeLevel));
+            OnPropertyChanged(nameof(MasteryStars));
+            OnPropertyChanged(nameof(MasteryLevelText));
 
             // Apply direction for each word in random mode
             if (_translationDirection == "random")
@@ -1260,6 +1324,13 @@ namespace LearningTrainer.ViewModels
 
                 UpdateProgress();
 
+                // Pomodoro break check (§18.1)
+                _wordsSinceLastBreak++;
+                if (_wordsSinceLastBreak >= PomodoroWordInterval && _wordsQueue.Any())
+                {
+                    ShowPomodoroBreak = true;
+                }
+
                 if (!_wordsQueue.Any())
                 {
                     await CompleteSessionAsync();
@@ -1327,10 +1398,54 @@ namespace LearningTrainer.ViewModels
             }
             catch { }
 
+            // Check for newly unlocked achievements (§18.5 Milestone Toast)
+            _ = CheckNewAchievementsAsync();
+
             IsSessionComplete = true;
             OnPropertyChanged(nameof(HasDifficultWords));
             (ReviewErrorsCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (CopyReportCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        // ── §18.5 Milestone Toast — Achievement notifications ────────
+
+        private async Task CaptureCurrentAchievementsAsync()
+        {
+            try
+            {
+                var stats = await _dataService.GetStatisticsAsync("all");
+                if (stats?.Achievements != null)
+                {
+                    _previouslyUnlockedAchievements = new HashSet<string>(
+                        stats.Achievements.Where(a => a.IsUnlocked).Select(a => a.Id));
+                }
+            }
+            catch { }
+        }
+
+        private async Task CheckNewAchievementsAsync()
+        {
+            try
+            {
+                var stats = await _dataService.GetStatisticsAsync("all");
+                if (stats?.Achievements == null) return;
+
+                var newlyUnlocked = stats.Achievements
+                    .Where(a => a.IsUnlocked && !_previouslyUnlockedAchievements.Contains(a.Id))
+                    .ToList();
+
+                foreach (var achievement in newlyUnlocked)
+                {
+                    EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
+                        $"🏆 Достижение: {achievement.Title}",
+                        $"{achievement.Icon} {achievement.Description}"));
+                }
+
+                // Update the set for potential subsequent checks
+                foreach (var a in newlyUnlocked)
+                    _previouslyUnlockedAchievements.Add(a.Id);
+            }
+            catch { }
         }
 
         // ── #8 Error Review Round ────────────────────────────────────

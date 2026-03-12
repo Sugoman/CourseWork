@@ -355,6 +355,15 @@
                         </ControlTemplate>
                     </ProgressBar.Template>
                 </ProgressBar>
+
+                <!-- Mastery Indicator (§18.1) -->
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+                            Visibility="{Binding IsMatchingMode, Converter={StaticResource InverseBoolToVis}}">
+                    <TextBlock Text="{Binding MasteryStars, Mode=OneWay}" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding MasteryLevelText, Mode=OneWay}" FontSize="{DynamicResource FontSizeSmall}" 
+                               Foreground="{DynamicResource SecondaryTextBrush}" Margin="6,0,0,0"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
             </StackPanel>
 
             <!-- Exercise type selector (shown before training starts) -->
@@ -1685,6 +1694,44 @@
                     </StackPanel>
                 </StackPanel>
             </Grid>
+
+            <!-- ====== POMODORO BREAK OVERLAY (§18.1) ====== -->
+            <Border Grid.Row="0" Grid.RowSpan="3" Panel.ZIndex="50"
+                    Visibility="{Binding ShowPomodoroBreak, Converter={StaticResource BoolToVis}}"
+                    Background="#CC000000">
+                <Border HorizontalAlignment="Center" VerticalAlignment="Center"
+                        Background="{DynamicResource CardBackgroundBrush}" CornerRadius="20" Padding="40,32"
+                        MaxWidth="420">
+                    <Border.Effect>
+                        <DropShadowEffect ShadowDepth="4" BlurRadius="20" Opacity="0.3"/>
+                    </Border.Effect>
+                    <StackPanel HorizontalAlignment="Center">
+                        <TextBlock Text="🍅" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,12"/>
+                        <TextBlock Text="Время для перерыва!" FontSize="22" FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryTextBrush}" HorizontalAlignment="Center"
+                                   Margin="0,0,0,8"/>
+                        <TextBlock Text="{Binding PomodoroMessage}" FontSize="14" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"
+                                   TextAlignment="Center" Margin="0,0,0,4"/>
+                        <TextBlock Text="Встаньте, разомнитесь, отдохните глаза 👀" FontSize="13"
+                                   Foreground="{DynamicResource SecondaryTextBrush}" HorizontalAlignment="Center"
+                                   Margin="0,0,0,24"/>
+                        <Button Command="{Binding DismissBreakCommand}" Content="Продолжить тренировку →"
+                                Padding="20,10" FontSize="15" FontWeight="SemiBold" Cursor="Hand"
+                                HorizontalAlignment="Center" Background="{DynamicResource AccentBrush}"
+                                Foreground="White" BorderThickness="0">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}" CornerRadius="10"
+                                            Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </Border>
 
             <!-- ====== SPEED ROUND OVERLAY (§18.1d) ====== -->
             <Border Grid.Row="0" VerticalAlignment="Top" HorizontalAlignment="Right" Margin="20,8,20,0"

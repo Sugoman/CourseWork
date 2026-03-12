@@ -864,6 +864,23 @@ namespace LearningTrainer.Services
             catch { return null; }
         }
 
+        // §18.7a — Import Anki
+        public async Task<ImportResult?> ImportAnkiAsync(string name, byte[] ankiData)
+        {
+            try
+            {
+                using var content = new MultipartFormDataContent();
+                content.Add(new ByteArrayContent(ankiData), "file", $"{name}.apkg");
+                if (!string.IsNullOrWhiteSpace(name))
+                    content.Add(new StringContent(name), "dictionaryName");
+                var response = await _httpClient.PostAsync("/api/dictionaries/import/anki", content);
+                if (response.IsSuccessStatusCode)
+                    return await response.Content.ReadFromJsonAsync<ImportResult>(_jsonOptions);
+                return null;
+            }
+            catch { return null; }
+        }
+
         #endregion
 
         #region Statistics

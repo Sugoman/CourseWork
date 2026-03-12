@@ -95,6 +95,7 @@ namespace LearningTrainer.ViewModels
 
             RefreshCommand = new RelayCommand(async _ => await LoadStatisticsAsync());
             PracticeDifficultWordsCommand = new RelayCommand(PracticeDifficultWords);
+            ToggleAllAchievementsCommand = new RelayCommand(_ => ShowAllAchievements = !ShowAllAchievements);
 
             _ = LoadStatisticsAsync();
         }
@@ -103,12 +104,29 @@ namespace LearningTrainer.ViewModels
         /// Активные достижения: недавно разблокированные или с прогрессом > 0
         /// </summary>
         public IEnumerable<LearningTrainerShared.Models.Statistics.Achievement> ActiveAchievements =>
-            Statistics?.Achievements?.Where(a =>
-                (a.IsUnlocked && a.UnlockedAt.HasValue && (DateTime.UtcNow - a.UnlockedAt.Value).TotalDays <= 7) ||
-                (!a.IsUnlocked && a.Progress > 0))
-            .OrderByDescending(a => a.IsUnlocked)
-            .ThenByDescending(a => a.Progress)
-            .Take(6) ?? Enumerable.Empty<LearningTrainerShared.Models.Statistics.Achievement>();
+            _showAllAchievements
+                ? (Statistics?.Achievements?
+                    .OrderByDescending(a => a.IsUnlocked)
+                    .ThenByDescending(a => a.Progress)
+                    ?? Enumerable.Empty<LearningTrainerShared.Models.Statistics.Achievement>())
+                : (Statistics?.Achievements?.Where(a =>
+                    (a.IsUnlocked && a.UnlockedAt.HasValue && (DateTime.UtcNow - a.UnlockedAt.Value).TotalDays <= 7) ||
+                    (!a.IsUnlocked && a.Progress > 0))
+                .OrderByDescending(a => a.IsUnlocked)
+                .ThenByDescending(a => a.Progress)
+                .Take(6) ?? Enumerable.Empty<LearningTrainerShared.Models.Statistics.Achievement>());
+
+        private bool _showAllAchievements;
+        public bool ShowAllAchievements
+        {
+            get => _showAllAchievements;
+            set
+            {
+                if (SetProperty(ref _showAllAchievements, value))
+                    OnPropertyChanged(nameof(ActiveAchievements));
+            }
+        }
+        public ICommand ToggleAllAchievementsCommand { get; }
 
         /// <summary>
         /// Количество разблокированных достижений

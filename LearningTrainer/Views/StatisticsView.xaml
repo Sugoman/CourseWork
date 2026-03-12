@@ -453,6 +453,31 @@
                                 <TextBlock Text="🏅 Достижения" Style="{StaticResource SectionHeaderStyle}" Margin="0"/>
                             </StackPanel>
                             <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button Command="{Binding ToggleAllAchievementsCommand}"
+                                        Padding="10,4" Margin="0,0,8,0"
+                                        Background="{DynamicResource SurfaceBrush}" BorderThickness="0" Cursor="Hand"
+                                        Foreground="{DynamicResource PrimaryAccentBrush}" FontSize="11">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Content" Value="Показать все ↓"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" 
+                                                                CornerRadius="10" Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ShowAllAchievements}" Value="True">
+                                                    <Setter Property="Content" Value="Свернуть ↑"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
                                 <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="10,4">
                                     <TextBlock FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}">
                                         <Run Text="✅ "/>
@@ -468,14 +493,15 @@
                         <ItemsControl ItemsSource="{Binding ActiveAchievements}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <UniformGrid Columns="3" Rows="2"/>
+                                    <WrapPanel/>
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border Margin="4" Padding="10" CornerRadius="10"
                                             Background="{DynamicResource SurfaceBrush}"
-                                            Opacity="{Binding IsUnlocked, Converter={StaticResource BoolToOpacityConverter}}">
+                                            Opacity="{Binding IsUnlocked, Converter={StaticResource BoolToOpacityConverter}}"
+                                            Width="280">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
