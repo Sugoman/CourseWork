@@ -1,6 +1,8 @@
 using LearningAPI.Extensions;
+using LearningAPI.Services;
 using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Models.Features.Ai;
 using LearningTrainerShared.Services;
 using Markdig;
 using Ganss.Xss;
@@ -24,6 +26,19 @@ namespace LearningAPI.Controllers
         private readonly ApiDbContext _context;
         private readonly ISpacedRepetitionService _srs;
         private readonly IDistributedCache _cache;
+        private readonly IAiGrammarExerciseService _aiGrammarExerciseService;
+        private readonly ILogger<GrammarController> _logger;
+
+        private static readonly HashSet<string> SupportedExerciseTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "mcq",
+            "transformation",
+            "error_correction",
+            "word_order",
+            "translation",
+            "matching",
+            "dictation"
+        };
 
         private static readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder()
             .UseAdvancedExtensions()
@@ -32,11 +47,18 @@ namespace LearningAPI.Controllers
 
         private static readonly HtmlSanitizer _htmlSanitizer = LearningTrainerShared.Services.SharedSanitizerFactory.Create();
 
-        public GrammarController(ApiDbContext context, ISpacedRepetitionService srs, IDistributedCache cache)
+        public GrammarController(
+            ApiDbContext context,
+            ISpacedRepetitionService srs,
+            IDistributedCache cache,
+            IAiGrammarExerciseService aiGrammarExerciseService,
+            ILogger<GrammarController> logger)
         {
             _context = context;
             _srs = srs;
             _cache = cache;
+            _aiGrammarExerciseService = aiGrammarExerciseService;
+            _logger = logger;
         }
 
         private static string ConvertMarkdownToHtml(string? markdown)
@@ -308,6 +330,165 @@ namespace LearningAPI.Controllers
         }
 
         /// <summary>
+        /// Сгенерировать упражнения через AI и сохранить их в банк GrammarExercise (§17.9.8).
+        /// </summary>
+        [HttpPost("{ruleId:int}/generate-exercises")]
+        public async Task<IActionResult> GenerateExercises(
+            int ruleId,
+            [FromQuery(Name = "type")] string exerciseType = "mcq",
+            [FromQuery] int count = 5,
+            [FromQuery] int difficultyTier = 1)
+        {
+            var userId = GetUserId();
+
+            exerciseType = (exerciseType ?? "mcq").Trim().ToLowerInvariant();
+
+            if (!SupportedExerciseTypes.Contains(exerciseType))
+                return BadRequest($"Неподдерживаемый type: {exerciseType}");
+
+            if (count is < 1 or > 20)
+                return BadRequest("count должен быть в диапазоне 1..20");
+
+            if (difficultyTier is < 1 or > 3)
+                return BadRequest("difficultyTier должен быть в диапазоне 1..3");
+
+            var rule = await _context.Rules
+                .IgnoreQueryFilters()
+                .Include(r => r.Exercises)
+                .FirstOrDefaultAsync(r => r.Id == ruleId &&
+                    (r.UserId == userId || _context.RuleSharings.Any(rs => rs.RuleId == r.Id && rs.StudentId == userId)));
+
+            if (rule == null)
+                return NotFound("Правило не найдено");
+
+            // POST-эндпоинт всегда генерирует новые упражнения через AI.
+            // Существующие упражнения возвращаются только как fallback при недоступности AI.
+            var existing = rule.Exercises
+                .Where(e => e.ExerciseType == exerciseType && e.DifficultyTier == difficultyTier)
+                .OrderByDescending(e => e.Id)
+                .Take(count)
+                .OrderBy(e => e.OrderIndex)
+                .ToList();
+
+            var generated = new List<GrammarExercise>();
+            bool aiGenerationAttempted = true;
+            bool aiGenerationSucceeded = false;
+            bool aiServiceUnavailable = false;
+            string? warning = null;
+
+            {
+                var aiResult = await _aiGrammarExerciseService.GenerateTypedExercisesAsync(
+                    rule.Title,
+                    rule.MarkdownContent,
+                    exerciseType,
+                    count,
+                    difficultyTier);
+
+                aiGenerationSucceeded = aiResult.IsSuccess;
+                aiServiceUnavailable = aiResult.IsServiceUnavailable;
+                var aiResults = aiResult.Exercises;
+
+                if (aiResults.Count == 0)
+                {
+                    _logger.LogWarning(
+                        "AI returned no exercises for rule {RuleId} and type {ExerciseType}. Success={IsSuccess}, ServiceUnavailable={IsServiceUnavailable}, Error={Error}",
+                        ruleId,
+                        exerciseType,
+                        aiResult.IsSuccess,
+                        aiResult.IsServiceUnavailable,
+                        aiResult.ErrorMessage);
+
+                    warning = aiResult.IsServiceUnavailable
+                        ? "AI service is unavailable; returned exercises from existing bank only."
+                        : "AI returned no new exercises.";
+                }
+
+                int orderSeed = rule.Exercises.Any() ? rule.Exercises.Max(e => e.OrderIndex) + 1 : 0;
+
+                generated = aiResults
+                    .Select((item, index) => ToGrammarExerciseEntity(ruleId, exerciseType, difficultyTier, item, orderSeed + index))
+                    .ToList();
+
+                if (generated.Count > 0)
+                {
+                    _context.GrammarExercises.AddRange(generated);
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            if (existing.Count == 0 && generated.Count == 0)
+            {
+                if (aiGenerationAttempted && aiServiceUnavailable)
+                {
+                    return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+                    {
+                        RuleId = ruleId,
+                        RuleTitle = rule.Title,
+                        ExerciseType = exerciseType,
+                        DifficultyTier = difficultyTier,
+                        RequestedCount = count,
+                        Message = "AI service is unavailable and no cached exercises exist for this rule/type.",
+                        AiGenerationAttempted = true,
+                        AiGenerationSucceeded = false,
+                        AiServiceUnavailable = true,
+                        Warning = warning,
+                        Exercises = Array.Empty<object>()
+                    });
+                }
+
+                return Ok(new GeneratedGrammarExercisesResponse
+                {
+                    RuleId = ruleId,
+                    RuleTitle = rule.Title,
+                    ExerciseType = exerciseType,
+                    DifficultyTier = difficultyTier,
+                    RequestedCount = count,
+                    GeneratedCount = 0,
+                    ReturnedCount = 0,
+                    AiGenerationAttempted = aiGenerationAttempted,
+                    AiGenerationSucceeded = aiGenerationSucceeded,
+                    AiServiceUnavailable = aiServiceUnavailable,
+                    Warning = warning ?? "No exercises available for this rule/type.",
+                    Exercises = new List<GeneratedGrammarExerciseDto>()
+                });
+            }
+
+            // Если AI вернул упражнения — возвращаем только новые.
+            // Если AI недоступен — fallback на existing из банка.
+            var exercisesToReturn = generated.Count > 0
+                ? generated
+                : existing;
+
+            var response = new GeneratedGrammarExercisesResponse
+            {
+                RuleId = ruleId,
+                RuleTitle = rule.Title,
+                ExerciseType = exerciseType,
+                DifficultyTier = difficultyTier,
+                RequestedCount = count,
+                GeneratedCount = generated.Count,
+                ReturnedCount = exercisesToReturn.Count,
+                AiGenerationAttempted = aiGenerationAttempted,
+                AiGenerationSucceeded = aiGenerationSucceeded,
+                AiServiceUnavailable = aiServiceUnavailable,
+                Warning = warning,
+                Exercises = exercisesToReturn
+                    .Take(count)
+                    .Select(ToGeneratedExerciseDto)
+                    .ToList()
+            };
+
+            // Инвалидация списков правил на случай, если клиент отображает количество упражнений.
+            if (generated.Count > 0)
+            {
+                await _cache.TryRemoveAsync($"rules:{userId}");
+                await _cache.TryRemoveAsync($"rules:available:{userId}");
+            }
+
+            return Ok(response);
+        }
+
+        /// <summary>
         /// Отправить результат сессии (обновляет GrammarProgress через SM-2).
         /// </summary>
         [HttpPost("{ruleId:int}/submit-session")]
@@ -432,6 +613,61 @@ namespace LearningAPI.Controllers
                     .ToList()
             });
         }
+
+        private static GrammarExercise ToGrammarExerciseEntity(
+            int ruleId,
+            string exerciseType,
+            int difficultyTier,
+            AiTypedExerciseResult item,
+            int orderIndex)
+        {
+            var options = item.Options?.Where(o => !string.IsNullOrWhiteSpace(o)).ToArray() ?? Array.Empty<string>();
+            var alternativeAnswers = item.AlternativeAnswers?.Where(a => !string.IsNullOrWhiteSpace(a)).ToArray() ?? Array.Empty<string>();
+            var shuffledWords = item.ShuffledWords?.Where(w => !string.IsNullOrWhiteSpace(w)).ToArray() ?? Array.Empty<string>();
+
+            var correctIndex = item.CorrectIndex ?? 0;
+            if (correctIndex < 0 || correctIndex >= options.Length)
+                correctIndex = 0;
+
+            var question = string.IsNullOrWhiteSpace(item.Question)
+                ? (item.IncorrectSentence ?? "Complete the exercise")
+                : item.Question;
+
+            return new GrammarExercise
+            {
+                RuleId = ruleId,
+                ExerciseType = exerciseType,
+                Question = question,
+                Options = options,
+                CorrectIndex = correctIndex,
+                CorrectAnswer = item.CorrectAnswer,
+                AlternativeAnswers = alternativeAnswers,
+                IncorrectSentence = item.IncorrectSentence,
+                ShuffledWords = shuffledWords,
+                Explanation = item.Explanation ?? string.Empty,
+                DifficultyTier = difficultyTier,
+                OrderIndex = orderIndex
+            };
+        }
+
+        private static GeneratedGrammarExerciseDto ToGeneratedExerciseDto(GrammarExercise exercise)
+        {
+            return new GeneratedGrammarExerciseDto
+            {
+                Id = exercise.Id,
+                ExerciseType = exercise.ExerciseType,
+                Question = exercise.Question,
+                Options = exercise.Options,
+                CorrectIndex = exercise.CorrectIndex,
+                CorrectAnswer = exercise.CorrectAnswer,
+                AlternativeAnswers = exercise.AlternativeAnswers,
+                IncorrectSentence = exercise.IncorrectSentence,
+                ShuffledWords = exercise.ShuffledWords,
+                Explanation = exercise.Explanation,
+                DifficultyTier = exercise.DifficultyTier,
+                OrderIndex = exercise.OrderIndex
+            };
+        }
     }
 
     // === DTOs ===
@@ -447,5 +683,37 @@ namespace LearningAPI.Controllers
         public string? UserAnswer { get; set; }
         public bool IsCorrect { get; set; }
         public int? ResponseTimeMs { get; set; }
+    }
+
+    public class GeneratedGrammarExercisesResponse
+    {
+        public int RuleId { get; set; }
+        public string RuleTitle { get; set; } = "";
+        public string ExerciseType { get; set; } = "mcq";
+        public int DifficultyTier { get; set; }
+        public int RequestedCount { get; set; }
+        public int GeneratedCount { get; set; }
+        public int ReturnedCount { get; set; }
+        public bool AiGenerationAttempted { get; set; }
+        public bool AiGenerationSucceeded { get; set; }
+        public bool AiServiceUnavailable { get; set; }
+        public string? Warning { get; set; }
+        public List<GeneratedGrammarExerciseDto> Exercises { get; set; } = new();
+    }
+
+    public class GeneratedGrammarExerciseDto
+    {
+        public int Id { get; set; }
+        public string ExerciseType { get; set; } = "mcq";
+        public string Question { get; set; } = "";
+        public string[] Options { get; set; } = Array.Empty<string>();
+        public int CorrectIndex { get; set; }
+        public string? CorrectAnswer { get; set; }
+        public string[] AlternativeAnswers { get; set; } = Array.Empty<string>();
+        public string? IncorrectSentence { get; set; }
+        public string[] ShuffledWords { get; set; } = Array.Empty<string>();
+        public string Explanation { get; set; } = "";
+        public int DifficultyTier { get; set; }
+        public int OrderIndex { get; set; }
     }
 }

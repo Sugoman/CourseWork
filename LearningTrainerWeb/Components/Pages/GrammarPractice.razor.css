@@ -207,6 +207,20 @@
     font-size: 4rem;
 }
 
+.ai-generation-panel {
+    max-width: 420px;
+    padding: 1rem;
+    border: 1px solid var(--border-default, #e0e0e0);
+    border-radius: var(--radius-md, 8px);
+    background: var(--surface-card, #ffffff);
+}
+
+.ai-tools-card {
+    border-radius: var(--radius-md, 8px);
+    border: 1px solid var(--border-default, #e0e0e0);
+    background: var(--surface-card, #ffffff);
+}
+
 /* === Results screen stars === */
 .bi-star-fill,
 .bi-star {

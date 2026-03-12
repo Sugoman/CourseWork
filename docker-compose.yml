@@ -16,11 +16,14 @@ services:
         condition: service_started
       redis:
         condition: service_started
+      ai-service:
+        condition: service_started
     environment:
       - ConnectionStrings__DefaultConnection=Server=db;Database=LearningLanguages;User Id=sa;Password=MySuperStrong!Pass123;TrustServerCertificate=True
       - ConnectionStrings__Redis=redis:6379
       - Jwt__Key=4d9b4ec83f469d8b02e1cdb17745350b15cb532c5441be4ea1ca5d4f54881678
       - ASPNETCORE_URLS=http://+:8080
+      - AiService__BaseUrl=http://ai-service:5200
     develop:
       watch:
         - action: rebuild
@@ -137,6 +140,7 @@ services:
       - Ollama__BaseUrl=http://host.docker.internal:11434
       - Ollama__Model=mistral-nemo
       - Ollama__TimeoutSeconds=180
+      - AiService__BaseUrl=http://ai-service:5200
 
   # -------------------------------
   # 6. Caddy (Reverse Proxy)

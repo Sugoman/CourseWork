@@ -414,3 +414,9 @@ Learn/
 
 # env file
 .env
+
+# Anki files
+*.apkg
+
+# keys folder
+keys/

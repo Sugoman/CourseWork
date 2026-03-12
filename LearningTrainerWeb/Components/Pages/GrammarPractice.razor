@@ -156,7 +156,48 @@
                         <i class="bi bi-journal-x"></i>
                     </div>
                     <h3>Нет упражнений</h3>
-                    <p class="text-muted mb-4">Для этого правила ещё нет упражнений. Добавьте их в редакторе.</p>
+                    <p class="text-muted mb-4">Для этого правила ещё нет упражнений. Можно сгенерировать их через AI.</p>
+
+                    <div class="ai-generation-panel mx-auto text-start">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Тип упражнения</label>
+                            <select class="form-select" @bind="GenerateExerciseType" disabled="@IsGeneratingExercises">
+                                @foreach (var exerciseType in ExerciseTypeOptions)
+                                {
+                                    <option value="@exerciseType.Key">@exerciseType.Value</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Количество</label>
+                            <input type="number" class="form-control" min="1" max="20"
+                                   @bind="GenerateExerciseCount"
+                                   @bind:event="oninput"
+                                   disabled="@IsGeneratingExercises" />
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(GenerateExercisesMessage))
+                        {
+                            <div class="alert @(IsGenerateError ? "alert-danger" : "alert-success") py-2">
+                                @GenerateExercisesMessage
+                            </div>
+                        }
+
+                        <div class="d-grid">
+                            <button class="btn btn-primary" @onclick="GenerateExercisesWithAi" disabled="@IsGeneratingExercises">
+                                @if (IsGeneratingExercises)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    <span>Генерация...</span>
+                                }
+                                else
+                                {
+                                    <span><i class="bi bi-stars me-2"></i>Сгенерировать упражнения</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
                 </div>
             }
             else if (ShowResults)
@@ -255,10 +296,63 @@
                 <!-- Practice session -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <span class="text-muted">Вопрос</span>
-                    <span class="badge bg-primary fs-6">
-                        @(CurrentExerciseIndex + 1) / @Session.Exercises.Count
-                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-sm btn-outline-secondary"
+                                @onclick="ToggleAiToolsPanel"
+                                disabled="@IsGeneratingExercises">
+                            <i class="bi bi-stars me-1"></i> Пополнить AI-банк
+                        </button>
+                        <span class="badge bg-primary fs-6">
+                            @(CurrentExerciseIndex + 1) / @Session.Exercises.Count
+                        </span>
+                    </div>
                 </div>
+
+                @if (ShowAiToolsPanel)
+                {
+                    <div class="card ai-tools-card mb-3">
+                        <div class="card-body py-3">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12 col-md-5">
+                                    <label class="form-label mb-1 small text-muted">Тип</label>
+                                    <select class="form-select form-select-sm" @bind="GenerateExerciseType" disabled="@IsGeneratingExercises">
+                                        @foreach (var exerciseType in ExerciseTypeOptions)
+                                        {
+                                            <option value="@exerciseType.Key">@exerciseType.Value</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label mb-1 small text-muted">Количество</label>
+                                    <input type="number" class="form-control form-control-sm" min="1" max="20"
+                                           @bind="GenerateExerciseCount"
+                                           @bind:event="oninput"
+                                           disabled="@IsGeneratingExercises" />
+                                </div>
+                                <div class="col-6 col-md-4 d-grid">
+                                    <button class="btn btn-sm btn-primary" @onclick="GenerateExercisesWithAi" disabled="@IsGeneratingExercises">
+                                        @if (IsGeneratingExercises)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                            <span>Генерация...</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Сгенерировать</span>
+                                        }
+                                    </button>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(GenerateExercisesMessage))
+                            {
+                                <div class="alert @(IsGenerateError ? "alert-danger" : "alert-success") py-2 mt-2 mb-0">
+                                    @GenerateExercisesMessage
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
 
                 <!-- Progress bar -->
                 <div class="progress mb-4" style="height: 8px; border-radius: 4px;">
@@ -641,8 +735,14 @@
     private GrammarSessionResultDto? SessionResult;
     private bool IsLoading = true;
     private bool IsPracticeLoading;
+    private bool IsGeneratingExercises;
+    private bool IsGenerateError;
+    private bool ShowAiToolsPanel;
     private bool ShowResults;
     private string ActiveTab = "theory";
+    private string GenerateExerciseType = "mcq";
+    private int GenerateExerciseCount = 8;
+    private string? GenerateExercisesMessage;
 
     // Practice state
     private int CurrentExerciseIndex;
@@ -660,6 +760,18 @@
 
     private GrammarPracticeExerciseDto CurrentExercise =>
         Session!.Exercises[CurrentExerciseIndex];
+
+    private static readonly IReadOnlyList<KeyValuePair<string, string>> ExerciseTypeOptions =
+        new List<KeyValuePair<string, string>>
+        {
+            new("mcq", "MCQ - выбор правильного ответа"),
+            new("transformation", "Transformation - преобразование"),
+            new("error_correction", "Error correction - исправление ошибки"),
+            new("word_order", "Word order - порядок слов"),
+            new("translation", "Translation - перевод"),
+            new("matching", "Matching - сопоставление"),
+            new("dictation", "Dictation - диктант")
+        };
 
     private List<GrammarAnswerSubmission> Answers = new();
 
@@ -710,6 +822,9 @@
     {
         IsPracticeLoading = true;
         ShowResults = false;
+        ShowAiToolsPanel = false;
+        GenerateExercisesMessage = null;
+        IsGenerateError = false;
         CurrentExerciseIndex = 0;
         Answers.Clear();
         try
@@ -909,6 +1024,71 @@
     private async Task RetryPractice()
     {
         await LoadPractice();
+    }
+
+    private async Task GenerateExercisesWithAi()
+    {
+        if (IsGeneratingExercises || RuleDetail == null)
+            return;
+
+        GenerateExerciseCount = Math.Clamp(GenerateExerciseCount, 1, 20);
+        IsGeneratingExercises = true;
+        GenerateExercisesMessage = null;
+        IsGenerateError = false;
+
+        try
+        {
+            int difficultyTier = GetRecommendedDifficultyTier(RuleDetail.KnowledgeLevel);
+            var response = await GrammarApi.GenerateExercisesAsync(RuleId, GenerateExerciseType, GenerateExerciseCount, difficultyTier);
+
+            if (response == null)
+            {
+                IsGenerateError = true;
+                GenerateExercisesMessage = "Не удалось сгенерировать упражнения. Попробуйте позже.";
+                return;
+            }
+
+            if (response.AiServiceUnavailable)
+            {
+                GenerateExercisesMessage = response.ReturnedCount > 0
+                    ? $"AI недоступен. Использован существующий банк ({response.ReturnedCount} упражнений)."
+                    : "AI недоступен и в банке нет упражнений.";
+            }
+            else
+            {
+                GenerateExercisesMessage = response.GeneratedCount > 0
+                    ? $"Готово: добавлено {response.GeneratedCount} упражнений, доступно {response.ReturnedCount}."
+                    : (response.Warning ?? "Новых упражнений не добавлено: использован существующий банк.");
+            }
+
+            var refreshed = await GrammarApi.GetRuleDetailAsync(RuleId);
+            if (refreshed != null)
+                RuleDetail = refreshed;
+
+            await LoadPractice();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error generating grammar exercises for rule {RuleId}", RuleId);
+            IsGenerateError = true;
+            GenerateExercisesMessage = "Ошибка при генерации упражнений.";
+        }
+        finally
+        {
+            IsGeneratingExercises = false;
+        }
+    }
+
+    private static int GetRecommendedDifficultyTier(int knowledgeLevel) => knowledgeLevel switch
+    {
+        <= 1 => 1,
+        <= 3 => 2,
+        _ => 3
+    };
+
+    private void ToggleAiToolsPanel()
+    {
+        ShowAiToolsPanel = !ShowAiToolsPanel;
     }
 
     private void OnTextKeyDown(KeyboardEventArgs e)

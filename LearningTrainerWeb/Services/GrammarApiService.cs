@@ -36,6 +36,15 @@ public interface IGrammarApiService
     /// Получить сводку прогресса по грамматике.
     /// </summary>
     Task<GrammarProgressSummaryDto?> GetProgressSummaryAsync();
+
+    /// <summary>
+    /// Сгенерировать и сохранить упражнения в банк правила через AI.
+    /// </summary>
+    Task<GeneratedGrammarExercisesResponseDto?> GenerateExercisesAsync(
+        int ruleId,
+        string exerciseType,
+        int count = 5,
+        int difficultyTier = 1);
 }
 
 public class GrammarApiService : IGrammarApiService
@@ -137,6 +146,31 @@ public class GrammarApiService : IGrammarApiService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching grammar progress summary");
+            return null;
+        }
+    }
+
+    public async Task<GeneratedGrammarExercisesResponseDto?> GenerateExercisesAsync(
+        int ruleId,
+        string exerciseType,
+        int count = 5,
+        int difficultyTier = 1)
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            var url = $"api/grammar/{ruleId}/generate-exercises?type={Uri.EscapeDataString(exerciseType)}&count={count}&difficultyTier={difficultyTier}";
+            var response = await _httpClient.PostAsync(url, content: null);
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<GeneratedGrammarExercisesResponseDto>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Error generating grammar exercises for rule {RuleId}, type {Type}, tier {Tier}",
+                ruleId,
+                exerciseType,
+                difficultyTier);
             return null;
         }
     }
@@ -288,4 +322,36 @@ public class GrammarRuleDetailDto
     public double AccuracyPercent { get; set; }
     public DateTime? LastPracticeDate { get; set; }
     public int LapseCount { get; set; }
+}
+
+public class GeneratedGrammarExercisesResponseDto
+{
+    public int RuleId { get; set; }
+    public string RuleTitle { get; set; } = "";
+    public string ExerciseType { get; set; } = "mcq";
+    public int DifficultyTier { get; set; }
+    public int RequestedCount { get; set; }
+    public int GeneratedCount { get; set; }
+    public int ReturnedCount { get; set; }
+    public bool AiGenerationAttempted { get; set; }
+    public bool AiGenerationSucceeded { get; set; }
+    public bool AiServiceUnavailable { get; set; }
+    public string? Warning { get; set; }
+    public List<GeneratedGrammarExerciseDto> Exercises { get; set; } = new();
+}
+
+public class GeneratedGrammarExerciseDto
+{
+    public int Id { get; set; }
+    public string ExerciseType { get; set; } = "mcq";
+    public string Question { get; set; } = "";
+    public string[] Options { get; set; } = Array.Empty<string>();
+    public int CorrectIndex { get; set; }
+    public string? CorrectAnswer { get; set; }
+    public string[] AlternativeAnswers { get; set; } = Array.Empty<string>();
+    public string? IncorrectSentence { get; set; }
+    public string[] ShuffledWords { get; set; } = Array.Empty<string>();
+    public string Explanation { get; set; } = "";
+    public int DifficultyTier { get; set; }
+    public int OrderIndex { get; set; }
 }

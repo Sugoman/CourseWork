@@ -1,12 +1,15 @@
 using FluentAssertions;
 using LearningAPI.Controllers;
+using LearningAPI.Services;
 using LearningAPI.Tests.Helpers;
 using LearningTrainerShared.Context;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Models.Features.Ai;
 using LearningTrainerShared.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 using Xunit;
 using Moq;
@@ -17,6 +20,7 @@ public class GrammarControllerTests : IDisposable
 {
     private readonly ApiDbContext _context;
     private readonly GrammarController _controller;
+    private readonly Mock<IAiGrammarExerciseService> _aiGrammarExerciseServiceMock;
     private readonly int _testUserId = 1;
 
     public GrammarControllerTests()
@@ -24,11 +28,22 @@ public class GrammarControllerTests : IDisposable
         _context = TestDbContextFactory.CreateInMemoryContext();
         var srs = new SpacedRepetitionService();
         var cacheMock = new Mock<IDistributedCache>();
+        _aiGrammarExerciseServiceMock = new Mock<IAiGrammarExerciseService>();
+        var loggerMock = new Mock<ILogger<GrammarController>>();
 
         cacheMock.Setup(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((byte[]?)null);
+        cacheMock.Setup(c => c.SetAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        cacheMock.Setup(c => c.RemoveAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
-        _controller = new GrammarController(_context, srs, cacheMock.Object);
+        _controller = new GrammarController(
+            _context,
+            srs,
+            cacheMock.Object,
+            _aiGrammarExerciseServiceMock.Object,
+            loggerMock.Object);
         SetupUserContext(_testUserId, "Teacher");
     }
 
@@ -490,6 +505,78 @@ public class GrammarControllerTests : IDisposable
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.Value.Should().NotBeNull();
+    }
+
+    #endregion
+
+    #region GenerateExercises Tests
+
+    [Fact]
+    public async Task GenerateExercises_WithUnsupportedType_ReturnsBadRequest()
+    {
+        // Arrange
+        var rule = await SeedRuleWithExercises(exerciseCount: 0);
+
+        // Act
+        var result = await _controller.GenerateExercises(rule.Id, "invalid_type", count: 5, difficultyTier: 1);
+
+        // Assert
+        result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task GenerateExercises_WithValidRequest_PersistsGeneratedExercises()
+    {
+        // Arrange
+        var rule = await SeedRuleWithExercises(exerciseCount: 0);
+
+        _aiGrammarExerciseServiceMock
+            .Setup(s => s.GenerateTypedExercisesAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                "mcq",
+                2,
+                1,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AiGrammarGenerationResult
+            {
+                IsSuccess = true,
+                IsServiceUnavailable = false,
+                Exercises = new List<AiTypedExerciseResult>
+                {
+                    new()
+                    {
+                        Question = "He ___ to school every day.",
+                        Options = new List<string> { "go", "goes", "going", "gone" },
+                        CorrectIndex = 1,
+                        CorrectAnswer = "goes",
+                        Explanation = "Present Simple, 3rd person singular.",
+                        DifficultyTier = 1
+                    },
+                    new()
+                    {
+                        Question = "She ___ coffee in the morning.",
+                        Options = new List<string> { "drink", "drinks", "drinking", "drank" },
+                        CorrectIndex = 1,
+                        CorrectAnswer = "drinks",
+                        Explanation = "Use -s with she/he/it.",
+                        DifficultyTier = 1
+                    }
+                }
+            });
+
+        // Act
+        var result = await _controller.GenerateExercises(rule.Id, "mcq", count: 2, difficultyTier: 1);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<GeneratedGrammarExercisesResponse>().Subject;
+
+        response.GeneratedCount.Should().Be(2);
+        response.ReturnedCount.Should().Be(2);
+        response.Exercises.Should().HaveCount(2);
+
+        _context.GrammarExercises.Count(e => e.RuleId == rule.Id).Should().Be(2);
     }
 
     #endregion

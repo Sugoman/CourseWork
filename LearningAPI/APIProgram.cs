@@ -88,6 +88,7 @@ builder.Services.AddDbContext<ApiDbContext>((sp, options) =>
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(GetDictionariesHandler).Assembly));
 
 var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+var aiBaseUrl = builder.Configuration["AiService:BaseUrl"] ?? "http://localhost:5200";
 
 if (!string.IsNullOrEmpty(redisConnectionString))
 {
@@ -185,6 +186,11 @@ builder.Services.AddScoped<TokenService>();
 builder.Services.AddSingleton<ISpacedRepetitionService, SpacedRepetitionService>();
 builder.Services.AddScoped<IDictionaryService, DictionaryService>();
 builder.Services.AddHttpClient<LearningTrainer.Services.ExternalDictionaryService>();
+builder.Services.AddHttpClient<IAiGrammarExerciseService, AiGrammarExerciseService>(client =>
+{
+    client.BaseAddress = new Uri(aiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(120);
+});
 
 // Асинхронная обработка транскрипций (Channel + BackgroundService)
 builder.Services.AddSingleton<TranscriptionChannel>();
