@@ -1,6 +1,9 @@
 ﻿@page "/"
+@using LearningTrainerShared.Models
 @inject IAuthService AuthService
 @inject IContentApiService ContentApi
+@inject ITrainingApiService TrainingService
+@inject IGrammarApiService GrammarService
 
 <PageTitle>Ingat - Платформа изучения иностранных языков</PageTitle>
 
@@ -47,6 +50,88 @@
         </div>
     </div>
 </section>
+
+@* §19.8 — Quick Actions panel for authenticated users *@
+@if (IsAuthenticated && QuickPlan != null)
+{
+    <section class="qa-section">
+        <div class="section-container">
+            <div class="qa-card">
+                <div class="qa-top-row">
+                    <div class="qa-title-block">
+                        <h3 class="qa-title"><i class="bi bi-lightning-charge-fill"></i> Быстрый старт</h3>
+                        <p class="qa-subtitle">@QaTotalWords слов ожидают тренировки</p>
+                    </div>
+                    <div class="qa-badges">
+                        @if (QuickPlan.Stats.CurrentStreak > 0)
+                        {
+                            <div class="qa-streak">
+                                <i class="bi bi-fire"></i>
+                                <span>@QuickPlan.Stats.CurrentStreak дн.</span>
+                            </div>
+                        }
+                        @if (QuickPlan.Stats.DailyGoal > 0)
+                        {
+                            <div class="qa-daily">
+                                <div class="qa-daily-label">Сегодня @QuickPlan.Stats.CompletedToday / @QuickPlan.Stats.DailyGoal</div>
+                                <div class="qa-progress-track">
+                                    <div class="qa-progress-fill" style="width: @(QaDailyProgress)%"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="qa-buttons">
+                    @if (QuickPlan.Stats.TotalReviewCount > 0)
+                    {
+                        <a href="training?mode=review&autostart=true" class="qa-btn qa-btn-review">
+                            <div class="qa-btn-icon"><i class="bi bi-arrow-repeat"></i></div>
+                            <div class="qa-btn-info">
+                                <span class="qa-btn-label">Повторить</span>
+                                <span class="qa-btn-count">@QuickPlan.Stats.TotalReviewCount слов</span>
+                            </div>
+                        </a>
+                    }
+                    @if (QuickPlan.Stats.TotalNewCount > 0)
+                    {
+                        <a href="training?mode=new&autostart=true" class="qa-btn qa-btn-new">
+                            <div class="qa-btn-icon"><i class="bi bi-plus-circle"></i></div>
+                            <div class="qa-btn-info">
+                                <span class="qa-btn-label">Новые</span>
+                                <span class="qa-btn-count">@QuickPlan.Stats.TotalNewCount слов</span>
+                            </div>
+                        </a>
+                    }
+                    @if (QuickPlan.Stats.TotalDifficultCount > 0)
+                    {
+                        <a href="training?mode=difficult&autostart=true" class="qa-btn qa-btn-difficult">
+                            <div class="qa-btn-icon"><i class="bi bi-lightning-fill"></i></div>
+                            <div class="qa-btn-info">
+                                <span class="qa-btn-label">Сложные</span>
+                                <span class="qa-btn-count">@QuickPlan.Stats.TotalDifficultCount слов</span>
+                            </div>
+                        </a>
+                    }
+                    @if (GrammarDueCount > 0)
+                    {
+                        <a href="grammar" class="qa-btn qa-btn-grammar">
+                            <div class="qa-btn-icon"><i class="bi bi-book-half"></i></div>
+                            <div class="qa-btn-info">
+                                <span class="qa-btn-label">Грамматика</span>
+                                <span class="qa-btn-count">@GrammarDueCount правил</span>
+                            </div>
+                        </a>
+                    }
+                </div>
+
+                <a href="training" class="qa-start-btn">
+                    <i class="bi bi-play-fill me-2"></i>Начать тренировку
+                </a>
+            </div>
+        </div>
+    </section>
+}
 
 <!-- Features Section -->
 <section class="features-section">
@@ -189,6 +274,13 @@
     private bool IsAuthenticated;
     private List<FeaturedItem>? FeaturedContent;
     private PlatformStatsDto PlatformStats = new();
+    private DailyPlanDto? QuickPlan;
+    private int GrammarDueCount;
+
+    private int QaTotalWords => QuickPlan == null ? 0
+        : QuickPlan.Stats.TotalReviewCount + QuickPlan.Stats.TotalNewCount + QuickPlan.Stats.TotalDifficultCount;
+    private int QaDailyProgress => QuickPlan == null || QuickPlan.Stats.DailyGoal <= 0 ? 0
+        : Math.Min(100, (int)(QuickPlan.Stats.CompletedToday * 100.0 / QuickPlan.Stats.DailyGoal));
 
     protected override async Task OnInitializedAsync()
     {
@@ -203,7 +295,23 @@
             // Prerendering — JS interop not available
         }
 
-        await LoadFeaturedContent();
+        var loadContent = LoadFeaturedContent();
+        var loadQuickPlan = IsAuthenticated ? LoadQuickPlan() : Task.CompletedTask;
+        await Task.WhenAll(loadContent, loadQuickPlan);
+    }
+
+    private async Task LoadQuickPlan()
+    {
+        try
+        {
+            QuickPlan = await TrainingService.GetDailyPlanAsync();
+            var grammarDue = await GrammarService.GetDueReviewsAsync();
+            GrammarDueCount = grammarDue?.Count ?? 0;
+        }
+        catch
+        {
+            // Non-critical — Quick Actions panel just won't show
+        }
     }
 
     private async Task LoadFeaturedContent()

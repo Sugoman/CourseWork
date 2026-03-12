@@ -262,6 +262,34 @@
     background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);
 }
 
+.mode-weakness .mode-icon {
+    background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+}
+
+/* §19.1 — Word progress section in results */
+.word-progress-section {
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: left;
+}
+
+.level-changes-list {
+    padding-left: 0.5rem;
+}
+
+.level-change-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.2rem 0;
+    font-size: 0.9rem;
+}
+
+.difficult-word-detail {
+    margin-bottom: 0.25rem;
+}
+
 /* Speed Round UI */
 .speed-timer {
     font-weight: 700;

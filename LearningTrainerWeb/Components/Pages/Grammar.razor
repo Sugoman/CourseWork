@@ -6,24 +6,26 @@
 
 <PageTitle>Грамматика - Ingat</PageTitle>
 
-<div class="container">
+<div class="grammar-page">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div class="section-heading" style="margin-bottom: 0;">
-            <i class="bi bi-book"></i>
-            <h1 style="margin-bottom: 0;">Грамматика</h1>
+    <div class="gp-header">
+        <div class="gp-header-left">
+            <div class="gp-header-icon"><i class="bi bi-book"></i></div>
+            <h1 class="gp-header-title">Грамматика</h1>
         </div>
         @if (ProgressSummary != null)
         {
-            <div class="d-flex align-items-center gap-3">
-                <span class="badge bg-primary fs-6">
-                    ⭐ @ProgressSummary.MasteredRules / @ProgressSummary.TotalRules навыков
-                </span>
+            <div class="gp-header-badges">
+                <div class="gp-badge gp-badge-mastery">
+                    <i class="bi bi-trophy-fill"></i>
+                    <span>@ProgressSummary.MasteredRules / @ProgressSummary.TotalRules</span>
+                </div>
                 @if (ProgressSummary.OverallAccuracy > 0)
                 {
-                    <span class="badge bg-success fs-6">
-                        🎯 @ProgressSummary.OverallAccuracy%
-                    </span>
+                    <div class="gp-badge gp-badge-accuracy">
+                        <i class="bi bi-bullseye"></i>
+                        <span>@ProgressSummary.OverallAccuracy.ToString("F0")%</span>
+                    </div>
                 }
             </div>
         }
@@ -31,11 +33,11 @@
 
     @if (IsLoading)
     {
-        <div class="text-center py-5">
+        <div class="gp-loading">
             <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
                 <span class="visually-hidden">Загрузка...</span>
             </div>
-            <p class="text-muted mt-3">Загрузка грамматики...</p>
+            <p>Загрузка грамматики...</p>
         </div>
     }
     else
@@ -43,65 +45,54 @@
         <!-- Due Reviews Banner -->
         @if (DueReviews != null && DueReviews.Count > 0)
         {
-            <div class="card mb-4 border-warning" style="border-radius: var(--radius-lg); border-width: 2px;">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="mb-1">
-                                <i class="bi bi-clock-history text-warning me-2"></i>
-                                Повторение: @DueReviews.Count @GetRulesWord(DueReviews.Count)
-                            </h5>
-                            <p class="text-muted mb-0">
-                                @if (DueReviews.Rules.Any())
-                                {
-                                    <span>Следующее: <strong>@DueReviews.Rules.First().RuleTitle</strong></span>
-                                }
-                            </p>
-                        </div>
-                        <button class="btn btn-warning btn-lg" @onclick="StartDueReview">
-                            <i class="bi bi-play-fill me-1"></i> Повторить
-                        </button>
-                    </div>
+            <div class="gp-due-banner" @onclick="StartDueReview">
+                <div class="gp-due-icon"><i class="bi bi-clock-history"></i></div>
+                <div class="gp-due-info">
+                    <span class="gp-due-title">Повторение</span>
+                    <span class="gp-due-desc">
+                        @DueReviews.Count @GetRulesWord(DueReviews.Count)
+                        @if (DueReviews.Rules.Any())
+                        {
+                            <span> · @DueReviews.Rules.First().RuleTitle</span>
+                        }
+                    </span>
                 </div>
+                <button class="gp-due-btn">
+                    <i class="bi bi-play-fill me-1"></i> Повторить
+                </button>
             </div>
         }
 
         <!-- Progress Overview -->
         @if (ProgressSummary != null)
         {
-            <div class="card mb-4" style="border-radius: var(--radius-lg);">
-                <div class="card-body p-4">
-                    <h5 class="mb-3">
-                        <i class="bi bi-bar-chart me-2"></i> Мой прогресс
-                    </h5>
-                    <div class="progress mb-2" style="height: 24px; border-radius: 12px;">
-                        @{
-                            int total = Math.Max(1, ProgressSummary.TotalRules);
-                            int mastered = ProgressSummary.MasteredRules;
-                            int inProgress = ProgressSummary.InProgressRules;
-                            double masteredPct = (double)mastered / total * 100;
-                            double inProgressPct = (double)inProgress / total * 100;
-                        }
-                        <div class="progress-bar bg-success" style="width: @masteredPct.ToString("F0")%"
-                             title="Освоено: @mastered">
-                            @if (masteredPct > 10)
-                            {
-                                <span>@mastered освоено</span>
-                            }
-                        </div>
-                        <div class="progress-bar bg-warning" style="width: @inProgressPct.ToString("F0")%"
-                             title="В процессе: @inProgress">
-                            @if (inProgressPct > 10)
-                            {
-                                <span>@inProgress в процессе</span>
-                            }
-                        </div>
+            <div class="gp-progress-card">
+                <div class="gp-progress-bar-wrap">
+                    <div class="gp-progress-track">
+                        <div class="gp-progress-mastered" style="width: @GpMasteredPct.ToString("F0")%"></div>
+                        <div class="gp-progress-inprogress" style="width: @GpInProgressPct.ToString("F0")%"></div>
                     </div>
-                    <div class="d-flex justify-content-between text-muted small">
-                        <span>🟢 Освоено: @mastered</span>
-                        <span>🟡 В процессе: @inProgress</span>
-                        <span>⚪ Не начато: @(total - mastered - inProgress)</span>
-                        <span>📊 Сессий: @ProgressSummary.TotalSessions</span>
+                </div>
+                <div class="gp-progress-stats">
+                    <div class="gp-stat">
+                        <span class="gp-stat-dot gp-dot-mastered"></span>
+                        <span class="gp-stat-label">Освоено</span>
+                        <span class="gp-stat-value">@ProgressSummary.MasteredRules</span>
+                    </div>
+                    <div class="gp-stat">
+                        <span class="gp-stat-dot gp-dot-progress"></span>
+                        <span class="gp-stat-label">В процессе</span>
+                        <span class="gp-stat-value">@ProgressSummary.InProgressRules</span>
+                    </div>
+                    <div class="gp-stat">
+                        <span class="gp-stat-dot gp-dot-new"></span>
+                        <span class="gp-stat-label">Не начато</span>
+                        <span class="gp-stat-value">@(ProgressSummary.TotalRules - ProgressSummary.MasteredRules - ProgressSummary.InProgressRules)</span>
+                    </div>
+                    <div class="gp-stat">
+                        <i class="bi bi-journal-check gp-stat-icon"></i>
+                        <span class="gp-stat-label">Сессий</span>
+                        <span class="gp-stat-value">@ProgressSummary.TotalSessions</span>
                     </div>
                 </div>
             </div>
@@ -112,94 +103,65 @@
         {
             @foreach (var levelGroup in SkillNodes.GroupBy(n => n.SkillTreeLevel).OrderBy(g => g.Key))
             {
-                <div class="mb-4">
-                    <h5 class="text-muted mb-3">
-                        @GetSkillTreeLevelTitle(levelGroup.Key)
-                    </h5>
-                    <div class="row g-3">
+                <div class="gp-level-group">
+                    <div class="gp-level-header">
+                        <span class="gp-level-emoji">@GetSkillTreeLevelEmoji(levelGroup.Key)</span>
+                        <span class="gp-level-title">@GetSkillTreeLevelTitle(levelGroup.Key)</span>
+                        <span class="gp-level-count">@levelGroup.Count()</span>
+                    </div>
+                    <div class="gp-skills-grid">
                         @foreach (var node in levelGroup)
                         {
-                            <div class="col-sm-6 col-md-4 col-lg-3">
-                                <div class="card h-100 skill-node @GetSkillNodeClass(node)"
-                                     style="border-radius: var(--radius-lg); cursor: @(node.IsUnlocked ? "pointer" : "default"); opacity: @(node.IsUnlocked ? "1" : "0.6");"
-                                     @onclick="() => OpenSkill(node)">
-                                    <div class="card-body text-center p-3">
-                                        <!-- Icon -->
-                                        <div class="fs-1 mb-2">
-                                            @if (!node.IsUnlocked)
-                                            {
-                                                <span>🔒</span>
-                                            }
-                                            else if (!string.IsNullOrEmpty(node.IconEmoji))
-                                            {
-                                                <span>@node.IconEmoji</span>
-                                            }
-                                            else
-                                            {
-                                                <span>📖</span>
-                                            }
-                                        </div>
-
-                                        <!-- Title -->
-                                        <h6 class="card-title mb-1">@node.Title</h6>
-
-                                        @if (!string.IsNullOrEmpty(node.SkillSummary))
+                            <div class="gp-skill @GetSkillStateClass(node)"
+                                 @onclick="() => OpenSkill(node)">
+                                @if (node.NextReview.HasValue && node.NextReview.Value <= DateTime.UtcNow && node.IsUnlocked)
+                                {
+                                    <div class="gp-skill-due-dot" title="Пора повторить"></div>
+                                }
+                                <div class="gp-skill-icon">
+                                    @if (!node.IsUnlocked)
+                                    {
+                                        <i class="bi bi-lock-fill"></i>
+                                    }
+                                    else if (!string.IsNullOrEmpty(node.IconEmoji))
+                                    {
+                                        <span>@node.IconEmoji</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-book"></i>
+                                    }
+                                </div>
+                                <span class="gp-skill-title">@node.Title</span>
+                                <div class="gp-skill-stars">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        var starClass = i <= node.KnowledgeLevel ? "gp-star-filled" : "gp-star-empty";
+                                        <span class="gp-star @starClass">★</span>
+                                    }
+                                </div>
+                                @if (node.ExerciseCount > 0 || node.TotalSessions > 0)
+                                {
+                                    <div class="gp-skill-meta">
+                                        @if (node.ExerciseCount > 0)
                                         {
-                                            <p class="text-muted small mb-2" style="font-size: 0.8rem;">@node.SkillSummary</p>
+                                            <span>@node.ExerciseCount упр.</span>
                                         }
-
-                                        <!-- Stars -->
-                                        <div class="mb-2">
-                                            @for (int i = 1; i <= 5; i++)
-                                            {
-                                                if (i <= node.KnowledgeLevel)
-                                                {
-                                                    <i class="bi bi-star-fill text-warning"></i>
-                                                }
-                                                else
-                                                {
-                                                    <i class="bi bi-star text-muted"></i>
-                                                }
-                                            }
-                                        </div>
-
-                                        <!-- Stats -->
-                                        <div class="d-flex justify-content-center gap-2 small">
-                                            @if (node.ExerciseCount > 0)
-                                            {
-                                                <span class="badge bg-light text-dark">
-                                                    @node.ExerciseCount упр.
-                                                </span>
-                                            }
-                                            @if (node.TotalSessions > 0)
-                                            {
-                                                <span class="badge bg-light text-dark">
-                                                    @node.AccuracyPercent%
-                                                </span>
-                                            }
-                                        </div>
-
-                                        <!-- Due indicator -->
-                                        @if (node.NextReview.HasValue && node.NextReview.Value <= DateTime.UtcNow)
+                                        @if (node.TotalSessions > 0)
                                         {
-                                            <div class="mt-2">
-                                                <span class="badge bg-warning text-dark">
-                                                    <i class="bi bi-clock-history"></i> Повторить
-                                                </span>
-                                            </div>
+                                            <span>@node.AccuracyPercent.ToString("F0")%</span>
                                         }
                                     </div>
-                                </div>
+                                }
                             </div>
                         }
                     </div>
                 </div>
             }
 
-            <!-- Marketplace link -->
-            <div class="text-center mt-4">
-                <a href="rules" class="btn btn-outline-primary">
-                    <i class="bi bi-search me-2"></i> Маркетплейс правил
+            <div class="gp-marketplace-link">
+                <a href="rules">
+                    <i class="bi bi-compass me-2"></i> Маркетплейс правил
                 </a>
             </div>
         }
@@ -231,6 +193,9 @@
     private DueReviewsDto? DueReviews;
     private GrammarProgressSummaryDto? ProgressSummary;
     private bool IsLoading = true;
+
+    private double GpMasteredPct => ProgressSummary == null ? 0 : (double)ProgressSummary.MasteredRules / Math.Max(1, ProgressSummary.TotalRules) * 100;
+    private double GpInProgressPct => ProgressSummary == null ? 0 : (double)ProgressSummary.InProgressRules / Math.Max(1, ProgressSummary.TotalRules) * 100;
 
     protected override async Task OnInitializedAsync()
     {
@@ -270,22 +235,31 @@
         }
     }
 
-    private string GetSkillNodeClass(SkillTreeNodeDto node)
+    private string GetSkillStateClass(SkillTreeNodeDto node)
     {
-        if (!node.IsUnlocked) return "border-secondary";
+        if (!node.IsUnlocked) return "gp-skill-locked";
         return node.KnowledgeLevel switch
         {
-            >= 4 => "border-success",
-            >= 1 => "border-warning",
-            _ => ""
+            >= 5 => "gp-skill-gold",
+            >= 4 => "gp-skill-mastered",
+            >= 1 => "gp-skill-started",
+            _ => "gp-skill-new"
         };
     }
 
+    private string GetSkillTreeLevelEmoji(int level) => level switch
+    {
+        1 => "🌱",
+        2 => "🌿",
+        3 => "🌳",
+        _ => "🎯"
+    };
+
     private string GetSkillTreeLevelTitle(int level) => level switch
     {
-        1 => "🌱 Базовый уровень",
-        2 => "🌿 Средний уровень",
-        3 => "🌳 Продвинутый уровень",
+        1 => "Базовый уровень",
+        2 => "Средний уровень",
+        3 => "Продвинутый уровень",
         _ => $"Уровень {level}"
     };
 

@@ -1,6 +1,7 @@
 @page "/training"
 @using LearningTrainerWeb.Services
 @using LearningTrainerShared.Models
+@using Microsoft.AspNetCore.Components
 @inject ITrainingApiService TrainingService
 @inject IStatisticsApiService StatsService
 @inject IAuthService AuthService
@@ -361,6 +362,13 @@
                         </div>
                         <h4>Сложные</h4>
                         <p>Слова с ошибками</p>
+                    </button>
+                    <button class="mode-card mode-weakness" @onclick='() => StartTraining("weakness")'>
+                        <div class="mode-icon">
+                            <i class="bi bi-bullseye"></i>
+                        </div>
+                        <h4>Слабые места</h4>
+                        <p>Слова с низкой точностью</p>
                     </button>
                     <button class="mode-card mode-speed" @onclick='() => StartSpeedRound()'
                             disabled="@(DailyPlan.Stats.TotalReviewCount == 0 && DailyPlan.Stats.TotalNewCount == 0)">
@@ -1624,7 +1632,7 @@
             }
             else
             {
-                <!-- Результаты тренировки -->
+                <!-- Результаты тренировки (§19.1 LEARNING_IMPROVEMENTS) -->
                 <div class="session-results">
                     <div class="results-icon">
                         @if (SessionAccuracy >= 90)
@@ -1663,6 +1671,10 @@
                             <span class="result-value">@SessionDurationFormatted</span>
                             <span class="result-label">Время</span>
                         </div>
+                        <div class="result-stat" style="color: var(--bs-warning);">
+                            <span class="result-value">+@_sessionXpEarned</span>
+                            <span class="result-label">XP</span>
+                        </div>
                     </div>
 
                     <!-- Accuracy bar -->
@@ -1676,21 +1688,83 @@
                         </div>
                     </div>
 
-                    <!-- Difficult words -->
+                    @if (_avgResponseTimeSec > 0)
+                    {
+                        <div class="text-muted mt-2" style="font-size: 0.9rem;">
+                            <i class="bi bi-stopwatch me-1"></i>Среднее время ответа: @_avgResponseTimeSec с/слово
+                        </div>
+                    }
+
+                    @* §19.1 — Level changes *@
+                    @{
+                        var levelUps = _wordResults.Where(r => r.WasCorrect && r.NewLevel > r.OldLevel).ToList();
+                        var levelDowns = _wordResults.Where(r => !r.WasCorrect && r.NewLevel < r.OldLevel).ToList();
+                    }
+                    @if (levelUps.Count > 0 || levelDowns.Count > 0)
+                    {
+                        <div class="word-progress-section mt-3">
+                            @if (levelUps.Count > 0)
+                            {
+                                <div class="mb-2">
+                                    <span class="badge bg-success-subtle text-success me-1">
+                                        <i class="bi bi-arrow-up-circle me-1"></i>@levelUps.Count @(levelUps.Count == 1 ? "слово повысило уровень" : "слов повысили уровень")
+                                    </span>
+                                </div>
+                                <div class="level-changes-list">
+                                    @foreach (var w in levelUps.Take(5))
+                                    {
+                                        <div class="level-change-item">
+                                            <span class="fw-medium">@w.Word</span>
+                                            <span class="text-muted mx-1">
+                                                @for (int i = 0; i < w.OldLevel; i++) { <i class="bi bi-star-fill text-warning" style="font-size: 0.65rem;"></i> }
+                                                →
+                                                @for (int i = 0; i < w.NewLevel; i++) { <i class="bi bi-star-fill text-warning" style="font-size: 0.65rem;"></i> }
+                                            </span>
+                                        </div>
+                                    }
+                                    @if (levelUps.Count > 5)
+                                    {
+                                        <div class="text-muted" style="font-size: 0.85rem;">и ещё @(levelUps.Count - 5)...</div>
+                                    }
+                                </div>
+                            }
+                            @if (levelDowns.Count > 0)
+                            {
+                                <div class="mb-2 mt-2">
+                                    <span class="badge bg-danger-subtle text-danger me-1">
+                                        <i class="bi bi-arrow-down-circle me-1"></i>@levelDowns.Count @(levelDowns.Count == 1 ? "слово понизило уровень" : "слов понизили уровень")
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <!-- Difficult words with details -->
                     @if (DifficultWordsList.Count > 0)
                     {
                         <div class="difficult-words-section">
                             <h5 class="text-muted mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Слова с ошибками</h5>
                             <div class="difficult-words-list">
-                                @foreach (var word in DifficultWordsList)
+                                @foreach (var w in _wordResults.Where(r => !r.WasCorrect).DistinctBy(r => r.WordId).Take(10))
                                 {
-                                    <span class="badge bg-danger-subtle text-danger me-1 mb-1 px-3 py-2" style="font-size: 0.9rem;">@word</span>
+                                    <div class="difficult-word-detail">
+                                        <span class="badge bg-danger-subtle text-danger px-3 py-2" style="font-size: 0.9rem;">
+                                            @w.Word <span class="text-muted mx-1">→</span> @w.Translation
+                                        </span>
+                                    </div>
                                 }
                             </div>
                         </div>
                     }
 
                     <div class="results-actions">
+                        @* §19.2 — Retry failed words *@
+                        @if (_failedWordIds.Count > 0)
+                        {
+                            <button class="btn btn-warning btn-lg" @onclick="RetryFailedWords">
+                                <i class="bi bi-arrow-counterclockwise me-2"></i>Перетренировать ошибки (@_failedWordIds.Count)
+                            </button>
+                        }
                         <button class="btn btn-primary btn-lg" @onclick="ContinueTraining">
                             <i class="bi bi-arrow-repeat me-2"></i>Продолжить
                         </button>
@@ -1873,6 +1947,24 @@ private DailyChallengeDto? DailyChallenge;
 private List<string> DifficultWordsList = new();
 private string _sessionDurationSnapshot = "";
 
+// §19.1 — Per-word session results for enhanced summary
+private List<WordSessionResult> _wordResults = new();
+private List<int> _failedWordIds = new();
+private int _sessionXpEarned;
+private double _avgResponseTimeSec;
+
+private class WordSessionResult
+{
+    public int WordId { get; set; }
+    public string Word { get; set; } = "";
+    public string Translation { get; set; } = "";
+    public bool WasCorrect { get; set; }
+    public int OldLevel { get; set; }
+    public int NewLevel { get; set; }
+    public string ExerciseType { get; set; } = "";
+    public int ResponseTimeMs { get; set; }
+}
+
 // AI explanation state (Phase 3)
 private string? AiExplanation;
 private string? AiTip;
@@ -1892,6 +1984,12 @@ private UnlockedAchievementInfo? CurrentMilestone;
 // Grammar integration state (§17.6 LEARNING_IMPROVEMENTS)
     private int GrammarDueCount;
     private DueReviewsDto? GrammarDueReviews;
+
+// §19.8 — Query parameters for auto-start from Quick Actions
+[SupplyParameterFromQuery(Name = "mode")]
+public string? QueryMode { get; set; }
+[SupplyParameterFromQuery(Name = "autostart")]
+public string? QueryAutostart { get; set; }
 
 // Element reference for focus
 private ElementReference trainingContainer;
@@ -2026,6 +2124,12 @@ protected override async Task OnInitializedAsync()
         AvailableTags = await ContentApi.GetDictionaryTagsAsync();
         await LoadAvailableDictionaries();
         _ = LoadGrammarDueCount(); // Fire-and-forget, не блокирует UI
+
+        // §19.8 — Auto-start from Quick Actions panel
+        if (string.Equals(QueryAutostart, "true", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(QueryMode))
+        {
+            await StartTraining(QueryMode);
+        }
     }
 
     IsLoading = false;
@@ -2105,6 +2209,10 @@ private async Task InstallStarterPack()
             SessionWrongCount = 0;
             DifficultWordsList.Clear();
             _againQueue.Clear();
+            _wordResults.Clear();
+            _failedWordIds.Clear();
+            _sessionXpEarned = 0;
+            _avgResponseTimeSec = 0;
             SessionStartedAt = DateTime.UtcNow;
             CurrentWord = TrainingWords[0];
             IsAnswerRevealed = false;
@@ -2346,6 +2454,8 @@ private async Task InstallStarterPack()
         // Отправляем результат на сервер с временем ответа и режимом упражнения
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, ActiveExerciseType);
 
+        TrackWordResult(quality >= ResponseQuality.Good, responseTimeMs, ActiveExerciseType);
+
         // Считаем правильные ответы
         if (quality >= ResponseQuality.Good)
         {
@@ -2379,6 +2489,8 @@ private async Task InstallStarterPack()
         // Update progress
         var quality = McqWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "mcq");
+
+        TrackWordResult(McqWasCorrect, responseTimeMs, "mcq");
 
         if (McqWasCorrect)
             {
@@ -2448,6 +2560,8 @@ private async Task InstallStarterPack()
                     : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "typing");
 
+        TrackWordResult(TypingWasCorrect || TypingWasAlmostCorrect, responseTimeMs, "typing");
+
         if (TypingWasCorrect || TypingWasAlmostCorrect)
         {
             CorrectCount++;
@@ -2515,6 +2629,8 @@ private async Task InstallStarterPack()
                     : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "listening");
 
+        TrackWordResult(ListeningWasCorrect || ListeningWasAlmostCorrect, responseTimeMs, "listening");
+
         if (ListeningWasCorrect || ListeningWasAlmostCorrect)
         {
             CorrectCount++;
@@ -2570,6 +2686,12 @@ private async Task InstallStarterPack()
                 _sessionDurationSnapshot = $"{finalElapsed.Minutes}мин {finalElapsed.Seconds}с";
             else
                 _sessionDurationSnapshot = $"{finalElapsed.Seconds}с";
+
+            // §19.1 — Compute session stats
+            _sessionXpEarned = SessionCorrectCount * 10 + (SessionAccuracy >= 90 ? 20 : 0);
+            var timesWithData = _wordResults.Where(r => r.ResponseTimeMs > 0).ToList();
+            _avgResponseTimeSec = timesWithData.Count > 0 ? Math.Round(timesWithData.Average(r => r.ResponseTimeMs) / 1000.0, 1) : 0;
+
             await SaveTrainingSessionAsync();
         }
     }
@@ -2634,6 +2756,39 @@ private async Task InstallStarterPack()
     {
         await LoadDailyPlan();
         await StartTraining(CurrentMode);
+    }
+
+    /// <summary>
+    /// §19.2 — Retry only the words that the user got wrong in the just-finished session.
+    /// </summary>
+    private async Task RetryFailedWords()
+    {
+        if (_failedWordIds.Count == 0) return;
+
+        var failedWords = TrainingWords.Where(w => _failedWordIds.Contains(w.WordId)).ToList();
+        if (failedWords.Count == 0) return;
+
+        TrainingWords = failedWords;
+        CurrentIndex = 0;
+        CorrectCount = 0;
+        SessionCorrectCount = 0;
+        SessionWrongCount = 0;
+        DifficultWordsList.Clear();
+        _againQueue.Clear();
+        _wordResults.Clear();
+        _failedWordIds.Clear();
+        _sessionXpEarned = 0;
+        _avgResponseTimeSec = 0;
+        SessionStartedAt = DateTime.UtcNow;
+        CurrentWord = TrainingWords[0];
+        IsAnswerRevealed = false;
+        IsTrainingActive = true;
+
+        if (_isMixedMode)
+            _activeExerciseType = PickRandomExerciseType();
+
+        PrepareCurrentWord();
+        await FocusContainer();
     }
 
     private async Task BackToPlan()
@@ -2803,6 +2958,8 @@ private async Task InstallStarterPack()
         var quality = ClozeWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "cloze");
 
+        TrackWordResult(ClozeWasCorrect, responseTimeMs, "cloze");
+
         if (ClozeWasCorrect)
         {
             CorrectCount++;
@@ -2862,6 +3019,8 @@ private async Task InstallStarterPack()
         var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
         var quality = SpellingWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "spelling");
+
+        TrackWordResult(SpellingWasCorrect, responseTimeMs, "spelling");
 
         if (SpellingWasCorrect)
         {
@@ -2949,6 +3108,26 @@ private async Task InstallStarterPack()
         ? Math.Round((double)SessionCorrectCount / TrainingWords.Count * 100, 0)
         : 0;
 
+    // §19.1 — Track per-word result for enhanced session summary
+    private void TrackWordResult(bool wasCorrect, int responseTimeMs, string exerciseType)
+    {
+        if (CurrentWord == null) return;
+        var oldLevel = CurrentWord.KnowledgeLevel;
+        _wordResults.Add(new WordSessionResult
+        {
+            WordId = CurrentWord.WordId,
+            Word = CurrentWord.OriginalWord,
+            Translation = CurrentWord.Translation,
+            WasCorrect = wasCorrect,
+            OldLevel = oldLevel,
+            NewLevel = wasCorrect ? Math.Min(oldLevel + 1, 5) : Math.Max(oldLevel - 1, 0),
+            ExerciseType = exerciseType,
+            ResponseTimeMs = responseTimeMs
+        });
+        if (!wasCorrect && !_failedWordIds.Contains(CurrentWord.WordId))
+            _failedWordIds.Add(CurrentWord.WordId);
+    }
+
     private string SessionResultMessage => SessionAccuracy switch
     {
         >= 90 => "Превосходно!",
@@ -3023,6 +3202,10 @@ private async Task InstallStarterPack()
             MatchedPairIds.Add(leftWord.WordId);
             MatchedTranslations.Add(MatchingSelectedRight);
             await TrainingService.UpdateProgressAsync(leftWord.WordId, ResponseQuality.Good, exerciseMode: "matching");
+            var matchWord = CurrentWord;
+            CurrentWord = leftWord;
+            TrackWordResult(true, 0, "matching");
+            CurrentWord = matchWord;
             CorrectCount++;
             SessionCorrectCount++;
         }
@@ -3032,6 +3215,10 @@ private async Task InstallStarterPack()
             MatchingWrongLeft = MatchingSelectedLeft;
             MatchingWrongRight = MatchingSelectedRight;
             await TrainingService.UpdateProgressAsync(leftWord.WordId, ResponseQuality.Again, exerciseMode: "matching");
+            var matchWordW = CurrentWord;
+            CurrentWord = leftWord;
+            TrackWordResult(false, 0, "matching");
+            CurrentWord = matchWordW;
             SessionWrongCount++;
             if (!DifficultWordsList.Contains(leftWord.OriginalWord))
                 DifficultWordsList.Add(leftWord.OriginalWord);

@@ -225,6 +225,18 @@ public class TrainingController : BaseApiController
                         .ToListAsync();
                     break;
 
+                case "weakness":
+                    // §19.4 — Слова с низкой точностью, но ещё не leeches
+                    result = await query
+                        .Where(p => p.TotalAttempts >= 3
+                                    && p.KnowledgeLevel <= 2
+                                    && p.CorrectAnswers < (int)(p.TotalAttempts * 0.6))
+                        .OrderBy(p => (double)p.CorrectAnswers / p.TotalAttempts)
+                        .Take(limit)
+                        .Select(p => MapToTrainingWordProjection(p))
+                        .ToListAsync();
+                    break;
+
                 case "new":
                     // Только новые слова
                     var progressedWordIds = await _context.LearningProgresses
