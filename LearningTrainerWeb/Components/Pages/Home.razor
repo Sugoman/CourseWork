@@ -128,6 +128,73 @@
                 <a href="training" class="qa-start-btn">
                     <i class="bi bi-play-fill me-2"></i>Начать тренировку
                 </a>
+
+                @* §19.9 — Streak Freeze *@
+                @if (ShowStreakFreeze)
+                {
+                    <div class="sf-banner">
+                        <div class="sf-info">
+                            <i class="bi bi-shield-fill-exclamation sf-icon"></i>
+                            <div class="sf-text">
+                                <strong>Серия под угрозой!</strong>
+                                <span>Вы пропустили тренировку. Используйте Freeze, чтобы сохранить серию.</span>
+                            </div>
+                        </div>
+                        <div class="sf-actions">
+                            @if (QuickPlan.Stats.StreakFreezeCount > 0)
+                            {
+                                <button class="btn btn-sm btn-warning sf-btn" @onclick="UseStreakFreeze" disabled="@_freezeLoading">
+                                    @if (_freezeLoading) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                    <i class="bi bi-shield-fill me-1"></i>Использовать Freeze (@QuickPlan.Stats.StreakFreezeCount шт.)
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-warning sf-btn" @onclick="UseStreakFreeze" disabled="@_freezeLoading">
+                                    @if (_freezeLoading) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                    <i class="bi bi-shield-fill me-1"></i>Купить Freeze (100 XP)
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+@* §19.7 — Слово дня *@
+@if (IsAuthenticated && WordOfDay != null)
+{
+    <section class="wod-section">
+        <div class="section-container">
+            <div class="wod-card">
+                <div class="wod-left">
+                    <span class="wod-tag"><i class="bi bi-lightbulb-fill me-1"></i>Слово дня</span>
+                    <div class="wod-word">@WordOfDay.OriginalWord</div>
+                    @if (!string.IsNullOrEmpty(WordOfDay.Transcription))
+                    {
+                        <div class="wod-transcription">/@WordOfDay.Transcription/</div>
+                    }
+                    <div class="wod-translation">@WordOfDay.Translation</div>
+                    @if (!string.IsNullOrEmpty(WordOfDay.Example))
+                    {
+                        <div class="wod-example">«@WordOfDay.Example»</div>
+                    }
+                </div>
+                <div class="wod-right">
+                    <div class="wod-stars">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            var cls = i <= WordOfDay.KnowledgeLevel ? "wod-star-on" : "wod-star-off";
+                            <span class="@cls">★</span>
+                        }
+                    </div>
+                    <div class="wod-dict">@WordOfDay.DictionaryName</div>
+                    <a href="training?mode=review&autostart=true" class="wod-train-btn">
+                        <i class="bi bi-play-fill me-1"></i>Тренировать
+                    </a>
+                </div>
             </div>
         </div>
     </section>
@@ -276,11 +343,21 @@
     private PlatformStatsDto PlatformStats = new();
     private DailyPlanDto? QuickPlan;
     private int GrammarDueCount;
+    private WordOfDayDto? WordOfDay;
+    private bool _freezeLoading;
 
     private int QaTotalWords => QuickPlan == null ? 0
         : QuickPlan.Stats.TotalReviewCount + QuickPlan.Stats.TotalNewCount + QuickPlan.Stats.TotalDifficultCount;
     private int QaDailyProgress => QuickPlan == null || QuickPlan.Stats.DailyGoal <= 0 ? 0
         : Math.Min(100, (int)(QuickPlan.Stats.CompletedToday * 100.0 / QuickPlan.Stats.DailyGoal));
+
+    /// <summary>
+    /// Show freeze banner when streak > 0 and user didn't practice today (streak at risk).
+    /// </summary>
+    private bool ShowStreakFreeze => QuickPlan != null
+        && QuickPlan.Stats.CurrentStreak > 0
+        && QuickPlan.Stats.LastPracticeDate.HasValue
+        && QuickPlan.Stats.LastPracticeDate.Value.Date < DateTime.UtcNow.Date;
 
     protected override async Task OnInitializedAsync()
     {
@@ -304,13 +381,35 @@
     {
         try
         {
-            QuickPlan = await TrainingService.GetDailyPlanAsync();
-            var grammarDue = await GrammarService.GetDueReviewsAsync();
-            GrammarDueCount = grammarDue?.Count ?? 0;
+            var planTask = TrainingService.GetDailyPlanAsync();
+            var grammarTask = GrammarService.GetDueReviewsAsync();
+            var wodTask = TrainingService.GetWordOfDayAsync();
+            await Task.WhenAll(planTask, grammarTask, wodTask);
+            QuickPlan = planTask.Result;
+            GrammarDueCount = grammarTask.Result?.Count ?? 0;
+            WordOfDay = wodTask.Result;
         }
         catch
         {
             // Non-critical — Quick Actions panel just won't show
+        }
+    }
+
+    private async Task UseStreakFreeze()
+    {
+        _freezeLoading = true;
+        try
+        {
+            var success = await TrainingService.UseStreakFreezeAsync();
+            if (success)
+            {
+                // Reload plan to update streak display
+                await LoadQuickPlan();
+            }
+        }
+        finally
+        {
+            _freezeLoading = false;
         }
     }
 

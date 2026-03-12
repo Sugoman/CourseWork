@@ -2619,7 +2619,7 @@ kbd {
     color: #e0a800;
 }
 
-/* === Leech Manager === */
+/* === Leech Manager (§19.10 enhanced) === */
 
 .leech-manager {
     background: var(--surface-card, #fff);
@@ -2629,25 +2629,41 @@ kbd {
     margin-bottom: 1.5rem;
 }
 
-.leech-manager h4 {
+.leech-manager-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 0.25rem;
+}
+
+.leech-manager h4 {
+    margin-bottom: 0;
     font-size: 1.1rem;
 }
 
 .leech-list {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
     margin-top: 0.75rem;
 }
 
 .leech-item {
     display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--surface-body, #f8f9fa);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    border-left: 3px solid var(--accent-red, #ef4444);
+}
+
+.leech-item-top {
+    display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--surface-body, #f8f9fa);
-    border-radius: 8px;
-    padding: 0.6rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .leech-word {
@@ -2655,6 +2671,30 @@ kbd {
     align-items: center;
     gap: 0.25rem;
     flex-wrap: wrap;
+}
+
+.leech-badges {
+    display: flex;
+    gap: 0.35rem;
+}
+
+.leech-ai-tip {
+    font-size: 0.82rem;
+    color: var(--primary-700, #4338ca);
+    background: var(--primary-50, #eef2ff);
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    line-height: 1.4;
+}
+
+.leech-ai-loading {
+    color: var(--gray-500);
+    background: var(--gray-100, #f3f4f6);
+}
+
+.leech-actions {
+    display: flex;
+    gap: 0.5rem;
 }
 
 @media (max-width: 576px) {

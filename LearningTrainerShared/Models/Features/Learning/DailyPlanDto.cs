@@ -47,6 +47,11 @@ public class DailyPlanStats
     /// Дневная цель пользователя (количество слов). 0 = не задана.
     /// </summary>
     public int DailyGoal { get; set; }
+
+    /// <summary>
+    /// Количество доступных Streak Freeze (§19.9 LEARNING_IMPROVEMENTS).
+    /// </summary>
+    public int StreakFreezeCount { get; set; }
 }
 
 /// <summary>

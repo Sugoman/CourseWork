@@ -372,6 +372,62 @@
     color: var(--bs-secondary-color);
 }
 
+/* §19.3 Review Forecast */
+.review-forecast {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+.forecast-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+.forecast-today {
+    font-weight: 600;
+}
+.forecast-label {
+    min-width: 90px;
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color);
+    flex-shrink: 0;
+}
+.forecast-today .forecast-label {
+    color: var(--bs-body-color);
+}
+.forecast-bar-track {
+    flex: 1;
+    height: 12px;
+    background: var(--bs-tertiary-bg, #f0f0f0);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.forecast-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--primary-300, #a5b4fc), var(--primary-500, #6366f1));
+    transition: width 0.4s ease;
+    min-width: 2px;
+}
+.forecast-bar-today {
+    background: linear-gradient(90deg, var(--primary-500, #6366f1), var(--accent-purple, #a855f7));
+}
+.forecast-count {
+    min-width: 36px;
+    text-align: right;
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color);
+    font-variant-numeric: tabular-nums;
+}
+.forecast-tip {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    background: var(--bs-tertiary-bg, #f8f9fa);
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color);
+}
+
 /* Difficult Words */
 .difficult-words-list {
     display: flex;

@@ -2,6 +2,7 @@
 @using LearningTrainerShared.Models.Statistics
 @using LearningTrainerWeb.Services
 @inject IStatisticsApiService StatsService
+@inject ITrainingApiService TrainingService
 @inject IGrammarApiService GrammarService
 @inject IAuthService AuthService
 @inject NavigationManager NavigationManager
@@ -444,6 +445,56 @@
             </div>
         }
 
+        <!-- §19.3 Расписание повторений -->
+        @if (ReviewForecast != null && ReviewForecast.Any())
+        {
+            <div class="section-card">
+                <div class="section-header">
+                    <h3><i class="bi bi-calendar-week me-2"></i>Расписание повторений</h3>
+                </div>
+                <div class="review-forecast">
+                    @{
+                        int maxCount = ReviewForecast.Max(f => f.Count);
+                        maxCount = maxCount > 0 ? maxCount : 1;
+                    }
+                    @foreach (var day in ReviewForecast)
+                    {
+                        var pct = (double)day.Count / maxCount * 100;
+                        var isToday = day.Date.Date == DateTime.UtcNow.Date;
+                        <div class="forecast-row @(isToday ? "forecast-today" : "")">
+                            <span class="forecast-label">
+                                @if (isToday)
+                                {
+                                    <strong>Сегодня</strong>
+                                }
+                                else if (day.Date.Date == DateTime.UtcNow.Date.AddDays(1))
+                                {
+                                    <span>Завтра</span>
+                                }
+                                else
+                                {
+                                    <span>@day.Date.ToString("ddd dd.MM")</span>
+                                }
+                            </span>
+                            <div class="forecast-bar-track">
+                                <div class="forecast-bar-fill @(isToday ? "forecast-bar-today" : "")" style="width: @pct.ToString("F0")%"></div>
+                            </div>
+                            <span class="forecast-count @(isToday ? "fw-bold" : "")">@day.Count</span>
+                        </div>
+                    }
+                    @if (ReviewForecast.Count > 1)
+                    {
+                        var total = ReviewForecast.Sum(f => f.Count);
+                        var avg = total / ReviewForecast.Count;
+                        <div class="forecast-tip">
+                            <i class="bi bi-lightbulb me-1"></i>
+                            Всего @total слов за @ReviewForecast.Count дн. (≈@avg/день)
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
         <!-- Сложные слова -->
         @if (Stats.DifficultWords.Any())
         {
@@ -614,6 +665,7 @@
 @code {
     private UserStatistics? Stats;
     private GrammarProgressSummaryDto? GrammarSummary;
+    private List<ReviewForecastDay>? ReviewForecast;
     private bool IsLoading = true;
     private bool IsAuthenticated;
     private string SelectedPeriod = "week";
@@ -643,9 +695,11 @@
         {
             var statsTask = StatsService.GetStatisticsAsync(SelectedPeriod);
             var grammarTask = GrammarService.GetProgressSummaryAsync();
-            await Task.WhenAll(statsTask, grammarTask);
+            var forecastTask = TrainingService.GetReviewForecastAsync(7);
+            await Task.WhenAll(statsTask, grammarTask, forecastTask);
             Stats = statsTask.Result;
             GrammarSummary = grammarTask.Result;
+            ReviewForecast = forecastTask.Result;
         }
         finally
         {

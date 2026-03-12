@@ -39,6 +39,16 @@ public interface ITrainingApiService
     Task<bool> UnsuspendWordAsync(int wordId);
 
     /// <summary>
+    /// Удалить слово из обучения
+    /// </summary>
+    Task<bool> RemoveFromLearningAsync(int wordId);
+
+    /// <summary>
+    /// Использовать streak freeze
+    /// </summary>
+    Task<bool> UseStreakFreezeAsync();
+
+    /// <summary>
     /// Установить дневную цель
     /// </summary>
     Task<bool> SetDailyGoalAsync(int goal);
@@ -52,6 +62,16 @@ public interface ITrainingApiService
     /// Получить ежедневный челлендж (§5.2 LEARNING_IMPROVEMENTS)
     /// </summary>
     Task<DailyChallengeDto?> GetDailyChallengeAsync();
+
+    /// <summary>
+    /// §19.3 Прогноз повторений
+    /// </summary>
+    Task<List<ReviewForecastDay>> GetReviewForecastAsync(int days = 7);
+
+    /// <summary>
+    /// §19.7 Слово дня
+    /// </summary>
+    Task<WordOfDayDto?> GetWordOfDayAsync();
 
     /// <summary>
     /// Установить токен авторизации
@@ -185,6 +205,36 @@ public class TrainingApiService : ITrainingApiService
         }
     }
 
+    public async Task<bool> RemoveFromLearningAsync(int wordId)
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            var response = await _httpClient.DeleteAsync($"api/progress/{wordId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing word {WordId} from learning", wordId);
+            return false;
+        }
+    }
+
+    public async Task<bool> UseStreakFreezeAsync()
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            var response = await _httpClient.PostAsync("api/progress/use-streak-freeze", null);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error using streak freeze");
+            return false;
+        }
+    }
+
     public async Task<bool> SetDailyGoalAsync(int goal)
     {
         try
@@ -230,6 +280,35 @@ public class TrainingApiService : ITrainingApiService
             return null;
         }
     }
+
+    public async Task<List<ReviewForecastDay>> GetReviewForecastAsync(int days = 7)
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            return await _httpClient.GetFromJsonAsync<List<ReviewForecastDay>>($"api/training/review-forecast?days={days}")
+                   ?? new List<ReviewForecastDay>();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching review forecast");
+            return new List<ReviewForecastDay>();
+        }
+    }
+
+    public async Task<WordOfDayDto?> GetWordOfDayAsync()
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            return await _httpClient.GetFromJsonAsync<WordOfDayDto>("api/training/word-of-day");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching word of the day");
+            return null;
+        }
+    }
 }
 
 #region DTOs
@@ -239,6 +318,26 @@ public class StarterPackResult
     public string Message { get; set; } = "";
     public int DictionaryId { get; set; }
     public int WordCount { get; set; }
+}
+
+public class ReviewForecastDay
+{
+    public DateTime Date { get; set; }
+    public int Count { get; set; }
+}
+
+public class WordOfDayDto
+{
+    public int WordId { get; set; }
+    public string OriginalWord { get; set; } = "";
+    public string Translation { get; set; } = "";
+    public string? Transcription { get; set; }
+    public string? Example { get; set; }
+    public string DictionaryName { get; set; } = "";
+    public string? LanguageFrom { get; set; }
+    public int KnowledgeLevel { get; set; }
+    public int TotalAttempts { get; set; }
+    public int CorrectAnswers { get; set; }
 }
 
 #endregion

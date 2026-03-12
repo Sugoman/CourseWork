@@ -71,6 +71,16 @@ public class UserStats
     public int BestStreak { get; set; }
     public DateTime? LastPracticeDate { get; set; }
 
+    /// <summary>
+    /// Количество доступных Streak Freeze (§19.9 LEARNING_IMPROVEMENTS).
+    /// </summary>
+    public int StreakFreezeCount { get; set; }
+
+    /// <summary>
+    /// Дата последнего использования Streak Freeze.
+    /// </summary>
+    public DateTime? LastFreezeUsedDate { get; set; }
+
     public long TotalLearningTimeSeconds { get; set; }
     public int TotalSessions { get; set; }
 

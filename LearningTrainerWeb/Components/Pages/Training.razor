@@ -303,25 +303,58 @@
                 </div>
             }
 
-            @* === Leech-менеджер === *@
+            @* === §19.10 Enhanced Leech Manager with AI === *@
             @if (IsLeechManagerVisible && LeechWords.Count > 0)
             {
                 <div class="leech-manager">
-                    <h4><i class="bi bi-bug me-2"></i>Замороженные слова</h4>
-                    <p class="text-muted small">Эти слова вызывают трудности. Попробуйте мнемонику, отредактируйте карточку или разморозьте для повторной попытки.</p>
+                    <div class="leech-manager-header">
+                        <h4><i class="bi bi-bug me-2"></i>Проблемные слова (@LeechWords.Count)</h4>
+                        <button class="btn btn-sm btn-outline-warning" @onclick="TrainAllLeeches" title="Тренировать все">
+                            <i class="bi bi-play-fill me-1"></i>Тренировать все
+                        </button>
+                    </div>
+                    <p class="text-muted small mb-3">Эти слова вызывают постоянные трудности. AI подскажет стратегию запоминания.</p>
                     <div class="leech-list">
                         @foreach (var leech in LeechWords)
                         {
+                            var accuracy = leech.TotalAttempts > 0
+                                ? (double)leech.CorrectAnswers / leech.TotalAttempts * 100
+                                : 0;
                             <div class="leech-item">
-                                <div class="leech-word">
-                                    <strong>@leech.OriginalWord</strong>
-                                    <span class="text-muted mx-1">→</span>
-                                    <span>@leech.Translation</span>
-                                    <span class="badge bg-danger-subtle text-danger ms-2">@leech.LapseCount сбросов</span>
+                                <div class="leech-item-top">
+                                    <div class="leech-word">
+                                        <strong>@leech.OriginalWord</strong>
+                                        <span class="text-muted mx-1">→</span>
+                                        <span>@leech.Translation</span>
+                                    </div>
+                                    <div class="leech-badges">
+                                        <span class="badge bg-danger-subtle text-danger">@leech.LapseCount сбросов</span>
+                                        <span class="badge bg-warning-subtle text-warning">@accuracy.ToString("F0")%</span>
+                                    </div>
                                 </div>
-                                <button class="btn btn-sm btn-outline-success" @onclick="() => UnsuspendWord(leech.WordId)" title="Разморозить">
-                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Разморозить
-                                </button>
+                                @if (_leechMnemonics.TryGetValue(leech.WordId, out var mnemonic))
+                                {
+                                    <div class="leech-ai-tip">
+                                        <i class="bi bi-robot me-1"></i>@mnemonic
+                                    </div>
+                                }
+                                else if (_leechMnemonicLoading.Contains(leech.WordId))
+                                {
+                                    <div class="leech-ai-tip leech-ai-loading">
+                                        <span class="spinner-border spinner-border-sm me-1"></span>AI думает...
+                                    </div>
+                                }
+                                <div class="leech-actions">
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => LoadLeechMnemonic(leech)" title="AI мнемоника">
+                                        <i class="bi bi-robot me-1"></i>Мнемоника
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success" @onclick="() => UnsuspendWord(leech.WordId)" title="Разморозить">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i>Разморозить
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveFromLearning(leech.WordId)" title="Убрать из обучения">
+                                        <i class="bi bi-trash me-1"></i>Убрать
+                                    </button>
+                                </div>
                             </div>
                         }
                     </div>
@@ -2391,6 +2424,12 @@ private async Task InstallStarterPack()
         {
             IsAnswerRevealed = true;
         }
+
+        // §19.5 AI auto-examples: enrich word if Example is empty
+        if (CurrentWord != null && string.IsNullOrEmpty(CurrentWord.Example))
+        {
+            _ = EnrichWordWithAiExample(CurrentWord);
+        }
     }
 
     private void GenerateMcqOptions()
@@ -2821,8 +2860,71 @@ private async Task InstallStarterPack()
         if (success)
         {
             LeechWords.RemoveAll(w => w.WordId == wordId);
-            await LoadDailyPlan(); // Обновить счётчики
+            _leechMnemonics.Remove(wordId);
+            await LoadDailyPlan();
         }
+    }
+
+    private async Task RemoveFromLearning(int wordId)
+    {
+        var success = await TrainingService.RemoveFromLearningAsync(wordId);
+        if (success)
+        {
+            LeechWords.RemoveAll(w => w.WordId == wordId);
+            _leechMnemonics.Remove(wordId);
+            await LoadDailyPlan();
+        }
+    }
+
+    // §19.10 Enhanced Leech Manager — AI mnemonics + train all
+    private Dictionary<int, string> _leechMnemonics = new();
+    private HashSet<int> _leechMnemonicLoading = new();
+
+    private async Task LoadLeechMnemonic(TrainingWordDto leech)
+    {
+        if (_leechMnemonics.ContainsKey(leech.WordId) || _leechMnemonicLoading.Contains(leech.WordId)) return;
+        if (DateTime.UtcNow < _aiCircuitBreakerUntil) return;
+
+        _leechMnemonicLoading.Add(leech.WordId);
+        StateHasChanged();
+
+        try
+        {
+            var sourceLang = leech.LanguageFrom ?? "English";
+            var targetLang = leech.LanguageTo ?? "Russian";
+            var result = await AiService.GenerateMnemonicAsync(
+                leech.OriginalWord, leech.Translation, sourceLang, targetLang);
+            if (result != null)
+            {
+                var text = result.Mnemonic ?? "";
+                if (!string.IsNullOrEmpty(result.Association))
+                    text += " | " + result.Association;
+                _leechMnemonics[leech.WordId] = text;
+            }
+        }
+        catch
+        {
+            _aiCircuitBreakerUntil = DateTime.UtcNow.AddSeconds(60);
+        }
+        finally
+        {
+            _leechMnemonicLoading.Remove(leech.WordId);
+            StateHasChanged();
+        }
+    }
+
+    private async Task TrainAllLeeches()
+    {
+        // Unsuspend all leeches and start a training session
+        foreach (var leech in LeechWords.ToList())
+        {
+            await TrainingService.UnsuspendWordAsync(leech.WordId);
+        }
+        LeechWords.Clear();
+        IsLeechManagerVisible = false;
+        await LoadDailyPlan();
+        // Navigate to difficult mode which will pick these recently unsuspended words
+        Navigation.NavigateTo("/training?mode=difficult&autostart=true", forceLoad: true);
     }
 
     // === Daily goal (P0 LEARNING_IMPROVEMENTS §1.2) ===
@@ -3261,6 +3363,30 @@ private async Task InstallStarterPack()
     }
 
     // === Phase 3: AI-powered explanation & mnemonic ===
+
+    /// <summary>
+    /// §19.5 — Auto-enrich word with AI-generated example sentence (fire-and-forget)
+    /// </summary>
+    private async Task EnrichWordWithAiExample(TrainingWordDto word)
+    {
+        if (DateTime.UtcNow < _aiCircuitBreakerUntil) return;
+        try
+        {
+            var sourceLang = word.LanguageFrom ?? "English";
+            var targetLang = word.LanguageTo ?? "Russian";
+            var examples = await AiService.GetExamplesAsync(
+                word.OriginalWord, sourceLang, targetLang, count: 1);
+            if (examples != null && examples.Count > 0)
+            {
+                word.Example = examples[0].Sentence;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch
+        {
+            _aiCircuitBreakerUntil = DateTime.UtcNow.AddSeconds(60);
+        }
+    }
 
     private async Task LoadAiExplanation(string word, string userAnswer, string correctAnswer)
     {

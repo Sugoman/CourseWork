@@ -289,6 +289,28 @@ namespace LearningAPI.Controllers
             return Ok(new { message = "Слово разморожено и возвращено в очередь повторения." });
         }
 
+        // DELETE /api/progress/{wordId}
+        /// <summary>
+        /// Полностью удалить прогресс слова (убрать из обучения)
+        /// </summary>
+        [HttpDelete("{wordId:int}")]
+        public async Task<IActionResult> RemoveFromLearning(int wordId, CancellationToken ct = default)
+        {
+            var userId = GetUserId();
+
+            var progress = await _context.LearningProgresses
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.WordId == wordId, ct);
+
+            if (progress == null)
+                return NotFound(new { message = "Прогресс для этого слова не найден." });
+
+            _context.LearningProgresses.Remove(progress);
+            await _context.SaveChangesAsync(ct);
+            await InvalidateUserStatsCacheAsync(userId);
+
+            return Ok(new { message = "Слово удалено из обучения." });
+        }
+
         // GET /api/progress/leeches
         /// <summary>
         /// Получить список замороженных слов (leeches)
@@ -359,6 +381,86 @@ namespace LearningAPI.Controllers
 
             await _context.SaveChangesAsync(ct);
             return Ok(new { userNote = progress.UserNote });
+        }
+
+        // POST /api/progress/use-streak-freeze
+        /// <summary>
+        /// Использовать Streak Freeze для защиты серии (§19.9 LEARNING_IMPROVEMENTS).
+        /// Стоимость: 100 XP. Можно использовать 1 раз в день.
+        /// </summary>
+        [HttpPost("use-streak-freeze")]
+        public async Task<IActionResult> UseStreakFreeze(CancellationToken ct = default)
+        {
+            var userId = GetUserId();
+            var userStats = await _context.UserStats.FindAsync(new object[] { userId }, ct);
+            if (userStats == null)
+                return BadRequest(new { message = "Статистика пользователя не найдена." });
+
+            var today = DateTime.UtcNow.Date;
+
+            // Check: already used today?
+            if (userStats.LastFreezeUsedDate?.Date == today)
+                return BadRequest(new { message = "Streak Freeze уже использован сегодня." });
+
+            // Check: has available freezes?
+            if (userStats.StreakFreezeCount <= 0)
+            {
+                // Can buy with XP (100 XP cost)
+                const int freezeCost = 100;
+                if (userStats.TotalXp < freezeCost)
+                    return BadRequest(new { message = $"Недостаточно XP. Нужно {freezeCost} XP, у вас {userStats.TotalXp}." });
+
+                userStats.TotalXp -= freezeCost;
+            }
+            else
+            {
+                userStats.StreakFreezeCount--;
+            }
+
+            // Apply freeze: set LastPracticeDate to today to preserve streak
+            userStats.LastFreezeUsedDate = today;
+            userStats.LastPracticeDate = today;
+            userStats.LastUpdated = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync(ct);
+            await InvalidateUserStatsCacheAsync(userId);
+
+            return Ok(new
+            {
+                message = "Streak Freeze активирован! Серия сохранена.",
+                streakFreezeCount = userStats.StreakFreezeCount,
+                totalXp = userStats.TotalXp
+            });
+        }
+
+        // GET /api/progress/streak-freeze-info
+        /// <summary>
+        /// Информация о streak freeze: доступные заморозки, стоимость, можно ли использовать.
+        /// </summary>
+        [HttpGet("streak-freeze-info")]
+        public async Task<IActionResult> GetStreakFreezeInfo(CancellationToken ct = default)
+        {
+            var userId = GetUserId();
+            var userStats = await _context.UserStats.FindAsync(new object[] { userId }, ct);
+            if (userStats == null)
+                return Ok(new { available = 0, canUse = false, canBuy = false, cost = 100, totalXp = 0L });
+
+            var today = DateTime.UtcNow.Date;
+            var usedToday = userStats.LastFreezeUsedDate?.Date == today;
+            var yesterday = today.AddDays(-1);
+            // Only show freeze option if user didn't practice yesterday (streak at risk)
+            var needsFreeze = userStats.LastPracticeDate?.Date < yesterday;
+
+            return Ok(new
+            {
+                available = userStats.StreakFreezeCount,
+                canUse = !usedToday && needsFreeze && (userStats.StreakFreezeCount > 0 || userStats.TotalXp >= 100),
+                canBuy = userStats.StreakFreezeCount <= 0 && userStats.TotalXp >= 100,
+                cost = 100,
+                totalXp = userStats.TotalXp,
+                usedToday,
+                needsFreeze
+            });
         }
 
         private async Task InvalidateUserStatsCacheAsync(int userId)

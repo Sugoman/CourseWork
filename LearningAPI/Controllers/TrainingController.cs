@@ -149,7 +149,8 @@ public class TrainingController : BaseApiController
                     CurrentStreak = streak,
                     LastPracticeDate = stats?.LastPractice,
                     LeechCount = stats?.LeechCount ?? 0,
-                    DailyGoal = dailyGoal
+                    DailyGoal = dailyGoal,
+                    StreakFreezeCount = userStats?.StreakFreezeCount ?? 0
                 }
             };
 
@@ -603,4 +604,110 @@ public class TrainingController : BaseApiController
             RelatedRuleTitle = p.Word?.RelatedRule?.Title
         };
     }
+
+    /// <summary>
+    /// §19.3 — Прогноз повторений на ближайшие дни
+    /// </summary>
+    [HttpGet("review-forecast")]
+    public async Task<IActionResult> GetReviewForecast(
+        [FromQuery] int days = 7,
+        CancellationToken ct = default)
+    {
+        var userId = GetUserId();
+        var now = DateTime.UtcNow.Date;
+        days = Math.Clamp(days, 1, 30);
+
+        var words = await _context.LearningProgresses
+            .Where(p => p.UserId == userId && !p.IsSuspended
+                        && p.NextReview < now.AddDays(days + 1))
+            .Select(p => p.NextReview.Date)
+            .ToListAsync(ct);
+
+        var result = new List<ReviewForecastDay>();
+        for (int i = 0; i < days; i++)
+        {
+            var date = now.AddDays(i);
+            int count;
+            if (i == 0)
+            {
+                // Today: all words due today or earlier (overdue)
+                count = words.Count(d => d <= date);
+            }
+            else
+            {
+                // Future: only words scheduled for that specific day
+                count = words.Count(d => d == date);
+            }
+            result.Add(new ReviewForecastDay { Date = date, Count = count });
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// §19.7 — Слово дня
+    /// </summary>
+    [HttpGet("word-of-day")]
+    public async Task<IActionResult> GetWordOfDay(CancellationToken ct = default)
+    {
+        var userId = GetUserId();
+        var now = DateTime.UtcNow;
+
+        // Seed based on date so the word stays the same all day for this user
+        var daySeed = now.Year * 10000 + now.Month * 100 + now.Day + userId;
+
+        // Pick from words due for review (priority) or mid-knowledge words
+        var candidates = await _context.LearningProgresses
+            .Where(p => p.UserId == userId && !p.IsSuspended && p.Word != null)
+            .Include(p => p.Word)
+                .ThenInclude(w => w!.Dictionary)
+            .OrderBy(p => p.NextReview)
+            .Take(50)
+            .ToListAsync(ct);
+
+        if (!candidates.Any())
+            return Ok(null as object);
+
+        var rng = new Random(daySeed);
+        // Prefer mid-knowledge words (levels 1-3) for "word of the day"
+        var midLevel = candidates.Where(p => p.KnowledgeLevel >= 1 && p.KnowledgeLevel <= 3).ToList();
+        var pool = midLevel.Any() ? midLevel : candidates;
+        var picked = pool[rng.Next(pool.Count)];
+
+        var word = new WordOfDayDto
+        {
+            WordId = picked.WordId,
+            OriginalWord = picked.Word?.OriginalWord ?? "",
+            Translation = picked.Word?.Translation ?? "",
+            Transcription = picked.Word?.Transcription,
+            Example = picked.Word?.Example,
+            DictionaryName = picked.Word?.Dictionary?.Name ?? "",
+            LanguageFrom = picked.Word?.Dictionary?.LanguageFrom,
+            KnowledgeLevel = picked.KnowledgeLevel,
+            TotalAttempts = picked.TotalAttempts,
+            CorrectAnswers = picked.CorrectAnswers
+        };
+
+        return Ok(word);
+    }
+}
+
+public class ReviewForecastDay
+{
+    public DateTime Date { get; set; }
+    public int Count { get; set; }
+}
+
+public class WordOfDayDto
+{
+    public int WordId { get; set; }
+    public string OriginalWord { get; set; } = "";
+    public string Translation { get; set; } = "";
+    public string? Transcription { get; set; }
+    public string? Example { get; set; }
+    public string DictionaryName { get; set; } = "";
+    public string? LanguageFrom { get; set; }
+    public int KnowledgeLevel { get; set; }
+    public int TotalAttempts { get; set; }
+    public int CorrectAnswers { get; set; }
 }
