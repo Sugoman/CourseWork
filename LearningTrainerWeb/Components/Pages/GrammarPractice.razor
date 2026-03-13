@@ -452,27 +452,46 @@
 
                             case "word_order":
                                 <div class="mb-3">
-                                    <div class="d-flex flex-wrap gap-2 mb-3">
-                                        @foreach (var word in AvailableWords)
-                                        {
-                                            var w = word;
-                                            <button class="btn btn-outline-primary" @onclick="() => AddWordToOrder(w)">
-                                                @w
-                                            </button>
-                                        }
-                                    </div>
-                                    <div class="border rounded p-3" style="min-height: 50px;">
+                                    @if (!HasAnswered)
+                                    {
+                                        <div class="wo-available">
+                                            @foreach (var word in AvailableWords)
+                                            {
+                                                var w = word;
+                                                <button class="wo-word wo-word-available" @onclick="() => AddWordToOrder(w)">
+                                                    @w
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                    <div class="wo-sentence @(HasAnswered ? "wo-sentence-answered" : "")">
                                         @if (OrderedWords.Any())
                                         {
-                                            <div class="d-flex flex-wrap gap-2">
-                                                @foreach (var word in OrderedWords)
+                                            @for (int i = 0; i < OrderedWords.Count; i++)
+                                            {
+                                                var idx = i;
+                                                var w = OrderedWords[idx];
+                                                string wordClass = "wo-word wo-word-placed";
+                                                if (HasAnswered)
                                                 {
-                                                    var w = word;
-                                                    <button class="btn btn-primary btn-sm" @onclick="() => RemoveWordFromOrder(w)" disabled="@HasAnswered">
-                                                        @w <i class="bi bi-x ms-1"></i>
-                                                    </button>
+                                                    wordClass += (idx < CorrectWordOrder.Length &&
+                                                                  string.Equals(w.TrimEnd('.', ',', '!', '?', ';', ':'),
+                                                                                CorrectWordOrder[idx].TrimEnd('.', ',', '!', '?', ';', ':'),
+                                                                                StringComparison.OrdinalIgnoreCase))
+                                                        ? " wo-word-correct" : " wo-word-wrong";
                                                 }
-                                            </div>
+                                                <button class="@wordClass" @onclick="() => RemoveWordFromOrder(w)" disabled="@HasAnswered">
+                                                    @if (HasAnswered)
+                                                    {
+                                                        <span class="wo-word-pos">@(idx + 1)</span>
+                                                    }
+                                                    @w
+                                                    @if (!HasAnswered)
+                                                    {
+                                                        <i class="bi bi-x ms-1"></i>
+                                                    }
+                                                </button>
+                                            }
                                         }
                                         else
                                         {
@@ -490,52 +509,91 @@
 
                             case "matching":
                                 <!-- Matching: сопоставление левых и правых элементов -->
-                                <div class="row g-3">
-                                    <div class="col-6">
+                                <div class="matching-container">
+                                    <div class="matching-column matching-left-col">
+                                        <div class="matching-col-header">
+                                            <i class="bi bi-arrow-right-circle"></i> Начало
+                                        </div>
                                         @for (int i = 0; i < GetMatchingLeftItems().Length; i++)
                                         {
                                             var li = i;
                                             var leftArr = GetMatchingLeftItems();
-                                            string leftClass = "btn btn-outline-secondary w-100 text-start mb-2";
+                                            var isPaired = MatchingPairs.ContainsKey(li);
+                                            var pairNum = isPaired ? MatchingPairs.Keys.ToList().IndexOf(li) + 1 : 0;
+                                            string leftClass = "matching-item matching-item-left";
                                             if (MatchingSelectedLeft == li)
-                                                leftClass = "btn btn-primary w-100 text-start mb-2";
-                                            if (HasAnswered && MatchingPairs.ContainsKey(li))
+                                                leftClass += " matching-item-selected";
+                                            else if (isPaired && !HasAnswered)
+                                                leftClass += " matching-item-paired";
+                                            if (HasAnswered && isPaired)
                                             {
-                                                leftClass = MatchingPairs[li] == li
-                                                    ? "btn btn-success w-100 text-start mb-2"
-                                                    : "btn btn-danger w-100 text-start mb-2";
+                                                leftClass += MatchingPairs[li] == MatchingCorrectMap[li]
+                                                    ? " matching-item-correct"
+                                                    : " matching-item-wrong";
                                             }
                                             <button class="@leftClass" disabled="@HasAnswered"
                                                     @onclick="() => SelectMatchingLeft(li)">
-                                                @leftArr[li]
+                                                @if (isPaired && !HasAnswered)
+                                                {
+                                                    <span class="matching-badge">@pairNum</span>
+                                                }
+                                                <span class="matching-text">@leftArr[li]</span>
                                             </button>
                                         }
                                     </div>
-                                    <div class="col-6">
+
+                                    <div class="matching-divider">
+                                        <i class="bi bi-link-45deg"></i>
+                                    </div>
+
+                                    <div class="matching-column matching-right-col">
+                                        <div class="matching-col-header">
+                                            <i class="bi bi-arrow-left-circle"></i> Продолжение
+                                        </div>
                                         @for (int i = 0; i < GetMatchingRightItems().Length; i++)
                                         {
                                             var ri = i;
                                             var rightArr = GetMatchingRightItems();
-                                            string rightClass = "btn btn-outline-secondary w-100 text-start mb-2";
-                                            if (HasAnswered && MatchingPairs.ContainsValue(ri))
+                                            var isPaired = MatchingPairs.ContainsValue(ri);
+                                            var pairNum = isPaired ? MatchingPairs.Values.ToList().IndexOf(ri) + 1 : 0;
+                                            string rightClass = "matching-item matching-item-right";
+                                            if (isPaired && !HasAnswered)
+                                                rightClass += " matching-item-paired";
+                                            if (HasAnswered && isPaired)
                                             {
                                                 var leftIdx = MatchingPairs.First(p => p.Value == ri).Key;
-                                                rightClass = leftIdx == ri
-                                                    ? "btn btn-success w-100 text-start mb-2"
-                                                    : "btn btn-danger w-100 text-start mb-2";
+                                                rightClass += MatchingCorrectMap[leftIdx] == ri
+                                                    ? " matching-item-correct"
+                                                    : " matching-item-wrong";
                                             }
                                             <button class="@rightClass" disabled="@(HasAnswered || MatchingSelectedLeft == null)"
                                                     @onclick="() => SelectMatchingRight(ri)">
-                                                @rightArr[ri]
+                                                @if (isPaired && !HasAnswered)
+                                                {
+                                                    <span class="matching-badge">@pairNum</span>
+                                                }
+                                                <span class="matching-text">@rightArr[ri]</span>
                                             </button>
                                         }
                                     </div>
                                 </div>
+
+                                @if (!HasAnswered && MatchingPairs.Count > 0)
+                                {
+                                    <div class="matching-status mt-3 text-center">
+                                        <small class="text-muted">
+                                            Соединено: @MatchingPairs.Count / @GetMatchingLeftItems().Length
+                                        </small>
+                                    </div>
+                                }
+
                                 if (!HasAnswered && MatchingPairs.Count > 0 && MatchingPairs.Count == GetMatchingLeftItems().Length)
                                 {
-                                    <button class="btn btn-primary mt-3" @onclick="SubmitMatching">
-                                        Проверить
-                                    </button>
+                                    <div class="text-center mt-2">
+                                        <button class="btn btn-primary px-4" @onclick="SubmitMatching">
+                                            <i class="bi bi-check2-circle me-1"></i> Проверить
+                                        </button>
+                                    </div>
                                 }
                                 break;
 
@@ -602,7 +660,19 @@
                                     <div class="alert alert-danger">
                                         <i class="bi bi-x-circle-fill me-2"></i>
                                         <strong>Неверно.</strong>
-                                        @if (!string.IsNullOrEmpty(CurrentExercise.CorrectAnswer))
+                                        @if (CurrentExercise.ExerciseType == "matching")
+                                        {
+                                            <div class="mt-2">
+                                                <small>Правильные пары:</small>
+                                                <ul class="mb-0 mt-1">
+                                                    @for (int i = 0; i < MatchingLeft.Length; i++)
+                                                    {
+                                                        <li><strong>@MatchingLeft[i]</strong> ↔ <strong>@MatchingRight[MatchingCorrectMap[i]]</strong></li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        }
+                                        else if (!string.IsNullOrEmpty(CurrentExercise.CorrectAnswer))
                                         {
                                             <span> Правильный ответ: <strong>@CurrentExercise.CorrectAnswer</strong></span>
                                         }
@@ -783,11 +853,15 @@
     private string TextAnswer = "";
     private List<string> OrderedWords = new();
     private List<string> AvailableWords = new();
+    private string[] CorrectWordOrder = Array.Empty<string>();
     private System.Diagnostics.Stopwatch _stopwatch = new();
 
     // Matching state
     private int? MatchingSelectedLeft;
     private Dictionary<int, int> MatchingPairs = new();
+    private string[] MatchingLeft = Array.Empty<string>();
+    private string[] MatchingRight = Array.Empty<string>();
+    private int[] MatchingCorrectMap = Array.Empty<int>(); // MatchingCorrectMap[leftIdx] = rightIdx
 
     // TTS state
     private bool DictationAutoPlayed;
@@ -897,21 +971,59 @@
             AvailableWords = ex.GetShuffledWords().ToList();
             if (!AvailableWords.Any() && !string.IsNullOrEmpty(ex.CorrectAnswer))
             {
-                var words = ex.CorrectAnswer.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
-                var rng = new Random();
-                for (int i = words.Count - 1; i > 0; i--)
-                {
-                    int j = rng.Next(i + 1);
-                    (words[i], words[j]) = (words[j], words[i]);
-                }
-                AvailableWords = words;
+                AvailableWords = ex.CorrectAnswer.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
             }
+            // Always shuffle to ensure randomness
+            var rng = new Random();
+            for (int i = AvailableWords.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (AvailableWords[i], AvailableWords[j]) = (AvailableWords[j], AvailableWords[i]);
+            }
+            // Store correct order for per-word highlighting
+            CorrectWordOrder = (ex.CorrectAnswer ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
         }
 
         // Auto-play TTS for dictation
         if (ex is { ExerciseType: "dictation" })
         {
             DictationAutoPlayed = false;
+        }
+
+        // Parse matching pairs from pipe-delimited options and shuffle right column
+        if (ex is { ExerciseType: "matching" })
+        {
+            var opts = ex.GetOptions();
+            var left = new List<string>();
+            var right = new List<string>();
+            foreach (var opt in opts)
+            {
+                var parts = opt.Split('|', 2);
+                left.Add(parts[0].Trim());
+                right.Add(parts.Length > 1 ? parts[1].Trim() : parts[0].Trim());
+            }
+            // Shuffle right column and track correct mapping
+            var indices = Enumerable.Range(0, right.Count).ToList();
+            var rng = new Random();
+            for (int i = indices.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (indices[i], indices[j]) = (indices[j], indices[i]);
+            }
+            MatchingLeft = left.ToArray();
+            MatchingRight = indices.Select(i => right[i]).ToArray();
+            // MatchingCorrectMap[leftIdx] = shuffled rightIdx
+            MatchingCorrectMap = new int[left.Count];
+            for (int li = 0; li < left.Count; li++)
+            {
+                MatchingCorrectMap[li] = indices.IndexOf(li);
+            }
+        }
+        else
+        {
+            MatchingLeft = Array.Empty<string>();
+            MatchingRight = Array.Empty<string>();
+            MatchingCorrectMap = Array.Empty<int>();
         }
     }
 
@@ -990,8 +1102,8 @@
     private void SubmitMatching()
     {
         if (HasAnswered) return;
-        // For matching: correct when left[i] maps to right[i] (pairs match by index)
-        int correctPairs = MatchingPairs.Count(p => p.Key == p.Value);
+        // Check each pair: user mapped left[i] -> right[j], correct is MatchingCorrectMap[i]
+        int correctPairs = MatchingPairs.Count(p => p.Value == MatchingCorrectMap[p.Key]);
         CurrentAnswerCorrect = correctPairs == MatchingPairs.Count;
         RecordAnswer(CurrentAnswerCorrect, $"matched:{correctPairs}/{MatchingPairs.Count}");
         HasAnswered = true;
@@ -1004,13 +1116,13 @@
 
         if (!string.IsNullOrEmpty(exercise.CorrectAnswer))
         {
-            if (string.Equals(trimmed, exercise.CorrectAnswer.Trim().TrimEnd('.'), StringComparison.OrdinalIgnoreCase))
+            if (AnswersMatch(trimmed, exercise.CorrectAnswer))
                 return true;
         }
 
         foreach (var alt in exercise.GetAlternativeAnswers())
         {
-            if (string.Equals(trimmed, alt.Trim().TrimEnd('.'), StringComparison.OrdinalIgnoreCase))
+            if (AnswersMatch(trimmed, alt))
                 return true;
         }
 
@@ -1024,6 +1136,33 @@
         }
 
         return false;
+    }
+
+    private static bool AnswersMatch(string userAnswer, string correctAnswer)
+    {
+        var a = userAnswer.Trim().TrimEnd('.');
+        var b = correctAnswer.Trim().TrimEnd('.');
+        if (string.Equals(a, b, StringComparison.OrdinalIgnoreCase))
+            return true;
+        // Compare with contractions expanded
+        return string.Equals(ExpandContractions(a), ExpandContractions(b), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string ExpandContractions(string text)
+    {
+        // Order matters: longer patterns first to avoid partial replacements
+        var result = System.Text.RegularExpressions.Regex.Replace(text, @"\bwon't\b", "will not", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"\bcan't\b", "cannot", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"\bshan't\b", "shall not", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"\blet's\b", "let us", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"\b(\w+)'re\b", "$1 are", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"\b(\w+)'ve\b", "$1 have", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"\b(\w+)'ll\b", "$1 will", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"\b(\w+)'d\b", "$1 would", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"\b(\w+)n't\b", "$1 not", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"\b(I|he|she|it|that|there|here|what|who|how)'s\b", "$1 is", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        result = System.Text.RegularExpressions.Regex.Replace(result, @"\bI'm\b", "I am", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return result;
     }
 
     private void RecordAnswer(bool isCorrect, string? userAnswer)
@@ -1184,19 +1323,9 @@
     };
 
     // Matching helpers
-    private string[] GetMatchingLeftItems()
-    {
-        var opts = CurrentExercise.GetOptions();
-        int half = opts.Length / 2;
-        return opts.Take(half).ToArray();
-    }
+    private string[] GetMatchingLeftItems() => MatchingLeft;
 
-    private string[] GetMatchingRightItems()
-    {
-        var opts = CurrentExercise.GetOptions();
-        int half = opts.Length / 2;
-        return opts.Skip(half).ToArray();
-    }
+    private string[] GetMatchingRightItems() => MatchingRight;
 
     private string GetDifficultyBadgeClass(int level) => level switch
     {
