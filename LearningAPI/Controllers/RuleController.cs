@@ -160,11 +160,17 @@ namespace LearningAPI.Controllers
             {
                 newRule.Exercises = ruleDto.Exercises.Select((e, idx) => new GrammarExercise
                 {
+                    ExerciseType = e.ExerciseType ?? "mcq",
                     Question = e.Question,
                     Options = e.Options,
                     CorrectIndex = e.CorrectIndex,
+                    CorrectAnswer = e.CorrectAnswer,
+                    AlternativeAnswersJson = e.AlternativeAnswersJson,
+                    IncorrectSentence = e.IncorrectSentence,
+                    ShuffledWordsJson = e.ShuffledWordsJson,
                     Explanation = e.Explanation ?? "",
-                    OrderIndex = e.OrderIndex > 0 ? e.OrderIndex : idx
+                    OrderIndex = e.OrderIndex > 0 ? e.OrderIndex : idx,
+                    DifficultyTier = e.DifficultyTier > 0 ? e.DifficultyTier : 1
                 }).ToList();
             }
 
@@ -218,10 +224,10 @@ namespace LearningAPI.Controllers
             existingRule.Description = rule.Description;
             existingRule.Category = rule.Category;
             existingRule.DifficultyLevel = rule.DifficultyLevel;
-            existingRule.IsPublished = rule.IsPublished;
-            existingRule.Rating = rule.Rating;
-            existingRule.RatingCount = rule.RatingCount;
-            existingRule.DownloadCount = rule.DownloadCount;
+            existingRule.IconEmoji = rule.IconEmoji;
+            existingRule.SkillSummary = rule.SkillSummary;
+            existingRule.SkillTreeLevel = rule.SkillTreeLevel;
+            existingRule.XpReward = rule.XpReward;
 
             // Update exercises: remove old, add new
             if (rule.Exercises != null)
@@ -230,11 +236,17 @@ namespace LearningAPI.Controllers
                 existingRule.Exercises = rule.Exercises.Select((e, idx) => new GrammarExercise
                 {
                     RuleId = id,
+                    ExerciseType = e.ExerciseType ?? "mcq",
                     Question = e.Question,
-                    OptionsJson = e.OptionsJson,
+                    OptionsJson = e.OptionsJson ?? "[]",
                     CorrectIndex = e.CorrectIndex,
+                    CorrectAnswer = e.CorrectAnswer,
+                    AlternativeAnswersJson = e.AlternativeAnswersJson,
+                    IncorrectSentence = e.IncorrectSentence,
+                    ShuffledWordsJson = e.ShuffledWordsJson,
                     Explanation = e.Explanation ?? "",
-                    OrderIndex = e.OrderIndex > 0 ? e.OrderIndex : idx
+                    OrderIndex = e.OrderIndex > 0 ? e.OrderIndex : idx,
+                    DifficultyTier = e.DifficultyTier > 0 ? e.DifficultyTier : 1
                 }).ToList();
             }
 

@@ -1,0 +1,687 @@
+@page "/edit-rule/{Id:int}"
+@using LearningTrainerWeb.Services
+@inject IContentApiService ContentApi
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Редактирование правила - Ingat</PageTitle>
+
+<div class="container" style="max-width: 900px;">
+    @if (!IsAuthenticated)
+    {
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--primary-400);"><i class="bi bi-lock"></i></div>
+            <h2>Требуется авторизация</h2>
+            <p class="text-muted mb-4">Войдите, чтобы редактировать правила</p>
+            <a href="login" class="btn btn-primary btn-lg"><i class="bi bi-box-arrow-in-right me-2"></i> Войти</a>
+        </div>
+    }
+    else if (IsLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="text-muted mt-3">Загрузка правила...</p>
+        </div>
+    }
+    else if (Rule == null)
+    {
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--gray-400);"><i class="bi bi-emoji-frown"></i></div>
+            <h2>Правило не найдено</h2>
+            <p class="text-muted mb-4">Возможно, оно было удалено или у вас нет прав</p>
+            <a href="my-content" class="btn btn-primary"><i class="bi bi-arrow-left me-2"></i> Мой контент</a>
+        </div>
+    }
+    else
+    {
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb" style="background: transparent; padding: 0;">
+                <li class="breadcrumb-item">
+                    <a href="my-content" style="color: var(--primary-600);"><i class="bi bi-folder2-open me-1"></i> Мой контент</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="my-content/rule/@Id" style="color: var(--primary-600);">@Rule.Title</a>
+                </li>
+                <li class="breadcrumb-item active" style="color: var(--gray-500);">Редактирование</li>
+            </ol>
+        </nav>
+
+        <!-- Rule metadata -->
+        <div class="card mb-4" style="border-radius: var(--radius-lg);">
+            <div class="card-body p-4">
+                <h4 class="d-flex align-items-center gap-2 mb-4">
+                    <i class="bi bi-pencil-square" style="color: var(--primary-500);"></i>
+                    Основные данные
+                </h4>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Название *</label>
+                    <input type="text" class="form-control" @bind="EditTitle" placeholder="Например: Present Simple" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Краткое описание</label>
+                    <textarea class="form-control" rows="2" @bind="EditDescription" maxlength="500"
+                              placeholder="Простое настоящее время — описание регулярных действий"></textarea>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Категория</label>
+                        <select class="form-select" @bind="EditCategory">
+                            <option value="Grammar">Грамматика</option>
+                            <option value="Vocabulary">Лексика</option>
+                            <option value="Pronunciation">Произношение</option>
+                            <option value="Writing">Письмо</option>
+                            <option value="Reading">Чтение</option>
+                            <option value="Other">Другое</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Сложность</label>
+                        <select class="form-select" @bind="EditDifficulty">
+                            <option value="1">1 — Начальный</option>
+                            <option value="2">2 — Средний</option>
+                            <option value="3">3 — Продвинутый</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mb-0">
+                    <label class="form-label fw-semibold">Содержание (Markdown) *</label>
+                    <textarea class="form-control" rows="16" maxlength="50000" @bind="EditContent"
+                              placeholder="# Present Simple&#10;&#10;Используется для описания регулярных действий."
+                              style="font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.9rem; min-height: 240px; resize: vertical;"></textarea>
+                    <div class="d-flex justify-content-end mt-1">
+                        <small class="text-muted">@(EditContent?.Length ?? 0) / 50 000 символов</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exercises section -->
+        <div class="card mb-4" style="border-radius: var(--radius-lg);">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="d-flex align-items-center gap-2 mb-0">
+                        <i class="bi bi-list-check" style="color: var(--primary-500);"></i>
+                        Упражнения
+                        <span class="badge bg-secondary bg-opacity-25 text-secondary">@Exercises.Count</span>
+                    </h4>
+                </div>
+
+                @if (Exercises.Count > 0)
+                {
+                    <div class="d-flex flex-column gap-3 mb-4">
+                        @for (int i = 0; i < Exercises.Count; i++)
+                        {
+                            var ex = Exercises[i];
+                            var capturedIdx = i;
+                            <div class="border rounded p-3 position-relative" style="border-color: var(--gray-300) !important;">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-primary bg-opacity-15 text-primary" style="font-size: 0.75rem;">
+                                            @GetExerciseTypeLabel(ex.ExerciseType)
+                                        </span>
+                                        <span class="fw-semibold small text-muted">Упражнение @(capturedIdx + 1)</span>
+                                        @if (ex.DifficultyTier > 1)
+                                        {
+                                            <span class="badge bg-warning bg-opacity-15 text-warning" style="font-size: 0.65rem;">
+                                                Ур. @ex.DifficultyTier
+                                            </span>
+                                        }
+                                    </div>
+                                    <div class="d-flex gap-1">
+                                        @if (capturedIdx > 0)
+                                        {
+                                            <button class="btn btn-sm btn-link text-muted p-1" @onclick="() => MoveExercise(capturedIdx, -1)" title="Вверх">
+                                                <i class="bi bi-arrow-up"></i>
+                                            </button>
+                                        }
+                                        @if (capturedIdx < Exercises.Count - 1)
+                                        {
+                                            <button class="btn btn-sm btn-link text-muted p-1" @onclick="() => MoveExercise(capturedIdx, 1)" title="Вниз">
+                                                <i class="bi bi-arrow-down"></i>
+                                            </button>
+                                        }
+                                        <button class="btn btn-sm btn-link text-danger p-1" @onclick="() => RemoveExercise(capturedIdx)" title="Удалить">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <p class="mb-2"><strong>Вопрос:</strong> @ex.Question</p>
+
+                                @if (ex.ExerciseType == "mcq")
+                                {
+                                    <div class="d-flex flex-wrap gap-1 mb-1">
+                                        @for (int oi = 0; oi < ex.Options.Length; oi++)
+                                        {
+                                            var isCorrect = oi == ex.CorrectIndex;
+                                            <span class="badge @(isCorrect ? "bg-success" : "bg-secondary bg-opacity-25 text-body")">
+                                                @(isCorrect ? "✓ " : "")@ex.Options[oi]
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else if (ex.ExerciseType == "error_correction")
+                                {
+                                    <p class="mb-1 small"><strong>Ошибочное предложение:</strong> <span class="text-danger">@ex.IncorrectSentence</span></p>
+                                    <p class="mb-1 small"><strong>Правильный ответ:</strong> <span class="text-success">@ex.CorrectAnswer</span></p>
+                                }
+                                else if (ex.ExerciseType == "word_order")
+                                {
+                                    <p class="mb-1 small"><strong>Слова:</strong> @ex.ShuffledWordsJson</p>
+                                    <p class="mb-1 small"><strong>Правильный ответ:</strong> <span class="text-success">@ex.CorrectAnswer</span></p>
+                                }
+                                else
+                                {
+                                    @if (!string.IsNullOrWhiteSpace(ex.CorrectAnswer))
+                                    {
+                                        <p class="mb-1 small"><strong>Правильный ответ:</strong> <span class="text-success">@ex.CorrectAnswer</span></p>
+                                    }
+                                }
+
+                                @if (!string.IsNullOrWhiteSpace(ex.Explanation))
+                                {
+                                    <div class="text-muted small mt-1"><i class="bi bi-info-circle me-1"></i>@ex.Explanation</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+
+                <!-- Add exercise form -->
+                <div class="border rounded p-3" style="background: var(--surface-card, #f8f9fa); border-color: var(--gray-300) !important;">
+                    <h6 class="mb-3"><i class="bi bi-plus-circle me-1"></i> Добавить упражнение</h6>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Тип упражнения</label>
+                            <select class="form-select form-select-sm" @bind="NewExType">
+                                <option value="mcq">Выбор из вариантов (MCQ)</option>
+                                <option value="transformation">Трансформация</option>
+                                <option value="error_correction">Исправление ошибки</option>
+                                <option value="word_order">Порядок слов</option>
+                                <option value="translation">Перевод</option>
+                                <option value="dictation">Диктант</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Уровень сложности</label>
+                            <select class="form-select form-select-sm" @bind="NewExDifficultyTier">
+                                <option value="1">1 — Базовый</option>
+                                <option value="2">2 — Средний</option>
+                                <option value="3">3 — Продвинутый</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Вопрос *</label>
+                        <input type="text" class="form-control form-control-sm" @bind="NewExQuestion"
+                               placeholder="@GetQuestionPlaceholder(NewExType)" />
+                    </div>
+
+                    @if (NewExType == "mcq")
+                    {
+                        <!-- MCQ options -->
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-text">
+                                        <input type="radio" name="newCorrectOption" class="form-check-input mt-0"
+                                               checked="@(NewExCorrectIdx == 0)" @onchange="() => NewExCorrectIdx = 0" />
+                                    </div>
+                                    <input type="text" class="form-control" @bind="NewExOpt0" placeholder="Вариант 1" />
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-text">
+                                        <input type="radio" name="newCorrectOption" class="form-check-input mt-0"
+                                               checked="@(NewExCorrectIdx == 1)" @onchange="() => NewExCorrectIdx = 1" />
+                                    </div>
+                                    <input type="text" class="form-control" @bind="NewExOpt1" placeholder="Вариант 2" />
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-text">
+                                        <input type="radio" name="newCorrectOption" class="form-check-input mt-0"
+                                               checked="@(NewExCorrectIdx == 2)" @onchange="() => NewExCorrectIdx = 2" />
+                                    </div>
+                                    <input type="text" class="form-control" @bind="NewExOpt2" placeholder="Вариант 3" />
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <div class="input-group-text">
+                                        <input type="radio" name="newCorrectOption" class="form-check-input mt-0"
+                                               checked="@(NewExCorrectIdx == 3)" @onchange="() => NewExCorrectIdx = 3" />
+                                    </div>
+                                    <input type="text" class="form-control" @bind="NewExOpt3" placeholder="Вариант 4" />
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mb-3">Отметьте радиокнопкой правильный вариант</small>
+                    }
+                    else if (NewExType == "error_correction")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Предложение с ошибкой *</label>
+                            <input type="text" class="form-control form-control-sm" @bind="NewExIncorrectSentence"
+                                   placeholder="He go to school every day." />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Правильный ответ *</label>
+                            <input type="text" class="form-control form-control-sm" @bind="NewExCorrectAnswer"
+                                   placeholder="He goes to school every day." />
+                        </div>
+                    }
+                    else if (NewExType == "word_order")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Перемешанные слова (через запятую) *</label>
+                            <input type="text" class="form-control form-control-sm" @bind="NewExShuffledWords"
+                                   placeholder="every, goes, day, he, school, to" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Правильный ответ *</label>
+                            <input type="text" class="form-control form-control-sm" @bind="NewExCorrectAnswer"
+                                   placeholder="He goes to school every day." />
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- transformation, translation, dictation -->
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Правильный ответ *</label>
+                            <input type="text" class="form-control form-control-sm" @bind="NewExCorrectAnswer"
+                                   placeholder="@GetAnswerPlaceholder(NewExType)" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Альтернативные ответы (через | )</label>
+                            <input type="text" class="form-control form-control-sm" @bind="NewExAlternatives"
+                                   placeholder="I have eaten|I've eaten" />
+                            <small class="text-muted">Несколько допустимых ответов, разделённых символом |</small>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Объяснение</label>
+                        <input type="text" class="form-control form-control-sm" @bind="NewExExplanation"
+                               placeholder="Present Simple, 3rd person → goes" />
+                    </div>
+
+                    <button class="btn btn-outline-primary btn-sm" @onclick="AddExercise" disabled="@(!CanAddExercise)">
+                        <i class="bi bi-plus-lg me-1"></i> Добавить
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error/Success messages -->
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert alert-danger d-flex align-items-center gap-2 mb-3">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <div>@ErrorMessage</div>
+            </div>
+        }
+
+        <!-- Action buttons -->
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <button class="btn btn-outline-danger" @onclick="ShowDeleteConfirm" disabled="@IsSaving">
+                <i class="bi bi-trash me-1"></i> Удалить правило
+            </button>
+            <div class="d-flex gap-2">
+                <a href="my-content/rule/@Id" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg me-1"></i> Отмена
+                </a>
+                <button class="btn btn-primary" @onclick="SaveRule"
+                        disabled="@(IsSaving || string.IsNullOrWhiteSpace(EditTitle) || string.IsNullOrWhiteSpace(EditContent))">
+                    @if (IsSaving)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        <span>Сохранение...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-check-lg me-2"></i>
+                        <span>Сохранить</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        @* Delete confirmation modal *@
+        @if (ShowDeleteModal)
+        {
+            <div class="import-modal-overlay" @onmousedown="() => ShowDeleteModal = false">
+                <div class="import-modal" style="max-width: 450px;" @onmousedown:stopPropagation="true">
+                    <div class="import-modal-accent" style="background: linear-gradient(135deg, #ef4444, #dc2626);"></div>
+                    <div class="import-modal-header">
+                        <div class="import-modal-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        </div>
+                        <div>
+                            <h4 class="import-modal-title">Удалить правило?</h4>
+                            <p class="import-modal-subtitle">Это действие необратимо</p>
+                        </div>
+                        <button type="button" class="import-modal-close" @onclick="() => ShowDeleteModal = false">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="import-modal-body">
+                        <p>Вы уверены, что хотите удалить правило <strong>«@Rule.Title»</strong>? Все упражнения также будут удалены.</p>
+                    </div>
+                    <div class="import-modal-footer">
+                        <button class="btn import-btn-cancel" @onclick="() => ShowDeleteModal = false">Отмена</button>
+                        <button class="btn btn-danger" @onclick="DeleteRule" disabled="@IsDeleting">
+                            @if (IsDeleting)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Удаление...</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-trash me-1"></i>
+                                <span>Удалить</span>
+                            }
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<LearningTrainerWeb.Components.Shared.AppToast
+    Message="@ToastMessage"
+    IsSuccess="@ToastSuccess"
+    OnDismiss="() => ToastMessage = null" />
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    // Loading state
+    private MyRuleDetailItem? Rule;
+    private bool IsLoading = true;
+    private bool IsAuthenticated;
+    private bool IsSaving;
+    private bool IsDeleting;
+    private bool ShowDeleteModal;
+    private string? ErrorMessage;
+    private string? ToastMessage;
+    private bool ToastSuccess;
+
+    // Rule edit fields
+    private string EditTitle = "";
+    private string EditDescription = "";
+    private string EditCategory = "Grammar";
+    private int EditDifficulty = 1;
+    private string EditContent = "";
+
+    // Exercises list
+    private List<CreateExerciseInput> Exercises = new();
+
+    // New exercise form
+    private string NewExType = "mcq";
+    private string NewExQuestion = "";
+    private string NewExOpt0 = "", NewExOpt1 = "", NewExOpt2 = "", NewExOpt3 = "";
+    private int NewExCorrectIdx = 0;
+    private string NewExCorrectAnswer = "";
+    private string NewExIncorrectSentence = "";
+    private string NewExShuffledWords = "";
+    private string NewExAlternatives = "";
+    private string NewExExplanation = "";
+    private int NewExDifficultyTier = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AuthService.InitializeAsync();
+        var session = await AuthService.GetCurrentSessionAsync();
+        IsAuthenticated = session != null;
+
+        if (IsAuthenticated)
+        {
+            await LoadRule();
+        }
+    }
+
+    private async Task LoadRule()
+    {
+        IsLoading = true;
+        try
+        {
+            Rule = await ContentApi.GetMyRuleDetailsAsync(Id);
+            if (Rule != null)
+            {
+                EditTitle = Rule.Title;
+                EditDescription = Rule.Description;
+                EditCategory = Rule.Category;
+                EditDifficulty = Rule.DifficultyLevel;
+                EditContent = Rule.MarkdownContent;
+
+                Exercises = Rule.Exercises.Select(e => new CreateExerciseInput
+                {
+                    ExerciseType = e.ExerciseType ?? "mcq",
+                    Question = e.Question,
+                    Options = e.Options ?? Array.Empty<string>(),
+                    CorrectIndex = e.CorrectIndex,
+                    CorrectAnswer = e.CorrectAnswer,
+                    AlternativeAnswersJson = e.AlternativeAnswersJson,
+                    IncorrectSentence = e.IncorrectSentence,
+                    ShuffledWordsJson = e.ShuffledWordsJson,
+                    Explanation = e.Explanation ?? "",
+                    DifficultyTier = e.DifficultyTier > 0 ? e.DifficultyTier : 1
+                }).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading rule for edit: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SaveRule()
+    {
+        if (string.IsNullOrWhiteSpace(EditTitle) || string.IsNullOrWhiteSpace(EditContent)) return;
+
+        IsSaving = true;
+        ErrorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            await ContentApi.UpdateRuleAsync(
+                Id,
+                EditTitle.Trim(),
+                EditContent.Trim(),
+                EditDescription.Trim(),
+                EditCategory,
+                EditDifficulty,
+                Exercises.Count > 0 ? Exercises : null);
+
+            ToastMessage = "Правило успешно сохранено!";
+            ToastSuccess = true;
+            StateHasChanged();
+
+            // Reload to get updated data
+            await LoadRule();
+
+            await Task.Delay(3000);
+            ToastMessage = null;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ShowDeleteConfirm()
+    {
+        ShowDeleteModal = true;
+    }
+
+    private async Task DeleteRule()
+    {
+        IsDeleting = true;
+        ErrorMessage = null;
+        StateHasChanged();
+
+        try
+        {
+            await ContentApi.DeleteRuleAsync(Id);
+            Navigation.NavigateTo("my-content", forceLoad: false);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            ShowDeleteModal = false;
+        }
+        finally
+        {
+            IsDeleting = false;
+            StateHasChanged();
+        }
+    }
+
+    // Exercise management
+
+    private void RemoveExercise(int idx)
+    {
+        if (idx >= 0 && idx < Exercises.Count)
+            Exercises.RemoveAt(idx);
+    }
+
+    private void MoveExercise(int idx, int direction)
+    {
+        var newIdx = idx + direction;
+        if (newIdx < 0 || newIdx >= Exercises.Count) return;
+        (Exercises[idx], Exercises[newIdx]) = (Exercises[newIdx], Exercises[idx]);
+    }
+
+    private bool CanAddExercise
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(NewExQuestion)) return false;
+
+            return NewExType switch
+            {
+                "mcq" => new[] { NewExOpt0, NewExOpt1, NewExOpt2, NewExOpt3 }
+                    .Count(o => !string.IsNullOrWhiteSpace(o)) >= 2
+                    && !string.IsNullOrWhiteSpace(new[] { NewExOpt0, NewExOpt1, NewExOpt2, NewExOpt3 }[NewExCorrectIdx]),
+                "error_correction" => !string.IsNullOrWhiteSpace(NewExIncorrectSentence) && !string.IsNullOrWhiteSpace(NewExCorrectAnswer),
+                "word_order" => !string.IsNullOrWhiteSpace(NewExShuffledWords) && !string.IsNullOrWhiteSpace(NewExCorrectAnswer),
+                _ => !string.IsNullOrWhiteSpace(NewExCorrectAnswer) // transformation, translation, dictation
+            };
+        }
+    }
+
+    private void AddExercise()
+    {
+        if (!CanAddExercise) return;
+
+        var ex = new CreateExerciseInput
+        {
+            ExerciseType = NewExType,
+            Question = NewExQuestion.Trim(),
+            Explanation = NewExExplanation.Trim(),
+            DifficultyTier = NewExDifficultyTier
+        };
+
+        if (NewExType == "mcq")
+        {
+            var allOptions = new[] { NewExOpt0, NewExOpt1, NewExOpt2, NewExOpt3 };
+            var nonEmpty = allOptions.Where(o => !string.IsNullOrWhiteSpace(o)).ToArray();
+            var correctedIndex = Array.IndexOf(nonEmpty, allOptions[NewExCorrectIdx]);
+            ex.Options = nonEmpty.Select(o => o.Trim()).ToArray();
+            ex.CorrectIndex = correctedIndex >= 0 ? correctedIndex : 0;
+        }
+        else if (NewExType == "error_correction")
+        {
+            ex.IncorrectSentence = NewExIncorrectSentence.Trim();
+            ex.CorrectAnswer = NewExCorrectAnswer.Trim();
+        }
+        else if (NewExType == "word_order")
+        {
+            var words = NewExShuffledWords.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            ex.ShuffledWordsJson = System.Text.Json.JsonSerializer.Serialize(words);
+            ex.CorrectAnswer = NewExCorrectAnswer.Trim();
+        }
+        else
+        {
+            ex.CorrectAnswer = NewExCorrectAnswer.Trim();
+            if (!string.IsNullOrWhiteSpace(NewExAlternatives))
+            {
+                var alts = NewExAlternatives.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                ex.AlternativeAnswersJson = System.Text.Json.JsonSerializer.Serialize(alts);
+            }
+        }
+
+        Exercises.Add(ex);
+        ResetExerciseForm();
+    }
+
+    private void ResetExerciseForm()
+    {
+        NewExType = "mcq";
+        NewExQuestion = "";
+        NewExOpt0 = ""; NewExOpt1 = ""; NewExOpt2 = ""; NewExOpt3 = "";
+        NewExCorrectIdx = 0;
+        NewExCorrectAnswer = "";
+        NewExIncorrectSentence = "";
+        NewExShuffledWords = "";
+        NewExAlternatives = "";
+        NewExExplanation = "";
+        NewExDifficultyTier = 1;
+    }
+
+    private static string GetExerciseTypeLabel(string type) => type switch
+    {
+        "mcq" => "Выбор из вариантов",
+        "transformation" => "Трансформация",
+        "error_correction" => "Исправление ошибки",
+        "word_order" => "Порядок слов",
+        "translation" => "Перевод",
+        "matching" => "Сопоставление",
+        "dictation" => "Диктант",
+        _ => type
+    };
+
+    private static string GetQuestionPlaceholder(string type) => type switch
+    {
+        "mcq" => "He ___ to school every day.",
+        "transformation" => "Перефразируйте: I eat breakfast every morning. (Past Simple)",
+        "error_correction" => "Найдите и исправьте ошибку в предложении:",
+        "word_order" => "Составьте предложение из слов:",
+        "translation" => "Переведите: Я хожу в школу каждый день.",
+        "dictation" => "Запишите предложение, которое вы слышите:",
+        _ => "Введите вопрос"
+    };
+
+    private static string GetAnswerPlaceholder(string type) => type switch
+    {
+        "transformation" => "I ate breakfast every morning.",
+        "translation" => "I go to school every day.",
+        "dictation" => "He goes to school every day.",
+        _ => "Правильный ответ"
+    };
+}

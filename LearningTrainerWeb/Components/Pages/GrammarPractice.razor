@@ -1,9 +1,11 @@
 @page "/grammar/{RuleId:int}"
 @using LearningTrainerWeb.Services
 @inject IGrammarApiService GrammarApi
+@inject IAuthService AuthService
 @inject IHtmlSanitizerService HtmlSanitizer
 @inject NavigationManager Navigation
 @inject ILogger<GrammarPractice> Logger
+@inject IJSRuntime JS
 
 <PageTitle>@(RuleDetail?.Title ?? "Грамматика") - Ingat</PageTitle>
 
@@ -537,6 +539,35 @@
                                 }
                                 break;
 
+                            case "dictation":
+                                <div class="text-center mb-4">
+                                    <button class="btn btn-outline-primary btn-lg rounded-circle" style="width: 80px; height: 80px; font-size: 2rem;"
+                                            @onclick="SpeakDictation">
+                                        <i class="bi bi-volume-up-fill"></i>
+                                    </button>
+                                    <div class="mt-2">
+                                        <button class="btn btn-outline-secondary btn-sm" @onclick="SpeakDictationSlow">
+                                            <i class="bi bi-skip-forward me-1"></i> Медленнее
+                                        </button>
+                                    </div>
+                                    <p class="text-muted small mt-2">Прослушайте и запишите предложение</p>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" class="form-control form-control-lg"
+                                           placeholder="Запишите то, что слышите..."
+                                           @bind="TextAnswer"
+                                           @bind:event="oninput"
+                                           @onkeydown="OnTextKeyDown"
+                                           disabled="@HasAnswered" />
+                                </div>
+                                if (!HasAnswered)
+                                {
+                                    <button class="btn btn-primary" @onclick="SubmitTextAnswer" disabled="@string.IsNullOrWhiteSpace(TextAnswer)">
+                                        Проверить
+                                    </button>
+                                }
+                                break;
+
                             default:
                                 <div class="mb-3">
                                     <input type="text" class="form-control form-control-lg"
@@ -758,6 +789,9 @@
     private int? MatchingSelectedLeft;
     private Dictionary<int, int> MatchingPairs = new();
 
+    // TTS state
+    private bool DictationAutoPlayed;
+
     private GrammarPracticeExerciseDto CurrentExercise =>
         Session!.Exercises[CurrentExerciseIndex];
 
@@ -777,6 +811,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await AuthService.InitializeAsync();
         await LoadRuleDetail();
     }
 
@@ -872,6 +907,12 @@
                 AvailableWords = words;
             }
         }
+
+        // Auto-play TTS for dictation
+        if (ex is { ExerciseType: "dictation" })
+        {
+            DictationAutoPlayed = false;
+        }
     }
 
     private void SelectMcqOption(int index)
@@ -881,6 +922,37 @@
         CurrentAnswerCorrect = index == CurrentExercise.CorrectIndex;
         RecordAnswer(CurrentAnswerCorrect, CurrentExercise.GetOptions().ElementAtOrDefault(index));
         HasAnswered = true;
+    }
+
+    // TTS for dictation exercises
+    private async Task SpeakDictation()
+    {
+        if (CurrentExercise?.CorrectAnswer != null)
+        {
+            await JS.InvokeVoidAsync("speakText", CurrentExercise.CorrectAnswer, "en-US");
+        }
+    }
+
+    private async Task SpeakDictationSlow()
+    {
+        if (CurrentExercise?.CorrectAnswer != null)
+        {
+            await JS.InvokeVoidAsync("speakTextSlow", CurrentExercise.CorrectAnswer, "en-US", 0.6);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Auto-play dictation on exercise load
+        if (Session != null && CurrentExerciseIndex < Session.Exercises.Count)
+        {
+            var ex = Session.Exercises[CurrentExerciseIndex];
+            if (ex.ExerciseType == "dictation" && !DictationAutoPlayed && !HasAnswered)
+            {
+                DictationAutoPlayed = true;
+                await SpeakDictation();
+            }
+        }
     }
 
     private void SubmitTextAnswer()

@@ -430,7 +430,7 @@ app.MapPost("/api/ai/generate-typed-exercises", async (GenerateTypedExercisesReq
     req.Count = Math.Clamp(req.Count, 1, 10);
     req.DifficultyTier = Math.Clamp(req.DifficultyTier, 1, 3);
 
-    var validTypes = new HashSet<string> { "mcq", "transformation", "error_correction", "word_order", "translation", "matching" };
+    var validTypes = new HashSet<string> { "mcq", "transformation", "error_correction", "word_order", "translation", "matching", "dictation" };
     if (!validTypes.Contains(req.ExerciseType))
         return Results.BadRequest(new { error = $"Invalid exercise type. Valid: {string.Join(", ", validTypes)}" });
 

@@ -31,6 +31,9 @@ namespace LearningTrainerShared.Models
 
     public class GrammarExerciseDto
     {
+        [MaxLength(30)]
+        public string ExerciseType { get; set; } = "mcq";
+
         [Required]
         [MaxLength(500)]
         public string Question { get; set; } = "";
@@ -39,9 +42,21 @@ namespace LearningTrainerShared.Models
 
         public int CorrectIndex { get; set; }
 
+        [MaxLength(500)]
+        public string? CorrectAnswer { get; set; }
+
+        public string? AlternativeAnswersJson { get; set; }
+
+        [MaxLength(500)]
+        public string? IncorrectSentence { get; set; }
+
+        public string? ShuffledWordsJson { get; set; }
+
         [MaxLength(1000)]
         public string Explanation { get; set; } = "";
 
         public int OrderIndex { get; set; }
+
+        public int DifficultyTier { get; set; } = 1;
     }
 }

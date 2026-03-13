@@ -826,15 +826,22 @@ public class MarketplaceController : BaseApiController
             Rating = rule.Rating,
             Downloads = rule.DownloadCount,
             HtmlContent = htmlContent,
+            MarkdownContent = rule.MarkdownContent ?? "",
             CreatedAt = rule.CreatedAt,
             Exercises = rule.Exercises.OrderBy(e => e.OrderIndex).Select(e => new ExerciseItemDto
             {
                 Id = e.Id,
+                ExerciseType = e.ExerciseType ?? "mcq",
                 Question = e.Question,
                 Options = e.Options,
                 CorrectIndex = e.CorrectIndex,
+                CorrectAnswer = e.CorrectAnswer,
+                AlternativeAnswersJson = e.AlternativeAnswersJson,
+                IncorrectSentence = e.IncorrectSentence,
+                ShuffledWordsJson = e.ShuffledWordsJson,
                 Explanation = e.Explanation ?? "",
-                OrderIndex = e.OrderIndex
+                OrderIndex = e.OrderIndex,
+                DifficultyTier = e.DifficultyTier
             }).ToList()
         };
 
@@ -1245,6 +1252,7 @@ public class MyRuleDetailsDto
     public double Rating { get; set; }
     public int Downloads { get; set; }
     public string HtmlContent { get; set; } = "";
+    public string MarkdownContent { get; set; } = "";
     public DateTime CreatedAt { get; set; }
     public List<ExerciseItemDto> Exercises { get; set; } = new();
 }
@@ -1252,11 +1260,17 @@ public class MyRuleDetailsDto
 public class ExerciseItemDto
 {
     public int Id { get; set; }
+    public string ExerciseType { get; set; } = "mcq";
     public string Question { get; set; } = "";
     public string[] Options { get; set; } = Array.Empty<string>();
     public int CorrectIndex { get; set; }
+    public string? CorrectAnswer { get; set; }
+    public string? AlternativeAnswersJson { get; set; }
+    public string? IncorrectSentence { get; set; }
+    public string? ShuffledWordsJson { get; set; }
     public string Explanation { get; set; } = "";
     public int OrderIndex { get; set; }
+    public int DifficultyTier { get; set; } = 1;
 }
 
 #endregion

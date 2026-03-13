@@ -1,6 +1,7 @@
 @page "/grammar"
 @using LearningTrainerWeb.Services
 @inject IGrammarApiService GrammarApi
+@inject IAuthService AuthService
 @inject NavigationManager Navigation
 @inject ILogger<Grammar> Logger
 
@@ -201,6 +202,8 @@
     {
         try
         {
+            await AuthService.InitializeAsync();
+
             var skillTreeTask = GrammarApi.GetSkillTreeAsync();
             var dueReviewsTask = GrammarApi.GetDueReviewsAsync();
             var progressTask = GrammarApi.GetProgressSummaryAsync();

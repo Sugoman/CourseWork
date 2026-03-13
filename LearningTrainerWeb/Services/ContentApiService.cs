@@ -48,6 +48,9 @@ public interface IContentApiService
     Task<CreatedWordResult> AddWordAsync(int dictionaryId, string originalWord, string translation, string? example = null);
     Task<CreatedRuleResult> CreateRuleAsync(string title, string markdownContent, string description,
         string category, int difficultyLevel, List<CreateExerciseInput>? exercises = null);
+    Task UpdateRuleAsync(int id, string title, string markdownContent, string description,
+        string category, int difficultyLevel, List<CreateExerciseInput>? exercises = null);
+    Task DeleteRuleAsync(int id);
 
     // Export
     Task<ExportResult> ExportDictionaryAsJsonAsync(int dictionaryId);
@@ -373,11 +376,17 @@ public class ContentApiService : IContentApiService
         await ApplyAuthAsync();
         var exercisesList = exercises?.Select((e, idx) => new
             {
+                e.ExerciseType,
                 e.Question,
                 e.Options,
                 e.CorrectIndex,
+                e.CorrectAnswer,
+                e.AlternativeAnswersJson,
+                e.IncorrectSentence,
+                e.ShuffledWordsJson,
                 e.Explanation,
-                OrderIndex = idx
+                OrderIndex = idx,
+                e.DifficultyTier
             }).ToArray();
         var request = new
         {
@@ -396,6 +405,53 @@ public class ContentApiService : IContentApiService
             throw new HttpRequestException(TryExtractMessage(body) ?? $"Ошибка создания правила: {response.StatusCode}");
         }
         return await response.Content.ReadFromJsonAsync<CreatedRuleResult>() ?? new();
+    }
+
+    public async Task UpdateRuleAsync(int id, string title, string markdownContent, string description,
+        string category, int difficultyLevel, List<CreateExerciseInput>? exercises = null)
+    {
+        await ApplyAuthAsync();
+        var exercisesList = exercises?.Select((e, idx) => new
+        {
+            e.ExerciseType,
+            e.Question,
+            OptionsJson = System.Text.Json.JsonSerializer.Serialize(e.Options ?? Array.Empty<string>()),
+            e.CorrectIndex,
+            e.CorrectAnswer,
+            e.AlternativeAnswersJson,
+            e.IncorrectSentence,
+            e.ShuffledWordsJson,
+            e.Explanation,
+            OrderIndex = idx,
+            e.DifficultyTier
+        }).ToArray();
+        var request = new
+        {
+            Id = id,
+            Title = title,
+            MarkdownContent = markdownContent,
+            Description = description,
+            Category = category,
+            DifficultyLevel = difficultyLevel,
+            Exercises = exercisesList ?? Array.Empty<object>()
+        };
+        var response = await _httpClient.PutAsJsonAsync($"api/rules/{id}", request);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException(TryExtractMessage(body) ?? $"Ошибка обновления правила: {response.StatusCode}");
+        }
+    }
+
+    public async Task DeleteRuleAsync(int id)
+    {
+        await ApplyAuthAsync();
+        var response = await _httpClient.DeleteAsync($"api/rules/{id}");
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException(TryExtractMessage(body) ?? $"Ошибка удаления правила: {response.StatusCode}");
+        }
     }
 
     #endregion
@@ -633,6 +689,7 @@ public class MyRuleDetailItem
     public double Rating { get; set; }
     public int Downloads { get; set; }
     public string HtmlContent { get; set; } = "";
+    public string MarkdownContent { get; set; } = "";
     public DateTime CreatedAt { get; set; }
     public List<ExerciseItem> Exercises { get; set; } = new();
 }
@@ -640,11 +697,17 @@ public class MyRuleDetailItem
 public class ExerciseItem
 {
     public int Id { get; set; }
+    public string ExerciseType { get; set; } = "mcq";
     public string Question { get; set; } = "";
     public string[] Options { get; set; } = Array.Empty<string>();
     public int CorrectIndex { get; set; }
+    public string? CorrectAnswer { get; set; }
+    public string? AlternativeAnswersJson { get; set; }
+    public string? IncorrectSentence { get; set; }
+    public string? ShuffledWordsJson { get; set; }
     public string Explanation { get; set; } = "";
     public int OrderIndex { get; set; }
+    public int DifficultyTier { get; set; } = 1;
 }
 
 public class ExportResult
@@ -723,10 +786,16 @@ public class CreatedRuleResult
 
 public class CreateExerciseInput
 {
+    public string ExerciseType { get; set; } = "mcq";
     public string Question { get; set; } = "";
     public string[] Options { get; set; } = Array.Empty<string>();
     public int CorrectIndex { get; set; }
+    public string? CorrectAnswer { get; set; }
+    public string? AlternativeAnswersJson { get; set; }
+    public string? IncorrectSentence { get; set; }
+    public string? ShuffledWordsJson { get; set; }
     public string Explanation { get; set; } = "";
+    public int DifficultyTier { get; set; } = 1;
 }
 
 #endregion

@@ -98,6 +98,11 @@
             return prefix || null;
         }
 
+        function getSavedVolume() {
+            var v = parseFloat(localStorage.getItem('ingat-tts-volume'));
+            return (!isNaN(v) && v >= 0 && v <= 1) ? v : 1;
+        }
+
         function speakText(text, lang, volume) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
@@ -106,7 +111,23 @@
                 utterance.lang = bcp47;
                 var savedSpeed = parseFloat(localStorage.getItem('ingat-tts-speed'));
                 utterance.rate = (!isNaN(savedSpeed) && savedSpeed >= 0.5 && savedSpeed <= 1.5) ? savedSpeed : 0.9;
-                utterance.volume = (typeof volume === 'number') ? Math.max(0, Math.min(1, volume)) : 1;
+                var vol = (typeof volume === 'number') ? volume : getSavedVolume();
+                utterance.volume = Math.max(0, Math.min(1, vol));
+                var voice = findBestVoice(bcp47);
+                if (voice) utterance.voice = voice;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function speakTextSlow(text, lang, rate, volume) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                var bcp47 = resolveLang(lang);
+                var utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = bcp47;
+                utterance.rate = (typeof rate === 'number') ? Math.max(0.3, Math.min(1.5, rate)) : 0.6;
+                var vol = (typeof volume === 'number') ? volume : getSavedVolume();
+                utterance.volume = Math.max(0, Math.min(1, vol));
                 var voice = findBestVoice(bcp47);
                 if (voice) utterance.voice = voice;
                 window.speechSynthesis.speak(utterance);

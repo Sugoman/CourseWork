@@ -119,6 +119,16 @@ public static class PromptTemplates
 
         {{GetExerciseTypeInstructions(exerciseType)}}
 
+        CRITICAL — TOPIC MATCHING:
+        Every exercise MUST test EXACTLY the grammar rule "{{ruleTitle}}" and nothing else.
+        Do NOT use a different tense, aspect, or grammatical structure, even if it looks similar.
+        Examples of WRONG topic matching:
+        - Topic "Present Continuous" → sentence uses Present Perfect Continuous ("have been doing") — WRONG
+        - Topic "Past Simple" → sentence uses Past Perfect ("had done") — WRONG
+        - Topic "Present Simple" → sentence uses Present Continuous ("is doing") — WRONG
+        - Topic "First Conditional" → sentence uses Second Conditional ("If I were...") — WRONG
+        If the rule title specifies a particular tense/structure, use ONLY that exact tense/structure.
+
         Language: {{language}}. Explanations in: {{targetLanguage}}.
         Return ONLY valid JSON matching the schema for type "{{exerciseType}}".
         """;
@@ -159,6 +169,17 @@ public static class PromptTemplates
 
             Return JSON:
             {"exercises": [{"question": "Match the sentence halves:", "options": ["If I had money...|...I would buy a car.", "If I had had money...|...I would have bought a car.", "If I have money...|...I will buy a car."], "correctAnswer": "", "explanation": "Conditionals: 2nd (would+inf), 3rd (would have+pp), 1st (will+inf)", "difficultyTier": 2}]}
+            """,
+        "dictation" => """
+            EXERCISE TYPE: Dictation
+            The student will hear a sentence read aloud by TTS, then must type it from memory.
+            Create natural, grammatically rich sentences that test the grammar rule.
+            The "question" field should contain a short instruction (e.g. "Listen and write the sentence.").
+            The "correctAnswer" field MUST contain the full sentence the student should type.
+            Provide reasonable alternative answers that differ only in minor punctuation or acceptable spelling.
+
+            Return JSON:
+            {"exercises": [{"question": "Listen and write the sentence.", "correctAnswer": "She has been studying English for three years.", "alternativeAnswers": ["She has been studying English for 3 years."], "explanation": "Present Perfect Continuous: has/have + been + V-ing", "difficultyTier": 1}]}
             """,
         _ => """
             EXERCISE TYPE: Fill-in-the-blank (MCQ)
@@ -204,7 +225,16 @@ public static class PromptTemplates
         {{exercisesJson}}
 
         For EACH exercise, check:
-        1. Does the sentence/question match the grammar topic "{{ruleTitle}}"? (e.g. if the topic is Past Simple, the sentence must test Past Simple, not Present Simple)
+        1. TOPIC MATCHING (most important check): Does the sentence test EXACTLY the grammar topic "{{ruleTitle}}" and ONLY that topic?
+           - If the topic is a specific tense (e.g. "Present Continuous"), the exercise MUST use that exact tense, NOT a similar one.
+           - Mark as INVALID if the exercise uses a different tense/structure, even a closely related one.
+           - Examples of mismatches that MUST be rejected:
+             * Topic "Present Continuous" but sentence uses Present Perfect Continuous ("have been doing") → INVALID
+             * Topic "Past Simple" but sentence uses Past Continuous ("was doing") → INVALID
+             * Topic "Present Perfect" but sentence uses Present Perfect Continuous ("have been doing") → INVALID
+             * Topic "Past Simple" but sentence uses Past Perfect ("had done") → INVALID
+             * Topic "Will Future" but sentence uses "going to" future → INVALID
+           - Analyze the actual verb forms in the sentence/answer, not just the time markers.
         2. Is the correct answer actually correct? (e.g. for MCQ: does options[correctIndex] fill the blank to make a grammatically correct sentence?)
         3. Are the wrong options actually wrong? (they must NOT also be correct in the given sentence)
         4. Is there any logical contradiction? (e.g. time marker says "last night" but the correct answer is present tense)
