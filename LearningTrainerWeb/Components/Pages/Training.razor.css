@@ -1001,12 +1001,12 @@
 .btn-hard {
     background: rgba(255, 193, 7, 0.1);
     border-color: #ffc107;
-    color: #b8860b;
+    color: #d97706;
 }
 
 .btn-hard:hover {
     background: #ffc107;
-    color: #000;
+    color: #451a03;
 }
 
 .btn-good {

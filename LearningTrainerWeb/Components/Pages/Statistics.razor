@@ -256,7 +256,7 @@
                         @foreach (var hour in Stats.HourlyActivity)
                         {
                             var intensity = maxHourly > 0 ? (double)hour.WordsReviewed / maxHourly : 0;
-                            var textColor = intensity > 0.5 ? "#1e293b" : intensity > 0 ? "#475569" : "#9ca3af";
+                            var textColor = intensity > 0.5 ? "#fff" : "var(--text-muted)";
                             <div class="hour-cell" 
                                  style="background: rgba(59, 130, 246, @intensity.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)); color: @textColor"
                                  title="@hour.Hour:00 - @hour.WordsReviewed слов">
@@ -595,44 +595,68 @@
 
         <!-- Достижения -->
         <div class="section-card">
-            <div class="section-header">
-                <h3><i class="bi bi-award-fill me-2"></i>Достижения</h3>
-                <span class="achievements-count">
-                    <i class="bi bi-check-circle-fill text-success me-1"></i>
-                    @Stats.Achievements.Count(a => a.IsUnlocked) / @Stats.Achievements.Count
-                </span>
+            <div class="ach-header">
+                <div class="ach-header-left">
+                    <h3><i class="bi bi-award-fill me-2"></i>Достижения</h3>
+                    <div class="ach-counter">
+                        <div class="ach-counter-bar">
+                            <div class="ach-counter-fill" style="width: @(Stats.Achievements.Count > 0 ? Stats.Achievements.Count(a => a.IsUnlocked) * 100 / Stats.Achievements.Count : 0)%"></div>
+                        </div>
+                        <span class="ach-counter-text">@Stats.Achievements.Count(a => a.IsUnlocked) из @Stats.Achievements.Count</span>
+                    </div>
+                </div>
+                <div class="ach-filter-tabs">
+                    <button class="ach-tab @(_achFilter == null ? "active" : "")" @onclick="() => _achFilter = null">Все</button>
+                    <button class="ach-tab @(_achFilter == AchievementCategory.Learning ? "active" : "")" @onclick='() => _achFilter = AchievementCategory.Learning'>📚 Обучение</button>
+                    <button class="ach-tab @(_achFilter == AchievementCategory.Consistency ? "active" : "")" @onclick='() => _achFilter = AchievementCategory.Consistency'>🔥 Серии</button>
+                    <button class="ach-tab @(_achFilter == AchievementCategory.Accuracy ? "active" : "")" @onclick='() => _achFilter = AchievementCategory.Accuracy'>🎯 Точность</button>
+                    <button class="ach-tab @(_achFilter == AchievementCategory.Speed ? "active" : "")" @onclick='() => _achFilter = AchievementCategory.Speed'>⚡ Скорость</button>
+                    <button class="ach-tab @(_achFilter == AchievementCategory.Explorer ? "active" : "")" @onclick='() => _achFilter = AchievementCategory.Explorer'>🗺️ Исследование</button>
+                    <button class="ach-tab @(_achFilter == AchievementCategory.Social ? "active" : "")" @onclick='() => _achFilter = AchievementCategory.Social'>🤝 Социальное</button>
+                </div>
             </div>
-            <div class="achievements-grid">
-                @foreach (var achievement in Stats.Achievements.OrderByDescending(a => a.IsUnlocked).ThenBy(a => a.Rarity))
+            <div class="ach-grid">
+                @foreach (var ach in Stats.Achievements
+                    .Where(a => _achFilter == null || a.Category == _achFilter)
+                    .OrderByDescending(a => a.IsUnlocked)
+                    .ThenByDescending(a => a.Rarity)
+                    .ThenBy(a => a.Title))
                 {
-                    <div class="achievement-card @(achievement.IsUnlocked ? "unlocked" : "locked") rarity-@achievement.Rarity.ToString().ToLower()">
-                        <div class="achievement-icon">
-                            @achievement.Icon
-                            @if (achievement.IsUnlocked)
+                    var rarityClass = ach.Rarity.ToString().ToLower();
+                    var stateClass = ach.IsUnlocked ? "ach-unlocked" : "ach-locked";
+                    <div class="ach-card @stateClass ach-@rarityClass" title="@ach.Description">
+                        <div class="ach-badge">
+                            <svg class="ach-ring" viewBox="0 0 36 36">
+                                <circle class="ach-ring-bg" cx="18" cy="18" r="16" />
+                                @if (!ach.IsUnlocked && ach.Progress > 0)
+                                {
+                                    <circle class="ach-ring-fg" cx="18" cy="18" r="16"
+                                            stroke-dasharray="@(ach.Progress.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)) 100"
+                                            transform="rotate(-90 18 18)" />
+                                }
+                                else if (ach.IsUnlocked)
+                                {
+                                    <circle class="ach-ring-fg ach-ring-full" cx="18" cy="18" r="16"
+                                            stroke-dasharray="100 100"
+                                            transform="rotate(-90 18 18)" />
+                                }
+                            </svg>
+                            <span class="ach-emoji">@ach.Icon</span>
+                            @if (ach.IsUnlocked)
                             {
-                                <span class="achievement-check"><i class="bi bi-check-circle-fill"></i></span>
+                                <span class="ach-checkmark"><i class="bi bi-check-circle-fill"></i></span>
                             }
                         </div>
-                        <div class="achievement-content">
-                            <div class="achievement-title">@achievement.Title</div>
-                            <div class="achievement-desc">@achievement.Description</div>
-                            @if (!achievement.IsUnlocked && achievement.TargetValue.HasValue)
-                            {
-                                <div class="achievement-progress">
-                                    <div class="progress" style="height: 6px;">
-                                        <div class="progress-bar" style="width: @achievement.Progress%"></div>
-                                    </div>
-                                    <span class="progress-text">@achievement.CurrentValue / @achievement.TargetValue</span>
-                                </div>
-                            }
-                            @if (achievement.IsUnlocked && achievement.UnlockedAt.HasValue)
-                            {
-                                <div class="achievement-date">
-                                    <i class="bi bi-calendar-check me-1"></i>
-                                    @achievement.UnlockedAt.Value.ToString("dd.MM.yyyy")
-                                </div>
-                            }
-                        </div>
+                        <div class="ach-name">@ach.Title</div>
+                        <div class="ach-rarity-tag">@GetRarityLabel(ach.Rarity)</div>
+                        @if (!ach.IsUnlocked && ach.TargetValue.HasValue && ach.TargetValue > 0)
+                        {
+                            <div class="ach-progress-text">@ach.CurrentValue / @ach.TargetValue</div>
+                        }
+                        @if (ach.IsUnlocked && ach.UnlockedAt.HasValue)
+                        {
+                            <div class="ach-date">@ach.UnlockedAt.Value.ToString("dd.MM.yy")</div>
+                        }
                     </div>
                 }
             </div>
@@ -669,6 +693,17 @@
     private bool IsLoading = true;
     private bool IsAuthenticated;
     private string SelectedPeriod = "week";
+    private AchievementCategory? _achFilter;
+
+    private static string GetRarityLabel(AchievementRarity rarity) => rarity switch
+    {
+        AchievementRarity.Common => "Обычное",
+        AchievementRarity.Uncommon => "Необычное",
+        AchievementRarity.Rare => "Редкое",
+        AchievementRarity.Epic => "Эпическое",
+        AchievementRarity.Legendary => "Легендарное",
+        _ => ""
+    };
 
     protected override async Task OnInitializedAsync()
     {

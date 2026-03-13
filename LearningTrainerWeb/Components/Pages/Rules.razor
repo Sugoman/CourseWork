@@ -14,54 +14,86 @@
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="card mb-4 " style="border-radius: var(--radius-lg);">
-        <div class="card-body p-4">
-            <div class="row g-3 align-items-end">
-                <div class="col-12 col-md-5">
-                    <label class="form-label small fw-bold text-muted">Поиск</label>
+    <!-- Search & Filters -->
+    <div class="dict-search-wrap">
+        <div class="dict-search-bar">
+            <i class="bi bi-search dict-search-icon"></i>
+            <input type="text"
+                   class="dict-search-input"
+                   placeholder="Найти правило по названию..."
+                   @bind="SearchQuery"
+                   @bind:event="oninput"
+                   @onkeyup="OnSearchKeyUp" />
+            @if (!string.IsNullOrEmpty(SearchQuery))
+            {
+                <button class="dict-search-clear" @onclick="() => { SearchQuery = string.Empty; ApplyFilters(); }">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            }
+        </div>
 
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text"
-                               class="form-control border-start-0 ps-0"
-                               placeholder="Название правила..."
-                               @bind="SearchQuery"
-                               @bind:event="oninput"
-                               @onkeyup="OnSearchKeyUp" />
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <label class="form-label small text-muted">
-                        <i class="bi bi-tag me-1"></i> Категория
-                    </label>
-                    <select class="form-select" @bind="SelectedCategory" @bind:after="ApplyFilters">
-                        <option value="">Все категории</option>
-                        <option value="Grammar">Грамматика</option>
-                        <option value="Vocabulary">Лексика</option>
-                        <option value="Pronunciation">Произношение</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-3">
-                    <label class="form-label small text-muted">
-                        <i class="bi bi-bar-chart me-1"></i> Уровень
-                    </label>
-                    <select class="form-select" @bind="SelectedDifficulty" @bind:after="ApplyFilters">
-                        <option value="0">Любой</option>
-                        <option value="1">Начальный</option>
-                        <option value="2">Средний</option>
-                        <option value="3">Продвинутый</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-2 d-flex align-items-end">
-                    <button class="btn btn-primary w-100 gap-2" @onclick="ApplyFilters">
-                        <i class="bi me-1"></i> Найти
-                    </button>
-                </div>
+        <div class="dict-filters-row">
+            <div class="dict-filter-group">
+                <label class="dict-filter-label">
+                    <i class="bi bi-tag"></i> Категория
+                </label>
+                <select class="dict-filter-select" @bind="SelectedCategory" @bind:after="ApplyFilters">
+                    <option value="">Все категории</option>
+                    <option value="Grammar">Грамматика</option>
+                    <option value="Vocabulary">Лексика</option>
+                    <option value="Pronunciation">Произношение</option>
+                </select>
+            </div>
+
+            <div class="dict-filter-group">
+                <label class="dict-filter-label">
+                    <i class="bi bi-bar-chart"></i> Уровень
+                </label>
+                <select class="dict-filter-select" @bind="SelectedDifficulty" @bind:after="ApplyFilters">
+                    <option value="0">Любой</option>
+                    <option value="1">Начальный</option>
+                    <option value="2">Средний</option>
+                    <option value="3">Продвинутый</option>
+                </select>
             </div>
         </div>
+
+        @if (HasActiveFilters)
+        {
+            <div class="dict-active-filters">
+                <span class="dict-af-label">Фильтры:</span>
+                @if (!string.IsNullOrEmpty(SearchQuery))
+                {
+                    <span class="dict-af-tag">
+                        <i class="bi bi-search"></i> «@SearchQuery»
+                        <button class="dict-af-remove" @onclick="() => { SearchQuery = string.Empty; ApplyFilters(); }">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </span>
+                }
+                @if (!string.IsNullOrEmpty(SelectedCategory))
+                {
+                    <span class="dict-af-tag">
+                        <i class="bi bi-tag"></i> @SelectedCategory
+                        <button class="dict-af-remove" @onclick="() => { SelectedCategory = string.Empty; ApplyFilters(); }">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </span>
+                }
+                @if (SelectedDifficulty > 0)
+                {
+                    <span class="dict-af-tag">
+                        <i class="bi bi-bar-chart"></i> @GetDifficultyText(SelectedDifficulty)
+                        <button class="dict-af-remove" @onclick="() => { SelectedDifficulty = 0; ApplyFilters(); }">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </span>
+                }
+                <button class="dict-af-clear" @onclick="ClearFilters">
+                    <i class="bi bi-x-circle me-1"></i>Сбросить все
+                </button>
+            </div>
+        }
     </div>
 
     <!-- Content -->
@@ -83,7 +115,7 @@
             </div>
             <h3>Правила не найдены</h3>
             <p class="text-muted mb-4">
-                @if (!string.IsNullOrEmpty(SearchQuery) || !string.IsNullOrEmpty(SelectedCategory) || SelectedDifficulty > 0)
+                @if (HasActiveFilters)
                 {
                     <span>По вашему запросу ничего не найдено. Попробуйте изменить параметры поиска.</span>
                 }
@@ -94,7 +126,7 @@
             </p>
             
             <div class="empty-state-actions">
-                @if (!string.IsNullOrEmpty(SearchQuery) || !string.IsNullOrEmpty(SelectedCategory) || SelectedDifficulty > 0)
+                @if (HasActiveFilters)
                 {
                     <button class="btn btn-outline-primary" @onclick="ClearFilters">
                         <i class="bi bi-x-circle me-2"></i>Сбросить фильтры
@@ -112,53 +144,49 @@
         <div class="row g-4">
             @foreach (var rule in RuleItems)
             {
-                <div class="col-sm-6">
+                <div class="col-sm-6 col-md-4">
                     <div class="card h-100">
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <h5 class="card-title mb-0">@rule.Title</h5>
-                                <span class="badge @GetDifficultyBadgeClass(rule.DifficultyLevel)">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="fw-bold mb-0" style="color: var(--gray-900);">@rule.Title</h5>
+                                <span class="badge rounded-pill px-3 py-2 @GetDifficultyBadgeClass(rule.DifficultyLevel)">
                                     @GetDifficultyText(rule.DifficultyLevel)
                                 </span>
                             </div>
-                            <p class="card-text" style="min-height: 48px;">@rule.Description</p>
+
+                            <p class="text-muted small mb-3" style="min-height: 45px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                @rule.Description
+                            </p>
+
                             <div class="d-flex gap-2 mb-3">
                                 <span class="badge bg-secondary">@rule.Category</span>
                             </div>
+
                             <div class="d-flex justify-content-between align-items-center">
-                                <span class="d-flex align-items-center gap-2" style="color: var(--accent-yellow);">
-                                    <i class="bi bi-star-fill"></i> 
-                                    <strong>@rule.Rating.ToString("F1")</strong>
-                                </span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-star-fill text-warning"></i>
+                                    <span class="fw-bold">@rule.Rating.ToString("F1")</span>
+                                </div>
                                 <div class="d-flex gap-2">
-                                    <a href="rule/@rule.Id" class="btn btn-sm btn-outline-primary gap-2">
-                                        <i class="bi bi-book-half me-1"></i> Читать
+                                    <a href="rule/@rule.Id" class="btn btn-link btn-sm text-decoration-none text-primary fw-medium">
+                                        Читать
                                     </a>
-                                    <button class="btn btn-sm btn-success" @onclick="() => DownloadRule(rule.Id)" disabled="@IsDownloading">
-                                        <i class="bi bi-download"></i> @(IsDownloading ? "..." : "Скачать")
+                                    <button class="btn btn-primary btn-sm px-3 rounded-pill gap-2" @onclick="() => DownloadRule(rule.Id)" disabled="@IsDownloading">
+                                        <i class="bi bi-download me-1"></i> Скачать
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-footer bg-transparent border-top-0 pb-3">
-                            <div class="d-flex justify-content-between align-items-center text-muted" style="font-size: 0.85rem;">
-
-                                <div class="d-flex align-items-center gap-2" style="min-width: 0; flex: 1;">
-                                    <i class="bi bi-person-circle"></i>
-                                    <span class="text-truncate">@rule.AuthorName</span>
+                        <div class="card-footer">
+                            <div class="d-flex align-items-center justify-content-between text-muted small">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-person-circle" style="font-size: 1.2rem;"></i>
+                                    <span>@rule.AuthorName</span>
                                 </div>
-
-                                <div class="d-flex align-items-center gap-3 ms-2">
-                                    <span class="d-flex align-items-center gap-2">
-                                        <i class="bi bi-calendar3 gap-2" ></i>
-                                        <span>@rule.CreatedAt.ToString("dd.MM")</span>
-                                    </span>
-                                    <span class="d-flex align-items-center gap-2">
-                                        <i class="bi bi-download"></i>
-                                        @rule.Downloads
-                                    </span>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span><i class="bi bi-calendar3 me-1"></i>@rule.CreatedAt.ToString("dd.MM")</span>
+                                    <span><i class="bi bi-download me-1"></i>@rule.Downloads</span>
                                 </div>
-
                             </div>
                         </div>
                     </div>
@@ -205,9 +233,10 @@
     private string SearchQuery = "";
     private string SelectedCategory = "";
     private int SelectedDifficulty = 0;
+    private bool HasActiveFilters => !string.IsNullOrEmpty(SearchQuery) || !string.IsNullOrEmpty(SelectedCategory) || SelectedDifficulty > 0;
     private int CurrentPage = 1;
     private int TotalPages = 1;
-    private const int PageSize = 8;
+    private const int PageSize = 9;
     private string? DownloadMessage;
     private bool DownloadSuccess;
     private bool IsDownloading;

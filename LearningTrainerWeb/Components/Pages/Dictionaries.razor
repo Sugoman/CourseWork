@@ -16,94 +16,130 @@
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="card mb-4" style="border-radius: var(--radius-lg);">
-        <div class="card-body p-4">
-            <div class="row g-3 align-items-end">
-                <div class="col-12 col-md-5">
-                    <label class="form-label small fw-bold text-muted">Поиск</label>
+    <!-- Search & Filters -->
+    <div class="dict-search-wrap">
+        <div class="dict-search-bar">
+            <i class="bi bi-search dict-search-icon"></i>
+            <input type="text"
+                   class="dict-search-input"
+                   placeholder="Найти словарь по названию..."
+                   @bind="SearchQuery"
+                   @bind:event="oninput"
+                   @onkeyup="OnSearchKeyUp" />
+            @if (!string.IsNullOrEmpty(SearchQuery))
+            {
+                <button class="dict-search-clear" @onclick="() => { SearchQuery = string.Empty; ApplyFilters(); }">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            }
+        </div>
 
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0 text-muted">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text"
-                               class="form-control border-start-0 ps-0"
-                               placeholder="Название словаря..."
-                               @bind="SearchQuery"
-                               @bind:event="oninput"
-                               @onkeyup="OnSearchKeyUp" />
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <label class="form-label small text-muted">
-                        <i class="bi bi-translate me-1"></i> Язык оригинала
-                    </label>
-                    <select class="form-select" @bind="SelectedLanguageFrom" @bind:after="ApplyFilters">
-                        <option value="">Все языки</option>
-                        <option value="English">English</option>
-                        <option value="Russian">Русский</option>
-                        <option value="German">Deutsch</option>
-                        <option value="French">Français</option>
-                        <option value="Spanish">Español</option>
-                        <option value="Italian">Italiano</option>
-                        <option value="Portuguese">Português</option>
-                        <option value="Chinese">中文</option>
-                        <option value="Japanese">日本語</option>
-                        <option value="Korean">한국어</option>
-                        <option value="Arabic">العربية</option>
-                        <option value="Turkish">Türkçe</option>
-                        <option value="Polish">Polski</option>
-                        <option value="Dutch">Nederlands</option>
-                        <option value="Swedish">Svenska</option>
-                        <option value="Norwegian">Norsk</option>
-                        <option value="Danish">Dansk</option>
-                        <option value="Finnish">Suomi</option>
-                        <option value="Czech">Čeština</option>
-                        <option value="Greek">Ελληνικά</option>
-                        <option value="Hindi">हिन्दी</option>
-                        <option value="Ukrainian">Українська</option>
-                        <option value="Hungarian">Magyar</option>
-                    </select>
-                </div>
-                <div class="col-6 col-md-3">
-                    <label class="form-label small text-muted">
-                        <i class="bi bi-arrow-right-circle me-1"></i> Язык перевода
-                    </label>
-                    <select class="form-select" @bind="SelectedLanguageTo" @bind:after="ApplyFilters">
-                        <option value="">Все языки</option>
-                        <option value="English">English</option>
-                        <option value="Russian">Русский</option>
-                        <option value="German">Deutsch</option>
-                        <option value="French">Français</option>
-                        <option value="Spanish">Español</option>
-                        <option value="Italian">Italiano</option>
-                        <option value="Portuguese">Português</option>
-                        <option value="Chinese">中文</option>
-                        <option value="Japanese">日本語</option>
-                        <option value="Korean">한국어</option>
-                        <option value="Arabic">العربية</option>
-                        <option value="Turkish">Türkçe</option>
-                        <option value="Polish">Polski</option>
-                        <option value="Dutch">Nederlands</option>
-                        <option value="Swedish">Svenska</option>
-                        <option value="Norwegian">Norsk</option>
-                        <option value="Danish">Dansk</option>
-                        <option value="Finnish">Suomi</option>
-                        <option value="Czech">Čeština</option>
-                        <option value="Greek">Ελληνικά</option>
-                        <option value="Hindi">हिन्दी</option>
-                        <option value="Ukrainian">Українська</option>
-                        <option value="Hungarian">Magyar</option>
-                    </select>
-                </div>
-                <div class="col-12 col-md-2 d-flex align-items-end">
-                    <button class="btn btn-primary w-100 gap-2" @onclick="ApplyFilters">
-                        <i class="bi me-1"></i> Найти
-                    </button>
-                </div>
+        <div class="dict-filters-row">
+            <div class="dict-filter-group">
+                <label class="dict-filter-label">
+                    <i class="bi bi-translate"></i> Оригинал
+                </label>
+                <select class="dict-filter-select" @bind="SelectedLanguageFrom" @bind:after="ApplyFilters">
+                    <option value="">Все языки</option>
+                    <option value="English">English</option>
+                    <option value="Russian">Русский</option>
+                    <option value="German">Deutsch</option>
+                    <option value="French">Français</option>
+                    <option value="Spanish">Español</option>
+                    <option value="Italian">Italiano</option>
+                    <option value="Portuguese">Português</option>
+                    <option value="Chinese">中文</option>
+                    <option value="Japanese">日本語</option>
+                    <option value="Korean">한국어</option>
+                    <option value="Arabic">العربية</option>
+                    <option value="Turkish">Türkçe</option>
+                    <option value="Polish">Polski</option>
+                    <option value="Dutch">Nederlands</option>
+                    <option value="Swedish">Svenska</option>
+                    <option value="Norwegian">Norsk</option>
+                    <option value="Danish">Dansk</option>
+                    <option value="Finnish">Suomi</option>
+                    <option value="Czech">Čeština</option>
+                    <option value="Greek">Ελληνικά</option>
+                    <option value="Hindi">हिन्दी</option>
+                    <option value="Ukrainian">Українська</option>
+                    <option value="Hungarian">Magyar</option>
+                </select>
+            </div>
+
+            <div class="dict-filter-sep">
+                <i class="bi bi-arrow-right"></i>
+            </div>
+
+            <div class="dict-filter-group">
+                <label class="dict-filter-label">
+                    <i class="bi bi-chat-dots"></i> Перевод
+                </label>
+                <select class="dict-filter-select" @bind="SelectedLanguageTo" @bind:after="ApplyFilters">
+                    <option value="">Все языки</option>
+                    <option value="English">English</option>
+                    <option value="Russian">Русский</option>
+                    <option value="German">Deutsch</option>
+                    <option value="French">Français</option>
+                    <option value="Spanish">Español</option>
+                    <option value="Italian">Italiano</option>
+                    <option value="Portuguese">Português</option>
+                    <option value="Chinese">中文</option>
+                    <option value="Japanese">日本語</option>
+                    <option value="Korean">한국어</option>
+                    <option value="Arabic">العربية</option>
+                    <option value="Turkish">Türkçe</option>
+                    <option value="Polish">Polski</option>
+                    <option value="Dutch">Nederlands</option>
+                    <option value="Swedish">Svenska</option>
+                    <option value="Norwegian">Norsk</option>
+                    <option value="Danish">Dansk</option>
+                    <option value="Finnish">Suomi</option>
+                    <option value="Czech">Čeština</option>
+                    <option value="Greek">Ελληνικά</option>
+                    <option value="Hindi">हिन्दी</option>
+                    <option value="Ukrainian">Українська</option>
+                    <option value="Hungarian">Magyar</option>
+                </select>
             </div>
         </div>
+
+        @if (HasActiveFilters)
+        {
+            <div class="dict-active-filters">
+                <span class="dict-af-label">Фильтры:</span>
+                @if (!string.IsNullOrEmpty(SearchQuery))
+                {
+                    <span class="dict-af-tag">
+                        <i class="bi bi-search"></i> «@SearchQuery»
+                        <button class="dict-af-remove" @onclick="() => { SearchQuery = string.Empty; ApplyFilters(); }">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </span>
+                }
+                @if (!string.IsNullOrEmpty(SelectedLanguageFrom))
+                {
+                    <span class="dict-af-tag">
+                        <i class="bi bi-translate"></i> @SelectedLanguageFrom
+                        <button class="dict-af-remove" @onclick="() => { SelectedLanguageFrom = string.Empty; ApplyFilters(); }">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </span>
+                }
+                @if (!string.IsNullOrEmpty(SelectedLanguageTo))
+                {
+                    <span class="dict-af-tag">
+                        <i class="bi bi-chat-dots"></i> @SelectedLanguageTo
+                        <button class="dict-af-remove" @onclick="() => { SelectedLanguageTo = string.Empty; ApplyFilters(); }">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </span>
+                }
+                <button class="dict-af-clear" @onclick="ClearFilters">
+                    <i class="bi bi-x-circle me-1"></i>Сбросить все
+                </button>
+            </div>
+        }
     </div>
 
     <!-- Content -->
@@ -125,7 +161,7 @@
             </div>
             <h3>Словари не найдены</h3>
             <p class="text-muted mb-4">
-                @if (!string.IsNullOrEmpty(SearchQuery) || !string.IsNullOrEmpty(SelectedLanguageFrom) || !string.IsNullOrEmpty(SelectedLanguageTo))
+                @if (HasActiveFilters)
                 {
                     <span>По вашему запросу ничего не найдено. Попробуйте изменить параметры поиска.</span>
                 }
@@ -136,7 +172,7 @@
             </p>
             
             <div class="empty-state-actions">
-                @if (!string.IsNullOrEmpty(SearchQuery) || !string.IsNullOrEmpty(SelectedLanguageFrom) || !string.IsNullOrEmpty(SelectedLanguageTo))
+                @if (HasActiveFilters)
                 {
                     <button class="btn btn-outline-primary" @onclick="ClearFilters">
                         <i class="bi bi-x-circle me-2"></i>Сбросить фильтры
@@ -294,6 +330,7 @@
     private string SearchQuery = "";
     private string SelectedLanguageFrom = "";
     private string SelectedLanguageTo = "";
+    private bool HasActiveFilters => !string.IsNullOrEmpty(SearchQuery) || !string.IsNullOrEmpty(SelectedLanguageFrom) || !string.IsNullOrEmpty(SelectedLanguageTo);
     private int CurrentPage = 1;
     private int TotalPages = 1;
     private const int PageSize = 9;
