@@ -1137,11 +1137,23 @@
 
                             @if (!TypingAnswered)
                             {
-                                <button class="btn btn-primary btn-lg" @onclick="CheckTypingAnswer">
-                                    <i class="bi bi-check-lg me-2"></i>Проверить
-                                </button>
+                                <div class="d-flex align-items-center gap-2 justify-content-center">
+                                    <button class="btn btn-outline-secondary" @onclick="UseHint" disabled="@(!CanUseHint)" title="Контекстная подсказка (снижает оценку до «Сложно»)">
+                                        <i class="bi bi-lightbulb me-1"></i>Подсказка
+                                        @if (_hintCount > 0) { <span class="badge bg-warning text-dark ms-1">@_hintCount/4</span> }
+                                    </button>
+                                    <button class="btn btn-primary btn-lg" @onclick="CheckTypingAnswer">
+                                        <i class="bi bi-check-lg me-2"></i>Проверить
+                                    </button>
+                                </div>
                             }
                         </div>
+                        @if (HintUsed && !TypingAnswered)
+                        {
+                            <div class="hint-display mt-2 p-2 rounded" style="background: var(--bs-primary-bg-subtle, #e7f1ff); border-left: 3px solid var(--bs-primary, #0d6efd);">
+                                <span style="font-style: italic;">@HintText</span>
+                            </div>
+                        }
 
                         @if (TypingAnswered)
                         {
@@ -1467,11 +1479,23 @@
 
                             @if (!ClozeAnswered)
                             {
-                                <button class="btn btn-primary btn-lg" @onclick="CheckClozeAnswer">
-                                    <i class="bi bi-check-lg me-2"></i>Проверить
-                                </button>
+                                <div class="d-flex align-items-center gap-2 justify-content-center">
+                                    <button class="btn btn-outline-secondary" @onclick="UseHint" disabled="@(!CanUseHint)" title="Контекстная подсказка (снижает оценку до «Сложно»)">
+                                        <i class="bi bi-lightbulb me-1"></i>Подсказка
+                                        @if (_hintCount > 0) { <span class="badge bg-warning text-dark ms-1">@_hintCount/4</span> }
+                                    </button>
+                                    <button class="btn btn-primary btn-lg" @onclick="CheckClozeAnswer">
+                                        <i class="bi bi-check-lg me-2"></i>Проверить
+                                    </button>
+                                </div>
                             }
                         </div>
+                        @if (HintUsed && !ClozeAnswered)
+                        {
+                            <div class="hint-display mt-2 p-2 rounded" style="background: var(--bs-primary-bg-subtle, #e7f1ff); border-left: 3px solid var(--bs-primary, #0d6efd);">
+                                <span style="font-style: italic;">@HintText</span>
+                            </div>
+                        }
 
                         @if (ClozeAnswered)
                         {
@@ -1606,6 +1630,18 @@
                                     <i class="bi bi-check-lg me-2"></i>Проверить
                                 </button>
                             </div>
+                            <div class="d-flex justify-content-center mt-2">
+                                <button class="btn btn-outline-secondary btn-sm" @onclick="UseHint" disabled="@(!CanUseHint)" title="Контекстная подсказка (снижает оценку до «Сложно»)">
+                                    <i class="bi bi-lightbulb me-1"></i>Подсказка
+                                    @if (_hintCount > 0) { <span class="badge bg-warning text-dark ms-1">@_hintCount/4</span> }
+                                </button>
+                            </div>
+                            @if (HintUsed)
+                            {
+                                <div class="hint-display mt-2 p-2 rounded" style="background: var(--bs-primary-bg-subtle, #e7f1ff); border-left: 3px solid var(--bs-primary, #0d6efd);">
+                                    <span style="font-style: italic;">@HintText</span>
+                                </div>
+                            }
                         }
 
                         @if (SpellingAnswered)
@@ -1963,6 +1999,14 @@ private double TtsVolume = 0.8;
 private bool ShowVolumeSlider;
 private bool IsEdgeBrowser = true;
 private bool TtsTipDismissed;
+
+// Context-Aware Hints state (§1.1 LEARNING_IMPROVEMENTS)
+private int _hintCount;
+private string HintText = "";
+private bool HintUsed;
+private bool CanUseHint => CurrentWord != null
+    && !TypingAnswered && !ListeningAnswered && !ClozeAnswered && !SpellingAnswered
+    && _hintCount < 4;
 
 // Speed Round state (§3.3 LEARNING_IMPROVEMENTS)
 private bool IsSpeedRound;
@@ -2358,6 +2402,11 @@ private async Task InstallStarterPack()
         IsEditingNote = false;
         EditingNoteText = "";
 
+        // Reset hints (§1.1 Context-Aware Hints)
+        _hintCount = 0;
+        HintText = "";
+        HintUsed = false;
+
         // Clear AI state
         AiExplanation = null;
         AiTip = null;
@@ -2594,9 +2643,10 @@ private async Task InstallStarterPack()
 
         // Update progress
         var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
-        var quality = TypingWasCorrect ? ResponseQuality.Good 
-                    : TypingWasAlmostCorrect ? ResponseQuality.Hard 
-                    : ResponseQuality.Again;
+        var quality = TypingWasCorrect
+            ? (HintUsed ? ResponseQuality.Hard : ResponseQuality.Good)
+            : TypingWasAlmostCorrect ? ResponseQuality.Hard 
+            : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "typing");
 
         TrackWordResult(TypingWasCorrect || TypingWasAlmostCorrect, responseTimeMs, "typing");
@@ -3057,7 +3107,9 @@ private async Task InstallStarterPack()
         }
 
         var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
-        var quality = ClozeWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
+        var quality = ClozeWasCorrect
+            ? (HintUsed ? ResponseQuality.Hard : ResponseQuality.Good)
+            : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "cloze");
 
         TrackWordResult(ClozeWasCorrect, responseTimeMs, "cloze");
@@ -3119,7 +3171,9 @@ private async Task InstallStarterPack()
         SpellingWasCorrect = string.Equals(SpellingTyped.Trim(), SpellingCorrectWord, StringComparison.OrdinalIgnoreCase);
 
         var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
-        var quality = SpellingWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
+        var quality = SpellingWasCorrect
+            ? (HintUsed ? ResponseQuality.Hard : ResponseQuality.Good)
+            : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "spelling");
 
         TrackWordResult(SpellingWasCorrect, responseTimeMs, "spelling");
@@ -3141,6 +3195,39 @@ private async Task InstallStarterPack()
     private async Task NextSpellingWord()
     {
         await MoveToNextWord();
+    }
+
+    // === §1.1 Context-Aware Hints ===
+
+    private void UseHint()
+    {
+        if (CurrentWord == null || !CanUseHint) return;
+
+        _hintCount++;
+        HintUsed = true;
+        var answer = ExpectedAnswer;
+
+        // Context-aware hint ladder:
+        // Level 1: Example sentence (context)
+        // Level 2: First letter + letter count (partial retrieval cue)
+        // Level 3: User note / mnemonic (personal association)
+        // Level 4: Half-word reveal (last resort)
+        HintText = _hintCount switch
+        {
+            1 when !string.IsNullOrEmpty(CurrentWord.Example)
+                => $"📖 {CurrentWord.Example}",
+            1 => $"Первая буква: {answer[0]}… ({answer.Length} букв)",
+
+            2 => $"💡 {answer[0]}… — {answer.Length} букв",
+
+            3 when !string.IsNullOrWhiteSpace(CurrentWord.UserNote)
+                => $"📝 {CurrentWord.UserNote}",
+            3 => $"🔤 {answer[..Math.Min(answer.Length, answer.Length / 2 + 1)]}…",
+
+            4 => $"🔤 {answer[..Math.Min(answer.Length, answer.Length / 2 + 1)]}…",
+
+            _ => HintText
+        };
     }
 
     private async Task SpeakExample()

@@ -1380,6 +1380,18 @@
                         </TextBox.Style>
                     </TextBox>
 
+                    <!-- Hint (§1.1 Context-Aware Hints) -->
+                    <StackPanel Visibility="{Binding ClozeAnswered, Converter={StaticResource InverseBoolToVis}}">
+                        <Button Content="💡 Подсказка" Command="{Binding UseHintCommand}"
+                                Style="{StaticResource BaseButton}"
+                                HorizontalAlignment="Center" Margin="0,8,0,0"
+                                Padding="14,6" FontSize="{DynamicResource FontSizeCaption}" Opacity="0.8"/>
+                        <TextBlock Text="{Binding HintText}" FontSize="{DynamicResource FontSizeBase}" FontStyle="Italic"
+                                   HorizontalAlignment="Center" Margin="0,6,0,0" TextWrapping="Wrap" MaxWidth="400"
+                                   TextAlignment="Center" Foreground="{DynamicResource PrimaryAccentBrush}"
+                                   Visibility="{Binding HintUsed, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
+
                     <!-- Check button -->
                     <Button Content="Проверить" Command="{Binding CheckClozeCommand}"
                             Style="{StaticResource McqOptionButton}" HorizontalAlignment="Center"
@@ -1508,6 +1520,18 @@
                             </Style>
                         </TextBox.Style>
                     </TextBox>
+
+                    <!-- Hint (§1.1 Context-Aware Hints) -->
+                    <StackPanel Visibility="{Binding SpellingAnswered, Converter={StaticResource InverseBoolToVis}}">
+                        <Button Content="💡 Подсказка" Command="{Binding UseHintCommand}"
+                                Style="{StaticResource BaseButton}"
+                                HorizontalAlignment="Center" Margin="0,8,0,0"
+                                Padding="14,6" FontSize="{DynamicResource FontSizeCaption}" Opacity="0.8"/>
+                        <TextBlock Text="{Binding HintText}" FontSize="{DynamicResource FontSizeBase}" FontStyle="Italic"
+                                   HorizontalAlignment="Center" Margin="0,6,0,0" TextWrapping="Wrap" MaxWidth="400"
+                                   TextAlignment="Center" Foreground="{DynamicResource PrimaryAccentBrush}"
+                                   Visibility="{Binding HintUsed, Converter={StaticResource BoolToVis}}"/>
+                    </StackPanel>
 
                     <!-- Check button -->
                     <Button Content="Проверить" Command="{Binding CheckSpellingCommand}"

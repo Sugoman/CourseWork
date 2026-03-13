@@ -80,6 +80,7 @@ namespace LearningTrainer.ViewModels
         private int _totalWordsCount;
         private readonly Random _random = new();
         private bool _isProcessing;
+        private Dictionary<int, string?> _userNotes = new();
         private DateTime _sessionStartTime;
         private bool _isMixedMode;
         private bool _disposed;
@@ -678,6 +679,10 @@ namespace LearningTrainer.ViewModels
             InitializeCommands();
 
             // Convert TrainingWordDto → Word and start session immediately
+            _userNotes = trainingWords
+                .Where(w => w.UserNote != null)
+                .ToDictionary(w => w.WordId, w => w.UserNote);
+
             var words = trainingWords.Select(w => new Word
             {
                 Id = w.WordId,
@@ -855,7 +860,9 @@ namespace LearningTrainer.ViewModels
 
             UseHintCommand = new RelayCommand(
                 (param) => UseHint(),
-                (param) => CurrentWord != null && !TypingAnswered && !ListeningAnswered && _hintCount < 3
+                (param) => CurrentWord != null
+                    && !TypingAnswered && !ListeningAnswered && !ClozeAnswered && !SpellingAnswered
+                    && _hintCount < 4
             );
 
             // Speed Round (§18.1d)
@@ -1483,7 +1490,17 @@ namespace LearningTrainer.ViewModels
             _sessionStopwatch.Restart();
         }
 
-        // ── #5 Hint System ───────────────────────────────────────────
+        // ── §1.1 Context-Aware Hints ─────────────────────────────────
+
+        private string? GetCurrentWordUserNote()
+        {
+            if (CurrentWord == null) return null;
+            // TrainingWordDto path — notes stored in dictionary
+            if (_userNotes.TryGetValue(CurrentWord.Id, out var note) && !string.IsNullOrWhiteSpace(note))
+                return note;
+            // Dictionary path — notes stored in LearningProgress navigation property
+            return CurrentWord.Progress?.FirstOrDefault()?.UserNote;
+        }
 
         private void UseHint()
         {
@@ -1493,12 +1510,25 @@ namespace LearningTrainer.ViewModels
             HintUsed = true;
             var answer = ExpectedAnswer;
 
+            // Context-aware hint ladder:
+            // Level 1: Example sentence (context)
+            // Level 2: First letter + letter count (partial retrieval cue)
+            // Level 3: User note / mnemonic (personal association)
+            // Level 4: Half-word reveal (last resort)
             HintText = _hintCount switch
             {
-                1 => $"Первая буква: {answer[0]}…",
-                2 => $"Букв: {answer.Length}  ({new string('●', answer.Length)})",
-                3 when !string.IsNullOrEmpty(CurrentWord.Example) => $"Пример: {CurrentWord.Example}",
-                3 => $"Слово: {answer[..Math.Min(answer.Length, answer.Length / 2 + 1)]}…",
+                1 when !string.IsNullOrEmpty(CurrentWord.Example)
+                    => $"📖 {CurrentWord.Example}",
+                1 => $"Первая буква: {answer[0]}… ({answer.Length} букв)",
+
+                2 => $"💡 {answer[0]}{'…'} — {answer.Length} букв ({new string('●', answer.Length)})",
+
+                3 when !string.IsNullOrWhiteSpace(GetCurrentWordUserNote())
+                    => $"📝 {GetCurrentWordUserNote()}",
+                3 => $"🔤 {answer[..Math.Min(answer.Length, answer.Length / 2 + 1)]}…",
+
+                4 => $"🔤 {answer[..Math.Min(answer.Length, answer.Length / 2 + 1)]}…",
+
                 _ => HintText
             };
 
@@ -1907,7 +1937,9 @@ namespace LearningTrainer.ViewModels
 
                 SpellingWasCorrect = string.Equals(userAnswer, correct, StringComparison.OrdinalIgnoreCase);
 
-                var quality = SpellingWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
+                var quality = SpellingWasCorrect
+                    ? (HintUsed ? ResponseQuality.Hard : ResponseQuality.Good)
+                    : ResponseQuality.Again;
                 await TrackAndSubmitAsync(quality);
 
                 if (IsSpeedRound)
@@ -1973,7 +2005,9 @@ namespace LearningTrainer.ViewModels
 
                 ClozeWasCorrect = string.Equals(userAnswer, correct, StringComparison.OrdinalIgnoreCase);
 
-                var quality = ClozeWasCorrect ? ResponseQuality.Good : ResponseQuality.Again;
+                var quality = ClozeWasCorrect
+                    ? (HintUsed ? ResponseQuality.Hard : ResponseQuality.Good)
+                    : ResponseQuality.Again;
                 await TrackAndSubmitAsync(quality);
 
                 if (IsSpeedRound)
