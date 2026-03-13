@@ -81,6 +81,7 @@ namespace LearningTrainer.ViewModels
         private readonly Random _random = new();
         private bool _isProcessing;
         private Dictionary<int, string?> _userNotes = new();
+        private Dictionary<int, string> _errorModes = new();
         private DateTime _sessionStartTime;
         private bool _isMixedMode;
         private bool _disposed;
@@ -558,12 +559,19 @@ namespace LearningTrainer.ViewModels
 
         public ObservableCollection<WordResultDto> DifficultWords { get; } = new();
 
-        // --- Error Review Round (#8) ---
+        // --- Error Review Round (#8, §1.2 Error Replay Queue) ---
         private bool _isErrorReviewRound;
         public bool IsErrorReviewRound
         {
             get => _isErrorReviewRound;
             set => SetProperty(ref _isErrorReviewRound, value);
+        }
+
+        private string _errorReplayBanner = "";
+        public string ErrorReplayBanner
+        {
+            get => _errorReplayBanner;
+            set => SetProperty(ref _errorReplayBanner, value);
         }
 
         public bool HasDifficultWords => DifficultWords.Count > 0;
@@ -1009,9 +1017,16 @@ namespace LearningTrainer.ViewModels
             if (_translationDirection == "random")
                 IsReversed = _random.Next(2) == 0;
 
-            if (_isMixedMode)
+            if (_isMixedMode || IsErrorReviewRound)
             {
-                var newType = _isAdaptiveDifficulty ? PickAdaptiveExerciseType() : PickRandomExerciseType();
+                string newType;
+                if (IsErrorReviewRound && CurrentWord != null && _errorModes.TryGetValue(CurrentWord.Id, out var errMode))
+                    newType = GetAlternativeMode(errMode);
+                else if (_isMixedMode)
+                    newType = _isAdaptiveDifficulty ? PickAdaptiveExerciseType() : PickRandomExerciseType();
+                else
+                    newType = _exerciseType;
+
                 if (newType != _exerciseType)
                 {
                     _exerciseType = newType;
@@ -1277,6 +1292,9 @@ namespace LearningTrainer.ViewModels
                 ErrorContextTranscription = CurrentWord.Transcription;
                 ShowErrorContext = !string.IsNullOrEmpty(ErrorContextExample) || !string.IsNullOrEmpty(ErrorContextTranscription);
 
+                // §1.2 Error Replay Queue: record the mode where the error occurred
+                _errorModes[CurrentWord.Id] = _exerciseType;
+
                 if (!DifficultWords.Any(w => w.WordId == CurrentWord.Id))
                 {
                     DifficultWords.Add(new WordResultDto
@@ -1408,7 +1426,16 @@ namespace LearningTrainer.ViewModels
             // Check for newly unlocked achievements (§18.5 Milestone Toast)
             _ = CheckNewAchievementsAsync();
 
+            // §1.2 Error Replay Queue: auto-start error replay if there are difficult words
+            if (DifficultWords.Count > 0 && !IsErrorReviewRound)
+            {
+                StartErrorReviewRound();
+                return;
+            }
+
             IsSessionComplete = true;
+            IsErrorReviewRound = false;
+            _errorModes.Clear();
             OnPropertyChanged(nameof(HasDifficultWords));
             (ReviewErrorsCommand as RelayCommand)?.RaiseCanExecuteChanged();
             (CopyReportCommand as RelayCommand)?.RaiseCanExecuteChanged();
@@ -1471,15 +1498,16 @@ namespace LearningTrainer.ViewModels
 
             if (errorWords.Count == 0) return;
 
+            // §1.2 Error Replay Queue: show banner with word count
+            ErrorReplayBanner = $"🔁 Работа над ошибками: {errorWords.Count} {GetWordDeclension(errorWords.Count)}";
+
             _wordsQueue = new Queue<Word>(errorWords.OrderBy(_ => _random.Next()));
             _totalWordsCount = _wordsQueue.Count;
             CorrectCount = 0;
             WrongCount = 0;
             DifficultWords.Clear();
 
-            // Force flashcard mode for review
-            _isMixedMode = false;
-            ExerciseType = "flashcard";
+            // §1.2: use alternative modes per word instead of forcing flashcard
             IsExerciseTypeChosen = true;
 
             CurrentWord = _wordsQueue.Peek();
@@ -1488,6 +1516,31 @@ namespace LearningTrainer.ViewModels
             PrepareCurrentExercise();
 
             _sessionStopwatch.Restart();
+        }
+
+        /// <summary>
+        /// §1.2 Error Replay Queue: maps the mode where the error occurred to an alternative mode.
+        /// </summary>
+        private static string GetAlternativeMode(string mode) => mode switch
+        {
+            "mcq" => "typing",
+            "typing" => "flashcard",
+            "cloze" => "listening",
+            "matching" => "cloze",
+            "listening" => "typing",
+            "spellingbee" => "flashcard",
+            "flashcard" => "typing",
+            _ => "flashcard"
+        };
+
+        private static string GetWordDeclension(int count)
+        {
+            var mod100 = count % 100;
+            var mod10 = count % 10;
+            if (mod100 >= 11 && mod100 <= 19) return "слов";
+            if (mod10 == 1) return "слово";
+            if (mod10 >= 2 && mod10 <= 4) return "слова";
+            return "слов";
         }
 
         // ── §1.1 Context-Aware Hints ─────────────────────────────────

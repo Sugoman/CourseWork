@@ -312,11 +312,11 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Error Review Round banner (#8) -->
+            <!-- Error Replay Queue banner (§1.2 LEARNING_IMPROVEMENTS) -->
             <Border Grid.Row="0" Background="#200066FF" CornerRadius="8" 
                     Padding="12,6" Margin="20,8,20,0"
                     Visibility="{Binding IsErrorReviewRound, Converter={StaticResource BoolToVis}}">
-                <TextBlock Text="🔁 Бонусный раунд — повторение ошибок" FontSize="{DynamicResource FontSizeBase}" FontWeight="SemiBold"
+                <TextBlock Text="{Binding ErrorReplayBanner}" FontSize="{DynamicResource FontSizeBase}" FontWeight="SemiBold"
                            Foreground="{DynamicResource PrimaryAccentBrush}" HorizontalAlignment="Center"/>
             </Border>
 

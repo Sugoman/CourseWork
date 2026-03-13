@@ -667,6 +667,10 @@
                                 <i class="bi bi-lightning-fill text-warning"></i> @SpeedRoundScore очков
                             </span>
                         }
+                        else if (_isErrorReplay)
+                        {
+                            <span><i class="bi bi-arrow-repeat me-1"></i>Работа над ошибками</span>
+                        }
                         else
                         {
                             <span>Слово @(CurrentIndex + 1) из @TrainingWords.Count</span>
@@ -685,6 +689,14 @@
                     {
                         <div class="progress">
                             <div class="progress-bar bg-warning" style="width: @(SpeedRoundTimeLeft * 100.0 / 60)%"></div>
+                        </div>
+                    }
+                    @* §1.2 Error Replay Queue: banner during error replay phase *@
+                    @if (_isErrorReplay)
+                    {
+                        <div class="alert alert-info py-2 mb-2 mt-2 d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+                            <i class="bi bi-arrow-repeat"></i>
+                            <span><strong>Работа над ошибками:</strong> @(_againQueue.Count + 1) @GetWordDeclension(_againQueue.Count + 1) — другой режим для лучшего запоминания</span>
                         </div>
                     }
                     <!-- Индикатор мастерства текущего слова (#10 LEARNING_IMPROVEMENTS) -->
@@ -1989,6 +2001,10 @@ private DateTime _wordShownAt;
 // Intra-session Again requeue (§10.4 LEARNING_IMPROVEMENTS)
 private Queue<TrainingWordDto> _againQueue = new();
 
+// §1.2 Error Replay Queue: track which mode each error occurred in
+private Dictionary<int, string> _errorModes = new();
+private bool _isErrorReplay;
+
 // User note state (§8.3 LEARNING_IMPROVEMENTS)
 private bool IsEditingNote;
 private bool IsSavingNote;
@@ -2286,6 +2302,8 @@ private async Task InstallStarterPack()
             SessionWrongCount = 0;
             DifficultWordsList.Clear();
             _againQueue.Clear();
+            _errorModes.Clear();
+            _isErrorReplay = false;
             _wordResults.Clear();
             _failedWordIds.Clear();
             _sessionXpEarned = 0;
@@ -2364,7 +2382,7 @@ private async Task InstallStarterPack()
         return picked;
     }
 
-    private string ActiveExerciseType => _isMixedMode ? _activeExerciseType : ExerciseType;
+    private string ActiveExerciseType => (_isMixedMode || _isErrorReplay) ? _activeExerciseType : ExerciseType;
 
     private void PrepareCurrentWord()
     {
@@ -2425,8 +2443,8 @@ private async Task InstallStarterPack()
             _ => false
         };
 
-        // Pick exercise type for mixed mode
-        if (_isMixedMode)
+        // Pick exercise type for mixed mode (skip during error replay — mode already set)
+        if (_isMixedMode && !_isErrorReplay)
             _activeExerciseType = PickRandomExerciseType();
 
         // Generate MCQ options if needed
@@ -2556,9 +2574,12 @@ private async Task InstallStarterPack()
             if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
                 DifficultWordsList.Add(CurrentWord.OriginalWord);
 
-            // Intra-session Again: добавляем слово в конец очереди (§10.4 LEARNING_IMPROVEMENTS)
+            // §1.2 Error Replay Queue: record mode and enqueue
             if (quality == ResponseQuality.Again)
+            {
+                _errorModes[CurrentWord.WordId] = ActiveExerciseType;
                 _againQueue.Enqueue(CurrentWord);
+            }
         }
 
         // Переход к следующему слову
@@ -2590,6 +2611,7 @@ private async Task InstallStarterPack()
                 SessionWrongCount++;
                 if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
                     DifficultWordsList.Add(CurrentWord.OriginalWord);
+                _errorModes[CurrentWord.WordId] = "mcq";
                 _againQueue.Enqueue(CurrentWord);
                 _ = LoadAiExplanation(CurrentWord.OriginalWord, option, ExpectedAnswer);
             }
@@ -2662,7 +2684,10 @@ private async Task InstallStarterPack()
             if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
                 DifficultWordsList.Add(CurrentWord.OriginalWord);
             if (quality == ResponseQuality.Again)
+            {
+                _errorModes[CurrentWord.WordId] = "typing";
                 _againQueue.Enqueue(CurrentWord);
+            }
             _ = LoadAiExplanation(CurrentWord.OriginalWord, TypedAnswer, ExpectedAnswer);
         }
     }
@@ -2731,7 +2756,10 @@ private async Task InstallStarterPack()
             if (CurrentWord != null && !DifficultWordsList.Contains(CurrentWord.OriginalWord))
                 DifficultWordsList.Add(CurrentWord.OriginalWord);
             if (quality == ResponseQuality.Again)
+            {
+                _errorModes[CurrentWord.WordId] = "listening";
                 _againQueue.Enqueue(CurrentWord);
+            }
         }
     }
 
@@ -2760,8 +2788,14 @@ private async Task InstallStarterPack()
         }
         else if (_againQueue.Count > 0)
         {
-            // Intra-session Again: повторяем слова, на которые ответили Again (§10.4)
+            // §1.2 Error Replay Queue: switch to error replay phase with alternative modes
+            _isErrorReplay = true;
             CurrentWord = _againQueue.Dequeue();
+
+            // Force alternative exercise mode for this word
+            if (_errorModes.TryGetValue(CurrentWord.WordId, out var errMode))
+                _activeExerciseType = GetAlternativeMode(errMode);
+
             PrepareCurrentWord();
         }
         else
@@ -2864,6 +2898,8 @@ private async Task InstallStarterPack()
         SessionWrongCount = 0;
         DifficultWordsList.Clear();
         _againQueue.Clear();
+        _errorModes.Clear();
+        _isErrorReplay = false;
         _wordResults.Clear();
         _failedWordIds.Clear();
         _sessionXpEarned = 0;
@@ -3124,6 +3160,7 @@ private async Task InstallStarterPack()
             SessionWrongCount++;
             if (!DifficultWordsList.Contains(CurrentWord.OriginalWord))
                 DifficultWordsList.Add(CurrentWord.OriginalWord);
+            _errorModes[CurrentWord.WordId] = "cloze";
             _againQueue.Enqueue(CurrentWord);
         }
     }
@@ -3188,6 +3225,7 @@ private async Task InstallStarterPack()
             SessionWrongCount++;
             if (!DifficultWordsList.Contains(CurrentWord.OriginalWord))
                 DifficultWordsList.Add(CurrentWord.OriginalWord);
+            _errorModes[CurrentWord.WordId] = "spelling";
             _againQueue.Enqueue(CurrentWord);
         }
     }
@@ -3237,6 +3275,31 @@ private async Task InstallStarterPack()
             var lang = CurrentWord.LanguageFrom ?? "en-US";
             await JS.InvokeVoidAsync("speakText", CurrentWord.Example, lang, TtsVolume);
         }
+    }
+
+    /// <summary>
+    /// §1.2 Error Replay Queue: maps the mode where the error occurred to an alternative mode.
+    /// </summary>
+    private static string GetAlternativeMode(string mode) => mode switch
+    {
+        "mcq" => "typing",
+        "typing" => "flashcard",
+        "cloze" => "listening",
+        "matching" => "cloze",
+        "listening" => "typing",
+        "spelling" => "flashcard",
+        "flashcard" => "typing",
+        _ => "flashcard"
+    };
+
+    private static string GetWordDeclension(int count)
+    {
+        var mod100 = count % 100;
+        var mod10 = count % 10;
+        if (mod100 >= 11 && mod100 <= 19) return "слов";
+        if (mod10 == 1) return "слово";
+        if (mod10 >= 2 && mod10 <= 4) return "слова";
+        return "слов";
     }
 
     private void ToggleVolumeSlider()
