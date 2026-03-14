@@ -1,140 +1,163 @@
 @inject IAuthService AuthService
 @inject IContentApiService ContentApi
 
-<div class="card" style="border-radius: var(--radius-lg);">
-    <div class="card-body">
-        <h5 class="d-flex align-items-center gap-2 mb-4">
-            <i class="bi bi-chat-dots" style="color: var(--primary-500);"></i>
-            Отзывы (@(CommentsResult?.TotalCount ?? 0))
-        </h5>
-
+<div class="comments-section">
+    <!-- Header with count and average -->
+    <div class="comments-header">
+        <div class="comments-title">
+            <i class="bi bi-chat-dots"></i>
+            <span>Отзывы</span>
+            <span class="comments-count">@(CommentsResult?.TotalCount ?? 0)</span>
+        </div>
         @if (CommentsResult != null && CommentsResult.Items.Any())
         {
-            @foreach (var comment in CommentsResult.Items)
-            {
-                <div class="p-3 mb-3" style="background: var(--gray-50); border-radius: var(--radius);">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <a href="/profile/@comment.AuthorId" class="d-flex align-items-center gap-2 text-decoration-none comment-author-link">
-                            <div style="width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-400), var(--primary-600)); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
-                                @(comment.AuthorName?.FirstOrDefault() ?? '?')
-                            </div>
-                            <strong style="color: var(--gray-800);">@comment.AuthorName</strong>
-                        </a>
-                        <span class="text-muted small">@comment.CreatedAt.ToString("dd.MM.yyyy")</span>
-                    </div>
-                    <div class="mb-2" style="color: var(--accent-yellow);">
-                        @for (int i = 0; i < comment.Rating; i++)
-                        {
-                            <i class="bi bi-star-fill"></i>
-                        }
-                        @for (int i = comment.Rating; i < 5; i++)
-                        {
-                            <i class="bi bi-star" style="opacity: 0.3;"></i>
-                        }
-                    </div>
-                    <p class="mb-0" style="color: var(--gray-700);">@comment.Text</p>
-                </div>
-            }
-
-            @if (CommentsResult.TotalPages > 1)
-            {
-                <nav class="d-flex justify-content-center mt-3">
-                    <ul class="pagination pagination-sm mb-0">
-                        <li class="page-item @(CurrentPage <= 1 ? "disabled" : "")">
-                            <button class="page-link" @onclick="PreviousPage" disabled="@(CurrentPage <= 1)">
-                                <i class="bi bi-chevron-left"></i>
-                            </button>
-                        </li>
-                        @foreach (var pageNum in GetPageWindow())
-                        {
-                            @if (pageNum == -1)
-                            {
-                                <li class="page-item disabled">
-                                    <span class="page-link">&hellip;</span>
-                                </li>
-                            }
-                            else
-                            {
-                                var p = pageNum;
-                                <li class="page-item @(p == CurrentPage ? "active" : "")">
-                                    <button class="page-link" @onclick="() => GoToPage(p)">@p</button>
-                                </li>
-                            }
-                        }
-                        <li class="page-item @(CurrentPage >= CommentsResult.TotalPages ? "disabled" : "")">
-                            <button class="page-link" @onclick="NextPage" disabled="@(CurrentPage >= CommentsResult.TotalPages)">
-                                <i class="bi bi-chevron-right"></i>
-                            </button>
-                        </li>
-                    </ul>
-                </nav>
-            }
-        }
-        else
-        {
-            <div class="text-center py-4 text-muted">
-                <i class="bi bi-chat" style="font-size: 2rem; opacity: 0.5;"></i>
-                <p class="mt-2 mb-0">Пока нет отзывов. Будьте первым!</p>
+            <div class="comments-avg">
+                <i class="bi bi-star-fill"></i>
+                <span>@GetAverageRating()</span>
             </div>
         }
+    </div>
 
-        <hr style="border-color: var(--gray-200); margin: 1.5rem 0;" />
+    <!-- Reviews list -->
+    @if (CommentsResult != null && CommentsResult.Items.Any())
+    {
+        <div class="comments-list">
+            @foreach (var comment in CommentsResult.Items)
+            {
+                <div class="review-card">
+                    <div class="review-top">
+                        <a href="/profile/@comment.AuthorId" class="review-author">
+                            <div class="review-avatar">
+                                @(comment.AuthorName?.FirstOrDefault() ?? '?')
+                            </div>
+                            <div class="review-author-info">
+                                <span class="review-author-name">@comment.AuthorName</span>
+                                <span class="review-date">@comment.CreatedAt.ToString("dd.MM.yyyy")</span>
+                            </div>
+                        </a>
+                        <div class="review-rating">
+                            @for (int i = 0; i < 5; i++)
+                            {
+                                <i class="bi @(i < comment.Rating ? "bi-star-fill star-filled" : "bi-star star-empty")"></i>
+                            }
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(comment.Text))
+                    {
+                        <p class="review-text">@comment.Text</p>
+                    }
+                </div>
+            }
+        </div>
 
-        @if (IsAuthenticated)
+        @if (CommentsResult.TotalPages > 1)
         {
-            <h6 class="mb-3">
-                <i class="bi bi-pencil me-1"></i> Оставить отзыв
+            <nav class="comments-pagination">
+                <button class="page-btn" @onclick="PreviousPage" disabled="@(CurrentPage <= 1)">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                @foreach (var pageNum in GetPageWindow())
+                {
+                    @if (pageNum == -1)
+                    {
+                        <span class="page-ellipsis">&hellip;</span>
+                    }
+                    else
+                    {
+                        var p = pageNum;
+                        <button class="page-btn @(p == CurrentPage ? "active" : "")" @onclick="() => GoToPage(p)">@p</button>
+                    }
+                }
+                <button class="page-btn" @onclick="NextPage" disabled="@(CurrentPage >= CommentsResult.TotalPages)">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </nav>
+        }
+    }
+    else
+    {
+        <div class="comments-empty">
+            <div class="comments-empty-icon">
+                <i class="bi bi-chat-heart"></i>
+            </div>
+            <p>Пока нет отзывов</p>
+            <span>Будьте первым, кто поделится мнением!</span>
+        </div>
+    }
+
+    <!-- Write a review form -->
+    <div class="comments-divider"></div>
+
+    @if (IsAuthenticated)
+    {
+        <div class="review-form">
+            <h6 class="review-form-title">
+                <i class="bi bi-pencil-square"></i>
+                <span>Оставить отзыв</span>
             </h6>
 
             @if (!string.IsNullOrEmpty(CommentError))
             {
-                <div class="alert alert-danger d-flex align-items-center gap-2">
-                    <i class="bi bi-exclamation-circle"></i> @CommentError
+                <div class="review-alert review-alert-error">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>@CommentError</span>
                 </div>
             }
             @if (!string.IsNullOrEmpty(CommentSuccess))
             {
-                <div class="alert alert-success d-flex align-items-center gap-2">
-                    <i class="bi bi-check-circle"></i> @CommentSuccess
+                <div class="review-alert review-alert-success">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>@CommentSuccess</span>
                 </div>
             }
 
-            <div class="mb-3">
-                <label class="form-label">
-                    <i class="bi bi-star me-1"></i> Оценка
-                </label>
-                <select class="form-select" @bind="NewRating">
-                    <option value="5">5 — Отлично</option>
-                    <option value="4">4 — Хорошо</option>
-                    <option value="3">3 — Нормально</option>
-                    <option value="2">2 — Плохо</option>
-                    <option value="1">1 — Ужасно</option>
-                </select>
+            <div class="review-form-group">
+                <label class="review-form-label">Оценка</label>
+                <div class="star-picker">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        var star = i;
+                        <button type="button"
+                                class="star-pick-btn @(star <= (HoverRating > 0 ? HoverRating : NewRating) ? "star-active" : "")"
+                                @onclick="() => NewRating = star"
+                                @onmouseenter="() => HoverRating = star"
+                                @onmouseleave="() => HoverRating = 0">
+                            <i class="bi @(star <= (HoverRating > 0 ? HoverRating : NewRating) ? "bi-star-fill" : "bi-star")"></i>
+                        </button>
+                    }
+                    <span class="star-pick-label">@GetRatingLabel(HoverRating > 0 ? HoverRating : NewRating)</span>
+                </div>
             </div>
-            <div class="mb-3">
-                <label class="form-label">
-                    <i class="bi bi-chat-text me-1"></i> Комментарий
-                </label>
-                <textarea class="form-control" rows="3" placeholder="Поделитесь своим мнением..." @bind="NewComment"></textarea>
+
+            <div class="review-form-group">
+                <label class="review-form-label">Комментарий</label>
+                <textarea class="review-textarea" rows="3" placeholder="Поделитесь своим мнением..." @bind="NewComment"></textarea>
             </div>
-            <button class="btn btn-primary" @onclick="SubmitComment" disabled="@IsSubmitting">
+
+            <button class="review-submit-btn" @onclick="SubmitComment" disabled="@IsSubmitting">
                 @if (IsSubmitting)
                 {
-                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    <span class="spinner-border spinner-border-sm"></span>
                 }
-                <i class="bi bi-send me-1"></i> Отправить
+                else
+                {
+                    <i class="bi bi-send-fill"></i>
+                }
+                <span>Отправить</span>
             </button>
-        }
-        else
-        {
-            <div class="text-center py-3">
-                <p class="text-muted mb-2">Войдите, чтобы оставить отзыв</p>
-                <a href="login" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-box-arrow-in-right me-1"></i> Войти
-                </a>
-            </div>
-        }
-    </div>
+        </div>
+    }
+    else
+    {
+        <div class="comments-login">
+            <i class="bi bi-lock"></i>
+            <p>Войдите, чтобы оставить отзыв</p>
+            <a href="login" class="comments-login-btn">
+                <i class="bi bi-box-arrow-in-right"></i>
+                <span>Войти</span>
+            </a>
+        </div>
+    }
 </div>
 
 @code {
@@ -152,12 +175,30 @@
     private const int PageSize = 5;
     private bool IsSubmitting;
     private int NewRating = 5;
+    private int HoverRating;
     private string NewComment = "";
     private string? CommentError;
     private string? CommentSuccess;
 
     private int _previousEntityId;
     private string _previousEntityType = "";
+
+    private string GetAverageRating()
+    {
+        if (CommentsResult == null || !CommentsResult.Items.Any()) return "0";
+        var avg = CommentsResult.Items.Average(c => c.Rating);
+        return avg.ToString("0.0");
+    }
+
+    private static string GetRatingLabel(int rating) => rating switch
+    {
+        1 => "Ужасно",
+        2 => "Плохо",
+        3 => "Нормально",
+        4 => "Хорошо",
+        5 => "Отлично",
+        _ => ""
+    };
 
     protected override async Task OnParametersSetAsync()
     {

@@ -6,11 +6,13 @@ using Microsoft.EntityFrameworkCore;
 namespace LearningAPI.Controllers;
 
 /// <summary>
-/// Контроллер публичных профилей пользователей
+/// Контроллер профилей пользователей.
+/// Требует аутентификации для предотвращения перечисления (IDOR).
 /// </summary>
 [ApiController]
 [Route("api/users")]
-public class UserProfileController : ControllerBase
+[Authorize]
+public class UserProfileController : BaseApiController
 {
     private readonly ApiDbContext _context;
 
@@ -20,10 +22,9 @@ public class UserProfileController : ControllerBase
     }
 
     /// <summary>
-    /// Получить публичный профиль пользователя
+    /// Получить профиль пользователя (требуется аутентификация)
     /// </summary>
     [HttpGet("{id}/profile")]
-    [AllowAnonymous]
     public async Task<IActionResult> GetPublicProfile(int id)
     {
         var user = await _context.Users
@@ -69,17 +70,24 @@ public class UserProfileController : ControllerBase
         {
             Id = user.Id,
             Username = user.Username,
-            Role = user.Role?.Name ?? "User",
             MemberSince = user.CreatedAt,
             CurrentStreak = stats?.CurrentStreak ?? 0,
             BestStreak = stats?.BestStreak ?? 0,
-            TotalSessions = stats?.TotalSessions ?? 0,
             PublishedDictionariesCount = publishedDictionaries.Count,
             PublishedRulesCount = publishedRules.Count,
             Achievements = achievements,
             PublishedDictionaries = publishedDictionaries,
             PublishedRules = publishedRules
         };
+
+        // Роль видна только самому пользователю и администрaторам
+        var requesterId = GetUserId();
+        var requesterRole = GetUserRole();
+        if (requesterId == id || requesterRole == "Admin")
+        {
+            profile.Role = user.Role?.Name ?? "User";
+            profile.TotalSessions = stats?.TotalSessions ?? 0;
+        }
 
         return Ok(profile);
     }
@@ -91,11 +99,11 @@ public class UserPublicProfileDto
 {
     public int Id { get; set; }
     public string Username { get; set; } = "";
-    public string Role { get; set; } = "";
+    public string? Role { get; set; }
     public DateTime MemberSince { get; set; }
     public int CurrentStreak { get; set; }
     public int BestStreak { get; set; }
-    public int TotalSessions { get; set; }
+    public int? TotalSessions { get; set; }
     public int PublishedDictionariesCount { get; set; }
     public int PublishedRulesCount { get; set; }
     public List<string> Achievements { get; set; } = new();

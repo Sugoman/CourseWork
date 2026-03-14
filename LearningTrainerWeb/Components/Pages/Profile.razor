@@ -41,7 +41,10 @@
                     <div class="profile-info">
                         <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                             <h2 class="mb-0 fw-bold profile-username">@UserProfile.Username</h2>
-                            <span class="badge role-badge">@GetRoleDisplay(UserProfile.Role)</span>
+                            @if (!string.IsNullOrEmpty(UserProfile.Role))
+                            {
+                                <span class="badge role-badge">@GetRoleDisplay(UserProfile.Role)</span>
+                            }
                             @if (IsOwnProfile)
                             {
                                 <span class="badge bg-light text-muted border">Это вы</span>
@@ -60,10 +63,13 @@
                                     рекорд: @UserProfile.BestStreak
                                 </div>
                             </div>
+                            @if (UserProfile.TotalSessions.HasValue)
+                            {
                             <div class="profile-stat">
                                 <i class="bi bi-mortarboard"></i>
                                 <span><strong>@UserProfile.TotalSessions</strong> сессий</span>
                             </div>
+                            }
                             <div class="profile-stat">
                                 <i class="bi bi-book text-primary"></i>
                                 <span><strong>@UserProfile.PublishedDictionariesCount</strong> словарей</span>
@@ -768,7 +774,7 @@
         }
     }
 
-    private string GetRoleDisplay(string role) => role switch
+    private string GetRoleDisplay(string? role) => role switch
     {
         "Teacher" => "👨‍🏫 Учитель",
         "Student" => "🎓 Ученик",

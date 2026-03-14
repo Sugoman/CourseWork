@@ -540,6 +540,7 @@ public class ContentApiService : IContentApiService
     {
         try
         {
+            await ApplyAuthAsync();
             return await _httpClient.GetFromJsonAsync<UserPublicProfile>($"api/users/{userId}/profile");
         }
         catch (HttpRequestException)
@@ -745,11 +746,11 @@ public class UserPublicProfile
 {
     public int Id { get; set; }
     public string Username { get; set; } = "";
-    public string Role { get; set; } = "";
+    public string? Role { get; set; }
     public DateTime MemberSince { get; set; }
     public int CurrentStreak { get; set; }
     public int BestStreak { get; set; }
-    public int TotalSessions { get; set; }
+    public int? TotalSessions { get; set; }
     public int PublishedDictionariesCount { get; set; }
     public int PublishedRulesCount { get; set; }
     public List<string> Achievements { get; set; } = new();
