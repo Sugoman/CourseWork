@@ -1,0 +1,423 @@
+@page "/admin-panel"
+@inject IAdminPanelApiService AdminApi
+@inject IAuthService AuthService
+@rendermode InteractiveServer
+
+<PageTitle>Админ-панель - Ingat</PageTitle>
+
+<div class="container py-4">
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+        </div>
+    }
+    else if (!isAdmin)
+    {
+        <div class="text-center py-5">
+            <div style="font-size: 4rem; margin-bottom: 1rem; color: var(--danger-400);"><i class="bi bi-shield-lock"></i></div>
+            <h2>Доступ запрещён</h2>
+            <p class="text-muted">Эта страница доступна только администраторам.</p>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <i class="bi bi-shield-gear" style="font-size: 2rem; color: var(--primary-400);"></i>
+            <div>
+                <h1 class="h3 mb-0">Админ-панель</h1>
+                <small class="text-muted">Управление XP, словами и достижениями пользователей</small>
+            </div>
+        </div>
+
+        <!-- Поиск пользователя -->
+        <div class="card mb-4" style="border: 1px solid var(--border-color); background: var(--card-bg);">
+            <div class="card-body">
+                <h5 class="card-title mb-3"><i class="bi bi-search me-2"></i>Найти пользователя</h5>
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Имя или email..."
+                           @bind="searchQuery" @bind:event="oninput"
+                           @onkeyup="OnSearchKeyUp" />
+                    <button class="btn btn-primary" @onclick="SearchUsers" disabled="@isSearching">
+                        @if (isSearching)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        Поиск
+                    </button>
+                </div>
+
+                @if (searchResults != null && searchResults.Count > 0)
+                {
+                    <div class="list-group mt-3">
+                        @foreach (var user in searchResults)
+                        {
+                            <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(selectedUserId == user.Id ? "active" : "")"
+                                    @onclick="() => SelectUser(user.Id)">
+                                <div>
+                                    <strong>@user.Username</strong>
+                                    <small class="ms-2 @(selectedUserId == user.Id ? "" : "text-muted")">@user.Email</small>
+                                </div>
+                                <span class="badge @GetRoleBadgeClass(user.Role)">@user.Role</span>
+                            </button>
+                        }
+                    </div>
+                }
+                else if (searchResults != null && searchResults.Count == 0 && !string.IsNullOrEmpty(searchQuery))
+                {
+                    <p class="text-muted mt-3 mb-0">Пользователи не найдены</p>
+                }
+            </div>
+        </div>
+
+        @if (userStats != null)
+        {
+            <!-- Карточка пользователя -->
+            <div class="card mb-4" style="border: 1px solid var(--border-color); background: var(--card-bg);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h4 class="mb-1">
+                                <i class="bi bi-person-circle me-2"></i>@userStats.User.Username
+                            </h4>
+                            <p class="text-muted mb-0">@userStats.User.Email · <span class="badge @GetRoleBadgeClass(userStats.User.Role)">@userStats.User.Role</span></p>
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="RefreshStats" disabled="@isRefreshing">
+                            <i class="bi bi-arrow-clockwise @(isRefreshing ? "spin" : "")"></i> Обновить
+                        </button>
+                    </div>
+
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-3 col-6">
+                            <div class="p-3 rounded" style="background: var(--bg-tertiary);">
+                                <div class="text-muted small">XP</div>
+                                <div class="h4 mb-0" style="color: var(--primary-400);">@userStats.TotalXp.ToString("N0")</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="p-3 rounded" style="background: var(--bg-tertiary);">
+                                <div class="text-muted small">Уровень</div>
+                                <div class="h4 mb-0" style="color: var(--warning-400);">@userStats.Level</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="p-3 rounded" style="background: var(--bg-tertiary);">
+                                <div class="text-muted small">Выучено слов</div>
+                                <div class="h4 mb-0" style="color: var(--success-400);">@userStats.LearnedWords / @userStats.TotalWords</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="p-3 rounded" style="background: var(--bg-tertiary);">
+                                <div class="text-muted small">Достижения</div>
+                                <div class="h4 mb-0" style="color: var(--info-400);">@userStats.Achievements.Count(a => a.IsUnlocked) / @userStats.Achievements.Count</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Панели действий -->
+            <div class="row g-4">
+                <!-- Накрутка XP -->
+                <div class="col-md-6">
+                    <div class="card h-100" style="border: 1px solid var(--border-color); background: var(--card-bg);">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="bi bi-lightning-charge-fill me-2" style="color: var(--primary-400);"></i>Добавить XP</h5>
+                            <div class="input-group mb-3">
+                                <input type="number" class="form-control" placeholder="Количество XP"
+                                       @bind="xpAmount" min="1" />
+                                <button class="btn btn-primary" @onclick="AddXp" disabled="@(isAddingXp || xpAmount <= 0)">
+                                    @if (isAddingXp) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                    Добавить
+                                </button>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn btn-outline-primary btn-sm" @onclick='() => xpAmount = 100'>+100</button>
+                                <button class="btn btn-outline-primary btn-sm" @onclick='() => xpAmount = 500'>+500</button>
+                                <button class="btn btn-outline-primary btn-sm" @onclick='() => xpAmount = 1000'>+1K</button>
+                                <button class="btn btn-outline-primary btn-sm" @onclick='() => xpAmount = 5000'>+5K</button>
+                                <button class="btn btn-outline-primary btn-sm" @onclick='() => xpAmount = 50000'>+50K</button>
+                            </div>
+                            @if (xpResult != null)
+                            {
+                                <div class="alert alert-success mt-3 mb-0 py-2">
+                                    <i class="bi bi-check-circle me-1"></i> XP: @xpResult.TotalXp.ToString("N0") · Уровень: @xpResult.Level
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Накрутка слов -->
+                <div class="col-md-6">
+                    <div class="card h-100" style="border: 1px solid var(--border-color); background: var(--card-bg);">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="bi bi-book-fill me-2" style="color: var(--success-400);"></i>Накрутить слова</h5>
+                            <div class="input-group mb-3">
+                                <input type="number" class="form-control" placeholder="Количество слов"
+                                       @bind="wordsCount" min="1" />
+                                <button class="btn btn-success" @onclick="BoostWords" disabled="@(isBoostingWords || wordsCount <= 0)">
+                                    @if (isBoostingWords) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                    Выучить
+                                </button>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn btn-outline-success btn-sm" @onclick='() => wordsCount = 10'>+10</button>
+                                <button class="btn btn-outline-success btn-sm" @onclick='() => wordsCount = 50'>+50</button>
+                                <button class="btn btn-outline-success btn-sm" @onclick='() => wordsCount = 100'>+100</button>
+                                <button class="btn btn-outline-success btn-sm" @onclick='() => wordsCount = 500'>+500</button>
+                            </div>
+                            @if (wordsResult != null)
+                            {
+                                <div class="alert alert-success mt-3 mb-0 py-2">
+                                    <i class="bi bi-check-circle me-1"></i> Выучено: +@wordsResult.BoostedCount · Всего: @wordsResult.TotalLearnedWords
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Достижения -->
+            <div class="card mt-4" style="border: 1px solid var(--border-color); background: var(--card-bg);">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0"><i class="bi bi-trophy-fill me-2" style="color: var(--warning-400);"></i>Достижения</h5>
+                        <button class="btn btn-warning btn-sm" @onclick="GrantAllAchievements" disabled="@isGrantingAll">
+                            @if (isGrantingAll) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                            <i class="bi bi-stars me-1"></i> Выдать все
+                        </button>
+                    </div>
+
+                    @if (grantAllMessage != null)
+                    {
+                        <div class="alert alert-success py-2 mb-3">
+                            <i class="bi bi-check-circle me-1"></i> @grantAllMessage
+                        </div>
+                    }
+
+                    <div class="row g-2">
+                        @foreach (var ach in userStats.Achievements)
+                        {
+                            <div class="col-lg-3 col-md-4 col-6">
+                                <div class="p-2 rounded d-flex align-items-center gap-2 @(ach.IsUnlocked ? "" : "opacity-50")"
+                                     style="background: var(--bg-tertiary); cursor: @(ach.IsUnlocked ? "default" : "pointer");"
+                                     @onclick="() => GrantSingleAchievement(ach)"
+                                     title="@(ach.IsUnlocked ? $"Разблокировано {ach.UnlockedAt:dd.MM.yyyy}" : "Нажмите, чтобы выдать")">
+                                    <span style="font-size: 1.5rem;">@ach.Icon</span>
+                                    <div style="min-width: 0;">
+                                        <div class="small fw-bold text-truncate">@ach.Title</div>
+                                        <div style="font-size: 0.7rem;" class="text-muted">
+                                            @if (ach.IsUnlocked)
+                                            {
+                                                <span style="color: var(--success-400);"><i class="bi bi-check-circle-fill"></i> Получено</span>
+                                            }
+                                            else
+                                            {
+                                                <span>@ach.Rarity</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (statusMessage != null)
+        {
+            <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+                <div class="toast show align-items-center text-bg-@statusType border-0">
+                    <div class="d-flex">
+                        <div class="toast-body">@statusMessage</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" @onclick='() => statusMessage = null'></button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .spin {
+        animation: spin 1s linear infinite;
+    }
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
+
+@code {
+    private bool isLoading = true;
+    private bool isAdmin;
+    private string searchQuery = "";
+    private bool isSearching;
+    private List<AdminUserInfo>? searchResults;
+    private int? selectedUserId;
+    private AdminUserStats? userStats;
+    private bool isRefreshing;
+
+    // XP
+    private long xpAmount = 1000;
+    private bool isAddingXp;
+    private AddXpResult? xpResult;
+
+    // Words
+    private int wordsCount = 50;
+    private bool isBoostingWords;
+    private BoostWordsResult? wordsResult;
+
+    // Achievements
+    private bool isGrantingAll;
+    private string? grantAllMessage;
+
+    // Toast
+    private string? statusMessage;
+    private string statusType = "success";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var session = await AuthService.GetCurrentSessionAsync();
+        isAdmin = session?.Role == "Admin";
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task OnSearchKeyUp(Microsoft.AspNetCore.Components.Web.KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            await SearchUsers();
+    }
+
+    private async Task SearchUsers()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery) || searchQuery.Length < 2) return;
+        isSearching = true;
+        StateHasChanged();
+
+        searchResults = await AdminApi.SearchUsersAsync(searchQuery);
+
+        isSearching = false;
+        StateHasChanged();
+    }
+
+    private async Task SelectUser(int userId)
+    {
+        selectedUserId = userId;
+        xpResult = null;
+        wordsResult = null;
+        grantAllMessage = null;
+        await LoadUserStats(userId);
+    }
+
+    private async Task LoadUserStats(int userId)
+    {
+        isRefreshing = true;
+        StateHasChanged();
+
+        userStats = await AdminApi.GetUserStatsAsync(userId);
+
+        isRefreshing = false;
+        StateHasChanged();
+    }
+
+    private async Task RefreshStats()
+    {
+        if (selectedUserId.HasValue)
+            await LoadUserStats(selectedUserId.Value);
+    }
+
+    private async Task AddXp()
+    {
+        if (selectedUserId == null || xpAmount <= 0) return;
+        isAddingXp = true;
+        StateHasChanged();
+
+        xpResult = await AdminApi.AddXpAsync(selectedUserId.Value, xpAmount);
+        if (xpResult != null)
+            ShowToast($"+{xpAmount:N0} XP → Уровень {xpResult.Level}", "success");
+        else
+            ShowToast("Ошибка добавления XP", "danger");
+
+        isAddingXp = false;
+        await RefreshStats();
+    }
+
+    private async Task BoostWords()
+    {
+        if (selectedUserId == null || wordsCount <= 0) return;
+        isBoostingWords = true;
+        StateHasChanged();
+
+        wordsResult = await AdminApi.BoostWordsAsync(selectedUserId.Value, wordsCount);
+        if (wordsResult != null)
+            ShowToast($"+{wordsResult.BoostedCount} выученных слов", "success");
+        else
+            ShowToast("Ошибка накрутки слов", "danger");
+
+        isBoostingWords = false;
+        await RefreshStats();
+    }
+
+    private async Task GrantSingleAchievement(AdminAchievementInfo ach)
+    {
+        if (ach.IsUnlocked || selectedUserId == null) return;
+
+        var result = await AdminApi.GrantAchievementAsync(selectedUserId.Value, ach.Id);
+        if (result != null)
+        {
+            ShowToast($"{result.Icon} {result.Title} — выдано!", "success");
+            await RefreshStats();
+        }
+        else
+        {
+            ShowToast("Ошибка выдачи достижения", "danger");
+        }
+    }
+
+    private async Task GrantAllAchievements()
+    {
+        if (selectedUserId == null) return;
+        isGrantingAll = true;
+        StateHasChanged();
+
+        var result = await AdminApi.GrantAllAchievementsAsync(selectedUserId.Value);
+        if (result != null)
+            grantAllMessage = $"Выдано {result.GrantedCount} достижений";
+        else
+            ShowToast("Ошибка выдачи достижений", "danger");
+
+        isGrantingAll = false;
+        await RefreshStats();
+    }
+
+    private void ShowToast(string message, string type)
+    {
+        statusMessage = message;
+        statusType = type;
+        StateHasChanged();
+        _ = ClearToastAfterDelay();
+    }
+
+    private async Task ClearToastAfterDelay()
+    {
+        await Task.Delay(4000);
+        statusMessage = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private string GetRoleBadgeClass(string role) => role switch
+    {
+        "Admin" => "bg-danger",
+        "Teacher" => "bg-primary",
+        "Student" => "bg-info",
+        _ => "bg-secondary"
+    };
+}

@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@inject IAuthService AuthService
 
 <div class="page-wrapper">
     <!-- Top Navigation -->
@@ -44,6 +45,16 @@
                             <NavLink class="nav-more-item" href="classroom" @onclick="CloseMoreMenu">
                                 <i class="bi bi-people"></i> Класс
                             </NavLink>
+                            <NavLink class="nav-more-item" href="knowledge-tree" @onclick="CloseMoreMenu">
+                                <i class="bi bi-tree"></i> Дерево знаний
+                            </NavLink>
+                            @if (isAdmin)
+                            {
+                                <div style="border-top: 1px solid var(--border-color); margin: 4px 0;"></div>
+                                <NavLink class="nav-more-item" href="admin-panel" @onclick="CloseMoreMenu">
+                                    <i class="bi bi-shield-gear"></i> Админ-панель
+                                </NavLink>
+                            }
                         </div>
                     }
                 </div>
@@ -94,6 +105,15 @@
                 <NavLink class="mobile-nav-link" href="classroom" @onclick="CloseMobileMenu">
                     <i class="bi bi-people"></i> Класс
                 </NavLink>
+                <NavLink class="mobile-nav-link" href="knowledge-tree" @onclick="CloseMobileMenu">
+                    <i class="bi bi-tree"></i> Дерево знаний
+                </NavLink>
+                @if (isAdmin)
+                {
+                    <NavLink class="mobile-nav-link" href="admin-panel" @onclick="CloseMobileMenu">
+                        <i class="bi bi-shield-gear"></i> Админ-панель
+                    </NavLink>
+                }
                 <div class="mobile-nav-divider"></div>
                 <NavLink class="mobile-nav-link" href="settings" @onclick="CloseMobileMenu">
                     <i class="bi bi-gear"></i> Настройки
@@ -139,6 +159,23 @@
 @code {
     private bool showMobileMenu = false;
     private bool showMoreMenu = false;
+    private bool isAdmin;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        try
+        {
+            var session = await AuthService.GetCurrentSessionAsync();
+            var newIsAdmin = session?.Role == "Admin";
+            if (newIsAdmin != isAdmin)
+            {
+                isAdmin = newIsAdmin;
+                StateHasChanged();
+            }
+        }
+        catch { }
+    }
 
     private async Task ToggleMobileMenu()
     {

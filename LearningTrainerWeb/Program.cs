@@ -40,6 +40,7 @@ builder.Services.AddHttpClient<IStatisticsApiService, StatisticsApiService>(c =>
 builder.Services.AddHttpClient<IClassroomApiService, ClassroomApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
 builder.Services.AddHttpClient<IGrammarApiService, GrammarApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
 builder.Services.AddHttpClient<IKnowledgeTreeApiService, KnowledgeTreeApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
+builder.Services.AddHttpClient<IAdminPanelApiService, AdminPanelApiService>(c => c.BaseAddress = new Uri(apiBaseUrl));
 builder.Services.AddSingleton<IHtmlSanitizerService, HtmlSanitizerService>();
 builder.Services.AddScoped<ITrainingReminderService, TrainingReminderService>();
 

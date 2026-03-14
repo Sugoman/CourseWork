@@ -324,11 +324,12 @@ app.UseSerilogRequestLogging(options =>
 
 // Response Compression (перед остальным middleware)
 app.UseResponseCompression();
-if (app.Environment.IsDevelopment())
-{
+// if (app.Environment.IsDevelopment())
+// {
 app.UseSwagger();
 app.UseSwaggerUI();
-}
+// }
+
 // Глобальная обработка исключений
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
