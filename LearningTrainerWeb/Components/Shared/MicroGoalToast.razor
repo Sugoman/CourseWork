@@ -1,0 +1,147 @@
+@using LearningTrainerShared.Services
+
+@if (_visible && Reward != null)
+{
+    <div class="micro-goal-toast @(_hiding ? "hiding" : "")" @onclick="Dismiss">
+        <span class="micro-goal-icon">@Reward.Icon</span>
+        <div class="micro-goal-body">
+            <span class="micro-goal-title">@Reward.Title</span>
+            <span class="micro-goal-desc">@Reward.Description</span>
+        </div>
+        <span class="micro-goal-xp">+@Reward.BonusXp XP</span>
+    </div>
+}
+
+<style>
+    .micro-goal-toast {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 1050;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.6rem 1rem;
+        border-radius: 12px;
+        background: var(--surface-card, #fff);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        border-left: 4px solid #f59e0b;
+        cursor: pointer;
+        max-width: 360px;
+        animation: microGoalSlideIn 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+    }
+
+    .micro-goal-toast.hiding {
+        animation: microGoalSlideOut 0.3s ease forwards;
+    }
+
+    @@keyframes microGoalSlideIn {
+        from { opacity: 0; transform: translateX(100%); }
+        to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @@keyframes microGoalSlideOut {
+        from { opacity: 1; transform: translateX(0); }
+        to   { opacity: 0; transform: translateX(100%); }
+    }
+
+    .micro-goal-icon {
+        font-size: 1.5rem;
+        line-height: 1;
+        flex-shrink: 0;
+    }
+
+    .micro-goal-body {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .micro-goal-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-color, #1f2937);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .micro-goal-desc {
+        font-size: 0.73rem;
+        color: var(--text-color-secondary, #6b7280);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .micro-goal-xp {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #f59e0b;
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+
+    @@media (max-width: 480px) {
+        .micro-goal-toast {
+            right: 0.5rem;
+            left: 0.5rem;
+            max-width: unset;
+        }
+    }
+</style>
+
+@code {
+    [Parameter] public MicroGoalReward? Reward { get; set; }
+    [Parameter] public EventCallback OnDismiss { get; set; }
+
+    private bool _visible;
+    private bool _hiding;
+    private System.Timers.Timer? _autoClose;
+
+    protected override void OnParametersSet()
+    {
+        if (Reward != null)
+        {
+            _visible = true;
+            _hiding = false;
+            StartAutoClose();
+        }
+        else
+        {
+            _visible = false;
+        }
+    }
+
+    private void StartAutoClose()
+    {
+        _autoClose?.Dispose();
+        _autoClose = new System.Timers.Timer(3000);
+        _autoClose.AutoReset = false;
+        _autoClose.Elapsed += async (_, _) => await InvokeAsync(AnimateOut);
+        _autoClose.Start();
+    }
+
+    private async Task AnimateOut()
+    {
+        _hiding = true;
+        StateHasChanged();
+        await Task.Delay(300);
+        _visible = false;
+        _hiding = false;
+        await OnDismiss.InvokeAsync();
+        StateHasChanged();
+    }
+
+    private async Task Dismiss()
+    {
+        _autoClose?.Dispose();
+        await AnimateOut();
+    }
+
+    public void Dispose()
+    {
+        _autoClose?.Dispose();
+    }
+}

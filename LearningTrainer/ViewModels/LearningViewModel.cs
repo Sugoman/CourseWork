@@ -1,6 +1,7 @@
 ﻿using LearningTrainer.Core;
 using LearningTrainer.Services;
 using LearningTrainerShared.Models;
+using LearningTrainerShared.Services;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
@@ -101,6 +102,9 @@ namespace LearningTrainer.ViewModels
 
         // === Milestone Toast (§18.5) ===
         private HashSet<string> _previouslyUnlockedAchievements = new();
+
+        // === §1.6 Session Micro-Goals ===
+        private readonly MicroGoalTracker _microGoalTracker = new();
 
         // === Pomodoro Break (§18.1) ===
         private const int PomodoroWordInterval = 25;
@@ -543,6 +547,9 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _accuracyPercent, value);
         }
 
+        // §1.6 Session Micro-Goals: bonus XP earned from micro-goals
+        public int MicroGoalBonusXp => _microGoalTracker.TotalBonusXp;
+
         private string _resultEmoji;
         public string ResultEmoji
         {
@@ -592,7 +599,7 @@ namespace LearningTrainer.ViewModels
             set => SetProperty(ref _hintUsed, value);
         }
 
-        // --- Typing Diff (#16) ---
+        // --- Typing Diff (#16) + Precision Feedback (§1.4) ---
         private string _typingDiffCorrect = "";
         public string TypingDiffCorrect
         {
@@ -605,6 +612,36 @@ namespace LearningTrainer.ViewModels
         {
             get => _typingDiffUser;
             set => SetProperty(ref _typingDiffUser, value);
+        }
+
+        // §1.4 — Error category label
+        private string _typingErrorCategory = "";
+        public string TypingErrorCategory
+        {
+            get => _typingErrorCategory;
+            set => SetProperty(ref _typingErrorCategory, value);
+        }
+
+        // §1.4 — Listening diff
+        private string _listeningDiffCorrect = "";
+        public string ListeningDiffCorrect
+        {
+            get => _listeningDiffCorrect;
+            set => SetProperty(ref _listeningDiffCorrect, value);
+        }
+
+        private string _listeningDiffUser = "";
+        public string ListeningDiffUser
+        {
+            get => _listeningDiffUser;
+            set => SetProperty(ref _listeningDiffUser, value);
+        }
+
+        private string _listeningErrorCategory = "";
+        public string ListeningErrorCategory
+        {
+            get => _listeningErrorCategory;
+            set => SetProperty(ref _listeningErrorCategory, value);
         }
 
         public ICommand FlipCardCommand { get; private set; }
@@ -996,6 +1033,7 @@ namespace LearningTrainer.ViewModels
             IsFlipped = false;
             _sessionStartTime = DateTime.UtcNow;
             _sessionStopwatch.Start();
+            _microGoalTracker.Reset();
             UpdateProgress();
             PrepareCurrentExercise();
 
@@ -1056,6 +1094,10 @@ namespace LearningTrainer.ViewModels
             ResetHint();
             TypingDiffCorrect = "";
             TypingDiffUser = "";
+            TypingErrorCategory = "";
+            ListeningDiffCorrect = "";
+            ListeningDiffUser = "";
+            ListeningErrorCategory = "";
 
             McqAnswered = false;
             McqWasCorrect = false;
@@ -1197,25 +1239,34 @@ namespace LearningTrainer.ViewModels
             {
                 TypingAnswered = true;
 
-                var userAnswer = TypedAnswer.Trim().ToLowerInvariant();
-                var correctAnswer = ExpectedAnswer.Trim().ToLowerInvariant();
+                var userAnswer = TypedAnswer.Trim();
+                var correctAnswer = ExpectedAnswer.Trim();
 
-                if (userAnswer == correctAnswer)
+                // §1.4 Precision Typing Feedback: analyze with shared service
+                var feedback = TypingFeedbackService.Analyze(userAnswer, correctAnswer);
+
+                if (feedback.ErrorType == TypingErrorType.None)
                 {
                     TypingWasCorrect = true;
                     TypingWasAlmostCorrect = false;
+                    TypingErrorCategory = "";
                     await TrackAndSubmitAsync(HintUsed ? ResponseQuality.Hard : ResponseQuality.Good);
                 }
                 else
                 {
-                    int distance = LevenshteinDistance(userAnswer, correctAnswer);
-                    int threshold = Math.Max(1, correctAnswer.Length / 5);
-                    bool isAlmostCorrect = distance > 0 && distance <= threshold && correctAnswer.Length >= 3;
+                    // Build per-character diff from service segments
+                    TypingDiffUser = FormatDiffSegments(feedback.UserSegments);
+                    TypingDiffCorrect = FormatDiffSegments(feedback.CorrectSegments);
+                    TypingErrorCategory = TypingFeedbackService.GetErrorLabel(feedback.ErrorType);
 
-                    // Build character-level diff (#16)
-                    BuildTypingDiff(userAnswer, correctAnswer);
-
-                    if (isAlmostCorrect)
+                    if (TypingFeedbackService.IsTypo(feedback))
+                    {
+                        // §1.4: Typo should not reset SM-2 progress
+                        TypingWasCorrect = false;
+                        TypingWasAlmostCorrect = true;
+                        await TrackAndSubmitAsync(HintUsed ? ResponseQuality.Hard : ResponseQuality.Good);
+                    }
+                    else if (feedback.ErrorType == TypingErrorType.PartialRecall)
                     {
                         TypingWasCorrect = false;
                         TypingWasAlmostCorrect = true;
@@ -1277,7 +1328,18 @@ namespace LearningTrainer.ViewModels
 
         private async Task TrackAndSubmitAsync(ResponseQuality quality)
         {
-            if (quality >= ResponseQuality.Good)
+            bool wasCorrect = quality >= ResponseQuality.Good;
+
+            // §1.6 Session Micro-Goals: track answer and show rewards
+            var microGoalRewards = _microGoalTracker.RecordAnswer(wasCorrect);
+            foreach (var reward in microGoalRewards)
+            {
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
+                    $"{reward.Icon} {reward.Title}",
+                    $"{reward.Description} (+{reward.BonusXp} XP)"));
+            }
+
+            if (wasCorrect)
             {
                 CorrectCount++;
                 CurrentStreak++;
@@ -1423,6 +1485,15 @@ namespace LearningTrainer.ViewModels
             }
             catch { }
 
+            // §1.6 Session Micro-Goals: check Perfect Round at session end
+            var perfectReward = _microGoalTracker.CheckPerfectRound();
+            if (perfectReward != null)
+            {
+                EventAggregator.Instance.Publish(ShowNotificationMessage.Success(
+                    $"{perfectReward.Icon} {perfectReward.Title}",
+                    $"{perfectReward.Description} (+{perfectReward.BonusXp} XP)"));
+            }
+
             // Check for newly unlocked achievements (§18.5 Milestone Toast)
             _ = CheckNewAchievementsAsync();
 
@@ -1506,6 +1577,7 @@ namespace LearningTrainer.ViewModels
             CorrectCount = 0;
             WrongCount = 0;
             DifficultWords.Clear();
+            _microGoalTracker.Reset();
 
             // §1.2: use alternative modes per word instead of forcing flashcard
             IsExerciseTypeChosen = true;
@@ -1595,111 +1667,23 @@ namespace LearningTrainer.ViewModels
             HintUsed = false;
         }
 
-        // ── #16 Typing Diff ──────────────────────────────────────────
+        // ── §1.4 Precision Typing Feedback helpers ─────────────────
 
-        private void BuildTypingDiff(string userAnswer, string correctAnswer)
+        /// <summary>
+        /// Converts DiffSegment list to bracket-notation string for display.
+        /// Matched chars shown as-is, errors wrapped in [brackets].
+        /// </summary>
+        private static string FormatDiffSegments(List<DiffSegment> segments)
         {
-            // When strings are too different, skip per-character diff
-            int maxLen = Math.Max(userAnswer.Length, correctAnswer.Length);
-            if (maxLen == 0)
+            var sb = new System.Text.StringBuilder();
+            foreach (var seg in segments)
             {
-                TypingDiffCorrect = correctAnswer;
-                TypingDiffUser = userAnswer;
-                return;
-            }
-
-            // Compute LCS to align characters properly
-            var lcs = ComputeLcs(userAnswer.ToLowerInvariant(), correctAnswer.ToLowerInvariant());
-
-            // If similarity is very low, just show plain strings
-            double similarity = (double)lcs.Count / maxLen;
-            if (similarity < 0.3)
-            {
-                TypingDiffUser = userAnswer;
-                TypingDiffCorrect = correctAnswer;
-                return;
-            }
-
-            // Build diff using LCS alignment
-            var diffUser = new System.Text.StringBuilder();
-            var diffCorrect = new System.Text.StringBuilder();
-            var lcsSet = new HashSet<(int, int)>(lcs);
-
-            int ui = 0, ci = 0, li = 0;
-            while (ui < userAnswer.Length || ci < correctAnswer.Length)
-            {
-                if (li < lcs.Count && ui == lcs[li].Item1 && ci == lcs[li].Item2)
-                {
-                    // Matched character
-                    diffUser.Append(userAnswer[ui]);
-                    diffCorrect.Append(correctAnswer[ci]);
-                    ui++; ci++; li++;
-                }
+                if (seg.Status == DiffStatus.Match)
+                    sb.Append(seg.Text);
                 else
-                {
-                    // Check if the current user char is part of a future LCS match
-                    bool userInLcs = li < lcs.Count && ui < userAnswer.Length && ui < lcs[li].Item1;
-                    bool correctInLcs = li < lcs.Count && ci < correctAnswer.Length && ci < lcs[li].Item2;
-
-                    if (userInLcs && !correctInLcs)
-                    {
-                        diffUser.Append($"[{userAnswer[ui]}]");
-                        ui++;
-                    }
-                    else if (correctInLcs && !userInLcs)
-                    {
-                        diffCorrect.Append($"[{correctAnswer[ci]}]");
-                        ci++;
-                    }
-                    else
-                    {
-                        if (ui < userAnswer.Length)
-                        {
-                            diffUser.Append($"[{userAnswer[ui]}]");
-                            ui++;
-                        }
-                        if (ci < correctAnswer.Length)
-                        {
-                            diffCorrect.Append($"[{correctAnswer[ci]}]");
-                            ci++;
-                        }
-                    }
-                }
+                    sb.Append($"[{seg.Text}]");
             }
-
-            TypingDiffUser = diffUser.ToString();
-            TypingDiffCorrect = diffCorrect.ToString();
-        }
-
-        private static List<(int, int)> ComputeLcs(string a, string b)
-        {
-            int m = a.Length, n = b.Length;
-            var dp = new int[m + 1, n + 1];
-
-            for (int i = 1; i <= m; i++)
-                for (int j = 1; j <= n; j++)
-                    dp[i, j] = a[i - 1] == b[j - 1]
-                        ? dp[i - 1, j - 1] + 1
-                        : Math.Max(dp[i - 1, j], dp[i, j - 1]);
-
-            // Backtrack to find matched indices
-            var result = new List<(int, int)>();
-            int x = m, y = n;
-            while (x > 0 && y > 0)
-            {
-                if (a[x - 1] == b[y - 1])
-                {
-                    result.Add((x - 1, y - 1));
-                    x--; y--;
-                }
-                else if (dp[x - 1, y] >= dp[x, y - 1])
-                    x--;
-                else
-                    y--;
-            }
-
-            result.Reverse();
-            return result;
+            return sb.ToString();
         }
 
         private async Task SkipWordAsync()
@@ -1855,22 +1839,32 @@ namespace LearningTrainer.ViewModels
             {
                 ListeningAnswered = true;
 
-                var userAnswer = ListeningTypedAnswer.Trim().ToLowerInvariant();
-                var correctAnswer = CurrentWord.OriginalWord.Trim().ToLowerInvariant();
+                var userAnswer = ListeningTypedAnswer.Trim();
+                var correctAnswer = CurrentWord.OriginalWord.Trim();
 
-                if (userAnswer == correctAnswer)
+                // §1.4 Precision Typing Feedback: analyze with shared service
+                var feedback = TypingFeedbackService.Analyze(userAnswer, correctAnswer);
+
+                if (feedback.ErrorType == TypingErrorType.None)
                 {
                     ListeningWasCorrect = true;
                     ListeningWasAlmostCorrect = false;
+                    ListeningErrorCategory = "";
                     await TrackAndSubmitAsync(ResponseQuality.Good);
                 }
                 else
                 {
-                    int distance = LevenshteinDistance(userAnswer, correctAnswer);
-                    int threshold = Math.Max(1, correctAnswer.Length / 5);
-                    bool isAlmostCorrect = distance > 0 && distance <= threshold && correctAnswer.Length >= 3;
+                    ListeningDiffUser = FormatDiffSegments(feedback.UserSegments);
+                    ListeningDiffCorrect = FormatDiffSegments(feedback.CorrectSegments);
+                    ListeningErrorCategory = TypingFeedbackService.GetErrorLabel(feedback.ErrorType);
 
-                    if (isAlmostCorrect)
+                    if (TypingFeedbackService.IsTypo(feedback))
+                    {
+                        ListeningWasCorrect = false;
+                        ListeningWasAlmostCorrect = true;
+                        await TrackAndSubmitAsync(ResponseQuality.Good);
+                    }
+                    else if (feedback.ErrorType == TypingErrorType.PartialRecall)
                     {
                         ListeningWasCorrect = false;
                         ListeningWasAlmostCorrect = true;

@@ -1,6 +1,7 @@
 @page "/training"
 @using LearningTrainerWeb.Services
 @using LearningTrainerShared.Models
+@using LearningTrainerShared.Services
 @using Microsoft.AspNetCore.Components
 @inject ITrainingApiService TrainingService
 @inject IStatisticsApiService StatsService
@@ -46,7 +47,7 @@
             <p>Подготовка тренировки...</p>
         </div>
     }
-    else if (DailyPlan == null || (DailyPlan.Stats.TotalReviewCount == 0 && DailyPlan.Stats.TotalNewCount == 0))
+    else if (!IsTrainingActive && (DailyPlan == null || (DailyPlan.Stats.TotalReviewCount == 0 && DailyPlan.Stats.TotalNewCount == 0 && DailyPlan.Stats.TotalDifficultCount == 0)))
     {
         <!-- Пустое состояние - нет слов -->
         <div class="training-empty">
@@ -1186,6 +1187,31 @@
                                     <span>Неверно. Правильный ответ: <strong>@ExpectedAnswer</strong></span>
                                 }
                             </div>
+                            @if (!TypingWasCorrect && TypingDiffUserSegments.Count > 0)
+                            {
+                                <div class="diff-feedback mt-2">
+                                    @if (!string.IsNullOrEmpty(TypingErrorCategory))
+                                    {
+                                        <div class="diff-category-badge mb-2">
+                                            <span class="badge bg-warning-subtle text-warning">@TypingErrorCategory</span>
+                                        </div>
+                                    }
+                                    <div class="diff-line">
+                                        <span class="diff-label">Ваш ввод:</span>
+                                        @foreach (var seg in TypingDiffUserSegments)
+                                        {
+                                            <span class="diff-char diff-@seg.Status.ToString().ToLowerInvariant()">@seg.Text</span>
+                                        }
+                                    </div>
+                                    <div class="diff-line">
+                                        <span class="diff-label">Верно:</span>
+                                        @foreach (var seg in TypingDiffCorrectSegments)
+                                        {
+                                            <span class="diff-char diff-@seg.Status.ToString().ToLowerInvariant()">@seg.Text</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
                             @if (!TypingWasCorrect)
                             {
                                 <div class="ai-card mt-3">
@@ -1365,6 +1391,31 @@
                                     <span>Неверно. Правильный ответ: <strong>@CurrentWord.OriginalWord</strong></span>
                                 }
                             </div>
+                            @if (!ListeningWasCorrect && ListeningDiffUserSegments.Count > 0)
+                            {
+                                <div class="diff-feedback mt-2">
+                                    @if (!string.IsNullOrEmpty(ListeningErrorCategory))
+                                    {
+                                        <div class="diff-category-badge mb-2">
+                                            <span class="badge bg-warning-subtle text-warning">@ListeningErrorCategory</span>
+                                        </div>
+                                    }
+                                    <div class="diff-line">
+                                        <span class="diff-label">Ваш ввод:</span>
+                                        @foreach (var seg in ListeningDiffUserSegments)
+                                        {
+                                            <span class="diff-char diff-@seg.Status.ToString().ToLowerInvariant()">@seg.Text</span>
+                                        }
+                                    </div>
+                                    <div class="diff-line">
+                                        <span class="diff-label">Верно:</span>
+                                        @foreach (var seg in ListeningDiffCorrectSegments)
+                                        {
+                                            <span class="diff-char diff-@seg.Status.ToString().ToLowerInvariant()">@seg.Text</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
                             @if (!string.IsNullOrEmpty(CurrentWord.Translation))
                             {
                                 <div class="mt-2 text-muted">
@@ -1769,6 +1820,13 @@
                         </div>
                     </div>
 
+                    @if (_microGoalTracker.TotalBonusXp > 0)
+                    {
+                        <div class="mt-2" style="font-size: 0.9rem; color: var(--bs-warning);">
+                            ⭐ Бонус за микро-цели: +@_microGoalTracker.TotalBonusXp XP
+                        </div>
+                    }
+
                     @if (_avgResponseTimeSec > 0)
                     {
                         <div class="text-muted mt-2" style="font-size: 0.9rem;">
@@ -1863,6 +1921,10 @@
     Achievement="@CurrentMilestone"
     OnDismiss="DismissMilestone" />
 
+<LearningTrainerWeb.Components.Shared.MicroGoalToast
+    Reward="@_currentMicroGoal"
+    OnDismiss="DismissMicroGoal" />
+
 @code {
 private bool IsAuthenticated;
 private bool IsLoading = true;
@@ -1904,11 +1966,21 @@ private bool TypingWasCorrect;
 private bool TypingWasAlmostCorrect;
 private Random _random = new();
 
+// §1.4 Typing Precision Feedback
+private List<DiffSegment> TypingDiffUserSegments = new();
+private List<DiffSegment> TypingDiffCorrectSegments = new();
+private string TypingErrorCategory = "";
+
 // Listening state
 private string ListeningTypedAnswer = "";
 private bool ListeningAnswered;
 private bool ListeningWasCorrect;
 private bool ListeningWasAlmostCorrect;
+
+// §1.4 Listening Precision Feedback
+private List<DiffSegment> ListeningDiffUserSegments = new();
+private List<DiffSegment> ListeningDiffCorrectSegments = new();
+private string ListeningErrorCategory = "";
 
 // Matching state (#6 LEARNING_IMPROVEMENTS)
 private List<TrainingWordDto> MatchingPairs = new();
@@ -2046,6 +2118,11 @@ private List<int> _failedWordIds = new();
 private int _sessionXpEarned;
 private double _avgResponseTimeSec;
 
+// §1.6 — Micro-goals tracker
+private readonly MicroGoalTracker _microGoalTracker = new();
+private Queue<MicroGoalReward> _microGoalQueue = new();
+private MicroGoalReward? _currentMicroGoal;
+
 private class WordSessionResult
 {
     public int WordId { get; set; }
@@ -2109,9 +2186,13 @@ protected override async Task OnAfterRenderAsync(bool firstRender)
             }
 
             // Load preferred exercise mode (§12.2 LEARNING_IMPROVEMENTS)
-            var prefMode = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-preferred-mode");
-            if (!string.IsNullOrEmpty(prefMode))
-                SetExerciseType(prefMode);
+            // Skip if training already started via autostart query params
+            if (!IsTrainingActive)
+            {
+                var prefMode = await JS.InvokeAsync<string?>("localStorage.getItem", "ingat-preferred-mode");
+                if (!string.IsNullOrEmpty(prefMode))
+                    SetExerciseType(prefMode);
+            }
         }
         catch { }
 
@@ -2221,6 +2302,7 @@ protected override async Task OnInitializedAsync()
         // §19.8 — Auto-start from Quick Actions panel
         if (string.Equals(QueryAutostart, "true", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(QueryMode))
         {
+            SetExerciseType("mixed");
             await StartTraining(QueryMode);
         }
     }
@@ -2308,6 +2390,7 @@ private async Task InstallStarterPack()
             _failedWordIds.Clear();
             _sessionXpEarned = 0;
             _avgResponseTimeSec = 0;
+            _microGoalTracker.Reset();
             SessionStartedAt = DateTime.UtcNow;
             CurrentWord = TrainingWords[0];
             IsAnswerRevealed = false;
@@ -2398,10 +2481,16 @@ private async Task InstallStarterPack()
         TypingWasCorrect = false;
         TypingWasAlmostCorrect = false;
         TypedAnswer = "";
+        TypingDiffUserSegments = new();
+        TypingDiffCorrectSegments = new();
+        TypingErrorCategory = "";
         ListeningAnswered = false;
         ListeningWasCorrect = false;
         ListeningWasAlmostCorrect = false;
         ListeningTypedAnswer = "";
+        ListeningDiffUserSegments = new();
+        ListeningDiffCorrectSegments = new();
+        ListeningErrorCategory = "";
 
         // Reset cloze state (§3.1)
         ClozeAnswered = false;
@@ -2636,22 +2725,32 @@ private async Task InstallStarterPack()
 
         TypingAnswered = true;
 
-        // Normalize answers for comparison
-        var userAnswer = TypedAnswer.Trim().ToLowerInvariant();
-        var correctAnswer = ExpectedAnswer.Trim().ToLowerInvariant();
+        var userAnswer = TypedAnswer.Trim();
+        var correctAnswer = ExpectedAnswer.Trim();
 
-        if (userAnswer == correctAnswer)
+        // §1.4 Precision Typing Feedback
+        var feedback = TypingFeedbackService.Analyze(userAnswer, correctAnswer);
+
+        if (feedback.ErrorType == TypingErrorType.None)
         {
             TypingWasCorrect = true;
             TypingWasAlmostCorrect = false;
+            TypingErrorCategory = "";
+            TypingDiffUserSegments = new();
+            TypingDiffCorrectSegments = new();
         }
         else
         {
-            int distance = LevenshteinDistance(userAnswer, correctAnswer);
-            int threshold = Math.Max(1, correctAnswer.Length / 5);
-            bool isAlmostCorrect = distance > 0 && distance <= threshold && correctAnswer.Length >= 3;
+            TypingDiffUserSegments = feedback.UserSegments;
+            TypingDiffCorrectSegments = feedback.CorrectSegments;
+            TypingErrorCategory = TypingFeedbackService.GetErrorLabel(feedback.ErrorType);
 
-            if (isAlmostCorrect)
+            if (TypingFeedbackService.IsTypo(feedback))
+            {
+                TypingWasCorrect = false;
+                TypingWasAlmostCorrect = true;
+            }
+            else if (feedback.ErrorType == TypingErrorType.PartialRecall)
             {
                 TypingWasCorrect = false;
                 TypingWasAlmostCorrect = true;
@@ -2667,8 +2766,10 @@ private async Task InstallStarterPack()
         var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
         var quality = TypingWasCorrect
             ? (HintUsed ? ResponseQuality.Hard : ResponseQuality.Good)
-            : TypingWasAlmostCorrect ? ResponseQuality.Hard 
-            : ResponseQuality.Again;
+            : TypingFeedbackService.IsTypo(feedback)
+                ? (HintUsed ? ResponseQuality.Hard : ResponseQuality.Good)
+                : TypingWasAlmostCorrect ? ResponseQuality.Hard
+                : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "typing");
 
         TrackWordResult(TypingWasCorrect || TypingWasAlmostCorrect, responseTimeMs, "typing");
@@ -2711,21 +2812,32 @@ private async Task InstallStarterPack()
 
         ListeningAnswered = true;
 
-        var userAnswer = ListeningTypedAnswer.Trim().ToLowerInvariant();
-        var correctAnswer = CurrentWord.OriginalWord.Trim().ToLowerInvariant();
+        var userAnswer = ListeningTypedAnswer.Trim();
+        var correctAnswer = CurrentWord.OriginalWord.Trim();
 
-        if (userAnswer == correctAnswer)
+        // §1.4 Precision Typing Feedback
+        var feedback = TypingFeedbackService.Analyze(userAnswer, correctAnswer);
+
+        if (feedback.ErrorType == TypingErrorType.None)
         {
             ListeningWasCorrect = true;
             ListeningWasAlmostCorrect = false;
+            ListeningErrorCategory = "";
+            ListeningDiffUserSegments = new();
+            ListeningDiffCorrectSegments = new();
         }
         else
         {
-            int distance = LevenshteinDistance(userAnswer, correctAnswer);
-            int threshold = Math.Max(1, correctAnswer.Length / 5);
-            bool isAlmostCorrect = distance > 0 && distance <= threshold && correctAnswer.Length >= 3;
+            ListeningDiffUserSegments = feedback.UserSegments;
+            ListeningDiffCorrectSegments = feedback.CorrectSegments;
+            ListeningErrorCategory = TypingFeedbackService.GetErrorLabel(feedback.ErrorType);
 
-            if (isAlmostCorrect)
+            if (TypingFeedbackService.IsTypo(feedback))
+            {
+                ListeningWasCorrect = false;
+                ListeningWasAlmostCorrect = true;
+            }
+            else if (feedback.ErrorType == TypingErrorType.PartialRecall)
             {
                 ListeningWasCorrect = false;
                 ListeningWasAlmostCorrect = true;
@@ -2739,8 +2851,10 @@ private async Task InstallStarterPack()
 
         var responseTimeMs = (int)(DateTime.UtcNow - _wordShownAt).TotalMilliseconds;
         var quality = ListeningWasCorrect ? ResponseQuality.Good
-                    : ListeningWasAlmostCorrect ? ResponseQuality.Hard
-                    : ResponseQuality.Again;
+                    : TypingFeedbackService.IsTypo(feedback)
+                        ? ResponseQuality.Good
+                        : ListeningWasAlmostCorrect ? ResponseQuality.Hard
+                        : ResponseQuality.Again;
         await TrainingService.UpdateProgressAsync(CurrentWord.WordId, quality, responseTimeMs, "listening");
 
         TrackWordResult(ListeningWasCorrect || ListeningWasAlmostCorrect, responseTimeMs, "listening");
@@ -2810,8 +2924,16 @@ private async Task InstallStarterPack()
             else
                 _sessionDurationSnapshot = $"{finalElapsed.Seconds}с";
 
+            // §1.6 — Check Perfect Round micro-goal
+            var perfectReward = _microGoalTracker.CheckPerfectRound();
+            if (perfectReward != null)
+            {
+                _microGoalQueue.Enqueue(perfectReward);
+                ShowNextMicroGoal();
+            }
+
             // §19.1 — Compute session stats
-            _sessionXpEarned = SessionCorrectCount * 10 + (SessionAccuracy >= 90 ? 20 : 0);
+            _sessionXpEarned = SessionCorrectCount * 10 + (SessionAccuracy >= 90 ? 20 : 0) + _microGoalTracker.TotalBonusXp;
             var timesWithData = _wordResults.Where(r => r.ResponseTimeMs > 0).ToList();
             _avgResponseTimeSec = timesWithData.Count > 0 ? Math.Round(timesWithData.Average(r => r.ResponseTimeMs) / 1000.0, 1) : 0;
 
@@ -2904,6 +3026,7 @@ private async Task InstallStarterPack()
         _failedWordIds.Clear();
         _sessionXpEarned = 0;
         _avgResponseTimeSec = 0;
+        _microGoalTracker.Reset();
         SessionStartedAt = DateTime.UtcNow;
         CurrentWord = TrainingWords[0];
         IsAnswerRevealed = false;
@@ -3341,6 +3464,34 @@ private async Task InstallStarterPack()
         }
     }
 
+    // === Micro-goal toast (§1.6 LEARNING_IMPROVEMENTS) ===
+
+    private void ShowNextMicroGoal()
+    {
+        if (_microGoalQueue.Count > 0)
+        {
+            _currentMicroGoal = _microGoalQueue.Dequeue();
+            StateHasChanged();
+        }
+        else
+        {
+            _currentMicroGoal = null;
+        }
+    }
+
+    private void DismissMicroGoal()
+    {
+        _currentMicroGoal = null;
+        if (_microGoalQueue.Count > 0)
+        {
+            _ = Task.Delay(200).ContinueWith(_ => InvokeAsync(() =>
+            {
+                ShowNextMicroGoal();
+                StateHasChanged();
+            }));
+        }
+    }
+
     private async Task OnVolumeChanged(ChangeEventArgs e)
     {
         if (double.TryParse(e.Value?.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var vol))
@@ -3378,6 +3529,13 @@ private async Task InstallStarterPack()
         });
         if (!wasCorrect && !_failedWordIds.Contains(CurrentWord.WordId))
             _failedWordIds.Add(CurrentWord.WordId);
+
+        // §1.6 — Micro-goals
+        var microRewards = _microGoalTracker.RecordAnswer(wasCorrect);
+        foreach (var reward in microRewards)
+            _microGoalQueue.Enqueue(reward);
+        if (microRewards.Count > 0)
+            ShowNextMicroGoal();
     }
 
     private string SessionResultMessage => SessionAccuracy switch

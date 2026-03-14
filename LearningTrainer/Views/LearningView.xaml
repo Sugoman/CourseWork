@@ -234,6 +234,25 @@
                         </Border>
                     </StackPanel>
 
+                    <!-- §1.6 Session Micro-Goals bonus XP -->
+                    <TextBlock HorizontalAlignment="Center" Margin="0,12,0,0"
+                               FontSize="{DynamicResource FontSizeBase}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource WarningBrush}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding MicroGoalBonusXp}" Value="0">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                        <Run Text="⭐ Бонус за микро-цели: +"/>
+                        <Run Text="{Binding MicroGoalBonusXp, Mode=OneWay}"/>
+                        <Run Text=" XP"/>
+                    </TextBlock>
+
                     <!-- Difficult words list -->
                     <StackPanel Margin="0,20,0,0" HorizontalAlignment="Center" Width="400">
                         <StackPanel.Style>
@@ -1049,7 +1068,7 @@
                                  Foreground="{DynamicResource SuccessBrush}"/>
                         </TextBlock>
 
-                        <!-- Typing Diff (#16) -->
+                        <!-- Typing Diff (#16, §1.4 Precision Feedback) -->
                         <StackPanel HorizontalAlignment="Center" Margin="0,6,0,0">
                             <StackPanel.Style>
                                 <Style TargetType="StackPanel">
@@ -1065,6 +1084,22 @@
                                     </Style.Triggers>
                                 </Style>
                             </StackPanel.Style>
+                            <!-- §1.4 Error category badge -->
+                            <TextBlock FontSize="{DynamicResource FontSizeSmall}" FontWeight="SemiBold"
+                                       HorizontalAlignment="Center" Margin="0,0,0,4"
+                                       Foreground="{DynamicResource WarningBrush}"
+                                       Text="{Binding TypingErrorCategory, Mode=OneWay}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding TypingErrorCategory}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                             <TextBlock FontSize="{DynamicResource FontSizeSmall}" Foreground="{DynamicResource SecondaryTextBrush}"
                                        HorizontalAlignment="Center" Margin="0,0,0,2">
                                 <Run Text="Ваш ввод: "/>
@@ -1266,6 +1301,49 @@
                             <Run Text="{Binding CurrentWord.OriginalWord, Mode=OneWay}" FontWeight="Bold"
                                  Foreground="{DynamicResource SuccessBrush}"/>
                         </TextBlock>
+
+                        <!-- §1.4 Listening Diff -->
+                        <StackPanel HorizontalAlignment="Center" Margin="0,6,0,0">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding ListeningWasCorrect}" Value="False"/>
+                                                <Condition Binding="{Binding ListeningAnswered}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock FontSize="{DynamicResource FontSizeSmall}" FontWeight="SemiBold"
+                                       HorizontalAlignment="Center" Margin="0,0,0,4"
+                                       Foreground="{DynamicResource WarningBrush}"
+                                       Text="{Binding ListeningErrorCategory, Mode=OneWay}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ListeningErrorCategory}" Value="">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock FontSize="{DynamicResource FontSizeSmall}" Foreground="{DynamicResource SecondaryTextBrush}"
+                                       HorizontalAlignment="Center" Margin="0,0,0,2">
+                                <Run Text="Ваш ввод: "/>
+                                <Run Text="{Binding ListeningDiffUser, Mode=OneWay}" Foreground="{DynamicResource DangerBrush}"/>
+                            </TextBlock>
+                            <TextBlock FontSize="{DynamicResource FontSizeSmall}" Foreground="{DynamicResource SecondaryTextBrush}"
+                                       HorizontalAlignment="Center">
+                                <Run Text="Верно:       "/>
+                                <Run Text="{Binding ListeningDiffCorrect, Mode=OneWay}" Foreground="{DynamicResource SuccessBrush}"/>
+                            </TextBlock>
+                        </StackPanel>
 
                         <!-- Transcription after answer -->
                         <TextBlock Text="{Binding CurrentWord.Transcription}"
