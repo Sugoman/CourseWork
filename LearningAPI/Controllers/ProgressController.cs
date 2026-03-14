@@ -36,6 +36,20 @@ namespace LearningAPI.Controllers
             _redis = redis;
         }
 
+        private async Task<TimeZoneInfo> GetUserTimeZoneAsync(int userId)
+        {
+            var tzId = await _context.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.TimeZoneId)
+                .FirstOrDefaultAsync();
+
+            if (string.IsNullOrEmpty(tzId))
+                return TimeZoneInfo.Utc;
+
+            try { return TimeZoneInfo.FindSystemTimeZoneById(tzId); }
+            catch (TimeZoneNotFoundException) { return TimeZoneInfo.Utc; }
+        }
+
         // POST /api/progress/update
         [HttpPost("update")]
         public async Task<IActionResult> UpdateProgress([FromBody] UpdateProgressRequest request, CancellationToken ct = default)
@@ -168,7 +182,8 @@ namespace LearningAPI.Controllers
                 .Distinct()
                 .CountAsync();
 
-            var today = DateTime.UtcNow.Date;
+            var userTz = await GetUserTimeZoneAsync(userId);
+            var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz).Date;
             var fromDate = today.AddDays(-6);
 
             // Calculate streak
@@ -396,7 +411,8 @@ namespace LearningAPI.Controllers
             if (userStats == null)
                 return BadRequest(new { message = "Статистика пользователя не найдена." });
 
-            var today = DateTime.UtcNow.Date;
+            var userTz = await GetUserTimeZoneAsync(userId);
+            var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz).Date;
 
             // Check: already used today?
             if (userStats.LastFreezeUsedDate?.Date == today)
@@ -445,7 +461,8 @@ namespace LearningAPI.Controllers
             if (userStats == null)
                 return Ok(new { available = 0, canUse = false, canBuy = false, cost = 100, totalXp = 0L });
 
-            var today = DateTime.UtcNow.Date;
+            var userTz = await GetUserTimeZoneAsync(userId);
+            var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz).Date;
             var usedToday = userStats.LastFreezeUsedDate?.Date == today;
             var yesterday = today.AddDays(-1);
             // Only show freeze option if user didn't practice yesterday (streak at risk)

@@ -148,7 +148,7 @@ namespace LearningAPI.Controllers
         /// Детальная проверка здоровья (расширенная)
         /// </summary>
         [HttpGet("detailed")]
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetDetailed(CancellationToken cancellationToken)
         {
             var sw = Stopwatch.StartNew();

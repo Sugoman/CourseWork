@@ -553,6 +553,12 @@
                                                     <Run Text="✓ "/>
                                                     <Run Text="{Binding UnlockedAt, Mode=OneWay, StringFormat={}{0:d MMM}}"/>
                                                 </TextBlock>
+
+                                                <!-- Secret hint for locked secret achievements -->
+                                                <TextBlock Visibility="{Binding IsSecret, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                           FontSize="9" Foreground="{DynamicResource SecondaryTextBrush}" 
+                                                           FontStyle="Italic" Margin="0,2,0,0"
+                                                           Text="{Binding SecretHint}" TextTrimming="CharacterEllipsis"/>
                                             </StackPanel>
                                         </Grid>
                                     </Border>

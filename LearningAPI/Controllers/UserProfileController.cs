@@ -91,6 +91,47 @@ public class UserProfileController : BaseApiController
 
         return Ok(profile);
     }
+
+    /// <summary>
+    /// Установить часовой пояс текущего пользователя (IANA ID, например "Europe/Moscow")
+    /// </summary>
+    [HttpPut("me/timezone")]
+    public async Task<IActionResult> SetTimeZone([FromBody] SetTimeZoneRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.TimeZoneId))
+            return BadRequest(new { message = "TimeZoneId is required." });
+
+        try
+        {
+            TimeZoneInfo.FindSystemTimeZoneById(request.TimeZoneId);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return BadRequest(new { message = $"Unknown timezone: {request.TimeZoneId}" });
+        }
+
+        var userId = GetUserId();
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return NotFound();
+
+        user.TimeZoneId = request.TimeZoneId;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { timeZoneId = user.TimeZoneId });
+    }
+
+    /// <summary>
+    /// Получить часовой пояс текущего пользователя
+    /// </summary>
+    [HttpGet("me/timezone")]
+    public async Task<IActionResult> GetTimeZone()
+    {
+        var userId = GetUserId();
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null) return NotFound();
+
+        return Ok(new { timeZoneId = user.TimeZoneId ?? "UTC" });
+    }
 }
 
 #region DTOs
@@ -117,6 +158,11 @@ public class PublishedContentItemDto
     public string Name { get; set; } = "";
     public double Rating { get; set; }
     public int DownloadCount { get; set; }
+}
+
+public class SetTimeZoneRequest
+{
+    public string TimeZoneId { get; set; } = "";
 }
 
 #endregion

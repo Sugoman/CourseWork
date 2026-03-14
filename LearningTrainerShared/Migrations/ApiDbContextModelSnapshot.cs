@@ -602,6 +602,10 @@ namespace LearningTrainerShared.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<string>("TimeZoneId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<int?>("UserId")
                         .HasColumnType("int");
 

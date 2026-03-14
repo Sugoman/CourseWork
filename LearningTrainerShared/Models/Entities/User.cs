@@ -46,6 +46,13 @@ namespace LearningTrainerShared.Models
         [MaxLength(20)]
         public string? TermsVersion { get; set; }
 
+        /// <summary>
+        /// IANA timezone ID (e.g. "Europe/Moscow", "America/New_York").
+        /// Null means UTC.
+        /// </summary>
+        [MaxLength(100)]
+        public string? TimeZoneId { get; set; }
+
         // Для обратной совместимости со старым кодом
         [NotMapped]
         [Obsolete("Use Username instead")]

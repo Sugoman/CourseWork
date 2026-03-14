@@ -342,7 +342,31 @@ namespace LearningTrainer.Services
                 throw new HttpRequestException(errorContent ?? "Неверный логин или пароль");
             }
 
-            return await response.Content.ReadFromJsonAsync<UserSessionDto>(_jsonOptions);
+            var session = await response.Content.ReadFromJsonAsync<UserSessionDto>(_jsonOptions);
+
+            // Auto-detect and send local timezone after login
+            _ = Task.Run(async () =>
+            {
+                try { await SendLocalTimeZoneAsync(); }
+                catch { /* ignore timezone errors */ }
+            });
+
+            return session;
+        }
+
+        /// <summary>
+        /// Send the local system timezone to the server (IANA format).
+        /// </summary>
+        public async Task SendLocalTimeZoneAsync()
+        {
+            var tz = TimeZoneInfo.Local;
+            string ianaId;
+            if (TimeZoneInfo.TryConvertWindowsIdToIanaId(tz.Id, out var iana))
+                ianaId = iana;
+            else
+                ianaId = tz.Id; // Already IANA on non-Windows or if conversion not needed
+
+            await _httpClient.PutAsJsonAsync("/api/users/me/timezone", new { timeZoneId = ianaId }, _writeJsonOptions);
         }
 
         public async Task<UpgradeResultDto> UpgradeToTeacherAsync()

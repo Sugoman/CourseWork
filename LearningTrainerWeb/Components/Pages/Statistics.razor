@@ -605,6 +605,128 @@
                         <span class="ach-counter-text">@Stats.Achievements.Count(a => a.IsUnlocked) из @Stats.Achievements.Count</span>
                     </div>
                 </div>
+                <div class="ach-view-toggle">
+                    <button class="ach-tab @(!_showChainView ? "active" : "")" @onclick="() => _showChainView = false" title="Сетка">
+                        <i class="bi bi-grid-3x3-gap"></i>
+                    </button>
+                    <button class="ach-tab @(_showChainView ? "active" : "")" @onclick="() => _showChainView = true" title="Цепочки">
+                        <i class="bi bi-diagram-3"></i>
+                    </button>
+                </div>
+            </div>
+
+            @if (_showChainView)
+            {
+                <!-- Chain View -->
+                <div class="ach-chains">
+                    @foreach (var chain in AchievementDefinitions.Chains)
+                    {
+                        var chainAchs = Stats.Achievements
+                            .Where(a => a.ChainId == chain.Id)
+                            .OrderBy(a => a.ChainOrder)
+                            .ToList();
+                        if (chainAchs.Count == 0) continue;
+                        var unlockedInChain = chainAchs.Count(a => a.IsUnlocked);
+
+                        <div class="ach-chain-group">
+                            <div class="ach-chain-header">
+                                <span class="ach-chain-icon">@chain.Icon</span>
+                                <span class="ach-chain-name">@chain.Name</span>
+                                <span class="ach-chain-progress-text">@unlockedInChain / @chainAchs.Count</span>
+                            </div>
+                            <div class="ach-chain-track">
+                                @for (var i = 0; i < chainAchs.Count; i++)
+                                {
+                                    var ach = chainAchs[i];
+                                    var rarityClass = ach.Rarity.ToString().ToLower();
+                                    var stateClass = ach.IsUnlocked ? "ach-unlocked" : "ach-locked";
+                                    @if (i > 0)
+                                    {
+                                        var prevUnlocked = chainAchs[i - 1].IsUnlocked;
+                                        <div class="ach-chain-connector @(prevUnlocked ? "ach-connector-done" : "")"></div>
+                                    }
+                                    <div class="ach-chain-node @stateClass ach-@rarityClass" title="@ach.Description">
+                                        <div class="ach-badge">
+                                            <svg class="ach-ring" viewBox="0 0 36 36">
+                                                <circle class="ach-ring-bg" cx="18" cy="18" r="16" />
+                                                @if (!ach.IsUnlocked && ach.Progress > 0)
+                                                {
+                                                    <circle class="ach-ring-fg" cx="18" cy="18" r="16"
+                                                            stroke-dasharray="@(ach.Progress.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)) 100"
+                                                            transform="rotate(-90 18 18)" />
+                                                }
+                                                else if (ach.IsUnlocked)
+                                                {
+                                                    <circle class="ach-ring-fg ach-ring-full" cx="18" cy="18" r="16"
+                                                            stroke-dasharray="100 100"
+                                                            transform="rotate(-90 18 18)" />
+                                                }
+                                            </svg>
+                                            <span class="ach-emoji">@ach.Icon</span>
+                                            @if (ach.IsUnlocked)
+                                            {
+                                                <span class="ach-checkmark"><i class="bi bi-check-circle-fill"></i></span>
+                                            }
+                                        </div>
+                                        <div class="ach-name">@ach.Title</div>
+                                        @if (!ach.IsUnlocked && ach.TargetValue.HasValue && ach.TargetValue > 0)
+                                        {
+                                            <div class="ach-progress-text">@ach.CurrentValue / @ach.TargetValue</div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @{
+                        var secretAchs = Stats.Achievements.Where(a => a.IsSecret).ToList();
+                    }
+                    @if (secretAchs.Count > 0)
+                    {
+                        <div class="ach-chain-group">
+                            <div class="ach-chain-header">
+                                <span class="ach-chain-icon">🔒</span>
+                                <span class="ach-chain-name">Секретные</span>
+                                <span class="ach-chain-progress-text">@secretAchs.Count(a => a.IsUnlocked) / @secretAchs.Count</span>
+                            </div>
+                            <div class="ach-chain-track">
+                                @foreach (var ach in secretAchs)
+                                {
+                                    var rarityClass = ach.Rarity.ToString().ToLower();
+                                    var stateClass = ach.IsUnlocked ? "ach-unlocked" : "ach-locked";
+                                    <div class="ach-chain-node ach-secret @stateClass ach-@rarityClass" title="@ach.Description">
+                                        <div class="ach-badge">
+                                            <svg class="ach-ring" viewBox="0 0 36 36">
+                                                <circle class="ach-ring-bg" cx="18" cy="18" r="16" />
+                                                @if (ach.IsUnlocked)
+                                                {
+                                                    <circle class="ach-ring-fg ach-ring-full" cx="18" cy="18" r="16"
+                                                            stroke-dasharray="100 100"
+                                                            transform="rotate(-90 18 18)" />
+                                                }
+                                            </svg>
+                                            <span class="ach-emoji">@ach.Icon</span>
+                                            @if (ach.IsUnlocked)
+                                            {
+                                                <span class="ach-checkmark"><i class="bi bi-check-circle-fill"></i></span>
+                                            }
+                                        </div>
+                                        <div class="ach-name">@ach.Title</div>
+                                        @if (!ach.IsUnlocked && !string.IsNullOrEmpty(ach.SecretHint))
+                                        {
+                                            <div class="ach-secret-hint">@ach.SecretHint</div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- Grid View (existing) -->
                 <div class="ach-filter-tabs">
                     <button class="ach-tab @(_achFilter == null ? "active" : "")" @onclick="() => _achFilter = null">Все</button>
                     <button class="ach-tab @(_achFilter == AchievementCategory.Learning ? "active" : "")" @onclick='() => _achFilter = AchievementCategory.Learning'>📚 Обучение</button>
@@ -614,52 +736,59 @@
                     <button class="ach-tab @(_achFilter == AchievementCategory.Explorer ? "active" : "")" @onclick='() => _achFilter = AchievementCategory.Explorer'>🗺️ Исследование</button>
                     <button class="ach-tab @(_achFilter == AchievementCategory.Social ? "active" : "")" @onclick='() => _achFilter = AchievementCategory.Social'>🤝 Социальное</button>
                 </div>
-            </div>
-            <div class="ach-grid">
-                @foreach (var ach in Stats.Achievements
-                    .Where(a => _achFilter == null || a.Category == _achFilter)
-                    .OrderByDescending(a => a.IsUnlocked)
-                    .ThenByDescending(a => a.Rarity)
-                    .ThenBy(a => a.Title))
-                {
-                    var rarityClass = ach.Rarity.ToString().ToLower();
-                    var stateClass = ach.IsUnlocked ? "ach-unlocked" : "ach-locked";
-                    <div class="ach-card @stateClass ach-@rarityClass" title="@ach.Description">
-                        <div class="ach-badge">
-                            <svg class="ach-ring" viewBox="0 0 36 36">
-                                <circle class="ach-ring-bg" cx="18" cy="18" r="16" />
-                                @if (!ach.IsUnlocked && ach.Progress > 0)
+                <div class="ach-grid">
+                    @foreach (var ach in Stats.Achievements
+                        .Where(a => _achFilter == null || a.Category == _achFilter)
+                        .OrderByDescending(a => a.IsUnlocked)
+                        .ThenBy(a => a.ChainId ?? "zzz")
+                        .ThenBy(a => a.ChainOrder)
+                        .ThenByDescending(a => a.Rarity)
+                        .ThenBy(a => a.Title))
+                    {
+                        var rarityClass = ach.Rarity.ToString().ToLower();
+                        var stateClass = ach.IsUnlocked ? "ach-unlocked" : "ach-locked";
+                        var secretClass = ach.IsSecret ? "ach-secret" : "";
+                        <div class="ach-card @stateClass ach-@rarityClass @secretClass" title="@ach.Description">
+                            <div class="ach-badge">
+                                <svg class="ach-ring" viewBox="0 0 36 36">
+                                    <circle class="ach-ring-bg" cx="18" cy="18" r="16" />
+                                    @if (!ach.IsUnlocked && ach.Progress > 0)
+                                    {
+                                        <circle class="ach-ring-fg" cx="18" cy="18" r="16"
+                                                stroke-dasharray="@(ach.Progress.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)) 100"
+                                                transform="rotate(-90 18 18)" />
+                                    }
+                                    else if (ach.IsUnlocked)
+                                    {
+                                        <circle class="ach-ring-fg ach-ring-full" cx="18" cy="18" r="16"
+                                                stroke-dasharray="100 100"
+                                                transform="rotate(-90 18 18)" />
+                                    }
+                                </svg>
+                                <span class="ach-emoji">@ach.Icon</span>
+                                @if (ach.IsUnlocked)
                                 {
-                                    <circle class="ach-ring-fg" cx="18" cy="18" r="16"
-                                            stroke-dasharray="@(ach.Progress.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)) 100"
-                                            transform="rotate(-90 18 18)" />
+                                    <span class="ach-checkmark"><i class="bi bi-check-circle-fill"></i></span>
                                 }
-                                else if (ach.IsUnlocked)
-                                {
-                                    <circle class="ach-ring-fg ach-ring-full" cx="18" cy="18" r="16"
-                                            stroke-dasharray="100 100"
-                                            transform="rotate(-90 18 18)" />
-                                }
-                            </svg>
-                            <span class="ach-emoji">@ach.Icon</span>
-                            @if (ach.IsUnlocked)
+                            </div>
+                            <div class="ach-name">@ach.Title</div>
+                            <div class="ach-rarity-tag">@GetRarityLabel(ach.Rarity)</div>
+                            @if (!ach.IsUnlocked && ach.TargetValue.HasValue && ach.TargetValue > 0)
                             {
-                                <span class="ach-checkmark"><i class="bi bi-check-circle-fill"></i></span>
+                                <div class="ach-progress-text">@ach.CurrentValue / @ach.TargetValue</div>
+                            }
+                            @if (ach.IsUnlocked && ach.UnlockedAt.HasValue)
+                            {
+                                <div class="ach-date">@ach.UnlockedAt.Value.ToString("dd.MM.yy")</div>
+                            }
+                            @if (!ach.IsUnlocked && ach.IsSecret && !string.IsNullOrEmpty(ach.SecretHint))
+                            {
+                                <div class="ach-secret-hint">@ach.SecretHint</div>
                             }
                         </div>
-                        <div class="ach-name">@ach.Title</div>
-                        <div class="ach-rarity-tag">@GetRarityLabel(ach.Rarity)</div>
-                        @if (!ach.IsUnlocked && ach.TargetValue.HasValue && ach.TargetValue > 0)
-                        {
-                            <div class="ach-progress-text">@ach.CurrentValue / @ach.TargetValue</div>
-                        }
-                        @if (ach.IsUnlocked && ach.UnlockedAt.HasValue)
-                        {
-                            <div class="ach-date">@ach.UnlockedAt.Value.ToString("dd.MM.yy")</div>
-                        }
-                    </div>
-                }
-            </div>
+                    }
+                </div>
+            }
         </div>
     }
     else if (!IsAuthenticated)
@@ -694,6 +823,7 @@
     private bool IsAuthenticated;
     private string SelectedPeriod = "week";
     private AchievementCategory? _achFilter;
+    private bool _showChainView = true;
 
     private static string GetRarityLabel(AchievementRarity rarity) => rarity switch
     {

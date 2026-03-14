@@ -54,6 +54,16 @@ public interface ITrainingApiService
     Task<bool> SetDailyGoalAsync(int goal);
 
     /// <summary>
+    /// Установить часовой пояс пользователя
+    /// </summary>
+    Task<bool> SetTimeZoneAsync(string timeZoneId);
+
+    /// <summary>
+    /// Получить часовой пояс пользователя
+    /// </summary>
+    Task<string> GetTimeZoneAsync();
+
+    /// <summary>
     /// Сохранить персональную заметку к слову
     /// </summary>
     Task<bool> SaveUserNoteAsync(int wordId, string? note);
@@ -250,6 +260,38 @@ public class TrainingApiService : ITrainingApiService
             return false;
         }
     }
+
+    public async Task<bool> SetTimeZoneAsync(string timeZoneId)
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            var response = await _httpClient.PutAsJsonAsync("api/users/me/timezone", new { timeZoneId });
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error setting timezone");
+            return false;
+        }
+    }
+
+    public async Task<string> GetTimeZoneAsync()
+    {
+        try
+        {
+            await ApplyAuthAsync();
+            var result = await _httpClient.GetFromJsonAsync<TimeZoneResponse>("api/users/me/timezone");
+            return result?.TimeZoneId ?? "UTC";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting timezone");
+            return "UTC";
+        }
+    }
+
+    private class TimeZoneResponse { public string TimeZoneId { get; set; } = "UTC"; }
 
     public async Task<bool> SaveUserNoteAsync(int wordId, string? note)
     {

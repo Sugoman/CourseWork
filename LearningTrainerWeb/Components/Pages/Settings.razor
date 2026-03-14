@@ -162,6 +162,32 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="setting-row">
+                        <div class="setting-label">
+                            <strong>Часовой пояс</strong>
+                            <span class="text-muted small">Используется для стриков, достижений и дневных целей</span>
+                        </div>
+                        <div class="setting-value">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-secondary">@UserTimeZone</span>
+                                <button class="btn btn-sm btn-outline-primary"
+                                        @onclick="DetectAndSetTimeZone"
+                                        title="Определить автоматически из браузера">
+                                    <i class="bi bi-geo-alt me-1"></i>Определить
+                                </button>
+                            </div>
+                            @if (DetectedTimeZone != UserTimeZone && DetectedTimeZone != "UTC")
+                            {
+                                <div class="text-muted small mt-1">
+                                    Определён: <strong>@DetectedTimeZone</strong>
+                                    <button class="btn btn-link btn-sm p-0 ms-1" @onclick="() => SetTimeZone(DetectedTimeZone)">
+                                        применить
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
                 </div>
             }
         </div>
@@ -342,6 +368,8 @@
     private int DailyGoal = 20;
     private string PreferredMode = "mixed";
     private string TranslationDir = "normal";
+    private string UserTimeZone = "UTC";
+    private string DetectedTimeZone = "UTC";
 
     // Interface
     private string ThemeMode = "light";
@@ -368,6 +396,7 @@
             {
                 await LoadLocalSettings();
                 await LoadDailyGoal();
+                await LoadTimeZone();
             }
 
             StateHasChanged();
@@ -455,6 +484,47 @@
         DailyGoal = goal;
         await TrainingApi.SetDailyGoalAsync(goal);
         ShowToast("Дневная цель обновлена", true);
+    }
+
+    private async Task LoadTimeZone()
+    {
+        try
+        {
+            DetectedTimeZone = await JS.InvokeAsync<string>("eval",
+                "Intl.DateTimeFormat().resolvedOptions().timeZone") ?? "UTC";
+
+            UserTimeZone = await TrainingApi.GetTimeZoneAsync();
+
+            // Auto-send detected timezone if user has no timezone set yet
+            if (UserTimeZone == "UTC" && DetectedTimeZone != "UTC")
+            {
+                await TrainingApi.SetTimeZoneAsync(DetectedTimeZone);
+                UserTimeZone = DetectedTimeZone;
+            }
+        }
+        catch { }
+    }
+
+    private async Task SetTimeZone(string tz)
+    {
+        UserTimeZone = tz;
+        await TrainingApi.SetTimeZoneAsync(tz);
+        ShowToast("Часовой пояс обновлён", true);
+    }
+
+    private async Task DetectAndSetTimeZone()
+    {
+        try
+        {
+            var detected = await JS.InvokeAsync<string>("eval",
+                "Intl.DateTimeFormat().resolvedOptions().timeZone");
+            if (!string.IsNullOrEmpty(detected))
+            {
+                DetectedTimeZone = detected;
+                await SetTimeZone(detected);
+            }
+        }
+        catch { }
     }
 
     private async Task OnPreferredModeChanged(ChangeEventArgs e)

@@ -46,6 +46,29 @@ public class StatisticsService : IStatisticsService
     private readonly ApiDbContext _context;
     private readonly ILogger<StatisticsService> _logger;
 
+    /// <summary>
+    /// Get the user's TimeZoneInfo from their stored IANA timezone ID. Falls back to UTC.
+    /// </summary>
+    private async Task<TimeZoneInfo> GetUserTimeZoneAsync(int userId, CancellationToken ct)
+    {
+        var tzId = await _context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => u.TimeZoneId)
+            .FirstOrDefaultAsync(ct);
+
+        if (string.IsNullOrEmpty(tzId))
+            return TimeZoneInfo.Utc;
+
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(tzId);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.Utc;
+        }
+    }
+
     private static readonly string[] LevelNames = 
     {
         "Не начато",
@@ -84,7 +107,8 @@ public class StatisticsService : IStatisticsService
         };
 
         var fromDate = DateTime.UtcNow.Date.AddDays(-days);
-        var today = DateTime.UtcNow.Date;
+        var userTz = await GetUserTimeZoneAsync(userId, ct);
+        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz).Date;
 
         // Основные данные прогресса
         var progresses = await _context.LearningProgresses
@@ -329,7 +353,8 @@ public class StatisticsService : IStatisticsService
                 : 0;
 
             // Если условие выполнено, но в БД нет записи — разблокируем
-            if (!isUnlocked && def.TargetValue > 0 && currentValue >= def.TargetValue)
+            // (секретные ачивки не разблокируются автоматически здесь — только через CheckAndUnlockAchievementsAsync)
+            if (!isUnlocked && !def.IsSecret && def.TargetValue > 0 && currentValue >= def.TargetValue)
             {
                 isUnlocked = true;
                 var ua = new UserAchievement
@@ -342,19 +367,28 @@ public class StatisticsService : IStatisticsService
                 unlockedIds[def.Id] = ua;
             }
 
+            // Секретные ачивки: скрывать название/описание пока не разблокированы
+            var title = def.IsSecret && !isUnlocked ? "???" : def.Title;
+            var description = def.IsSecret && !isUnlocked ? (def.SecretHint ?? "Секретное достижение") : def.Description;
+            var icon = def.IsSecret && !isUnlocked ? "🔒" : def.Icon;
+
             return new Achievement
             {
                 Id = def.Id,
-                Title = def.Title,
-                Description = def.Description,
-                Icon = def.Icon,
+                Title = title,
+                Description = description,
+                Icon = icon,
                 Category = def.Category,
                 Rarity = def.Rarity,
                 IsUnlocked = isUnlocked,
                 UnlockedAt = isUnlocked ? unlockedIds[def.Id].UnlockedAt : null,
-                Progress = isUnlocked ? 100 : progress,
-                CurrentValue = isUnlocked ? def.TargetValue : currentValue,
-                TargetValue = def.TargetValue
+                Progress = isUnlocked ? 100 : (def.IsSecret && !isUnlocked ? 0 : progress),
+                CurrentValue = isUnlocked ? def.TargetValue : (def.IsSecret ? null : currentValue),
+                TargetValue = def.IsSecret && !isUnlocked ? null : def.TargetValue,
+                ChainId = def.ChainId,
+                ChainOrder = def.ChainOrder,
+                IsSecret = def.IsSecret,
+                SecretHint = def.IsSecret && !isUnlocked ? def.SecretHint : null
             };
         }).ToList();
 
@@ -404,7 +438,8 @@ public class StatisticsService : IStatisticsService
 
     public async Task UpdateUserStatsAsync(int userId, CancellationToken ct = default)
     {
-        var today = DateTime.UtcNow.Date;
+        var userTz = await GetUserTimeZoneAsync(userId, ct);
+        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz).Date;
         var userStats = await _context.UserStats.FindAsync(new object[] { userId }, ct);
 
         // Агрегация на стороне БД вместо загрузки всех сессий в память
@@ -599,6 +634,96 @@ public class StatisticsService : IStatisticsService
                             (d.ContentType == "Rule" && userRuleIds.Contains(d.ContentId)), ct);
                     CheckMilestoneAchievement("popular", 100, downloads, existingAchievements, newAchievements, userId);
                 }
+            }
+        }
+
+        // === SECRET ACHIEVEMENTS ===
+
+        // Convert session time to user's local timezone for time-of-day checks
+        var userTz = await GetUserTimeZoneAsync(userId, ct);
+        var localCompletedAt = TimeZoneInfo.ConvertTimeFromUtc(
+            DateTime.SpecifyKind(session.CompletedAt, DateTimeKind.Utc), userTz);
+
+        // 🦉 Ночная сова — тренировка после 23:00
+        if (!existingAchievements.Contains("night_owl") && localCompletedAt.Hour >= 23)
+        {
+            newAchievements.Add(new UserAchievement
+            {
+                UserId = userId,
+                AchievementId = "night_owl",
+                UnlockedAt = DateTime.UtcNow
+            });
+            existingAchievements.Add("night_owl");
+        }
+
+        // 🐦 Ранняя пташка — тренировка до 06:00
+        if (!existingAchievements.Contains("early_bird") && localCompletedAt.Hour < 6)
+        {
+            newAchievements.Add(new UserAchievement
+            {
+                UserId = userId,
+                AchievementId = "early_bird",
+                UnlockedAt = DateTime.UtcNow
+            });
+            existingAchievements.Add("early_bird");
+        }
+
+        // 💎 Перфекционист — 10 безупречных сессий подряд (мин. 10 слов)
+        if (!existingAchievements.Contains("perfectionist"))
+        {
+            var recentSessions = await _context.TrainingSessions
+                .Where(s => s.UserId == userId && s.WordsReviewed >= 10)
+                .OrderByDescending(s => s.CompletedAt)
+                .Take(10)
+                .Select(s => new { s.WrongAnswers })
+                .ToListAsync(ct);
+
+            if (recentSessions.Count >= 10 && recentSessions.All(s => s.WrongAnswers == 0))
+            {
+                newAchievements.Add(new UserAchievement
+                {
+                    UserId = userId,
+                    AchievementId = "perfectionist",
+                    UnlockedAt = DateTime.UtcNow
+                });
+                existingAchievements.Add("perfectionist");
+            }
+        }
+
+        // 🔄 Возвращение — вернуться после 30+ дней перерыва
+        if (!existingAchievements.Contains("comeback_kid"))
+        {
+            var previousSession = await _context.TrainingSessions
+                .Where(s => s.UserId == userId && s.Id != session.Id)
+                .OrderByDescending(s => s.CompletedAt)
+                .Select(s => s.CompletedAt)
+                .FirstOrDefaultAsync(ct);
+
+            if (previousSession != default && (session.StartedAt - previousSession).TotalDays >= 30)
+            {
+                newAchievements.Add(new UserAchievement
+                {
+                    UserId = userId,
+                    AchievementId = "comeback_kid",
+                    UnlockedAt = DateTime.UtcNow
+                });
+                existingAchievements.Add("comeback_kid");
+            }
+        }
+
+        // 👑 Молниеносный — 100 слов за 10 минут
+        if (!existingAchievements.Contains("speed_king"))
+        {
+            var sessionMinutes = (session.CompletedAt - session.StartedAt).TotalMinutes;
+            if (session.WordsReviewed >= 100 && sessionMinutes <= 10)
+            {
+                newAchievements.Add(new UserAchievement
+                {
+                    UserId = userId,
+                    AchievementId = "speed_king",
+                    UnlockedAt = DateTime.UtcNow
+                });
+                existingAchievements.Add("speed_king");
             }
         }
 

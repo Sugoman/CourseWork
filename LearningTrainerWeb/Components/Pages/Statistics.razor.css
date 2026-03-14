@@ -711,6 +711,110 @@
     color: var(--bs-secondary-color);
 }
 
+/* Chain View */
+.ach-view-toggle {
+    display: flex;
+    gap: 0.25rem;
+}
+.ach-view-toggle .ach-tab {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+.ach-chains {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+.ach-chain-group {
+    background: var(--card-bg, rgba(255, 255, 255, 0.03));
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--bs-border-color-translucent);
+}
+.ach-chain-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+.ach-chain-icon {
+    font-size: 1.25rem;
+}
+.ach-chain-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--bs-body-color);
+}
+.ach-chain-progress-text {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--bs-secondary-color);
+    background: var(--bs-tertiary-bg);
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+}
+.ach-chain-track {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    padding: 0.5rem 0;
+}
+.ach-chain-connector {
+    width: 24px;
+    min-width: 24px;
+    height: 2px;
+    background: var(--bs-border-color);
+    flex-shrink: 0;
+}
+.ach-chain-connector.ach-connector-done {
+    background: #10B981;
+}
+.ach-chain-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 80px;
+    padding: 0.5rem;
+    border-radius: 10px;
+    transition: transform 0.2s, background 0.2s;
+    flex-shrink: 0;
+}
+.ach-chain-node:hover {
+    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.05);
+}
+.ach-chain-node .ach-name {
+    font-size: 0.65rem;
+    white-space: nowrap;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ach-chain-node .ach-progress-text {
+    font-size: 0.55rem;
+}
+
+/* Secret achievements */
+.ach-secret.ach-locked {
+    opacity: 0.5;
+    filter: grayscale(0.5);
+}
+.ach-secret.ach-locked:hover {
+    opacity: 0.7;
+}
+.ach-secret-hint {
+    font-size: 0.6rem;
+    color: var(--bs-secondary-color);
+    font-style: italic;
+    text-align: center;
+    max-width: 100px;
+}
+
 /* Empty State */
 .empty-state {
     display: flex;

@@ -62,6 +62,11 @@ namespace LearningAPI.Controllers
                     return BadRequest(new { message = "No file provided" });
                 }
 
+                if (file.Length > 10 * 1024 * 1024)
+                {
+                    return BadRequest(new { message = "File size exceeds the 10 MB limit" });
+                }
+
                 if (!file.FileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
                 {
                     return BadRequest(new { message = "File must be JSON format" });
@@ -148,6 +153,10 @@ namespace LearningAPI.Controllers
                 if (file == null || file.Length == 0)
                 {
                     return BadRequest(new { message = "No file provided" });
+                }
+                if (file.Length > 10 * 1024 * 1024)
+                {
+                    return BadRequest(new { message = "File size exceeds the 10 MB limit" });
                 }
 
                 if (!file.FileName.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
@@ -524,6 +533,11 @@ namespace LearningAPI.Controllers
                     var zipPath = Path.Combine(tempDir, "deck.zip");
                     using (var fs = new FileStream(zipPath, FileMode.Create))
                         await file.CopyToAsync(fs);
+                    
+                    var totalExtractedSize = Directory.EnumerateFiles(tempDir, "*", SearchOption.AllDirectories).Sum(f => new FileInfo(f).Length);
+                    if (totalExtractedSize > 100 * 1024 * 1024)                    
+                        return BadRequest(new { message = "Extracted content exceeds the 100 MB limit" });
+                  
 
                     ZipFile.ExtractToDirectory(zipPath, tempDir, overwriteFiles: true);
 

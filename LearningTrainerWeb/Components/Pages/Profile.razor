@@ -94,7 +94,7 @@
                             <i class="bi bi-award" style="color: var(--accent-yellow);"></i>
                             Достижения
                         </h5>
-                        <span class="pach-count">@UserProfile.Achievements.Count из @AchievementDefinitions.All.Count</span>
+                        <span class="pach-count">@UserProfile.Achievements.Count из @AchievementDefinitions.All.Count(a => !a.IsSecret || UserProfile.Achievements.Contains(a.Id))</span>
                     </div>
                     <div class="pach-grid @(AchievementsExpanded ? "pach-expanded" : "")">
                         @foreach (var achievementId in UserProfile.Achievements)

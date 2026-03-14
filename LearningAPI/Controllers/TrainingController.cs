@@ -27,6 +27,20 @@ public class TrainingController : BaseApiController
         _logger = logger;
     }
 
+    private async Task<TimeZoneInfo> GetUserTimeZoneAsync(int userId)
+    {
+        var tzId = await _context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => u.TimeZoneId)
+            .FirstOrDefaultAsync();
+
+        if (string.IsNullOrEmpty(tzId))
+            return TimeZoneInfo.Utc;
+
+        try { return TimeZoneInfo.FindSystemTimeZoneById(tzId); }
+        catch (TimeZoneNotFoundException) { return TimeZoneInfo.Utc; }
+    }
+
     /// <summary>
     /// Получить план тренировки на сегодня
     /// </summary>
@@ -38,7 +52,8 @@ public class TrainingController : BaseApiController
     {
         var userId = GetUserId();
         var now = DateTime.UtcNow;
-        var today = now.Date;
+        var userTz = await GetUserTimeZoneAsync(userId);
+        var today = TimeZoneInfo.ConvertTimeFromUtc(now, userTz).Date;
 
         _logger.LogInformation("Getting daily plan for User={UserId}", userId);
 
@@ -356,7 +371,8 @@ public class TrainingController : BaseApiController
     public async Task<ActionResult<DailyChallengeDto>> GetDailyChallenge(CancellationToken ct = default)
     {
         var userId = GetUserId();
-        var today = DateTime.UtcNow.Date;
+        var userTz = await GetUserTimeZoneAsync(userId);
+        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz).Date;
 
         try
         {

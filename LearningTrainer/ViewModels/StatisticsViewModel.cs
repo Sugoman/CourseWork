@@ -107,12 +107,16 @@ namespace LearningTrainer.ViewModels
             _showAllAchievements
                 ? (Statistics?.Achievements?
                     .OrderByDescending(a => a.IsUnlocked)
+                    .ThenBy(a => a.ChainId ?? "zzz")
+                    .ThenBy(a => a.ChainOrder)
                     .ThenByDescending(a => a.Progress)
                     ?? Enumerable.Empty<LearningTrainerShared.Models.Statistics.Achievement>())
                 : (Statistics?.Achievements?.Where(a =>
                     (a.IsUnlocked && a.UnlockedAt.HasValue && (DateTime.UtcNow - a.UnlockedAt.Value).TotalDays <= 7) ||
                     (!a.IsUnlocked && a.Progress > 0))
                 .OrderByDescending(a => a.IsUnlocked)
+                .ThenBy(a => a.ChainId ?? "zzz")
+                .ThenBy(a => a.ChainOrder)
                 .ThenByDescending(a => a.Progress)
                 .Take(6) ?? Enumerable.Empty<LearningTrainerShared.Models.Statistics.Achievement>());
 
