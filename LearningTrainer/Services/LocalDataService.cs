@@ -724,5 +724,18 @@ namespace LearningTrainer.Services
         }
 
         #endregion
+
+        #region Knowledge Tree
+
+        public Task<LearningTrainerShared.Models.KnowledgeTreeDto.KnowledgeTreeState?> GetKnowledgeTreeStateAsync()
+            => Task.FromResult<LearningTrainerShared.Models.KnowledgeTreeDto.KnowledgeTreeState?>(null);
+
+        public Task<List<LearningTrainerShared.Models.KnowledgeTreeDto.TreeSkinInfo>> GetTreeSkinsAsync()
+            => Task.FromResult(new List<LearningTrainerShared.Models.KnowledgeTreeDto.TreeSkinInfo>());
+
+        public Task<bool> ChangeTreeSkinAsync(int skinId)
+            => Task.FromResult(false);
+
+        #endregion
     }
 }

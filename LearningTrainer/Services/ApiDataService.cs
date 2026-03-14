@@ -946,6 +946,47 @@ namespace LearningTrainer.Services
 
         #endregion
 
+        #region Knowledge Tree
+
+        public async Task<LearningTrainerShared.Models.KnowledgeTreeDto.KnowledgeTreeState?> GetKnowledgeTreeStateAsync()
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<LearningTrainerShared.Models.KnowledgeTreeDto.KnowledgeTreeState>("/api/knowledge-tree/state", _jsonOptions);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task<List<LearningTrainerShared.Models.KnowledgeTreeDto.TreeSkinInfo>> GetTreeSkinsAsync()
+        {
+            try
+            {
+                return await _httpClient.GetFromJsonAsync<List<LearningTrainerShared.Models.KnowledgeTreeDto.TreeSkinInfo>>("/api/knowledge-tree/skins", _jsonOptions) ?? [];
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
+        public async Task<bool> ChangeTreeSkinAsync(int skinId)
+        {
+            try
+            {
+                var response = await _httpClient.PutAsJsonAsync("/api/knowledge-tree/skin", new { SkinId = skinId }, _jsonOptions);
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        #endregion
+
         private class ApiResponseDto { public string Message { get; set; } }
     }
 }

@@ -201,6 +201,7 @@
 
                                 <!-- STATISTICS -->
     <system:String x:Key="Loc.Tab.Statistics">Статистика</system:String>
+    <system:String x:Key="Loc.Tab.KnowledgeTree">Дерево знаний</system:String>
     <system:String x:Key="Loc.Statistics.Title">Статистика</system:String>
     <system:String x:Key="Loc.Statistics.LearnedWords">Изучено слов</system:String>
     <system:String x:Key="Loc.Statistics.CurrentStreak">Дней подряд</system:String>

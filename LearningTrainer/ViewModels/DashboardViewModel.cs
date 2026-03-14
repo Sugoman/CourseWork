@@ -38,6 +38,7 @@ namespace LearningTrainer.ViewModels
         public ICommand OpenSettingsCommand { get; }
         public ICommand OpenMarketplaceCommand { get; }
         public ICommand OpenStatisticsCommand { get; }
+        public ICommand OpenKnowledgeTreeCommand { get; }
         public ICommand CreateDictionaryCommand { get; }
         public ICommand ImportDictionaryCommand { get; }
         public ICommand GenerateAiDictionaryCommand { get; }
@@ -321,6 +322,12 @@ namespace LearningTrainer.ViewModels
         {
             var statisticsVm = new StatisticsViewModel(_dataService);
             EventAggregator.Instance.Publish(statisticsVm);
+        }
+
+        private void OpenKnowledgeTree()
+        {
+            var treeVm = new KnowledgeTreeViewModel(_dataService);
+            EventAggregator.Instance.Publish(treeVm);
         }
 
         private void OnDictionaryDeleted(DictionaryDeletedMessage message)
@@ -1249,6 +1256,7 @@ namespace LearningTrainer.ViewModels
             OpenSettingsCommand = new RelayCommand(OpenSettings);
             OpenMarketplaceCommand = new RelayCommand(_ => OpenMarketplace());
             OpenStatisticsCommand = new RelayCommand(_ => OpenStatistics());
+            OpenKnowledgeTreeCommand = new RelayCommand(_ => OpenKnowledgeTree());
 
             // Daily Plan commands (§18.2 LEARNING_IMPROVEMENTS)
             StartSmartTrainingCommand = new RelayCommand(async _ => await StartSmartTraining());

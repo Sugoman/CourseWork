@@ -199,6 +199,7 @@
 
                                 <!-- STATISTICS -->
     <system:String x:Key="Loc.Tab.Statistics">Statistics</system:String>
+    <system:String x:Key="Loc.Tab.KnowledgeTree">Knowledge Tree</system:String>
     <system:String x:Key="Loc.Statistics.Title">Statistics</system:String>
     <system:String x:Key="Loc.Statistics.LearnedWords">Learned Words</system:String>
     <system:String x:Key="Loc.Statistics.CurrentStreak">Days Streak</system:String>

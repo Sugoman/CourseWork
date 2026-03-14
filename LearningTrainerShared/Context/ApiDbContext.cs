@@ -44,6 +44,10 @@ namespace LearningTrainerShared.Context
         // Grammar progress (§17.2 LEARNING_IMPROVEMENTS)
         public DbSet<GrammarProgress> GrammarProgresses { get; set; } = null!;
 
+        // Knowledge Tree (§3.8 LEARNING_IMPROVEMENTS)
+        public DbSet<KnowledgeTree> KnowledgeTrees { get; set; } = null!;
+        public DbSet<TreeSkin> TreeSkins { get; set; } = null!;
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -247,6 +251,33 @@ namespace LearningTrainerShared.Context
 
             modelBuilder.Entity<GrammarProgress>()
                 .HasQueryFilter(gp => TenantUserId == null || gp.UserId == TenantUserId);
+
+            // === KNOWLEDGE TREE (§3.8 LEARNING_IMPROVEMENTS) ===
+
+            modelBuilder.Entity<KnowledgeTree>()
+                .HasOne(kt => kt.User)
+                .WithMany()
+                .HasForeignKey(kt => kt.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<KnowledgeTree>()
+                .HasOne(kt => kt.TreeSkin)
+                .WithMany()
+                .HasForeignKey(kt => kt.TreeSkinId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<KnowledgeTree>()
+                .HasIndex(kt => kt.UserId)
+                .IsUnique();
+
+            // Seed default tree skins
+            modelBuilder.Entity<TreeSkin>().HasData(
+                new TreeSkin { Id = 1, Name = "Классическое дерево", AssetPrefix = "default", StageEmojis = "🌰|🌱|🌿|🌳|🌲|🏔️|🌍", IsPremium = false, PriceCoins = 0 },
+                new TreeSkin { Id = 2, Name = "Сакура", AssetPrefix = "sakura", StageEmojis = "🌰|🌸|🌿|🌸|🌸|🌸|🌸", IsPremium = true, PriceCoins = 500 },
+                new TreeSkin { Id = 3, Name = "Дуб", AssetPrefix = "oak", StageEmojis = "🌰|🌱|🌿|🌳|🌳|🌳|🌳", IsPremium = true, PriceCoins = 300 },
+                new TreeSkin { Id = 4, Name = "Пальма", AssetPrefix = "palm", StageEmojis = "🥥|🌱|🌿|🌴|🌴|🌴|🌴", IsPremium = true, PriceCoins = 400 },
+                new TreeSkin { Id = 5, Name = "Ёлка", AssetPrefix = "pine", StageEmojis = "🌰|🌱|🌲|🌲|🎄|🎄|🎄", IsPremium = true, PriceCoins = 350 }
+            );
         }
     }
 }

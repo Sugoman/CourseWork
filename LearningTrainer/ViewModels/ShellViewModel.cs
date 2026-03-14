@@ -59,6 +59,9 @@ namespace LearningTrainer.ViewModels
             // Statistics subscription
             EventAggregator.Instance.Subscribe<StatisticsViewModel>(OpenTab);
 
+            // Knowledge Tree subscription
+            EventAggregator.Instance.Subscribe<KnowledgeTreeViewModel>(OpenTab);
+
             // AI Dictionary Generator subscription
             EventAggregator.Instance.Subscribe<AiDictionaryGeneratorViewModel>(OpenTab);
 
@@ -170,6 +173,7 @@ namespace LearningTrainer.ViewModels
             EventAggregator.Instance.Unsubscribe<MarketplaceDictionaryDetailsViewModel>(OpenTab);
             EventAggregator.Instance.Unsubscribe<MarketplaceRuleDetailsViewModel>(OpenTab);
             EventAggregator.Instance.Unsubscribe<StatisticsViewModel>(OpenTab);
+            EventAggregator.Instance.Unsubscribe<KnowledgeTreeViewModel>(OpenTab);
             EventAggregator.Instance.Unsubscribe<ShowNotificationMessage>(OnShowNotification);
         }
     }

@@ -175,5 +175,10 @@ namespace LearningTrainer.Services
         // Statistics
         Task<LearningTrainerShared.Models.Statistics.UserStatistics?> GetStatisticsAsync(string period = "week");
         Task SaveTrainingSessionAsync(DateTime startedAt, DateTime completedAt, int wordsReviewed, int correctAnswers, int wrongAnswers, string mode, int? dictionaryId);
+
+        // Knowledge Tree
+        Task<LearningTrainerShared.Models.KnowledgeTreeDto.KnowledgeTreeState?> GetKnowledgeTreeStateAsync();
+        Task<List<LearningTrainerShared.Models.KnowledgeTreeDto.TreeSkinInfo>> GetTreeSkinsAsync();
+        Task<bool> ChangeTreeSkinAsync(int skinId);
     }
 }

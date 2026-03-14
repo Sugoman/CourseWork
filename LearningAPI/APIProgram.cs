@@ -220,6 +220,7 @@ if (!string.IsNullOrEmpty(redisConnectionString))
 }
 
 // Statistics service
+builder.Services.AddScoped<IKnowledgeTreeService, KnowledgeTreeService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 
 // Добавить CORS конфигурацию

@@ -1,0 +1,626 @@
+@page "/knowledge-tree"
+@using LearningTrainerShared.Models
+@using LearningTrainerShared.Models.KnowledgeTreeDto
+@inject IKnowledgeTreeApiService TreeService
+@inject IAuthService AuthService
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<PageTitle>Дерево знаний — LearningTrainer</PageTitle>
+
+@if (IsLoading)
+{
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 60vh;">
+        <div class="spinner-border text-success" role="status">
+            <span class="visually-hidden">Загрузка...</span>
+        </div>
+    </div>
+}
+else if (!IsAuthenticated)
+{
+    <div class="container text-center py-5">
+        <h3>Войдите, чтобы увидеть своё Дерево Знаний</h3>
+        <a href="/login" class="btn btn-primary mt-3">Войти</a>
+    </div>
+}
+else if (Tree != null)
+{
+    <div class="container-fluid py-3">
+        <div class="row g-3">
+            @* ── Main SVG viewport ── *@
+            <div class="col-lg-9">
+                <div class="card shadow-sm border-0 position-relative overflow-hidden" style="min-height: 500px;">
+
+                    @* Cloud overlay for level-up *@
+                    <div id="cloud-overlay" class="cloud-overlay hidden">
+                        <svg class="cloud-svg cloud-left" viewBox="0 0 300 500" preserveAspectRatio="none">
+                            <ellipse cx="150" cy="250" rx="220" ry="300" fill="white" opacity="0.95"/>
+                        </svg>
+                        <svg class="cloud-svg cloud-right" viewBox="0 0 300 500" preserveAspectRatio="none">
+                            <ellipse cx="150" cy="250" rx="220" ry="300" fill="white" opacity="0.95"/>
+                        </svg>
+                    </div>
+
+                    @* Wilting overlay *@
+                    @if (Tree.IsWilting)
+                    {
+                        <div class="alert alert-warning m-3 mb-0">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Ваше дерево увядает! Не занимались уже @Tree.DaysSinceActivity дней.
+                        </div>
+                    }
+
+                    @* Navigation breadcrumb *@
+                    <div class="px-3 pt-3 d-flex align-items-center gap-2">
+                        @if (CurrentView != TreeView.Overview)
+                        {
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="NavigateBack">
+                                <i class="bi bi-arrow-left"></i> Назад
+                            </button>
+                        }
+                        <span class="text-muted small">
+                            @switch (CurrentView)
+                            {
+                                case TreeView.Overview:
+                                    <span>🌳 Обзор дерева</span>
+                                    break;
+                                case TreeView.Branch:
+                                    <span>🌳 / 🌿 @SelectedBranch?.TagName</span>
+                                    break;
+                                case TreeView.Twig:
+                                    <span>🌳 / 🌿 @SelectedBranch?.TagName / 🍃 @SelectedTwig?.DictionaryName</span>
+                                    break;
+                            }
+                        </span>
+                        <button class="btn btn-sm btn-success ms-auto" @onclick="GoToTraining">
+                            <i class="bi bi-mortarboard-fill"></i> Начать тренировку
+                        </button>
+                    </div>
+
+                    @* SVG Tree Display *@
+                    <div id="tree-viewport" class="tree-viewport @(Tree.IsWilting ? "wilting" : "")" style="min-height: 450px;">
+                        <svg id="tree-svg" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet"
+                             style="width: 100%; height: 450px;" xmlns="http://www.w3.org/2000/svg">
+
+                            <defs>
+                                <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#e8f5e9"/>
+                                    <stop offset="100%" stop-color="#c8e6c9"/>
+                                </linearGradient>
+                                <linearGradient id="trunk-grad" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="0%" stop-color="#5d4037"/>
+                                    <stop offset="50%" stop-color="#795548"/>
+                                    <stop offset="100%" stop-color="#5d4037"/>
+                                </linearGradient>
+                            </defs>
+
+                            @* Background *@
+                            <rect width="800" height="500" fill="url(#sky)"/>
+
+                            @* Ground *@
+                            <ellipse cx="400" cy="480" rx="380" ry="30" fill="#8d6e63" opacity="0.3"/>
+                            <rect x="0" y="480" width="800" height="20" fill="#a1887f" opacity="0.2"/>
+
+                            @switch (CurrentView)
+                            {
+                                case TreeView.Overview:
+                                    @* Trunk — size depends on stage *@
+                                    var trunkW = 20 + (int)Tree.CurrentStage * 8;
+                                    var trunkH = 100 + (int)Tree.CurrentStage * 40;
+                                    var trunkX = 400 - trunkW / 2;
+                                    var trunkY = 480 - trunkH;
+                                    <rect x="@trunkX" y="@trunkY" width="@trunkW" height="@trunkH"
+                                          rx="6" fill="url(#trunk-grad)"/>
+
+                                    @* Stage emoji at top of trunk *@
+                                    @SvgText(400, trunkY - 10, "middle", 48, null, Tree.StageEmoji)
+
+                                    @* Branches radiating from trunk top *@
+                                    @for (int i = 0; i < Tree.Branches.Count; i++)
+                                    {
+                                        var branch = Tree.Branches[i];
+                                        var angle = -60 + (120.0 / Math.Max(1, Tree.Branches.Count - 1)) * i;
+                                        if (Tree.Branches.Count == 1) angle = 0;
+                                        var rad = angle * Math.PI / 180;
+                                        var branchLen = 80 + branch.TotalWords * 0.3;
+                                        if (branchLen > 200) branchLen = 200;
+                                        var bx1 = 400;
+                                        var by1 = trunkY + 20;
+                                        var bx2 = bx1 + Math.Sin(rad) * branchLen;
+                                        var by2 = by1 - Math.Cos(rad) * branchLen;
+                                        var thickness = 3 + branch.Twigs.Count;
+                                        if (thickness > 10) thickness = 10;
+                                        var branchColor = branch.CompletionPercent >= 100 ? "#2e7d32" : "#6d4c41";
+                                        var capturedBranch = branch;
+
+                                        <line x1="@F(bx1)" y1="@F(by1)" x2="@F(bx2)" y2="@F(by2)"
+                                              stroke="@branchColor" stroke-width="@thickness" stroke-linecap="round"
+                                              class="svg-branch" @onclick="() => SelectBranch(capturedBranch)"
+                                              style="cursor: pointer;"/>
+
+                                        @* Branch label *@
+                                        @SvgText(bx2, by2 - 8, "middle", 10, "#33691e", $"🌿 {Truncate(branch.TagName, 12)}", "600")
+                                        @SvgText(bx2, by2 + 6, "middle", 8, "#558b2f", $"{branch.LearnedWords}/{branch.TotalWords}")
+                                    }
+
+                                    @* Fruits along the tree *@
+                                    @for (int i = 0; i < Math.Min(Tree.Fruits.Count, 12); i++)
+                                    {
+                                        var fruit = Tree.Fruits[i];
+                                        var fx = 340 + (i % 4) * 40;
+                                        var fy = trunkY + 10 + (i / 4) * 30;
+                                        @SvgText(fx, fy, "middle", 16, null, fruit.IsMastered ? "🍎" : "🍏")
+                                    }
+
+                                    @* Stage info *@
+                                    @SvgText(400, 30, "middle", 14, "#1b5e20", $"{Tree.StageName}  •  Ур. {Tree.TreeLevel}  •  {Tree.TreeXp} XP дерева", "700")
+                                    break;
+
+                                case TreeView.Branch:
+                                    @if (SelectedBranch != null)
+                                    {
+                                        @SvgText(400, 30, "middle", 16, "#1b5e20", $"🌿 {SelectedBranch.TagName}", "700")
+                                        @SvgText(400, 50, "middle", 11, "#558b2f",
+                                            $"{SelectedBranch.LearnedWords} / {SelectedBranch.TotalWords} слов ({SelectedBranch.CompletionPercent.ToString("F0")}%)")
+
+                                        @* Render twigs as sub-branches *@
+                                        @for (int i = 0; i < SelectedBranch.Twigs.Count; i++)
+                                        {
+                                            var twig = SelectedBranch.Twigs[i];
+                                            var tw = twig;
+                                            var tx = 100 + i * (600 / Math.Max(1, SelectedBranch.Twigs.Count));
+                                            var ty = 120;
+                                            var twigH = 60 + twig.TotalWords * 0.5;
+                                            if (twigH > 280) twigH = 280;
+                                            var twigColor = twig.CompletionPercent >= 100 ? "#388e3c" : "#795548";
+
+                                            <line x1="@tx" y1="@ty" x2="@tx" y2="@F(ty + twigH)"
+                                                  stroke="@twigColor" stroke-width="4" stroke-linecap="round"
+                                                  class="svg-twig" @onclick="() => SelectTwig(tw)"
+                                                  style="cursor: pointer;"/>
+
+                                            @SvgText(tx, ty - 10, "middle", 10, "#33691e", $"🍃 {Truncate(twig.DictionaryName, 14)}", "600")
+                                            @SvgText(tx, ty + twigH + 16, "middle", 9, "#558b2f", $"{twig.LearnedWords}/{twig.TotalWords}")
+
+                                            @* Mini-leaf indicators along the twig *@
+                                            var miniCount = Math.Min(twig.Leaves.Count, 8);
+                                            @for (int j = 0; j < miniCount; j++)
+                                            {
+                                                var ly = ty + 10 + j * (twigH / (miniCount + 1));
+                                                var lx = tx + (j % 2 == 0 ? 10 : -10);
+                                                var lColor = twig.Leaves[j].IsLearned ? "#4caf50" : "#c8e6c9";
+                                                <circle cx="@F(lx)" cy="@F(ly)" r="4" fill="@lColor"
+                                                        stroke="#388e3c" stroke-width="0.5"/>
+                                            }
+                                        }
+                                    }
+                                    break;
+
+                                case TreeView.Twig:
+                                    @if (SelectedTwig != null)
+                                    {
+                                        @SvgText(400, 30, "middle", 16, "#1b5e20", $"🍃 {SelectedTwig.DictionaryName}", "700")
+                                        @SvgText(400, 50, "middle", 11, "#558b2f",
+                                            $"{SelectedTwig.LearnedWords} / {SelectedTwig.TotalWords} слов ({SelectedTwig.CompletionPercent.ToString("F0")}%)")
+
+                                        @* Leaves container — populated by JS scatterLeaves *@
+                                        <g id="leaves-container"></g>
+                                    }
+                                    break;
+                            }
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            @* ── Side panel ── *@
+            <div class="col-lg-3">
+                @* Pour XP card *@
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header bg-transparent">
+                        <h6 class="mb-0"><i class="bi bi-droplet-fill text-primary"></i> Влить XP в дерево</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-muted mb-2">Доступно: <strong>@Tree.AvailableUserXp</strong> XP</p>
+                        <p class="small text-muted mb-2">Дерево: <strong>@Tree.TreeXp</strong> XP (ур. @Tree.TreeLevel)</p>
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="number" class="form-control" @bind="PourAmount" min="1" max="@Tree.AvailableUserXp"
+                                   placeholder="Кол-во XP"/>
+                            <button class="btn btn-success" @onclick="PourXpAsync" disabled="@(IsPouringXp || PourAmount <= 0)">
+                                @if (IsPouringXp)
+                                {
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                }
+                                else
+                                {
+                                    <span>💧 Влить</span>
+                                }
+                            </button>
+                        </div>
+                        @if (!string.IsNullOrEmpty(PourMessage))
+                        {
+                            <div class="alert alert-sm @(PourSuccess ? "alert-success" : "alert-danger") py-1 px-2 small mb-0">
+                                @PourMessage
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* Progress card *@
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header bg-transparent">
+                        <h6 class="mb-0">📊 Прогресс</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>@Tree.StageName → след. стадия</span>
+                            <span>@Tree.ProgressToNextStage.ToString("F0")%</span>
+                        </div>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated"
+                                 style="width: @Tree.ProgressToNextStage.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%">
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            Нужно: @Tree.WordsForNextStage слов · @Tree.XpForNextStage XP
+                        </div>
+                        <div class="small text-muted">
+                            Сейчас: @Tree.TotalWordsContributed слов · @Tree.TreeXp XP
+                        </div>
+                    </div>
+                </div>
+
+                @* Stage legend *@
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header bg-transparent">
+                        <h6 class="mb-0">🌱 Стадии роста</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0 small">
+                            <thead><tr><th>Стадия</th><th>XP</th><th>Слова</th></tr></thead>
+                            <tbody>
+                                @foreach (var s in StageData)
+                                {
+                                    <tr class="@(Tree.CurrentStage == s.Stage ? "table-success" : "")">
+                                        <td>@s.Emoji @s.Name</td><td>@s.Xp</td><td>@s.Words</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                @* Skins *@
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-transparent">
+                        <h6 class="mb-0"><i class="bi bi-palette"></i> Скины</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        @if (Skins.Count > 0)
+                        {
+                            <div class="list-group list-group-flush">
+                                @foreach (var skin in Skins)
+                                {
+                                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center small @(skin.IsActive ? "active" : "")"
+                                            @onclick="() => SelectSkin(skin.Id)"
+                                            disabled="@(skin.IsActive || (!skin.IsOwned && skin.IsPremium))">
+                                        <span>@GetSkinPreviewEmoji(skin) @skin.Name</span>
+                                        @if (skin.IsActive)
+                                        {
+                                            <span class="badge bg-success">✓</span>
+                                        }
+                                        else if (skin.IsPremium && !skin.IsOwned)
+                                        {
+                                            <span class="badge bg-secondary">🪙 @skin.PriceCoins</span>
+                                        }
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="container text-center py-5">
+        <h3>Не удалось загрузить Дерево Знаний</h3>
+        <button class="btn btn-outline-primary mt-3" @onclick="LoadDataAsync">Попробовать снова</button>
+    </div>
+}
+
+<style>
+    .tree-viewport {
+        transition: filter 0.5s ease;
+    }
+    .tree-viewport.wilting {
+        filter: grayscale(0.5) brightness(0.8);
+    }
+
+    /* SVG interactive elements */
+    .svg-branch:hover, .svg-twig:hover {
+        filter: brightness(1.3);
+        stroke-width: inherit;
+    }
+    .svg-branch { transition: filter 0.2s; }
+    .svg-twig   { transition: filter 0.2s; }
+
+    /* Leaf hover */
+    .tree-leaf:hover {
+        filter: brightness(1.2);
+        cursor: default;
+    }
+    .tree-leaf { transition: filter 0.15s; }
+
+    /* ── Cloud Level-Up Animation ── */
+    .cloud-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 50;
+        pointer-events: none;
+        display: flex;
+        justify-content: center;
+        align-items: stretch;
+    }
+    .cloud-overlay.hidden { display: none; }
+
+    .cloud-svg {
+        position: absolute;
+        width: 55%;
+        height: 100%;
+    }
+    .cloud-left  { left: -55%; }
+    .cloud-right { right: -55%; }
+
+    /* Clouds slide IN from edges */
+    .cloud-overlay.clouds-in .cloud-left {
+        animation: cloud-slide-in-left 0.6s ease-out forwards;
+    }
+    .cloud-overlay.clouds-in .cloud-right {
+        animation: cloud-slide-in-right 0.6s ease-out forwards;
+    }
+
+    /* Clouds slide OUT to edges */
+    .cloud-overlay.clouds-out .cloud-left {
+        animation: cloud-slide-out-left 0.6s ease-in forwards;
+    }
+    .cloud-overlay.clouds-out .cloud-right {
+        animation: cloud-slide-out-right 0.6s ease-in forwards;
+    }
+
+    @@keyframes cloud-slide-in-left {
+        from { transform: translateX(0); }
+        to   { transform: translateX(100%); }
+    }
+    @@keyframes cloud-slide-in-right {
+        from { transform: translateX(0); }
+        to   { transform: translateX(-100%); }
+    }
+    @@keyframes cloud-slide-out-left {
+        from { transform: translateX(100%); }
+        to   { transform: translateX(0); }
+    }
+    @@keyframes cloud-slide-out-right {
+        from { transform: translateX(-100%); }
+        to   { transform: translateX(0); }
+    }
+</style>
+
+@code {
+    private KnowledgeTreeState? Tree;
+    private List<TreeSkinInfo> Skins = new();
+    private bool IsLoading = true;
+    private bool IsAuthenticated;
+
+    // Navigation state
+    private enum TreeView { Overview, Branch, Twig }
+    private TreeView CurrentView = TreeView.Overview;
+    private TreeBranch? SelectedBranch;
+    private TreeTwig? SelectedTwig;
+
+    // Pour XP state
+    private long PourAmount;
+    private bool IsPouringXp;
+    private string PourMessage = "";
+    private bool PourSuccess;
+
+    // For JS callback during cloud animation
+    private DotNetObjectReference<KnowledgeTree>? _selfRef;
+
+    private static readonly (TreeStage Stage, string Emoji, string Name, string Xp, string Words)[] StageData =
+    [
+        (TreeStage.Seed,       "🌰", "Зерно",         "0",       "0"),
+        (TreeStage.Sprout,     "🌱", "Росток",         "100",     "10"),
+        (TreeStage.Sapling,    "🌿", "Саженец",        "500",     "50"),
+        (TreeStage.YoungTree,  "🌳", "Молодое дерево", "2 000",   "200"),
+        (TreeStage.MatureTree, "🌲", "Зрелое дерево",  "10 000",  "1 000"),
+        (TreeStage.MightyTree, "🏔️", "Могучее дерево", "30 000",  "3 000"),
+        (TreeStage.Legendary,  "🌍", "Легендарное",    "75 000",  "5 000"),
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _selfRef = DotNetObjectReference.Create(this);
+        await AuthService.InitializeAsync();
+        var session = await AuthService.GetCurrentSessionAsync();
+        IsAuthenticated = session != null;
+
+        if (IsAuthenticated)
+            await LoadDataAsync();
+        else
+            IsLoading = false;
+    }
+
+    private async Task LoadDataAsync()
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var treeTask = TreeService.GetTreeStateAsync();
+            var skinsTask = TreeService.GetSkinsAsync();
+            await Task.WhenAll(treeTask, skinsTask);
+
+            Tree = treeTask.Result;
+            Skins = skinsTask.Result;
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    // ── Navigation ──
+
+    private void GoToTraining()
+    {
+        Navigation.NavigateTo("/training");
+    }
+
+    private async Task SelectBranch(TreeBranch branch)
+    {
+        SelectedBranch = branch;
+        SelectedTwig = null;
+        CurrentView = TreeView.Branch;
+
+        await ZoomToCenter(1.2);
+    }
+
+    private async Task SelectTwig(TreeTwig twig)
+    {
+        SelectedTwig = twig;
+        CurrentView = TreeView.Twig;
+        StateHasChanged();
+
+        // Wait for SVG to render, then scatter leaves via JS
+        await Task.Delay(50);
+        await ScatterLeaves(twig);
+    }
+
+    private async Task NavigateBack()
+    {
+        switch (CurrentView)
+        {
+            case TreeView.Twig:
+                SelectedTwig = null;
+                CurrentView = TreeView.Branch;
+                break;
+            case TreeView.Branch:
+                SelectedBranch = null;
+                CurrentView = TreeView.Overview;
+                break;
+        }
+
+        await ResetZoom();
+    }
+
+    // ── Pour XP ──
+
+    private async Task PourXpAsync()
+    {
+        if (PourAmount <= 0 || Tree == null) return;
+
+        IsPouringXp = true;
+        PourMessage = "";
+        StateHasChanged();
+
+        try
+        {
+            var oldStage = Tree.CurrentStage;
+            var result = await TreeService.PourXpAsync(PourAmount);
+
+            if (result is { Success: true })
+            {
+                PourSuccess = true;
+                PourMessage = result.Message;
+
+                // If stage changed, play cloud transition
+                if (result.StageChanged)
+                {
+                    await JS.InvokeVoidAsync("KnowledgeTreeInterop.playCloudTransition", "cloud-overlay", _selfRef);
+                }
+
+                // Reload data
+                await LoadDataAsync();
+                PourAmount = 0;
+            }
+            else
+            {
+                PourSuccess = false;
+                PourMessage = result?.Message ?? "Ошибка при вливании XP";
+            }
+        }
+        finally
+        {
+            IsPouringXp = false;
+            StateHasChanged();
+        }
+    }
+
+    /// <summary>Called from JS when clouds fully cover the tree — swap sprite</summary>
+    [JSInvokable]
+    public void OnCloudsCovered()
+    {
+        // The tree data is already refreshed; Blazor re-renders with new stage automatically
+        InvokeAsync(StateHasChanged);
+    }
+
+    // ── Skins ──
+
+    private async Task SelectSkin(int skinId)
+    {
+        var success = await TreeService.ChangeSkinAsync(skinId);
+        if (success)
+            await LoadDataAsync();
+    }
+
+    private string GetSkinPreviewEmoji(TreeSkinInfo skin)
+    {
+        var emojis = skin.StageEmojis.Split('|');
+        return emojis.Length > 3 ? emojis[3] : (emojis.Length > 0 ? emojis[0] : "🌳");
+    }
+
+    // ── JS Interop Helpers ──
+
+    private async Task ScatterLeaves(TreeTwig twig)
+    {
+        var leavesData = twig.Leaves.Select(l => new { wordId = l.WordId, word = l.Word, isLearned = l.IsLearned });
+        var bbox = new { x = 80, y = 70, width = 640, height = 380 };
+        await JS.InvokeVoidAsync("KnowledgeTreeInterop.scatterLeaves", "leaves-container", leavesData, bbox);
+    }
+
+    private async Task ZoomToCenter(double scale)
+    {
+        await JS.InvokeVoidAsync("KnowledgeTreeInterop.zoomTo", "tree-viewport", 400, 250, scale, 400);
+    }
+
+    private async Task ResetZoom()
+    {
+        await JS.InvokeVoidAsync("KnowledgeTreeInterop.resetZoom", "tree-viewport", 400);
+    }
+
+    // ── Helpers ──
+
+    private static string F(double v) => v.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+    private static string Truncate(string s, int max) => s.Length <= max ? s : s[..(max - 1)] + "…";
+
+    /// <summary>Renders an SVG text element as MarkupString (workaround for Blazor &lt;text&gt; conflict)</summary>
+    private static MarkupString SvgText(double x, double y, string anchor, int fontSize, string? fill, string content, string? fontWeight = null)
+    {
+        var fillAttr = fill != null ? $" fill=\"{System.Web.HttpUtility.HtmlAttributeEncode(fill)}\"" : "";
+        var weightAttr = fontWeight != null ? $" font-weight=\"{System.Web.HttpUtility.HtmlAttributeEncode(fontWeight)}\"" : "";
+        var encodedContent = System.Web.HttpUtility.HtmlEncode(content);
+        return new MarkupString(
+            $"<text x=\"{F(x)}\" y=\"{F(y)}\" text-anchor=\"{anchor}\" font-size=\"{fontSize}\"{fillAttr}{weightAttr}>{encodedContent}</text>");
+    }
+
+    public void Dispose()
+    {
+        _selfRef?.Dispose();
+    }
+}

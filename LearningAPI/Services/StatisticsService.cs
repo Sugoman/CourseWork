@@ -45,6 +45,7 @@ public class StatisticsService : IStatisticsService
 {
     private readonly ApiDbContext _context;
     private readonly ILogger<StatisticsService> _logger;
+    private readonly IKnowledgeTreeService _knowledgeTreeService;
 
     /// <summary>
     /// Get the user's TimeZoneInfo from their stored IANA timezone ID. Falls back to UTC.
@@ -89,10 +90,11 @@ public class StatisticsService : IStatisticsService
         "#10B981"  // Emerald
     };
 
-    public StatisticsService(ApiDbContext context, ILogger<StatisticsService> logger)
+    public StatisticsService(ApiDbContext context, ILogger<StatisticsService> logger, IKnowledgeTreeService knowledgeTreeService)
     {
         _context = context;
         _logger = logger;
+        _knowledgeTreeService = knowledgeTreeService;
     }
 
     public async Task<UserStatistics> GetFullStatisticsAsync(int userId, string period, CancellationToken ct = default)
@@ -480,6 +482,9 @@ public class StatisticsService : IStatisticsService
         }
 
         await _context.SaveChangesAsync(ct);
+
+        // Обновляем Дерево Знаний (§3.8 LEARNING_IMPROVEMENTS)
+        await _knowledgeTreeService.UpdateTreeAsync(userId, ct);
     }
 
     private async Task<int> CalculateStreakAsync(int userId, DateTime today, CancellationToken ct)
