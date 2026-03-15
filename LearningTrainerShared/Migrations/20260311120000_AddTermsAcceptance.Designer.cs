@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LearningTrainerShared.Migrations
 {
     [DbContext(typeof(ApiDbContext))]
-    [Migration("20260326120000_AddKnowledgeTree")]
-    partial class AddKnowledgeTree
+    [Migration("20260311120000_AddTermsAcceptance")]
+    partial class AddTermsAcceptance
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
