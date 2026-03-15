@@ -46,6 +46,9 @@ public interface IContentApiService
     Task<CreatedDictionaryResult> CreateDictionaryAsync(string name, string description,
         string languageFrom, string languageTo, string? tags = null);
     Task<CreatedWordResult> AddWordAsync(int dictionaryId, string originalWord, string translation, string? example = null);
+    Task UpdateWordAsync(int wordId, string originalWord, string translation, string? example = null);
+    Task DeleteWordAsync(int wordId);
+    Task UpdateDictionaryAsync(int id, string name, string? description, string languageFrom, string languageTo, string? tags = null);
     Task<CreatedRuleResult> CreateRuleAsync(string title, string markdownContent, string description,
         string category, int difficultyLevel, List<CreateExerciseInput>? exercises = null);
     Task UpdateRuleAsync(int id, string title, string markdownContent, string description,
@@ -370,6 +373,41 @@ public class ContentApiService : IContentApiService
         return await response.Content.ReadFromJsonAsync<CreatedWordResult>() ?? new();
     }
 
+    public async Task UpdateWordAsync(int wordId, string originalWord, string translation, string? example = null)
+    {
+        await ApplyAuthAsync();
+        var request = new { Id = wordId, OriginalWord = originalWord, Translation = translation, Example = example ?? "" };
+        var response = await _httpClient.PutAsJsonAsync($"api/words/{wordId}", request);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException(TryExtractMessage(body) ?? $"Ошибка обновления слова: {response.StatusCode}");
+        }
+    }
+
+    public async Task DeleteWordAsync(int wordId)
+    {
+        await ApplyAuthAsync();
+        var response = await _httpClient.DeleteAsync($"api/words/{wordId}");
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException(TryExtractMessage(body) ?? $"Ошибка удаления слова: {response.StatusCode}");
+        }
+    }
+
+    public async Task UpdateDictionaryAsync(int id, string name, string? description, string languageFrom, string languageTo, string? tags = null)
+    {
+        await ApplyAuthAsync();
+        var request = new { Id = id, Name = name, Description = description, LanguageFrom = languageFrom, LanguageTo = languageTo, Tags = tags };
+        var response = await _httpClient.PutAsJsonAsync($"api/dictionaries/{id}", request);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException(TryExtractMessage(body) ?? $"Ошибка обновления словаря: {response.StatusCode}");
+        }
+    }
+
     public async Task<CreatedRuleResult> CreateRuleAsync(string title, string markdownContent, string description,
         string category, int difficultyLevel, List<CreateExerciseInput>? exercises = null)
     {
@@ -644,6 +682,7 @@ public class MyDictionaryFullDto
     public string? Description { get; set; }
     public string LanguageFrom { get; set; } = "";
     public string LanguageTo { get; set; } = "";
+    public string? Tags { get; set; }
     public List<MyDictionaryWordDto> Words { get; set; } = new();
 }
 

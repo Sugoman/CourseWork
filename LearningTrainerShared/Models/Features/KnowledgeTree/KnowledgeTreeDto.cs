@@ -1,7 +1,7 @@
 namespace LearningTrainerShared.Models.KnowledgeTreeDto;
 
 /// <summary>
-/// Полное состояние Дерева Знаний (§3.8 LEARNING_IMPROVEMENTS)
+/// Полное состояние Дерева Знаний — Botanical Dendrogram
 /// </summary>
 public class KnowledgeTreeState
 {
@@ -12,7 +12,7 @@ public class KnowledgeTreeState
     public int TotalWordsContributed { get; set; }
     public long TotalXpContributed { get; set; }
 
-    /// <summary>Tree-specific XP (poured by user, separate from UserStats.TotalXp)</summary>
+    /// <summary>Tree-specific XP (poured by user)</summary>
     public long TreeXp { get; set; }
 
     /// <summary>Tree level derived from TreeXp</summary>
@@ -36,53 +36,116 @@ public class KnowledgeTreeState
     public bool IsWilting { get; set; }
     public int DaysSinceActivity { get; set; }
 
-    // === ВИЗУАЛИЗАЦИЯ: ВЕТКИ (по тегу) ===
+    // === BOTANICAL DENDROGRAM ===
+    /// <summary>Trunk segment (Root → first fork)</summary>
+    public BotanicalSegment Trunk { get; set; } = new();
+
+    /// <summary>Branches (Tags) growing off trunk</summary>
     public List<TreeBranch> Branches { get; set; } = new();
 
-    // === ВИЗУАЛИЗАЦИЯ: ПЛОДЫ (правила грамматики) ===
-    public List<TreeFruit> Fruits { get; set; } = new();
+    /// <summary>SVG canvas dimensions</summary>
+    public double CanvasWidth { get; set; } = 2000;
+    public double CanvasHeight { get; set; } = 1800;
 
-    /// <summary>Max branches shown on screen (configurable)</summary>
     public int MaxVisibleBranches { get; set; } = 6;
 }
 
 /// <summary>
-/// Ветка дерева = тег словарей (Branch)
+/// A line segment in the tree, defined by start/end points.
+/// Used for trunk, branches, twigs.
+/// </summary>
+public class BotanicalSegment
+{
+    public double X1 { get; set; }
+    public double Y1 { get; set; }
+    public double X2 { get; set; }
+    public double Y2 { get; set; }
+}
+
+/// <summary>
+/// A branch = tag grouping. Grows off the trunk.
 /// </summary>
 public class TreeBranch
 {
+    public string Id { get; set; } = "";
     public string TagName { get; set; } = "";
+
+    /// <summary>Start point (on trunk) and end point (tip)</summary>
+    public BotanicalSegment Segment { get; set; } = new();
+
+    /// <summary>Bezier control-point offsets for organic curvature</summary>
+    public double Cp1X { get; set; }
+    public double Cp1Y { get; set; }
+    public double Cp2X { get; set; }
+    public double Cp2Y { get; set; }
+
+    public double StrokeWidth { get; set; } = 12;
     public int TotalWords { get; set; }
     public int LearnedWords { get; set; }
-    public double CompletionPercent { get; set; }
+    public double Progress { get; set; }
 
-    /// <summary>Twigs = dictionaries under this tag</summary>
     public List<TreeTwig> Twigs { get; set; } = new();
 }
 
 /// <summary>
-/// Ветка-прутик = конкретный словарь (Twig)
+/// A twig = dictionary. Grows off a branch.
 /// </summary>
 public class TreeTwig
 {
+    public string Id { get; set; } = "";
     public int DictionaryId { get; set; }
     public string DictionaryName { get; set; } = "";
+
+    public BotanicalSegment Segment { get; set; } = new();
+    public double Cp1X { get; set; }
+    public double Cp1Y { get; set; }
+    public double Cp2X { get; set; }
+    public double Cp2Y { get; set; }
+
+    public double StrokeWidth { get; set; } = 5;
     public int TotalWords { get; set; }
     public int LearnedWords { get; set; }
-    public double CompletionPercent { get; set; }
+    public double Progress { get; set; }
 
-    /// <summary>Up to 100 leaves (words)</summary>
+    /// <summary>Leaf positions at the tip (word-level)</summary>
+    public List<TreeLeaf> Leaves { get; set; } = new();
+
+    /// <summary>Decorative mini-branches that hold leaf clusters</summary>
+    public List<TreeSprig> Sprigs { get; set; } = new();
+}
+
+/// <summary>
+/// Decorative mini-branch growing off a twig. Holds a small cluster of leaves.
+/// </summary>
+public class TreeSprig
+{
+    public double X1 { get; set; }
+    public double Y1 { get; set; }
+    public double X2 { get; set; }
+    public double Y2 { get; set; }
+    /// <summary>Quadratic Bezier control point for slight curvature</summary>
+    public double CpX { get; set; }
+    public double CpY { get; set; }
+    public double StrokeWidth { get; set; } = 1.5;
+    /// <summary>Leaves attached to this sprig tip</summary>
     public List<TreeLeaf> Leaves { get; set; } = new();
 }
 
 /// <summary>
-/// Листок = слово в словаре (Leaf). Max 100 per twig.
+/// A leaf = word endpoint. Rendered as a green leaf icon at (X, Y).
 /// </summary>
 public class TreeLeaf
 {
     public int WordId { get; set; }
     public string Word { get; set; } = "";
     public bool IsLearned { get; set; }
+
+    /// <summary>Position at the end of the twig (or scattered around it)</summary>
+    public double X { get; set; }
+    public double Y { get; set; }
+
+    /// <summary>Rotation angle in degrees for visual variety</summary>
+    public double Rotation { get; set; }
 }
 
 /// <summary>

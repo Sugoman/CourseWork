@@ -6,8 +6,9 @@
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @implements IDisposable
+@rendermode InteractiveServer
 
-<PageTitle>Дерево знаний — LearningTrainer</PageTitle>
+<PageTitle>Дерево знаний — Ingat</PageTitle>
 
 @if (IsLoading)
 {
@@ -26,301 +27,360 @@ else if (!IsAuthenticated)
 }
 else if (Tree != null)
 {
-    <div class="container-fluid py-3">
-        <div class="row g-3">
-            @* ── Main SVG viewport ── *@
-            <div class="col-lg-9">
-                <div class="card shadow-sm border-0 position-relative overflow-hidden" style="min-height: 500px;">
+    <div class="tree-layout">
+        @* ── Side panel ── *@
+        <aside class="tree-sidebar">
+            <div class="st-panel">
+                <div class="st-panel-header">@Tree.StageEmoji @Tree.StageName · Ур. @Tree.TreeLevel</div>
+                <div class="st-stat-row">
+                    <span class="text-muted">XP дерева</span>
+                    <strong>@Tree.TreeXp.ToString("N0")</strong>
+                </div>
+                <div class="st-stat-row">
+                    <span class="text-muted">Слов выучено</span>
+                    <strong>@Tree.TotalWordsContributed</strong>
+                </div>
+                <div class="st-progress-label">
+                    @Tree.StageName → след. стадия
+                    <span>@Tree.ProgressToNextStage.ToString("F0")%</span>
+                </div>
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar bg-success" style="width: @Inv(Tree.ProgressToNextStage)%"></div>
+                </div>
+            </div>
 
-                    @* Cloud overlay for level-up *@
-                    <div id="cloud-overlay" class="cloud-overlay hidden">
-                        <svg class="cloud-svg cloud-left" viewBox="0 0 300 500" preserveAspectRatio="none">
-                            <ellipse cx="150" cy="250" rx="220" ry="300" fill="white" opacity="0.95"/>
-                        </svg>
-                        <svg class="cloud-svg cloud-right" viewBox="0 0 300 500" preserveAspectRatio="none">
-                            <ellipse cx="150" cy="250" rx="220" ry="300" fill="white" opacity="0.95"/>
-                        </svg>
+            @* Pour XP *@
+            <div class="st-panel">
+                <div class="st-panel-header"><i class="bi bi-droplet-fill text-primary"></i> Влить XP</div>
+                <p class="small text-muted mb-2">Доступно: <strong>@Tree.AvailableUserXp</strong></p>
+                <div class="input-group input-group-sm mb-2">
+                    <input type="number" class="form-control" @bind="PourAmount" min="1" max="@Tree.AvailableUserXp" placeholder="XP"/>
+                    <button class="btn btn-success btn-sm" @onclick="PourXpAsync" disabled="@(IsPouringXp || PourAmount <= 0)">
+                        @if (IsPouringXp) { <span class="spinner-border spinner-border-sm"></span> }
+                        else { <span>💧</span> }
+                    </button>
+                </div>
+                @if (!string.IsNullOrEmpty(PourMessage))
+                {
+                    <div class="alert py-1 px-2 small mb-0 @(PourSuccess ? "alert-success" : "alert-danger")">@PourMessage</div>
+                }
+            </div>
+
+            @* Selected branch/twig info *@
+            @if (SelectedBranch != null)
+            {
+                <div class="st-panel">
+                    <div class="st-panel-header">🌿 @SelectedBranch.TagName</div>
+                    <div class="st-stat-row">
+                        <span class="text-muted">Словарей</span>
+                        <span>@SelectedBranch.Twigs.Count</span>
                     </div>
+                    <div class="st-stat-row">
+                        <span class="text-muted">Прогресс</span>
+                        <span>@SelectedBranch.LearnedWords / @SelectedBranch.TotalWords</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 5px;">
+                        <div class="progress-bar bg-info" style="width: @Inv(SelectedBranch.Progress * 100)%"></div>
+                    </div>
+                </div>
+            }
+            @if (SelectedTwig != null)
+            {
+                <div class="st-panel">
+                    <div class="st-panel-header">🍃 @SelectedTwig.DictionaryName</div>
+                    <div class="st-stat-row">
+                        <span class="text-muted">Прогресс</span>
+                        <span>@SelectedTwig.LearnedWords / @SelectedTwig.TotalWords</span>
+                    </div>
+                    <div class="progress mb-2" style="height: 5px;">
+                        <div class="progress-bar bg-success" style="width: @Inv(SelectedTwig.Progress * 100)%"></div>
+                    </div>
+                    <button class="btn btn-outline-primary btn-sm w-100" @onclick="() => DrillIntoTwig(SelectedTwig)">
+                        <i class="bi bi-eye"></i> Показать слова
+                    </button>
+                </div>
+            }
 
-                    @* Wilting overlay *@
-                    @if (Tree.IsWilting)
+            <div class="st-panel">
+                <button class="btn btn-sm btn-outline-secondary w-100 mb-2" @onclick="ResetView">
+                    <i class="bi bi-arrows-fullscreen"></i> Всё дерево
+                </button>
+                <button class="btn btn-sm btn-success w-100" @onclick="GoToTraining">
+                    <i class="bi bi-mortarboard-fill"></i> Тренировка
+                </button>
+            </div>
+        </aside>
+
+        @* ── Main SVG Canvas ── *@
+        <div class="tree-canvas-wrap"
+             @onmousedown="OnPointerDown" @onmousemove="OnPointerMove"
+             @onmouseup="OnPointerUp" @onmouseleave="OnPointerUp">
+
+            <div id="cloud-overlay" class="cloud-overlay hidden">
+                <div class="cloud-panel cloud-left"></div>
+                <div class="cloud-panel cloud-right"></div>
+            </div>
+
+            @if (Tree.IsWilting)
+            {
+                <div class="wilt-banner">
+                    <i class="bi bi-exclamation-triangle"></i> Дерево увядает! @Tree.DaysSinceActivity дней без занятий.
+                </div>
+            }
+
+            <svg id="tree-svg"
+                 viewBox="@($"{F(VX)} {F(VY)} {F(VW)} {F(VH)}")"
+                 preserveAspectRatio="xMidYMid meet"
+                 style="width:100%;height:100%;cursor:@(IsDragging?"grabbing":"grab");"
+                 xmlns="http://www.w3.org/2000/svg">
+
+                <defs>
+                    @* Sky gradient background *@
+                    <linearGradient id="sky-grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#b3e5fc"/>
+                        <stop offset="60%" stop-color="#e8f5e9"/>
+                        <stop offset="100%" stop-color="#8d6e63" stop-opacity="0.3"/>
+                    </linearGradient>
+                    @* Bark texture gradient *@
+                    <linearGradient id="bark-grad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#5D4037"/>
+                        <stop offset="30%" stop-color="#6D4C41"/>
+                        <stop offset="50%" stop-color="#795548"/>
+                        <stop offset="70%" stop-color="#6D4C41"/>
+                        <stop offset="100%" stop-color="#4E342E"/>
+                    </linearGradient>
+                    <linearGradient id="branch-grad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#6D4C41"/>
+                        <stop offset="50%" stop-color="#8D6E63"/>
+                        <stop offset="100%" stop-color="#5D4037"/>
+                    </linearGradient>
+                    <linearGradient id="twig-grad" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#795548"/>
+                        <stop offset="100%" stop-color="#A1887F"/>
+                    </linearGradient>
+                    <filter id="wood-shadow">
+                        <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#3E2723" flood-opacity="0.3"/>
+                    </filter>
+                    <filter id="leaf-glow">
+                        <feGaussianBlur stdDeviation="2" result="blur"/>
+                        <feMerge>
+                            <feMergeNode in="blur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+
+                @* Sky background *@
+                <rect x="0" y="0" width="@F(Tree.CanvasWidth)" height="@F(Tree.CanvasHeight)" fill="url(#sky-grad)"/>
+
+                @* Ground *@
+                <ellipse cx="@F(Tree.CanvasWidth / 2)" cy="@F(Tree.CanvasHeight - 30)"
+                         rx="@F(Tree.CanvasWidth * 0.45)" ry="60"
+                         fill="#6D4C41" opacity="0.3"/>
+                <ellipse cx="@F(Tree.CanvasWidth / 2)" cy="@F(Tree.CanvasHeight - 40)"
+                         rx="@F(Tree.CanvasWidth * 0.35)" ry="30"
+                         fill="#4CAF50" opacity="0.4"/>
+
+                @if (!IsLeafView)
+                {
+                    @* ── TRUNK ── *@
+                    <path d="@TrunkPath()" stroke="url(#bark-grad)" stroke-width="24"
+                          fill="none" stroke-linecap="round" filter="url(#wood-shadow)"/>
+                    @* Bark texture lines *@
+                    <path d="@TrunkPath()" stroke="#4E342E" stroke-width="1"
+                          fill="none" stroke-dasharray="8,12" opacity="0.3"/>
+
+                    @* Roots at trunk base *@
+                    @for (int ri = 0; ri < 5; ri++)
                     {
-                        <div class="alert alert-warning m-3 mb-0">
-                            <i class="bi bi-exclamation-triangle"></i>
-                            Ваше дерево увядает! Не занимались уже @Tree.DaysSinceActivity дней.
-                        </div>
+                        var rootAngle = -150 + ri * 30.0 + 60;
+                        var rootRad = rootAngle * Math.PI / 180;
+                        var rootLen = 40 + ri * 15;
+                        var rx1 = Tree.Trunk.X1;
+                        var ry1 = Tree.Trunk.Y1;
+                        var rx2 = rx1 + Math.Cos(rootRad) * rootLen;
+                        var ry2 = ry1 + Math.Sin(rootRad) * Math.Abs(rootLen * 0.3);
+                        <path d="@($"M {F(rx1)},{F(ry1)} Q {F((rx1+rx2)/2)},{F(ry1 + 15)} {F(rx2)},{F(ry2)}")"
+                              stroke="#5D4037" stroke-width="@(6 - ri)" fill="none" stroke-linecap="round" opacity="0.6"/>
                     }
 
-                    @* Navigation breadcrumb *@
-                    <div class="px-3 pt-3 d-flex align-items-center gap-2">
-                        @if (CurrentView != TreeView.Overview)
-                        {
-                            <button class="btn btn-sm btn-outline-secondary" @onclick="NavigateBack">
-                                <i class="bi bi-arrow-left"></i> Назад
-                            </button>
-                        }
-                        <span class="text-muted small">
-                            @switch (CurrentView)
+                    @* ── BRANCHES (Tags) ── *@
+                    @foreach (var branch in Tree.Branches)
+                    {
+                        var capturedBranch = branch;
+                        var isSelectedBranch = SelectedBranch?.Id == branch.Id;
+                        var branchOpacity = isSelectedBranch ? 1.0 : 0.85;
+
+                        <g style="cursor:pointer;" @onclick="() => OnBranchClick(capturedBranch)">
+                            @* Branch path *@
+                            <path d="@BezierPath(branch.Segment, branch.Cp1X, branch.Cp1Y, branch.Cp2X, branch.Cp2Y)"
+                                  stroke="url(#branch-grad)" stroke-width="@F(branch.StrokeWidth)"
+                                  fill="none" stroke-linecap="round" filter="url(#wood-shadow)"
+                                  opacity="@F(branchOpacity)"/>
+                            @* Bark texture on branch *@
+                            <path d="@BezierPath(branch.Segment, branch.Cp1X, branch.Cp1Y, branch.Cp2X, branch.Cp2Y)"
+                                  stroke="#4E342E" stroke-width="0.8" fill="none"
+                                  stroke-dasharray="5,10" opacity="0.2"/>
+
+                            @* Tag label at branch midpoint *@
+                            @{ var bMid = BezierMid(branch.Segment, branch.Cp1X, branch.Cp1Y, branch.Cp2X, branch.Cp2Y); }
+                            @SvgText(bMid.x, bMid.y - 12, "middle", 11, "#3E2723",
+                                Truncate(branch.TagName, 16), "700")
+                            @SvgText(bMid.x, bMid.y + 2, "middle", 8, "#6D4C41",
+                                $"{branch.LearnedWords}/{branch.TotalWords}")
+
+                            @if (isSelectedBranch)
                             {
-                                case TreeView.Overview:
-                                    <span>🌳 Обзор дерева</span>
-                                    break;
-                                case TreeView.Branch:
-                                    <span>🌳 / 🌿 @SelectedBranch?.TagName</span>
-                                    break;
-                                case TreeView.Twig:
-                                    <span>🌳 / 🌿 @SelectedBranch?.TagName / 🍃 @SelectedTwig?.DictionaryName</span>
-                                    break;
+                                <circle cx="@F(bMid.x)" cy="@F(bMid.y - 5)" r="3" fill="#4CAF50" opacity="0.7">
+                                    <animate attributeName="r" values="3;5;3" dur="1.5s" repeatCount="indefinite"/>
+                                </circle>
                             }
-                        </span>
-                        <button class="btn btn-sm btn-success ms-auto" @onclick="GoToTraining">
-                            <i class="bi bi-mortarboard-fill"></i> Начать тренировку
-                        </button>
-                    </div>
+                        </g>
 
-                    @* SVG Tree Display *@
-                    <div id="tree-viewport" class="tree-viewport @(Tree.IsWilting ? "wilting" : "")" style="min-height: 450px;">
-                        <svg id="tree-svg" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet"
-                             style="width: 100%; height: 450px;" xmlns="http://www.w3.org/2000/svg">
+                        @* ── TWIGS (Dictionaries) ── *@
+                        @foreach (var twig in branch.Twigs)
+                        {
+                            var capturedTwig = twig;
+                            var isSelectedTwig = SelectedTwig?.Id == twig.Id;
 
-                            <defs>
-                                <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stop-color="#e8f5e9"/>
-                                    <stop offset="100%" stop-color="#c8e6c9"/>
-                                </linearGradient>
-                                <linearGradient id="trunk-grad" x1="0" y1="0" x2="1" y2="0">
-                                    <stop offset="0%" stop-color="#5d4037"/>
-                                    <stop offset="50%" stop-color="#795548"/>
-                                    <stop offset="100%" stop-color="#5d4037"/>
-                                </linearGradient>
-                            </defs>
+                            <g style="cursor:pointer;" @onclick="() => OnTwigClick(capturedTwig)"
+                               @ondblclick="() => DrillIntoTwig(capturedTwig)">
+                                <path d="@BezierPath(twig.Segment, twig.Cp1X, twig.Cp1Y, twig.Cp2X, twig.Cp2Y)"
+                                      stroke="url(#twig-grad)" stroke-width="@F(twig.StrokeWidth)"
+                                      fill="none" stroke-linecap="round"
+                                      opacity="@(isSelectedTwig ? "1" : "0.7")"/>
 
-                            @* Background *@
-                            <rect width="800" height="500" fill="url(#sky)"/>
+                                @* Twig label *@
+                                @SvgText(twig.Segment.X2, twig.Segment.Y2 - 18, "middle", 8, "#5D4037",
+                                    Truncate(twig.DictionaryName, 14), "600")
 
-                            @* Ground *@
-                            <ellipse cx="400" cy="480" rx="380" ry="30" fill="#8d6e63" opacity="0.3"/>
-                            <rect x="0" y="480" width="800" height="20" fill="#a1887f" opacity="0.2"/>
+                                @* ── SPRIGS (mini-branches) with leaves ── *@
+                                @foreach (var sprig in twig.Sprigs)
+                                {
+                                    @* Curved mini-branch (quadratic Bezier) *@
+                                    <path d="M @F(sprig.X1),@F(sprig.Y1) Q @F(sprig.CpX),@F(sprig.CpY) @F(sprig.X2),@F(sprig.Y2)"
+                                          stroke="#7B5B3A" stroke-width="@F(sprig.StrokeWidth)"
+                                          fill="none" stroke-linecap="round" opacity="0.75"/>
 
-                            @switch (CurrentView)
+                                    @foreach (var leaf in sprig.Leaves)
+                                    {
+                                        var lColor = leaf.IsLearned ? "#388E3C" : "#A5D6A7";
+                                        var lStroke = leaf.IsLearned ? "#1B5E20" : "#81C784";
+                                        var lColor2 = leaf.IsLearned ? "#2E7D32" : "#C8E6C9";
+                                        var lColor3 = leaf.IsLearned ? "#43A047" : "#81C784";
+                                        <g transform="translate(@F(leaf.X),@F(leaf.Y))">
+                                            <path d="M 0,1 C -5,-4 -7,-11 0,-15 C 7,-11 5,-4 0,1 Z"
+                                                  fill="@lColor2" stroke="@lStroke" stroke-width="0.3"
+                                                  opacity="0.5" transform="rotate(@F(leaf.Rotation - 25)) scale(1.1)"/>
+                                            <path d="M 0,0 C -4,-4 -6,-10 0,-14 C 6,-10 4,-4 0,0 Z"
+                                                  fill="@lColor" stroke="@lStroke" stroke-width="0.4"
+                                                  opacity="0.85" transform="rotate(@F(leaf.Rotation))"/>
+                                            <line x1="0" y1="0" x2="0" y2="-11"
+                                                  stroke="@lStroke" stroke-width="0.3" opacity="0.4"
+                                                  transform="rotate(@F(leaf.Rotation))"/>
+                                            <path d="M 0,0 C -3,-3 -4,-7 0,-10 C 4,-7 3,-3 0,0 Z"
+                                                  fill="@lColor3" stroke="none"
+                                                  opacity="0.6" transform="rotate(@F(leaf.Rotation + 30)) scale(0.7)"/>
+                                        </g>
+                                    }
+                                }
+                                @* Twig-level leaves (20% for fullness) *@
+                                @foreach (var leaf in twig.Leaves)
+                                {
+                                    var lColor = leaf.IsLearned ? "#388E3C" : "#A5D6A7";
+                                    var lStroke = leaf.IsLearned ? "#1B5E20" : "#81C784";
+                                    var lColor2 = leaf.IsLearned ? "#2E7D32" : "#C8E6C9";
+                                    var lColor3 = leaf.IsLearned ? "#43A047" : "#81C784";
+                                    <g transform="translate(@F(leaf.X),@F(leaf.Y))">
+                                        <path d="M 0,1 C -5,-4 -7,-11 0,-15 C 7,-11 5,-4 0,1 Z"
+                                              fill="@lColor2" stroke="@lStroke" stroke-width="0.3"
+                                              opacity="0.5" transform="rotate(@F(leaf.Rotation - 25)) scale(1.1)"/>
+                                        <path d="M 0,0 C -4,-4 -6,-10 0,-14 C 6,-10 4,-4 0,0 Z"
+                                              fill="@lColor" stroke="@lStroke" stroke-width="0.4"
+                                              opacity="0.85" transform="rotate(@F(leaf.Rotation))"/>
+                                        <line x1="0" y1="0" x2="0" y2="-11"
+                                              stroke="@lStroke" stroke-width="0.3" opacity="0.4"
+                                              transform="rotate(@F(leaf.Rotation))"/>
+                                        <path d="M 0,0 C -3,-3 -4,-7 0,-10 C 4,-7 3,-3 0,0 Z"
+                                              fill="@lColor3" stroke="none"
+                                              opacity="0.6" transform="rotate(@F(leaf.Rotation + 30)) scale(0.7)"/>
+                                    </g>
+                                }
+
+                                @if (isSelectedTwig)
+                                {
+                                    <circle cx="@F(twig.Segment.X2)" cy="@F(twig.Segment.Y2)" r="4"
+                                            fill="#FF9800" opacity="0.8">
+                                        <animate attributeName="r" values="4;6;4" dur="1.2s" repeatCount="indefinite"/>
+                                    </circle>
+                                }
+                            </g>
+                        }
+                    }
+                }
+                else
+                {
+                    @* ── LEAF VIEW: Zoomed-in word cloud for a single twig ── *@
+                    @if (LeafViewTwig != null)
+                    {
+                        var cx = Tree.CanvasWidth / 2;
+                        var cy = Tree.CanvasHeight / 2;
+
+                        @* Central twig illustration *@
+                        <line x1="@F(cx)" y1="@F(cy + 80)" x2="@F(cx)" y2="@F(cy - 60)"
+                              stroke="#8D6E63" stroke-width="4" stroke-linecap="round"/>
+                        @SvgText(cx, cy + 110, "middle", 14, "#3E2723", LeafViewTwig.DictionaryName, "700")
+                        @SvgText(cx, cy + 130, "middle", 10, "#795548",
+                            $"{LeafViewTwig.LearnedWords} / {LeafViewTwig.TotalWords} слов")
+
+                        @* Words as leaf clusters *@
+                        var leafWords = LeafViewTwig.Leaves;
+                        var leafCount = Math.Min(leafWords.Count, 100);
+                        var ringCount = (int)Math.Ceiling(leafCount / 16.0);
+                        var idx = 0;
+                        @for (int ring = 0; ring < ringCount && idx < leafCount; ring++)
+                        {
+                            var ringR = 90 + ring * 70;
+                            var wordsInRing = Math.Min(16 + ring * 4, leafCount - idx);
+                            @for (int wi = 0; wi < wordsInRing && idx < leafCount; wi++)
                             {
-                                case TreeView.Overview:
-                                    @* Trunk — size depends on stage *@
-                                    var trunkW = 20 + (int)Tree.CurrentStage * 8;
-                                    var trunkH = 100 + (int)Tree.CurrentStage * 40;
-                                    var trunkX = 400 - trunkW / 2;
-                                    var trunkY = 480 - trunkH;
-                                    <rect x="@trunkX" y="@trunkY" width="@trunkW" height="@trunkH"
-                                          rx="6" fill="url(#trunk-grad)"/>
+                                var leaf = leafWords[idx];
+                                var angle = (360.0 / wordsInRing) * wi - 90;
+                                var rad = angle * Math.PI / 180;
+                                var lx = cx + Math.Cos(rad) * ringR;
+                                var ly = cy + Math.Sin(rad) * ringR;
+                                var lColor = leaf.IsLearned ? "#388E3C" : "#C8E6C9";
+                                var lStroke = leaf.IsLearned ? "#1B5E20" : "#A5D6A7";
 
-                                    @* Stage emoji at top of trunk *@
-                                    @SvgText(400, trunkY - 10, "middle", 48, null, Tree.StageEmoji)
+                                @* Tiny twig to leaf *@
+                                <line x1="@F(cx)" y1="@F(cy)" x2="@F(lx)" y2="@F(ly)"
+                                      stroke="#A1887F" stroke-width="0.5" opacity="0.15"/>
 
-                                    @* Branches radiating from trunk top *@
-                                    @for (int i = 0; i < Tree.Branches.Count; i++)
-                                    {
-                                        var branch = Tree.Branches[i];
-                                        var angle = -60 + (120.0 / Math.Max(1, Tree.Branches.Count - 1)) * i;
-                                        if (Tree.Branches.Count == 1) angle = 0;
-                                        var rad = angle * Math.PI / 180;
-                                        var branchLen = 80 + branch.TotalWords * 0.3;
-                                        if (branchLen > 200) branchLen = 200;
-                                        var bx1 = 400;
-                                        var by1 = trunkY + 20;
-                                        var bx2 = bx1 + Math.Sin(rad) * branchLen;
-                                        var by2 = by1 - Math.Cos(rad) * branchLen;
-                                        var thickness = 3 + branch.Twigs.Count;
-                                        if (thickness > 10) thickness = 10;
-                                        var branchColor = branch.CompletionPercent >= 100 ? "#2e7d32" : "#6d4c41";
-                                        var capturedBranch = branch;
+                                @* Leaf *@
+                                <g transform="translate(@F(lx),@F(ly)) rotate(@F(angle)) scale(1.2)">
+                                    <path d="M 0,-1 C -5,-6 -6,-12 0,-15 C 6,-12 5,-6 0,-1 Z"
+                                          fill="@lColor" stroke="@lStroke" stroke-width="0.5"/>
+                                    <line x1="0" y1="-1" x2="0" y2="-12"
+                                          stroke="@lStroke" stroke-width="0.3" opacity="0.5"/>
+                                </g>
 
-                                        <line x1="@F(bx1)" y1="@F(by1)" x2="@F(bx2)" y2="@F(by2)"
-                                              stroke="@branchColor" stroke-width="@thickness" stroke-linecap="round"
-                                              class="svg-branch" @onclick="() => SelectBranch(capturedBranch)"
-                                              style="cursor: pointer;"/>
+                                @* Word label *@
+                                @SvgText(lx, ly + 14, "middle", 7, leaf.IsLearned ? "#1B5E20" : "#999",
+                                    Truncate(leaf.Word, 10))
 
-                                        @* Branch label *@
-                                        @SvgText(bx2, by2 - 8, "middle", 10, "#33691e", $"🌿 {Truncate(branch.TagName, 12)}", "600")
-                                        @SvgText(bx2, by2 + 6, "middle", 8, "#558b2f", $"{branch.LearnedWords}/{branch.TotalWords}")
-                                    }
-
-                                    @* Fruits along the tree *@
-                                    @for (int i = 0; i < Math.Min(Tree.Fruits.Count, 12); i++)
-                                    {
-                                        var fruit = Tree.Fruits[i];
-                                        var fx = 340 + (i % 4) * 40;
-                                        var fy = trunkY + 10 + (i / 4) * 30;
-                                        @SvgText(fx, fy, "middle", 16, null, fruit.IsMastered ? "🍎" : "🍏")
-                                    }
-
-                                    @* Stage info *@
-                                    @SvgText(400, 30, "middle", 14, "#1b5e20", $"{Tree.StageName}  •  Ур. {Tree.TreeLevel}  •  {Tree.TreeXp} XP дерева", "700")
-                                    break;
-
-                                case TreeView.Branch:
-                                    @if (SelectedBranch != null)
-                                    {
-                                        @SvgText(400, 30, "middle", 16, "#1b5e20", $"🌿 {SelectedBranch.TagName}", "700")
-                                        @SvgText(400, 50, "middle", 11, "#558b2f",
-                                            $"{SelectedBranch.LearnedWords} / {SelectedBranch.TotalWords} слов ({SelectedBranch.CompletionPercent.ToString("F0")}%)")
-
-                                        @* Render twigs as sub-branches *@
-                                        @for (int i = 0; i < SelectedBranch.Twigs.Count; i++)
-                                        {
-                                            var twig = SelectedBranch.Twigs[i];
-                                            var tw = twig;
-                                            var tx = 100 + i * (600 / Math.Max(1, SelectedBranch.Twigs.Count));
-                                            var ty = 120;
-                                            var twigH = 60 + twig.TotalWords * 0.5;
-                                            if (twigH > 280) twigH = 280;
-                                            var twigColor = twig.CompletionPercent >= 100 ? "#388e3c" : "#795548";
-
-                                            <line x1="@tx" y1="@ty" x2="@tx" y2="@F(ty + twigH)"
-                                                  stroke="@twigColor" stroke-width="4" stroke-linecap="round"
-                                                  class="svg-twig" @onclick="() => SelectTwig(tw)"
-                                                  style="cursor: pointer;"/>
-
-                                            @SvgText(tx, ty - 10, "middle", 10, "#33691e", $"🍃 {Truncate(twig.DictionaryName, 14)}", "600")
-                                            @SvgText(tx, ty + twigH + 16, "middle", 9, "#558b2f", $"{twig.LearnedWords}/{twig.TotalWords}")
-
-                                            @* Mini-leaf indicators along the twig *@
-                                            var miniCount = Math.Min(twig.Leaves.Count, 8);
-                                            @for (int j = 0; j < miniCount; j++)
-                                            {
-                                                var ly = ty + 10 + j * (twigH / (miniCount + 1));
-                                                var lx = tx + (j % 2 == 0 ? 10 : -10);
-                                                var lColor = twig.Leaves[j].IsLearned ? "#4caf50" : "#c8e6c9";
-                                                <circle cx="@F(lx)" cy="@F(ly)" r="4" fill="@lColor"
-                                                        stroke="#388e3c" stroke-width="0.5"/>
-                                            }
-                                        }
-                                    }
-                                    break;
-
-                                case TreeView.Twig:
-                                    @if (SelectedTwig != null)
-                                    {
-                                        @SvgText(400, 30, "middle", 16, "#1b5e20", $"🍃 {SelectedTwig.DictionaryName}", "700")
-                                        @SvgText(400, 50, "middle", 11, "#558b2f",
-                                            $"{SelectedTwig.LearnedWords} / {SelectedTwig.TotalWords} слов ({SelectedTwig.CompletionPercent.ToString("F0")}%)")
-
-                                        @* Leaves container — populated by JS scatterLeaves *@
-                                        <g id="leaves-container"></g>
-                                    }
-                                    break;
+                                idx++;
                             }
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            @* ── Side panel ── *@
-            <div class="col-lg-3">
-                @* Pour XP card *@
-                <div class="card shadow-sm border-0 mb-3">
-                    <div class="card-header bg-transparent">
-                        <h6 class="mb-0"><i class="bi bi-droplet-fill text-primary"></i> Влить XP в дерево</h6>
-                    </div>
-                    <div class="card-body">
-                        <p class="small text-muted mb-2">Доступно: <strong>@Tree.AvailableUserXp</strong> XP</p>
-                        <p class="small text-muted mb-2">Дерево: <strong>@Tree.TreeXp</strong> XP (ур. @Tree.TreeLevel)</p>
-                        <div class="input-group input-group-sm mb-2">
-                            <input type="number" class="form-control" @bind="PourAmount" min="1" max="@Tree.AvailableUserXp"
-                                   placeholder="Кол-во XP"/>
-                            <button class="btn btn-success" @onclick="PourXpAsync" disabled="@(IsPouringXp || PourAmount <= 0)">
-                                @if (IsPouringXp)
-                                {
-                                    <span class="spinner-border spinner-border-sm"></span>
-                                }
-                                else
-                                {
-                                    <span>💧 Влить</span>
-                                }
-                            </button>
-                        </div>
-                        @if (!string.IsNullOrEmpty(PourMessage))
-                        {
-                            <div class="alert alert-sm @(PourSuccess ? "alert-success" : "alert-danger") py-1 px-2 small mb-0">
-                                @PourMessage
-                            </div>
                         }
-                    </div>
-                </div>
 
-                @* Progress card *@
-                <div class="card shadow-sm border-0 mb-3">
-                    <div class="card-header bg-transparent">
-                        <h6 class="mb-0">📊 Прогресс</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between small mb-1">
-                            <span>@Tree.StageName → след. стадия</span>
-                            <span>@Tree.ProgressToNextStage.ToString("F0")%</span>
-                        </div>
-                        <div class="progress mb-2" style="height: 8px;">
-                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated"
-                                 style="width: @Tree.ProgressToNextStage.ToString("F1", System.Globalization.CultureInfo.InvariantCulture)%">
-                            </div>
-                        </div>
-                        <div class="small text-muted">
-                            Нужно: @Tree.WordsForNextStage слов · @Tree.XpForNextStage XP
-                        </div>
-                        <div class="small text-muted">
-                            Сейчас: @Tree.TotalWordsContributed слов · @Tree.TreeXp XP
-                        </div>
-                    </div>
-                </div>
-
-                @* Stage legend *@
-                <div class="card shadow-sm border-0 mb-3">
-                    <div class="card-header bg-transparent">
-                        <h6 class="mb-0">🌱 Стадии роста</h6>
-                    </div>
-                    <div class="card-body p-0">
-                        <table class="table table-sm mb-0 small">
-                            <thead><tr><th>Стадия</th><th>XP</th><th>Слова</th></tr></thead>
-                            <tbody>
-                                @foreach (var s in StageData)
-                                {
-                                    <tr class="@(Tree.CurrentStage == s.Stage ? "table-success" : "")">
-                                        <td>@s.Emoji @s.Name</td><td>@s.Xp</td><td>@s.Words</td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                @* Skins *@
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-transparent">
-                        <h6 class="mb-0"><i class="bi bi-palette"></i> Скины</h6>
-                    </div>
-                    <div class="card-body p-0">
-                        @if (Skins.Count > 0)
-                        {
-                            <div class="list-group list-group-flush">
-                                @foreach (var skin in Skins)
-                                {
-                                    <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center small @(skin.IsActive ? "active" : "")"
-                                            @onclick="() => SelectSkin(skin.Id)"
-                                            disabled="@(skin.IsActive || (!skin.IsOwned && skin.IsPremium))">
-                                        <span>@GetSkinPreviewEmoji(skin) @skin.Name</span>
-                                        @if (skin.IsActive)
-                                        {
-                                            <span class="badge bg-success">✓</span>
-                                        }
-                                        else if (skin.IsPremium && !skin.IsOwned)
-                                        {
-                                            <span class="badge bg-secondary">🪙 @skin.PriceCoins</span>
-                                        }
-                                    </button>
-                                }
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
+                        @* Back button *@
+                        <g style="cursor:pointer;" @onclick="ExitLeafView">
+                            <rect x="@F(cx - 50)" y="@F(Tree.CanvasHeight - 100)"
+                                  width="100" height="32" rx="16" fill="#5D4037"/>
+                            @SvgText(cx, Tree.CanvasHeight - 80, "middle", 12, "white", "← Назад", "600")
+                        </g>
+                    }
+                }
+            </svg>
         </div>
     </div>
 }
@@ -333,113 +393,124 @@ else
 }
 
 <style>
-    .tree-viewport {
-        transition: filter 0.5s ease;
-    }
-    .tree-viewport.wilting {
-        filter: grayscale(0.5) brightness(0.8);
-    }
-
-    /* SVG interactive elements */
-    .svg-branch:hover, .svg-twig:hover {
-        filter: brightness(1.3);
-        stroke-width: inherit;
-    }
-    .svg-branch { transition: filter 0.2s; }
-    .svg-twig   { transition: filter 0.2s; }
-
-    /* Leaf hover */
-    .tree-leaf:hover {
-        filter: brightness(1.2);
-        cursor: default;
-    }
-    .tree-leaf { transition: filter 0.15s; }
-
-    /* ── Cloud Level-Up Animation ── */
-    .cloud-overlay {
-        position: absolute;
-        inset: 0;
-        z-index: 50;
-        pointer-events: none;
+    .tree-layout {
         display: flex;
-        justify-content: center;
-        align-items: stretch;
+        height: calc(100vh - 60px);
+        overflow: hidden;
+        background: #f5f5f5;
+    }
+    .tree-sidebar {
+        width: 260px;
+        min-width: 260px;
+        padding: 12px;
+        overflow-y: auto;
+        background: var(--card-bg, #fff);
+        border-right: 1px solid var(--border-color, #e0e0e0);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .tree-canvas-wrap {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+        background: linear-gradient(180deg, #e3f2fd 0%, #e8f5e9 60%, #efebe9 100%);
+    }
+    .st-panel {
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: var(--bg-tertiary, #f9f9f9);
+        border: 1px solid var(--border-color, #eee);
+    }
+    .st-panel-header {
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+    }
+    .st-stat-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        margin-bottom: 4px;
+    }
+    .st-progress-label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: #888;
+        margin-bottom: 4px;
+    }
+    .wilt-banner {
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        padding: 6px 16px;
+        border-radius: 20px;
+        background: rgba(255, 152, 0, 0.9);
+        color: white;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    /* Cloud transition */
+    .cloud-overlay {
+        position: absolute; inset: 0; z-index: 50; pointer-events: none; display: flex;
     }
     .cloud-overlay.hidden { display: none; }
+    .cloud-panel {
+        width: 55%; height: 100%; position: absolute;
+        background: linear-gradient(135deg, #e8f5e9 0%, white 50%, #efebe9 100%);
+        opacity: 0.97;
+    }
+    .cloud-panel.cloud-left  { left: -55%; }
+    .cloud-panel.cloud-right { right: -55%; }
+    .cloud-overlay.clouds-in .cloud-left  { animation: cl-in-l 0.5s ease-out forwards; }
+    .cloud-overlay.clouds-in .cloud-right { animation: cl-in-r 0.5s ease-out forwards; }
+    .cloud-overlay.clouds-out .cloud-left  { animation: cl-out-l 0.5s ease-in forwards; }
+    .cloud-overlay.clouds-out .cloud-right { animation: cl-out-r 0.5s ease-in forwards; }
 
-    .cloud-svg {
-        position: absolute;
-        width: 55%;
-        height: 100%;
-    }
-    .cloud-left  { left: -55%; }
-    .cloud-right { right: -55%; }
+    @@keyframes cl-in-l  { from { transform: translateX(0); } to { transform: translateX(100%); } }
+    @@keyframes cl-in-r  { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+    @@keyframes cl-out-l { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    @@keyframes cl-out-r { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 
-    /* Clouds slide IN from edges */
-    .cloud-overlay.clouds-in .cloud-left {
-        animation: cloud-slide-in-left 0.6s ease-out forwards;
-    }
-    .cloud-overlay.clouds-in .cloud-right {
-        animation: cloud-slide-in-right 0.6s ease-out forwards;
-    }
-
-    /* Clouds slide OUT to edges */
-    .cloud-overlay.clouds-out .cloud-left {
-        animation: cloud-slide-out-left 0.6s ease-in forwards;
-    }
-    .cloud-overlay.clouds-out .cloud-right {
-        animation: cloud-slide-out-right 0.6s ease-in forwards;
-    }
-
-    @@keyframes cloud-slide-in-left {
-        from { transform: translateX(0); }
-        to   { transform: translateX(100%); }
-    }
-    @@keyframes cloud-slide-in-right {
-        from { transform: translateX(0); }
-        to   { transform: translateX(-100%); }
-    }
-    @@keyframes cloud-slide-out-left {
-        from { transform: translateX(100%); }
-        to   { transform: translateX(0); }
-    }
-    @@keyframes cloud-slide-out-right {
-        from { transform: translateX(-100%); }
-        to   { transform: translateX(0); }
+    @@media (max-width: 768px) {
+        .tree-sidebar {
+            position: fixed; left: -280px; top: 60px; bottom: 0; z-index: 40; transition: left 0.3s;
+        }
+        .tree-sidebar.open { left: 0; }
     }
 </style>
 
 @code {
+    // ─── State ───
     private KnowledgeTreeState? Tree;
-    private List<TreeSkinInfo> Skins = new();
     private bool IsLoading = true;
     private bool IsAuthenticated;
 
-    // Navigation state
-    private enum TreeView { Overview, Branch, Twig }
-    private TreeView CurrentView = TreeView.Overview;
+    // Selection
     private TreeBranch? SelectedBranch;
     private TreeTwig? SelectedTwig;
 
-    // Pour XP state
+    // Leaf view drill-down
+    private bool IsLeafView;
+    private TreeTwig? LeafViewTwig;
+
+    // Pour XP
     private long PourAmount;
     private bool IsPouringXp;
     private string PourMessage = "";
     private bool PourSuccess;
 
-    // For JS callback during cloud animation
-    private DotNetObjectReference<KnowledgeTree>? _selfRef;
+    // Pan state (viewBox manipulation)
+    private double VX, VY, VW, VH;
+    private bool IsDragging;
+    private double DragStartX, DragStartY;
+    private double DragVXStart, DragVYStart;
 
-    private static readonly (TreeStage Stage, string Emoji, string Name, string Xp, string Words)[] StageData =
-    [
-        (TreeStage.Seed,       "🌰", "Зерно",         "0",       "0"),
-        (TreeStage.Sprout,     "🌱", "Росток",         "100",     "10"),
-        (TreeStage.Sapling,    "🌿", "Саженец",        "500",     "50"),
-        (TreeStage.YoungTree,  "🌳", "Молодое дерево", "2 000",   "200"),
-        (TreeStage.MatureTree, "🌲", "Зрелое дерево",  "10 000",  "1 000"),
-        (TreeStage.MightyTree, "🏔️", "Могучее дерево", "30 000",  "3 000"),
-        (TreeStage.Legendary,  "🌍", "Легендарное",    "75 000",  "5 000"),
-    ];
+    private DotNetObjectReference<KnowledgeTree>? _selfRef;
 
     protected override async Task OnInitializedAsync()
     {
@@ -458,15 +529,11 @@ else
     {
         IsLoading = true;
         StateHasChanged();
-
         try
         {
-            var treeTask = TreeService.GetTreeStateAsync();
-            var skinsTask = TreeService.GetSkinsAsync();
-            await Task.WhenAll(treeTask, skinsTask);
-
-            Tree = treeTask.Result;
-            Skins = skinsTask.Result;
+            Tree = await TreeService.GetTreeStateAsync();
+            if (Tree != null)
+                ResetViewInternal();
         }
         finally
         {
@@ -475,84 +542,126 @@ else
         }
     }
 
-    // ── Navigation ──
+    // ─── Interaction ───
 
-    private void GoToTraining()
-    {
-        Navigation.NavigateTo("/training");
-    }
-
-    private async Task SelectBranch(TreeBranch branch)
+    private void OnBranchClick(TreeBranch branch)
     {
         SelectedBranch = branch;
         SelectedTwig = null;
-        CurrentView = TreeView.Branch;
-
-        await ZoomToCenter(1.2);
+        ZoomToSegment(branch.Segment, 200);
     }
 
-    private async Task SelectTwig(TreeTwig twig)
+    private void OnTwigClick(TreeTwig twig)
     {
         SelectedTwig = twig;
-        CurrentView = TreeView.Twig;
-        StateHasChanged();
-
-        // Wait for SVG to render, then scatter leaves via JS
-        await Task.Delay(50);
-        await ScatterLeaves(twig);
+        SelectedBranch = Tree?.Branches.FirstOrDefault(b => b.Twigs.Any(t => t.Id == twig.Id));
+        ZoomToSegment(twig.Segment, 120);
     }
 
-    private async Task NavigateBack()
+    private async Task DrillIntoTwig(TreeTwig twig)
     {
-        switch (CurrentView)
-        {
-            case TreeView.Twig:
-                SelectedTwig = null;
-                CurrentView = TreeView.Branch;
-                break;
-            case TreeView.Branch:
-                SelectedBranch = null;
-                CurrentView = TreeView.Overview;
-                break;
-        }
+        if (twig.Leaves.Count == 0) return;
 
-        await ResetZoom();
+        IsLeafView = false;
+        StateHasChanged();
+        await JS.InvokeVoidAsync("KnowledgeTreeInterop.playCloudTransition", "cloud-overlay", _selfRef);
+
+        LeafViewTwig = twig;
+        IsLeafView = true;
+        VX = Tree!.CanvasWidth / 2 - 500;
+        VY = Tree.CanvasHeight / 2 - 400;
+        VW = 1000;
+        VH = 800;
+        StateHasChanged();
     }
 
-    // ── Pour XP ──
+    private async Task ExitLeafView()
+    {
+        await JS.InvokeVoidAsync("KnowledgeTreeInterop.playCloudTransition", "cloud-overlay", _selfRef);
+        IsLeafView = false;
+        LeafViewTwig = null;
+        ResetViewInternal();
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnCloudsCovered()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ZoomToSegment(BotanicalSegment seg, double padding)
+    {
+        var minX = Math.Min(seg.X1, seg.X2) - padding;
+        var minY = Math.Min(seg.Y1, seg.Y2) - padding;
+        var w = Math.Abs(seg.X2 - seg.X1) + padding * 2;
+        var h = Math.Abs(seg.Y2 - seg.Y1) + padding * 2;
+        w = Math.Max(w, 400);
+        h = Math.Max(h, 300);
+        VX = minX; VY = minY; VW = w; VH = h;
+        StateHasChanged();
+    }
+
+    private void ResetView()
+    {
+        SelectedBranch = null;
+        SelectedTwig = null;
+        IsLeafView = false;
+        LeafViewTwig = null;
+        ResetViewInternal();
+    }
+
+    private void ResetViewInternal()
+    {
+        if (Tree == null) return;
+        VX = 0; VY = 0; VW = Tree.CanvasWidth; VH = Tree.CanvasHeight;
+        StateHasChanged();
+    }
+
+    // ─── Pan ───
+
+    private void OnPointerDown(MouseEventArgs e)
+    {
+        IsDragging = true;
+        DragStartX = e.ClientX; DragStartY = e.ClientY;
+        DragVXStart = VX; DragVYStart = VY;
+    }
+
+    private void OnPointerMove(MouseEventArgs e)
+    {
+        if (!IsDragging) return;
+        var dx = (e.ClientX - DragStartX) * (VW / 800);
+        var dy = (e.ClientY - DragStartY) * (VH / 600);
+        VX = DragVXStart - dx;
+        VY = DragVYStart - dy;
+    }
+
+    private void OnPointerUp(MouseEventArgs e) => IsDragging = false;
+
+    // ─── Pour XP ───
 
     private async Task PourXpAsync()
     {
         if (PourAmount <= 0 || Tree == null) return;
-
-        IsPouringXp = true;
-        PourMessage = "";
+        IsPouringXp = true; PourMessage = "";
         StateHasChanged();
 
         try
         {
-            var oldStage = Tree.CurrentStage;
             var result = await TreeService.PourXpAsync(PourAmount);
-
             if (result is { Success: true })
             {
                 PourSuccess = true;
                 PourMessage = result.Message;
-
-                // If stage changed, play cloud transition
                 if (result.StageChanged)
-                {
                     await JS.InvokeVoidAsync("KnowledgeTreeInterop.playCloudTransition", "cloud-overlay", _selfRef);
-                }
-
-                // Reload data
                 await LoadDataAsync();
                 PourAmount = 0;
             }
             else
             {
                 PourSuccess = false;
-                PourMessage = result?.Message ?? "Ошибка при вливании XP";
+                PourMessage = result?.Message ?? "Ошибка";
             }
         }
         finally
@@ -562,65 +671,51 @@ else
         }
     }
 
-    /// <summary>Called from JS when clouds fully cover the tree — swap sprite</summary>
-    [JSInvokable]
-    public void OnCloudsCovered()
+    private void GoToTraining() => Navigation.NavigateTo("/training");
+
+    // ─── SVG Helpers ───
+
+    private static string F(double v) =>
+        v.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+    private static string Inv(double v) =>
+        v.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+    private static string Truncate(string s, int max) =>
+        s.Length <= max ? s : s[..(max - 1)] + "…";
+
+    /// <summary>Builds the trunk as a slightly curved quadratic path</summary>
+    private string TrunkPath()
     {
-        // The tree data is already refreshed; Blazor re-renders with new stage automatically
-        InvokeAsync(StateHasChanged);
+        if (Tree == null) return "";
+        var t = Tree.Trunk;
+        var cpx = (t.X1 + t.X2) / 2 + 12;
+        var cpy = (t.Y1 + t.Y2) / 2;
+        return $"M {F(t.X1)},{F(t.Y1)} Q {F(cpx)},{F(cpy)} {F(t.X2)},{F(t.Y2)}";
     }
 
-    // ── Skins ──
+    /// <summary>Cubic bezier path string</summary>
+    private static string BezierPath(BotanicalSegment s, double cp1x, double cp1y, double cp2x, double cp2y) =>
+        $"M {F(s.X1)},{F(s.Y1)} C {F(cp1x)},{F(cp1y)} {F(cp2x)},{F(cp2y)} {F(s.X2)},{F(s.Y2)}";
 
-    private async Task SelectSkin(int skinId)
+    /// <summary>Approximate midpoint on a cubic bezier at t=0.5</summary>
+    private static (double x, double y) BezierMid(BotanicalSegment s, double cp1x, double cp1y, double cp2x, double cp2y)
     {
-        var success = await TreeService.ChangeSkinAsync(skinId);
-        if (success)
-            await LoadDataAsync();
+        const double t = 0.5;
+        var u = 1 - t;
+        var x = u*u*u*s.X1 + 3*u*u*t*cp1x + 3*u*t*t*cp2x + t*t*t*s.X2;
+        var y = u*u*u*s.Y1 + 3*u*u*t*cp1y + 3*u*t*t*cp2y + t*t*t*s.Y2;
+        return (x, y);
     }
 
-    private string GetSkinPreviewEmoji(TreeSkinInfo skin)
+    private static MarkupString SvgText(double x, double y, string anchor, int fontSize,
+        string? fill, string content, string? fontWeight = null)
     {
-        var emojis = skin.StageEmojis.Split('|');
-        return emojis.Length > 3 ? emojis[3] : (emojis.Length > 0 ? emojis[0] : "🌳");
-    }
-
-    // ── JS Interop Helpers ──
-
-    private async Task ScatterLeaves(TreeTwig twig)
-    {
-        var leavesData = twig.Leaves.Select(l => new { wordId = l.WordId, word = l.Word, isLearned = l.IsLearned });
-        var bbox = new { x = 80, y = 70, width = 640, height = 380 };
-        await JS.InvokeVoidAsync("KnowledgeTreeInterop.scatterLeaves", "leaves-container", leavesData, bbox);
-    }
-
-    private async Task ZoomToCenter(double scale)
-    {
-        await JS.InvokeVoidAsync("KnowledgeTreeInterop.zoomTo", "tree-viewport", 400, 250, scale, 400);
-    }
-
-    private async Task ResetZoom()
-    {
-        await JS.InvokeVoidAsync("KnowledgeTreeInterop.resetZoom", "tree-viewport", 400);
-    }
-
-    // ── Helpers ──
-
-    private static string F(double v) => v.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
-    private static string Truncate(string s, int max) => s.Length <= max ? s : s[..(max - 1)] + "…";
-
-    /// <summary>Renders an SVG text element as MarkupString (workaround for Blazor &lt;text&gt; conflict)</summary>
-    private static MarkupString SvgText(double x, double y, string anchor, int fontSize, string? fill, string content, string? fontWeight = null)
-    {
-        var fillAttr = fill != null ? $" fill=\"{System.Web.HttpUtility.HtmlAttributeEncode(fill)}\"" : "";
-        var weightAttr = fontWeight != null ? $" font-weight=\"{System.Web.HttpUtility.HtmlAttributeEncode(fontWeight)}\"" : "";
-        var encodedContent = System.Web.HttpUtility.HtmlEncode(content);
+        var fillAttr = fill != null ? " fill=\"" + System.Web.HttpUtility.HtmlAttributeEncode(fill) + "\"" : "";
+        var weightAttr = fontWeight != null ? " font-weight=\"" + System.Web.HttpUtility.HtmlAttributeEncode(fontWeight) + "\"" : "";
+        var enc = System.Web.HttpUtility.HtmlEncode(content);
         return new MarkupString(
-            $"<text x=\"{F(x)}\" y=\"{F(y)}\" text-anchor=\"{anchor}\" font-size=\"{fontSize}\"{fillAttr}{weightAttr}>{encodedContent}</text>");
+            "<text x=\"" + F(x) + "\" y=\"" + F(y) + "\" text-anchor=\"" + anchor
+            + "\" font-size=\"" + fontSize + "\"" + fillAttr + weightAttr + ">" + enc + "</text>");
     }
 
-    public void Dispose()
-    {
-        _selfRef?.Dispose();
-    }
+    public void Dispose() => _selfRef?.Dispose();
 }

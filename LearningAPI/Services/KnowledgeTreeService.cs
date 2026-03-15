@@ -26,6 +26,8 @@ public class KnowledgeTreeService : IKnowledgeTreeService
 
     private const int MaxLeavesPerTwig = 100;
     private const int DefaultMaxVisibleBranches = 6;
+    private const double CanvasW = 2000;
+    private const double CanvasH = 1800;
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
     private static readonly (TreeStage Stage, long XpThreshold, int WordsThreshold, string Name)[] StageThresholds =
@@ -46,7 +48,7 @@ public class KnowledgeTreeService : IKnowledgeTreeService
         _logger = logger;
     }
 
-    private static string CacheKey(int userId) => $"knowledge_tree:{userId}";
+    private static string CacheKey(int userId) => $"knowledge_tree:v3:{userId}";
 
     public async Task<KnowledgeTreeState> GetTreeStateAsync(int userId, CancellationToken ct = default)
     {
@@ -207,6 +209,8 @@ public class KnowledgeTreeService : IKnowledgeTreeService
             IsWilting = tree.IsWilting,
             DaysSinceActivity = tree.DaysSinceActivity,
             MaxVisibleBranches = DefaultMaxVisibleBranches,
+            CanvasWidth = CanvasW,
+            CanvasHeight = CanvasH,
         };
 
         // Progress to next stage
@@ -230,7 +234,7 @@ public class KnowledgeTreeService : IKnowledgeTreeService
             state.ProgressToNextStage = 100;
         }
 
-        // Build Branches (by Tag) → Twigs (Dictionaries) → Leaves (Words)
+        // ─── Build Botanical Dendrogram ─────────────────────────
         var dictionaries = await _context.Dictionaries
             .Where(d => d.UserId == userId)
             .Select(d => new
@@ -250,68 +254,353 @@ public class KnowledgeTreeService : IKnowledgeTreeService
             })
             .ToListAsync(ct);
 
-        // Group dictionaries by tag
-        var tagGroups = new Dictionary<string, List<TreeTwig>>();
-
-        foreach (var dict in dictionaries)
+        // Group dictionaries by tag → branches
+        var tagGroups = new Dictionary<string, List<int>>();
+        for (int i = 0; i < dictionaries.Count; i++)
         {
+            var dict = dictionaries[i];
             var tags = string.IsNullOrWhiteSpace(dict.Tags)
                 ? new[] { "Без тега" }
                 : dict.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-            var twig = new TreeTwig
-            {
-                DictionaryId = dict.Id,
-                DictionaryName = dict.Name,
-                TotalWords = dict.TotalWordsCount,
-                LearnedWords = dict.LearnedCount,
-                CompletionPercent = dict.TotalWordsCount > 0
-                    ? dict.LearnedCount * 100.0 / dict.TotalWordsCount
-                    : 0,
-                Leaves = dict.Words.Select(w => new TreeLeaf
-                {
-                    WordId = w.Id,
-                    Word = w.OriginalWord,
-                    IsLearned = w.IsLearned
-                }).ToList()
-            };
-
-            foreach (var tag in tags)
+            foreach (var tag in tags.Take(1)) // first tag only (avoid duplicate dict in multiple branches)
             {
                 if (!tagGroups.ContainsKey(tag))
-                    tagGroups[tag] = new List<TreeTwig>();
-                tagGroups[tag].Add(twig);
+                    tagGroups[tag] = new List<int>();
+                tagGroups[tag].Add(i);
             }
         }
 
-        state.Branches = tagGroups
-            .Select(g => new TreeBranch
-            {
-                TagName = g.Key,
-                Twigs = g.Value,
-                TotalWords = g.Value.Sum(t => t.TotalWords),
-                LearnedWords = g.Value.Sum(t => t.LearnedWords),
-                CompletionPercent = g.Value.Sum(t => t.TotalWords) > 0
-                    ? g.Value.Sum(t => t.LearnedWords) * 100.0 / g.Value.Sum(t => t.TotalWords)
-                    : 0
-            })
-            .OrderByDescending(b => b.TotalWords)
-            .Take(DefaultMaxVisibleBranches)
+        // ─── Botanical layout from bottom-center upward ─────────
+        var trunkBaseX = CanvasW / 2;
+        var trunkBaseY = CanvasH - 60;   // ground level
+        var trunkTopY = CanvasH * 0.40;  // top of trunk
+        var trunkTopX = trunkBaseX + 6;  // slight lean for organic feel
+
+        state.Trunk = new BotanicalSegment
+        {
+            X1 = trunkBaseX, Y1 = trunkBaseY,
+            X2 = trunkTopX,  Y2 = trunkTopY
+        };
+
+        var branchCount = tagGroups.Count;
+        if (branchCount == 0)
+            return state;
+
+        // Sort branches: heaviest tags at the bottom of trunk, lightest at top
+        var sortedTags = tagGroups
+            .Select(kv => (Tag: kv.Key, DictIndices: kv.Value,
+                TotalWords: kv.Value.Sum(i => dictionaries[i].TotalWordsCount)))
+            .OrderByDescending(x => x.TotalWords)
             .ToList();
 
-        // Fruits = grammar rules
-        state.Fruits = await _context.GrammarProgresses
-            .Where(gp => gp.UserId == userId)
-            .Select(gp => new TreeFruit
+        // Global max word count across all tags — used for proportional sizing
+        var globalMaxWords = sortedTags.Max(x => x.TotalWords);
+        if (globalMaxWords < 1) globalMaxWords = 1;
+
+        var rng = new Random(userId); // deterministic per user
+
+        // Pre-generate organic side pattern: not strict alternation
+        // Real trees sometimes have 2-3 branches on the same side in a row
+        var sides = new double[sortedTags.Count];
+        var lastSide = 1.0;
+        var sameCount = 0;
+        for (int si = 0; si < sides.Length; si++)
+        {
+            // After 1-2 branches on same side, switch; occasionally allow 3
+            var switchChance = sameCount == 0 ? 0.35 : sameCount == 1 ? 0.65 : 0.90;
+            if (rng.NextDouble() < switchChance)
             {
-                RuleId = gp.RuleId,
-                RuleName = gp.Rule!.Title,
-                KnowledgeLevel = gp.KnowledgeLevel,
-                IsMastered = gp.KnowledgeLevel >= 4
-            })
-            .ToListAsync(ct);
+                lastSide = -lastSide;
+                sameCount = 0;
+            }
+            else
+            {
+                sameCount++;
+            }
+            sides[si] = lastSide;
+        }
+
+        for (int branchIdx = 0; branchIdx < sortedTags.Count; branchIdx++)
+        {
+            var (tag, dictIndices, tagTotalWords) = sortedTags[branchIdx];
+
+            // ── Weight ratio 0..1 (1 = heaviest branch) + random jitter for liveliness ──
+            var weightRatio = (double)tagTotalWords / globalMaxWords;
+            var jitter = (rng.NextDouble() - 0.5) * 0.35; // ±17% random variation
+            var jitteredWeight = Math.Clamp(weightRatio + jitter, 0.05, 1.0);
+
+            // Attachment position along trunk with organic spacing
+            var tBase = sortedTags.Count == 1
+                ? 0.50
+                : 0.18 + 0.74 * branchIdx / (sortedTags.Count - 1);
+            // Larger random offset (±8%) so branches aren't evenly spaced
+            var t = Math.Clamp(tBase + (rng.NextDouble() - 0.5) * 0.16, 0.12, 0.96);
+
+            var attachX = trunkBaseX + (trunkTopX - trunkBaseX) * t;
+            var attachY = trunkBaseY + (trunkTopY - trunkBaseY) * t;
+
+            // Organic side selection (not strict alternation)
+            var side = sides[branchIdx];
+
+            // ── Organic angle: wide range with heavy randomness ──
+            // Base angle 25°-55° from vertical, then ±15° random wobble
+            var baseAngleDeg = 25.0 + 30.0 * jitteredWeight;
+            var angleDeg = baseAngleDeg + (rng.NextDouble() - 0.5) * 30.0;
+            angleDeg = Math.Clamp(angleDeg, 20.0, 70.0);
+            var angleFromVertical = side * angleDeg;
+            var angleRad = (angleFromVertical - 90.0) * Math.PI / 180.0;
+
+            // ── Organic length: wide variance (±30%) ──
+            var baseLen = 150.0 + 230.0 * jitteredWeight;
+            var branchLen = baseLen * (0.70 + rng.NextDouble() * 0.60); // ±30%
+
+            var tipX = attachX + Math.Cos(angleRad) * branchLen;
+            var tipY = attachY + Math.Sin(angleRad) * branchLen;
+
+            // Clamp within canvas
+            tipX = Math.Clamp(tipX, 100, CanvasW - 100);
+            tipY = Math.Clamp(tipY, 60, attachY - 30); // tip must always be above attach point
+
+            // ── Safe Bezier CPs with organic sway ──
+            var dy = attachY - tipY;
+            var dx = tipX - attachX;
+            // Randomize CP positions more broadly for organic curves
+            var cp1Frac = 0.20 + rng.NextDouble() * 0.20; // 20%-40%
+            var cp2Frac = 0.55 + rng.NextDouble() * 0.25; // 55%-80%
+            var cp1x = attachX + dx * cp1Frac + side * (10.0 + rng.NextDouble() * 30.0);
+            var cp1y = attachY - dy * cp1Frac - rng.NextDouble() * 15.0;
+            var cp2x = attachX + dx * cp2Frac + side * (rng.NextDouble() * 20.0 - 5.0);
+            var cp2y = attachY - dy * cp2Frac - rng.NextDouble() * 10.0;
+
+            // Guarantee monotonic upward progression: cp1y > cp2y > tipY (screen coords)
+            cp1y = Math.Clamp(cp1y, tipY, attachY);
+            cp2y = Math.Clamp(cp2y, tipY, cp1y);
+
+            var tagDicts = dictIndices.Select(i => dictionaries[i]).ToList();
+            var tagTotal = tagDicts.Sum(d => d.TotalWordsCount);
+            var tagLearned = tagDicts.Sum(d => d.LearnedCount);
+
+            // ── Dynamic stroke-width: proportional + random variation (6px–18px) ──
+            var branchStroke = Math.Clamp(6.0 + 12.0 * jitteredWeight + (rng.NextDouble() - 0.5) * 2.0, 6, 18);
+
+            var branch = new TreeBranch
+            {
+                Id = $"branch-{tag.GetHashCode():x8}",
+                TagName = tag,
+                Segment = new BotanicalSegment { X1 = attachX, Y1 = attachY, X2 = tipX, Y2 = tipY },
+                Cp1X = cp1x, Cp1Y = cp1y,
+                Cp2X = cp2x, Cp2Y = cp2y,
+                StrokeWidth = branchStroke,
+                TotalWords = tagTotal,
+                LearnedWords = tagLearned,
+                Progress = tagTotal > 0 ? (double)tagLearned / tagTotal : 0,
+            };
+
+            // ─── Twigs (dictionaries) off this branch ───────────
+            // Sort twigs by word count DESCENDING: heaviest attach near trunk (low t), lightest near tip (high t)
+            var sortedDicts = tagDicts
+                .OrderByDescending(d => d.TotalWordsCount)
+                .ToList();
+            var twigCount = sortedDicts.Count;
+            var branchMaxWords = sortedDicts.Count > 0 ? sortedDicts[0].TotalWordsCount : 1;
+            if (branchMaxWords < 1) branchMaxWords = 1;
+
+            // ── Even angular fan: distribute twigs across ±50° arc relative to branch direction ──
+            var branchAngle = Math.Atan2(tipY - attachY, tipX - attachX);
+
+            for (int ti = 0; ti < twigCount; ti++)
+            {
+                var dict = sortedDicts[ti];
+
+                // Twig weight within this branch (1 = heaviest twig) + jitter
+                var twigWeightRaw = (double)dict.TotalWordsCount / branchMaxWords;
+                var twigJitter = (rng.NextDouble() - 0.5) * 0.25;
+                var twigWeight = Math.Clamp(twigWeightRaw + twigJitter, 0.05, 1.0);
+
+                // Heaviest twig (ti=0) at t≈0.20, lightest at t≈0.85, with random offset
+                var twigTBase = twigCount == 1
+                    ? 0.55
+                    : 0.20 + 0.65 * ti / (twigCount - 1);
+                var twigT = Math.Clamp(twigTBase + (rng.NextDouble() - 0.5) * 0.06, 0.15, 0.90);
+
+                // Point on the parent branch Bezier curve
+                var twAttachX = Bezier(attachX, cp1x, cp2x, tipX, twigT);
+                var twAttachY = Bezier(attachY, cp1y, cp2y, tipY, twigT);
+
+                // ── Alternating sides: twigs grow left/right of branch like a real tree ──
+                var twigSide = (ti % 2 == 0) ? 1.0 : -1.0;
+                if (rng.NextDouble() < 0.20) twigSide = -twigSide; // occasional same-side pair
+                // Angle offset from branch: 20°-55° perpendicular, with weight & randomness
+                var twigOffsetRad = (20.0 + 35.0 * (1.0 - twigWeight * 0.4)
+                    + (rng.NextDouble() - 0.5) * 18.0) * Math.PI / 180.0;
+                var twigAngle = branchAngle + twigSide * twigOffsetRad
+                    + (rng.NextDouble() - 0.5) * 0.12;
+
+                // ── Dynamic twig length: heavy twigs longer, light shorter, with ±20% jitter ──
+                var twigBaseLen = 60.0 + 100.0 * twigWeight;
+                var twigLen = twigBaseLen * (0.80 + rng.NextDouble() * 0.40);
+
+                var twTipX = twAttachX + Math.Cos(twigAngle) * twigLen;
+                var twTipY = twAttachY + Math.Sin(twigAngle) * twigLen;
+
+                // Tip must be above attach (upward growth)
+                twTipY = Math.Min(twTipY, twAttachY - 15);
+                twTipX = Math.Clamp(twTipX, 60, CanvasW - 60);
+                twTipY = Math.Clamp(twTipY, 40, CanvasH - 100);
+
+                // ── Curved twig Bezier CPs: perpendicular sway for organic curvature ──
+                var twDy = twAttachY - twTipY;
+                var twDx = twTipX - twAttachX;
+                var twigPerpAngle = twigAngle + Math.PI / 2.0;
+                // Random sway direction & magnitude perpendicular to twig
+                var curveSway = (rng.NextDouble() < 0.5 ? 1.0 : -1.0)
+                    * (12.0 + rng.NextDouble() * 24.0); // 12-36px
+                var twCp1x = twAttachX + twDx * 0.33
+                    + Math.Cos(twigPerpAngle) * curveSway * 0.8;
+                var twCp1y = twAttachY - twDy * (0.30 + rng.NextDouble() * 0.10)
+                    + Math.Sin(twigPerpAngle) * curveSway * 0.8;
+                var twCp2x = twAttachX + twDx * 0.66
+                    + Math.Cos(twigPerpAngle) * curveSway * 0.4;
+                var twCp2y = twAttachY - twDy * (0.60 + rng.NextDouble() * 0.10)
+                    + Math.Sin(twigPerpAngle) * curveSway * 0.4;
+
+                // Clamp CPs monotonically: attachY >= cp1y >= cp2y >= tipY
+                twCp1y = Math.Clamp(twCp1y, twTipY, twAttachY);
+                twCp2y = Math.Clamp(twCp2y, twTipY, twCp1y);
+
+                // ── Dynamic twig stroke-width: proportional (2.5px–7px) ──
+                var twigStroke = Math.Clamp(2.5 + 4.5 * twigWeight, 2.5, 7);
+
+                var twig = new TreeTwig
+                {
+                    Id = $"twig-{dict.Id}",
+                    DictionaryId = dict.Id,
+                    DictionaryName = dict.Name,
+                    Segment = new BotanicalSegment { X1 = twAttachX, Y1 = twAttachY, X2 = twTipX, Y2 = twTipY },
+                    Cp1X = twCp1x, Cp1Y = twCp1y,
+                    Cp2X = twCp2x, Cp2Y = twCp2y,
+                    StrokeWidth = twigStroke,
+                    TotalWords = dict.TotalWordsCount,
+                    LearnedWords = dict.LearnedCount,
+                    Progress = dict.TotalWordsCount > 0 ? (double)dict.LearnedCount / dict.TotalWordsCount : 0,
+                };
+
+                // ─── Sprigs (mini-branches) along twig Bezier holding leaves ───
+                var leafCount = Math.Min(dict.Words.Count, MaxLeavesPerTwig);
+                var sprigCount = Math.Max(2, (int)Math.Ceiling(leafCount / 4.0));
+                sprigCount = Math.Min(sprigCount, 14);
+                var leafIdx = 0;
+
+                // 20% of leaves go directly on the twig for fullness
+                var twigLeafCount = Math.Max(1, (int)(leafCount * 0.20));
+                var sprigLeafCount = leafCount - twigLeafCount;
+
+                // ── First: place sprig leaves (80%) ──
+                for (int ci = 0; ci < sprigCount && leafIdx < sprigLeafCount; ci++)
+                {
+                    // Sprig attachment point on twig Bezier
+                    var sbt = 0.20 + 0.78 * ci / Math.Max(sprigCount - 1, 1);
+                    var spBaseX = Bezier(twAttachX, twCp1x, twCp2x, twTipX, sbt);
+                    var spBaseY = Bezier(twAttachY, twCp1y, twCp2y, twTipY, sbt);
+
+                    // Sprig grows perpendicular to twig, alternating sides
+                    var sprigSide = (ci % 2 == 0) ? 1.0 : -1.0;
+                    if (rng.NextDouble() < 0.18) sprigSide = -sprigSide;
+                    var sprigAngle = twigAngle + sprigSide * (Math.PI / 2.0)
+                        + (rng.NextDouble() - 0.5) * 0.44;
+                    var sprigLen = 10.0 + rng.NextDouble() * 25.0;
+                    var spTipX = spBaseX + Math.Cos(sprigAngle) * sprigLen;
+                    var spTipY = spBaseY + Math.Sin(sprigAngle) * sprigLen;
+
+                    // Quadratic Bezier CP: perpendicular offset for slight curvature
+                    var spMidX = (spBaseX + spTipX) / 2.0;
+                    var spMidY = (spBaseY + spTipY) / 2.0;
+                    var spPerpAngle = sprigAngle + Math.PI / 2.0;
+                    var spCurve = (rng.NextDouble() < 0.5 ? 1.0 : -1.0)
+                        * (3.0 + rng.NextDouble() * 8.0); // 3-11px sway
+                    var spCpX = spMidX + Math.Cos(spPerpAngle) * spCurve;
+                    var spCpY = spMidY + Math.Sin(spPerpAngle) * spCurve;
+
+                    var sprigStroke = 1.0 + rng.NextDouble() * 1.5;
+
+                    var sprig = new TreeSprig
+                    {
+                        X1 = spBaseX, Y1 = spBaseY,
+                        X2 = spTipX,  Y2 = spTipY,
+                        CpX = spCpX,  CpY = spCpY,
+                        StrokeWidth = sprigStroke,
+                    };
+
+                    var leavesHere = ci == sprigCount - 1
+                        ? sprigLeafCount - leafIdx
+                        : Math.Min(2 + (int)(rng.NextDouble() * 4), sprigLeafCount - leafIdx);
+
+                    for (int cli = 0; cli < leavesHere && leafIdx < sprigLeafCount; cli++)
+                    {
+                        var w = dict.Words[leafIdx];
+                        var la = rng.NextDouble() * 2.0 * Math.PI;
+                        var ld = 1.5 + rng.NextDouble() * 6.0;
+                        var lx = spTipX + Math.Cos(la) * ld;
+                        var ly = spTipY + Math.Sin(la) * ld;
+                        var leafRot = sprigAngle * 180.0 / Math.PI
+                                      + (rng.NextDouble() - 0.5) * 70.0;
+
+                        sprig.Leaves.Add(new TreeLeaf
+                        {
+                            WordId = w.Id,
+                            Word = w.OriginalWord,
+                            IsLearned = w.IsLearned,
+                            X = lx, Y = ly,
+                            Rotation = leafRot,
+                        });
+                        leafIdx++;
+                    }
+
+                    twig.Sprigs.Add(sprig);
+                }
+
+                // ── Then: place 20% leaves directly on the twig Bezier for fullness ──
+                for (int tli = 0; tli < twigLeafCount && leafIdx < leafCount; tli++)
+                {
+                    var w = dict.Words[leafIdx];
+                    var twLeafT = 0.15 + 0.80 * rng.NextDouble();
+                    var twLeafBaseX = Bezier(twAttachX, twCp1x, twCp2x, twTipX, twLeafT);
+                    var twLeafBaseY = Bezier(twAttachY, twCp1y, twCp2y, twTipY, twLeafT);
+                    // Offset slightly to each side of twig
+                    var twLeafPerp = twigAngle + Math.PI / 2.0;
+                    var twLeafSide = (tli % 2 == 0) ? 1.0 : -1.0;
+                    var twLeafDist = 2.0 + rng.NextDouble() * 8.0;
+                    var lx = twLeafBaseX + Math.Cos(twLeafPerp) * twLeafDist * twLeafSide;
+                    var ly = twLeafBaseY + Math.Sin(twLeafPerp) * twLeafDist * twLeafSide;
+                    var leafRot = twigAngle * 180.0 / Math.PI
+                                  + twLeafSide * 20.0 + (rng.NextDouble() - 0.5) * 60.0;
+
+                    twig.Leaves.Add(new TreeLeaf
+                    {
+                        WordId = w.Id,
+                        Word = w.OriginalWord,
+                        IsLearned = w.IsLearned,
+                        X = lx, Y = ly,
+                        Rotation = leafRot,
+                    });
+                    leafIdx++;
+                }
+
+                branch.Twigs.Add(twig);
+            }
+
+            state.Branches.Add(branch);
+        }
 
         return state;
+    }
+
+    /// <summary>Cubic bezier interpolation for a single axis</summary>
+    private static double Bezier(double p0, double p1, double p2, double p3, double t)
+    {
+        var u = 1 - t;
+        return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
     }
 
     private static TreeStage CalculateStage(long treeXp, int learnedWords)
