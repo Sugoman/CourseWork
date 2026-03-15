@@ -85,6 +85,9 @@ public class TreeBranch
     public double Progress { get; set; }
 
     public List<TreeTwig> Twigs { get; set; } = new();
+
+    /// <summary>Decorative leaves growing directly on the branch for visual fullness</summary>
+    public List<TreeLeaf> Leaves { get; set; } = new();
 }
 
 /// <summary>

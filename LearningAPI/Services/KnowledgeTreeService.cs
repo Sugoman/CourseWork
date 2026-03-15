@@ -60,7 +60,7 @@ public class KnowledgeTreeService : IKnowledgeTreeService
         _logger = logger;
     }
 
-    private static string CacheKey(int userId) => $"knowledge_tree:v5:{userId}";
+    private static string CacheKey(int userId) => $"knowledge_tree:v7:{userId}";
 
     public async Task<KnowledgeTreeState> GetTreeStateAsync(int userId, CancellationToken ct = default)
     {
@@ -342,6 +342,9 @@ public class KnowledgeTreeService : IKnowledgeTreeService
             sides[si] = lastSide;
         }
 
+        // Track used branch angles for anti-overlap repulsion
+        var _usedBranchAngles = new double[sortedTags.Count];
+
         for (int branchIdx = 0; branchIdx < sortedTags.Count; branchIdx++)
         {
             var (tag, dictIndices, tagTotalWords) = sortedTags[branchIdx];
@@ -364,12 +367,23 @@ public class KnowledgeTreeService : IKnowledgeTreeService
             // Organic side selection (not strict alternation)
             var side = sides[branchIdx];
 
-            // ── Organic angle: wide range with heavy randomness ──
-            // Base angle 25°-55° from vertical, then ±15° random wobble
-            var baseAngleDeg = 25.0 + 30.0 * jitteredWeight;
-            var angleDeg = baseAngleDeg + (rng.NextDouble() - 0.5) * 30.0;
-            angleDeg = Math.Clamp(angleDeg, 20.0, 70.0);
+            // ── Organic angle: wide range with heavy randomness + anti-overlap ──
+            var baseAngleDeg = 40.0 + 25.0 * jitteredWeight;
+            var angleDeg = baseAngleDeg + (rng.NextDouble() - 0.5) * 25.0;
+            angleDeg = Math.Clamp(angleDeg, 35.0, 75.0);
             var angleFromVertical = side * angleDeg;
+
+            // Anti-overlap repulsion: push away from previous branches on same side
+            for (int pi = 0; pi < branchIdx; pi++)
+            {
+                if (sides[pi] != side) continue;
+                var prevAngle = _usedBranchAngles[pi];
+                var diff = Math.Abs(angleFromVertical - prevAngle);
+                if (diff < 15.0)
+                    angleFromVertical += Math.Sign(angleFromVertical - prevAngle) * (15.0 - diff);
+            }
+            angleFromVertical = Math.Clamp(angleFromVertical, side > 0 ? 35.0 : -80.0, side > 0 ? 80.0 : -35.0);
+            _usedBranchAngles[branchIdx] = angleFromVertical;
             var angleRad = (angleFromVertical - 90.0) * Math.PI / 180.0;
 
             // ── Organic length: wide variance (±30%) ──
@@ -427,6 +441,31 @@ public class KnowledgeTreeService : IKnowledgeTreeService
             var twigCount = sortedDicts.Count;
             var branchMaxWords = sortedDicts.Count > 0 ? sortedDicts[0].TotalWordsCount : 1;
             if (branchMaxWords < 1) branchMaxWords = 1;
+
+            // ── Generate decorative leaves along the branch itself ──
+            var branchLeafCount = 3 + (int)(6.0 * weightRatio) + (int)(rng.NextDouble() * 4);
+            for (int bli = 0; bli < branchLeafCount; bli++)
+            {
+                var blt = 0.15 + 0.70 * bli / Math.Max(branchLeafCount - 1, 1)
+                    + (rng.NextDouble() - 0.5) * 0.08;
+                blt = Math.Clamp(blt, 0.10, 0.90);
+                var blBaseX = Bezier(attachX, cp1x, cp2x, tipX, blt);
+                var blBaseY = Bezier(attachY, cp1y, cp2y, tipY, blt);
+                var blPerp = angleRad + Math.PI / 2.0;
+                var blSide = (bli % 2 == 0) ? 1.0 : -1.0;
+                var blDist = 6.0 + rng.NextDouble() * 18.0;
+                var blX = blBaseX + Math.Cos(blPerp) * blDist * blSide;
+                var blY = blBaseY + Math.Sin(blPerp) * blDist * blSide;
+                var blRot = angleFromVertical + blSide * 25.0 + (rng.NextDouble() - 0.5) * 50.0;
+                branch.Leaves.Add(new TreeLeaf
+                {
+                    WordId = 0,
+                    Word = "",
+                    IsLearned = branch.Progress > 0.5,
+                    X = blX, Y = blY,
+                    Rotation = blRot,
+                });
+            }
 
             // ── Even angular fan: distribute twigs across ±50° arc relative to branch direction ──
             var branchAngle = Math.Atan2(tipY - attachY, tipX - attachX);
@@ -566,7 +605,10 @@ public class KnowledgeTreeService : IKnowledgeTreeService
                         var spLeafBaseX = QuadBezier(spBaseX, spCpX, spTipX, spLeafT);
                         var spLeafBaseY = QuadBezier(spBaseY, spCpY, spTipY, spLeafT);
                         var la = rng.NextDouble() * 2.0 * Math.PI;
-                        var ld = 3.0 + rng.NextDouble() * 10.0;
+                        // Irregular radius: mix short + long for ragged crown edge
+                        var ld = rng.NextDouble() < 0.3
+                            ? 10.0 + rng.NextDouble() * 22.0   // 30% outliers fly far
+                            : 2.0 + rng.NextDouble() * 10.0;  // 70% stay closer
                         var lx = spLeafBaseX + Math.Cos(la) * ld;
                         var ly = spLeafBaseY + Math.Sin(la) * ld;
                         var leafRot = sprigAngle * 180.0 / Math.PI
