@@ -30,6 +30,18 @@ public class KnowledgeTreeService : IKnowledgeTreeService
     private const double CanvasH = 1800;
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
+    // Stage-based limits: (maxBranches, maxTwigsPerBranch)
+    private static readonly Dictionary<TreeStage, (int MaxBranches, int MaxTwigsPerBranch)> StageLimits = new()
+    {
+        [TreeStage.Seed]       = (0,  0),
+        [TreeStage.Sprout]     = (0,  0),
+        [TreeStage.Sapling]    = (4,  4),
+        [TreeStage.YoungTree]  = (10, 10),
+        [TreeStage.MatureTree] = (15, 30),
+        [TreeStage.MightyTree] = (25, 50),
+        [TreeStage.Legendary]  = (50, 70),
+    };
+
     private static readonly (TreeStage Stage, long XpThreshold, int WordsThreshold, string Name)[] StageThresholds =
     [
         (TreeStage.Seed,       0,     0,    "Зерно"),
@@ -48,7 +60,7 @@ public class KnowledgeTreeService : IKnowledgeTreeService
         _logger = logger;
     }
 
-    private static string CacheKey(int userId) => $"knowledge_tree:v3:{userId}";
+    private static string CacheKey(int userId) => $"knowledge_tree:v5:{userId}";
 
     public async Task<KnowledgeTreeState> GetTreeStateAsync(int userId, CancellationToken ct = default)
     {
@@ -208,7 +220,7 @@ public class KnowledgeTreeService : IKnowledgeTreeService
             LastActivityAt = tree.LastActivityAt,
             IsWilting = tree.IsWilting,
             DaysSinceActivity = tree.DaysSinceActivity,
-            MaxVisibleBranches = DefaultMaxVisibleBranches,
+            MaxVisibleBranches = StageLimits.TryGetValue(tree.CurrentStage, out var sl) ? sl.MaxBranches : DefaultMaxVisibleBranches,
             CanvasWidth = CanvasW,
             CanvasHeight = CanvasH,
         };
@@ -287,11 +299,20 @@ public class KnowledgeTreeService : IKnowledgeTreeService
         if (branchCount == 0)
             return state;
 
+        // Stage-based limits
+        var limits = StageLimits.TryGetValue(state.CurrentStage, out var lim)
+            ? lim : (MaxBranches: DefaultMaxVisibleBranches, MaxTwigsPerBranch: 10);
+
+        // Seed & Sprout: no branches at all
+        if (limits.MaxBranches <= 0)
+            return state;
+
         // Sort branches: heaviest tags at the bottom of trunk, lightest at top
         var sortedTags = tagGroups
             .Select(kv => (Tag: kv.Key, DictIndices: kv.Value,
                 TotalWords: kv.Value.Sum(i => dictionaries[i].TotalWordsCount)))
             .OrderByDescending(x => x.TotalWords)
+            .Take(limits.MaxBranches)
             .ToList();
 
         // Global max word count across all tags — used for proportional sizing
@@ -401,6 +422,7 @@ public class KnowledgeTreeService : IKnowledgeTreeService
             // Sort twigs by word count DESCENDING: heaviest attach near trunk (low t), lightest near tip (high t)
             var sortedDicts = tagDicts
                 .OrderByDescending(d => d.TotalWordsCount)
+                .Take(limits.MaxTwigsPerBranch)
                 .ToList();
             var twigCount = sortedDicts.Count;
             var branchMaxWords = sortedDicts.Count > 0 ? sortedDicts[0].TotalWordsCount : 1;
@@ -509,7 +531,7 @@ public class KnowledgeTreeService : IKnowledgeTreeService
                     if (rng.NextDouble() < 0.18) sprigSide = -sprigSide;
                     var sprigAngle = twigAngle + sprigSide * (Math.PI / 2.0)
                         + (rng.NextDouble() - 0.5) * 0.44;
-                    var sprigLen = 10.0 + rng.NextDouble() * 25.0;
+                    var sprigLen = 16.0 + rng.NextDouble() * 36.0;
                     var spTipX = spBaseX + Math.Cos(sprigAngle) * sprigLen;
                     var spTipY = spBaseY + Math.Sin(sprigAngle) * sprigLen;
 
@@ -539,10 +561,14 @@ public class KnowledgeTreeService : IKnowledgeTreeService
                     for (int cli = 0; cli < leavesHere && leafIdx < sprigLeafCount; cli++)
                     {
                         var w = dict.Words[leafIdx];
+                        // Distribute leaves along the sprig Bezier (t = 0.25..1.0)
+                        var spLeafT = 0.25 + 0.75 * (cli + rng.NextDouble()) / Math.Max(leavesHere, 1);
+                        var spLeafBaseX = QuadBezier(spBaseX, spCpX, spTipX, spLeafT);
+                        var spLeafBaseY = QuadBezier(spBaseY, spCpY, spTipY, spLeafT);
                         var la = rng.NextDouble() * 2.0 * Math.PI;
-                        var ld = 1.5 + rng.NextDouble() * 6.0;
-                        var lx = spTipX + Math.Cos(la) * ld;
-                        var ly = spTipY + Math.Sin(la) * ld;
+                        var ld = 3.0 + rng.NextDouble() * 10.0;
+                        var lx = spLeafBaseX + Math.Cos(la) * ld;
+                        var ly = spLeafBaseY + Math.Sin(la) * ld;
                         var leafRot = sprigAngle * 180.0 / Math.PI
                                       + (rng.NextDouble() - 0.5) * 70.0;
 
@@ -570,7 +596,7 @@ public class KnowledgeTreeService : IKnowledgeTreeService
                     // Offset slightly to each side of twig
                     var twLeafPerp = twigAngle + Math.PI / 2.0;
                     var twLeafSide = (tli % 2 == 0) ? 1.0 : -1.0;
-                    var twLeafDist = 2.0 + rng.NextDouble() * 8.0;
+                    var twLeafDist = 5.0 + rng.NextDouble() * 16.0;
                     var lx = twLeafBaseX + Math.Cos(twLeafPerp) * twLeafDist * twLeafSide;
                     var ly = twLeafBaseY + Math.Sin(twLeafPerp) * twLeafDist * twLeafSide;
                     var leafRot = twigAngle * 180.0 / Math.PI
@@ -601,6 +627,13 @@ public class KnowledgeTreeService : IKnowledgeTreeService
     {
         var u = 1 - t;
         return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
+    }
+
+    /// <summary>Quadratic bezier interpolation for a single axis</summary>
+    private static double QuadBezier(double p0, double cp, double p1, double t)
+    {
+        var u = 1 - t;
+        return u * u * p0 + 2 * u * t * cp + t * t * p1;
     }
 
     private static TreeStage CalculateStage(long treeXp, int learnedWords)

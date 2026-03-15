@@ -183,7 +183,38 @@ else if (Tree != null)
 
                 @if (!IsLeafView)
                 {
-                    @* ── TRUNK ── *@
+                    @if (Tree.CurrentStage == TreeStage.Seed)
+                    {
+                        @* ── SEED: small seed on the ground ── *@
+                        var seedCx = Tree.CanvasWidth / 2;
+                        var seedCy = Tree.CanvasHeight - 70;
+                        <ellipse cx="@F(seedCx)" cy="@F(seedCy)" rx="18" ry="12"
+                                 fill="#795548" stroke="#5D4037" stroke-width="1.5" opacity="0.9"/>
+                        <ellipse cx="@F(seedCx - 3)" cy="@F(seedCy - 2)" rx="6" ry="4"
+                                 fill="#8D6E63" opacity="0.6"/>
+                        @SvgText(seedCx, seedCy - 28, "middle", 12, "#5D4037", "🌰 Зерно", "600")
+                    }
+                    else if (Tree.CurrentStage == TreeStage.Sprout)
+                    {
+                        @* ── SPROUT: thin stem with 2 small leaves ── *@
+                        var sprCx = Tree.CanvasWidth / 2;
+                        var sprBase = Tree.CanvasHeight - 65;
+                        var sprTop = sprBase - 80;
+                        <line x1="@F(sprCx)" y1="@F(sprBase)" x2="@F(sprCx)" y2="@F(sprTop)"
+                              stroke="#66BB6A" stroke-width="4" stroke-linecap="round"/>
+                        @* Left leaf *@
+                        <path d="M @F(sprCx),@F(sprTop + 25) C @F(sprCx - 20),@F(sprTop + 10) @F(sprCx - 28),@F(sprTop - 5) @F(sprCx - 10),@F(sprTop + 5)"
+                              fill="#81C784" stroke="#388E3C" stroke-width="0.5" opacity="0.9"/>
+                        @* Right leaf *@
+                        <path d="M @F(sprCx),@F(sprTop + 15) C @F(sprCx + 18),@F(sprTop) @F(sprCx + 25),@F(sprTop - 10) @F(sprCx + 8),@F(sprTop)"
+                              fill="#A5D6A7" stroke="#388E3C" stroke-width="0.5" opacity="0.9"/>
+                        @* Tip bud *@
+                        <circle cx="@F(sprCx)" cy="@F(sprTop - 3)" r="4" fill="#66BB6A" stroke="#43A047" stroke-width="0.5"/>
+                        @SvgText(sprCx, sprTop - 22, "middle", 12, "#388E3C", "🌱 Росток", "600")
+                    }
+                    else
+                    {
+                    @* ── TRUNK (Sapling and above) ── *@
                     <path d="@TrunkPath()" stroke="url(#bark-grad)" stroke-width="24"
                           fill="none" stroke-linecap="round" filter="url(#wood-shadow)"/>
                     @* Bark texture lines *@
@@ -209,14 +240,20 @@ else if (Tree != null)
                     {
                         var capturedBranch = branch;
                         var isSelectedBranch = SelectedBranch?.Id == branch.Id;
-                        var branchOpacity = isSelectedBranch ? 1.0 : 0.85;
+                        var hasAnySelection = SelectedBranch != null || SelectedTwig != null;
+                        var branchContainsSelectedTwig = SelectedTwig != null
+                            && branch.Twigs.Any(tw => tw.Id == SelectedTwig.Id);
+                        // If something is selected but this branch is NOT it, dim to 0.10
+                        var groupOpacity = !hasAnySelection ? 1.0
+                            : (isSelectedBranch || branchContainsSelectedTwig) ? 1.0 : 0.10;
 
+                        <g opacity="@F(groupOpacity)">
                         <g style="cursor:pointer;" @onclick="() => OnBranchClick(capturedBranch)">
                             @* Branch path *@
                             <path d="@BezierPath(branch.Segment, branch.Cp1X, branch.Cp1Y, branch.Cp2X, branch.Cp2Y)"
                                   stroke="url(#branch-grad)" stroke-width="@F(branch.StrokeWidth)"
                                   fill="none" stroke-linecap="round" filter="url(#wood-shadow)"
-                                  opacity="@F(branchOpacity)"/>
+                                  opacity="1"/>
                             @* Bark texture on branch *@
                             <path d="@BezierPath(branch.Segment, branch.Cp1X, branch.Cp1Y, branch.Cp2X, branch.Cp2Y)"
                                   stroke="#4E342E" stroke-width="0.8" fill="none"
@@ -242,13 +279,17 @@ else if (Tree != null)
                         {
                             var capturedTwig = twig;
                             var isSelectedTwig = SelectedTwig?.Id == twig.Id;
+                            // Within a selected branch, dim non-selected twigs
+                            var twigOpacity = SelectedTwig == null ? 1.0
+                                : isSelectedTwig ? 1.0 : 0.10;
 
-                            <g style="cursor:pointer;" @onclick="() => OnTwigClick(capturedTwig)"
+                            <g style="cursor:pointer;" opacity="@F(twigOpacity)"
+                               @onclick="() => OnTwigClick(capturedTwig)"
                                @ondblclick="() => DrillIntoTwig(capturedTwig)">
                                 <path d="@BezierPath(twig.Segment, twig.Cp1X, twig.Cp1Y, twig.Cp2X, twig.Cp2Y)"
                                       stroke="url(#twig-grad)" stroke-width="@F(twig.StrokeWidth)"
                                       fill="none" stroke-linecap="round"
-                                      opacity="@(isSelectedTwig ? "1" : "0.7")"/>
+                                      opacity="1"/>
 
                                 @* Twig label *@
                                 @SvgText(twig.Segment.X2, twig.Segment.Y2 - 18, "middle", 8, "#5D4037",
@@ -268,7 +309,7 @@ else if (Tree != null)
                                         var lStroke = leaf.IsLearned ? "#1B5E20" : "#81C784";
                                         var lColor2 = leaf.IsLearned ? "#2E7D32" : "#C8E6C9";
                                         var lColor3 = leaf.IsLearned ? "#43A047" : "#81C784";
-                                        <g transform="translate(@F(leaf.X),@F(leaf.Y))">
+                                        <g transform="translate(@F(leaf.X),@F(leaf.Y)) scale(1.6)">
                                             <path d="M 0,1 C -5,-4 -7,-11 0,-15 C 7,-11 5,-4 0,1 Z"
                                                   fill="@lColor2" stroke="@lStroke" stroke-width="0.3"
                                                   opacity="0.5" transform="rotate(@F(leaf.Rotation - 25)) scale(1.1)"/>
@@ -291,7 +332,7 @@ else if (Tree != null)
                                     var lStroke = leaf.IsLearned ? "#1B5E20" : "#81C784";
                                     var lColor2 = leaf.IsLearned ? "#2E7D32" : "#C8E6C9";
                                     var lColor3 = leaf.IsLearned ? "#43A047" : "#81C784";
-                                    <g transform="translate(@F(leaf.X),@F(leaf.Y))">
+                                    <g transform="translate(@F(leaf.X),@F(leaf.Y)) scale(1.6)">
                                         <path d="M 0,1 C -5,-4 -7,-11 0,-15 C 7,-11 5,-4 0,1 Z"
                                               fill="@lColor2" stroke="@lStroke" stroke-width="0.3"
                                               opacity="0.5" transform="rotate(@F(leaf.Rotation - 25)) scale(1.1)"/>
@@ -316,7 +357,9 @@ else if (Tree != null)
                                 }
                             </g>
                         }
+                        </g>
                     }
+                    } @* end else (Sapling+) *@
                 }
                 else
                 {
