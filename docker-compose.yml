@@ -7,10 +7,8 @@ services:
     build:
       context: .
       dockerfile: LearningAPI/Dockerfile
-    ports:
-    - "8080:8080"
-    # expose:
-    #   - "8080" 
+    expose:
+      - "8080" 
     depends_on:
       db:
         condition: service_started
@@ -84,10 +82,10 @@ services:
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=${DB_PASSWORD}  
-    ports:
-      - "127.0.0.1:14333:1433"
-    # expose:
-    #   - "1433"
+    # ports:
+    #   - "127.0.0.1:14333:1433"
+    expose:
+      - "1433"
     volumes:
       - sql_data:/var/opt/mssql/data
 
